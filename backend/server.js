@@ -1,11 +1,11 @@
-//server.js
+// server.js
 require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
+const fs    = require('fs');
+const path  = require('path');
 const { spawn } = require('child_process');
 const express = require('express');
-const cors = require('cors');
-const PizZip = require('pizzip');
+const cors    = require('cors');
+const PizZip  = require('pizzip');
 const Docxtemplater = require('docxtemplater');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 
@@ -13,33 +13,52 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
-
-// Prepara Google Sheets
+// ——————————————————————————————
+// 1) Configuração do Google Sheets
+// ——————————————————————————————
 const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
-const creds = JSON.parse(Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, 'base64').toString('utf8'));
+
+// Decodifica suas credenciais (Base64 ou JSON puro)
+const creds = process.env.GOOGLE_CREDENTIALS_B64
+  ? JSON.parse(Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, 'base64').toString('utf8'))
+  : require('./credentials.json');
 
 async function authSheets() {
   await doc.useServiceAccountAuth(creds);
   await doc.loadInfo();
 }
 
-// Rota principal
+// ——————————————————————————————
+// 2) Rota de teste do Google Sheets
+// ——————————————————————————————
+app.get('/api/test-sheets', async (req, res) => {
+  try {
+    await authSheets();
+    const sheet = doc.sheetsByIndex[0];
+    await sheet.addRow({ teste: 'ok', data: new Date().toISOString() });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Erro no test-sheets:', e);
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// ——————————————————————————————
+// 3) Rota principal: gera termo e PDF
+// ——————————————————————————————
 app.post('/api/gerar-termo', async (req, res) => {
   const dados = req.body;
 
   try {
-    // 1) Grava na planilha
+    // 3.1) Grava na planilha
     await authSheets();
     const sheet = doc.sheetsByIndex[0];
     await sheet.addRow(dados);
 
-    // 2) Carrega o template .docx
+    // 3.2) Carrega e mescla o template .docx
     const content = fs.readFileSync(path.resolve(__dirname, 'Termo_Regularidade_CRP.docx'), 'binary');
     const zip     = new PizZip(content);
     const docx    = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-    // 3) Mescla os dados
     docx.setData({
       ente:        dados.ente,
       cnpj:        dados.cnpj,
@@ -53,17 +72,19 @@ app.post('/api/gerar-termo', async (req, res) => {
     });
     docx.render();
 
-    // 4) Salva novo DOCX temporário
+    // 3.3) Salva DOCX temporário
     const bufDocx = docx.getZip().generate({ type: 'nodebuffer' });
-    const tmpDocx = path.resolve(__dirname, 'tmp', `termo_${Date.now()}.docx`);
+    const tmpDir  = path.resolve(__dirname, 'tmp');
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
+    const tmpDocx = path.join(tmpDir, `termo_${Date.now()}.docx`);
     fs.writeFileSync(tmpDocx, bufDocx);
 
-    // 5) Converte para PDF usando LibreOffice CLI
+    // 3.4) Converte para PDF (LibreOffice CLI)
     await new Promise((resolve, reject) => {
       const soffice = spawn('soffice', [
         '--headless',
         '--convert-to', 'pdf',
-        '--outdir', path.dirname(tmpDocx),
+        '--outdir', tmpDir,
         tmpDocx
       ]);
       soffice.on('exit', code => code === 0 ? resolve() : reject(new Error('Conversion failed')));
@@ -72,18 +93,20 @@ app.post('/api/gerar-termo', async (req, res) => {
     const pdfPath = tmpDocx.replace(/\.docx$/, '.pdf');
     const pdfBuf  = fs.readFileSync(pdfPath);
 
-    // 6) Limpa arquivos temporários (opcional)
+    // 3.5) Limpeza de arquivos temporários
     fs.unlinkSync(tmpDocx);
     fs.unlinkSync(pdfPath);
 
-    // 7) Retorna o PDF
+    // 3.6) Retorna o PDF
     res.setHeader('Content-Type', 'application/pdf');
     res.send(pdfBuf);
 
   } catch (err) {
-    console.error(err);
+    console.error('Erro em gerar-termo:', err);
     res.status(500).json({ error: 'Erro interno ao gerar termo.' });
   }
 });
 
+// ——————————————————————————————
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server rodando na porta ${PORT}`));
