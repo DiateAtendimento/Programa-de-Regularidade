@@ -1,0 +1,124 @@
+/* 0) Reset e fonte */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html, body {
+  height: 100%;
+  overflow-x: hidden; /* remove scroll lateral */
+}
+body {
+  font-family: 'Inter', sans-serif;
+
+  /* ondas de fundo */
+  background: url('imagens/bg.svg') top center no-repeat;
+  background-size: cover;
+  min-height: 100vh;
+}
+
+/* 1) Painel flutuante */
+.container.floating-panel {
+  position: relative;
+  width: 90%;
+  max-width: 900px;
+  margin: 12vh auto 0;   /* empurra o form mais para cima */
+  padding: 0 1rem;
+  z-index: 1;
+}
+
+/* 2) Título “encaixado” */
+.container.floating-panel > h1 {
+  position: absolute;
+  top: 0;
+  left: 1rem;
+  transform: translateY(-50%);
+  background: #fff;
+  padding: 0 0.5rem;
+  color: #2563eb;
+  font-size: 1.75rem;
+  font-weight: 600;
+  z-index: 2;
+}
+
+/* 3) Formulário */
+#regularidadeForm {
+  margin-top: 1.5rem;
+  background: #fff;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+/* 4) Cards internos */
+.card {
+  border: none;
+  border-radius: .75rem;
+  box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, 0.08);
+  transition: transform .2s, box-shadow .2s;
+}
+
+.card-header {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* 5) Inputs e selects */
+.form-control,
+.form-select {
+  border-radius: .375rem;
+  box-shadow: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 .2rem rgba(37,99,235,0.25);
+}
+
+/* 6) Botões */
+.btn-primary {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+.btn-primary:hover {
+  background: #1e4db7;
+  border-color: #1e4db7;
+}
+
+/* 7) Logo abaixo do formulário */
+.logo-bottom {
+  text-align: center;
+  margin: 2rem auto;
+  position: relative;
+  z-index: 1;
+}
+.logo-bottom img {
+  width: 160px;
+  height: auto;
+}
+
+/* 8) Ajustes para mobile */
+@media (max-width: 576px) {
+  .container.floating-panel {
+    margin: 8vh auto 0;
+  }
+  .container.floating-panel > h1 {
+    left: .75rem;
+    font-size: 1.5rem;
+  }
+  #regularidadeForm {
+    margin-top: 1rem;
+    padding: 1.5rem;
+  }
+  .card-body .row > [class*="col-"] {
+    margin-bottom: 1rem;
+  }
+  .logo-bottom {
+    margin: 1.5rem auto;
+  }
+  .logo-bottom img {
+    width: 120px;
+  }
+}
