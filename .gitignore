@@ -1,0 +1,16 @@
+# node
+**/node_modules/
+
+# credenciais e env
+**/.env
+**/credentials.json
+
+# temporários de conversão
+backend/tmp/
+
+# logs
+*.log
+
+# editor
+.vscode/
+.DS_Store
