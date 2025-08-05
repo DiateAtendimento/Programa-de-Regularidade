@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="termo.css" />
 </head>
 <body>
-  <div class="term-container">
+  <div class="term-container" id="term-content">
 
     <!-- Cabeçalho: logos alinhadas à direita -->
     <header class="term-header">
@@ -137,24 +137,39 @@
       <p>__________________________________________</p>
       <p>{{responsavel}}</p>
     </footer>
+
+    <!-- BOTÃO DE DOWNLOAD -->
+    <div class="download-wrap">
+      <button id="btn-download" class="btn-download">📥 Baixar PDF</button>
+    </div>
   </div>
 
+  <!-- html2pdf.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+
   <script>
-    // captura todos os parâmetros da URL
     const params = new URLSearchParams(window.location.search);
 
-    // substitui placeholders simples {{campo}}
+    // Preenche placeholders {{campo}}
     document.querySelectorAll('.term-container p, .term-container li').forEach(el => {
       el.innerHTML = el.innerHTML.replace(/\{\{(\w+)\}\}/g, (_, key) => params.get(key) || '');
     });
 
-    // renderiza a lista de critérios
+    // Renderiza critérios
     const ul = document.getElementById('criterios-list');
-    const criterios = params.getAll('criterios'); 
-    criterios.forEach(text => {
+    params.getAll('criterios').forEach(text => {
       const li = document.createElement('li');
       li.textContent = text;
       ul.appendChild(li);
+    });
+
+    // Botão de download
+    document.getElementById('btn-download').addEventListener('click', () => {
+      const element = document.getElementById('term-content');
+      html2pdf()
+        .set({ margin: 10, filename: 'termo_crp.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } })
+        .from(element)
+        .save();
     });
   </script>
 </body>

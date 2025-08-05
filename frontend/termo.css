@@ -71,3 +71,22 @@ body {
 .term-footer p {
   margin-bottom: 0.5rem;
 }
+
+.download-wrap {
+  text-align: center;
+  margin-top: 2rem;
+}
+.btn-download {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-download:hover {
+  background: #1e4db7;
+}
+
