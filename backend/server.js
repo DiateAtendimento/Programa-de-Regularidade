@@ -111,9 +111,16 @@ app.post('/api/gerar-termo', async (req, res) => {
     res.send(pdfBuf);
 
   } catch (err) {
-    console.error('❌ Erro em /api/gerar-termo:', err);
-    res.status(500).json({ error: 'Erro interno ao gerar termo.' });
+        console.error('❌ Erro em /api/gerar-termo:', err);
+
+    // Se for multi_error, mostre cada sub-erro:
+    if (err.properties && Array.isArray(err.properties.errors)) {
+      err.properties.errors.forEach((e, i) => {
+        console.error(` ↳ sub-erro[${i}]:`, e);
+      });
+    }
   }
+    res.status(500).json({ error: 'Erro interno ao gerar termo (veja console do servidor).' });
 });
 
 const PORT = process.env.PORT || 3000;
