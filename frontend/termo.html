@@ -4,30 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Termo de Regularidade Previdenciária – CRP</title>
-  <!-- Link para o CSS deste termo -->
   <link rel="stylesheet" href="termo.css" />
 </head>
 <body>
   <div class="term-container">
 
-    <!-- Cabeçalho com as logos alinhadas à direita -->
+    <!-- Cabeçalho: logos alinhadas à direita -->
     <header class="term-header">
       <img
         src="imagens/logo-termo-mps.svg"
-        alt="Logo Ministério da Previdência Social"
+        alt="Logo MPS"
         class="logo termo-logo"
       />
       <img
         src="imagens/logo-termo-drpps.svg"
-        alt="Logo Departamento dos Regimes Próprios de Previdência Social"
+        alt="Logo DRPPS"
         class="logo termo-logo"
       />
     </header>
 
-    <!-- Título principal -->
+    <!-- Título -->
     <h1 class="term-title">TERMO DE REGULARIDADE PREVIDENCIÁRIA – CRP</h1>
 
-    <!-- 1. Identificação -->
+    <!-- Seções com placeholders {{campo}} -->
     <section class="term-section">
       <h2>1. IDENTIFICAÇÃO</h2>
       <p><strong>1.1. Ente Federativo:</strong> {{ente}}</p>
@@ -36,7 +35,6 @@
       <p><strong>1.4. Órgão Gestor do RPPS:</strong> {{orgaoGestor}}</p>
     </section>
 
-    <!-- 2. Dados Pessoais -->
     <section class="term-section">
       <h2>2. DADOS PESSOAIS</h2>
       <p><strong>2.1. CPF:</strong> {{cpf}}</p>
@@ -46,7 +44,6 @@
       <p><strong>2.5. Endereço:</strong> {{endereco}}</p>
     </section>
 
-    <!-- 3. Objeto -->
     <section class="term-section">
       <h2>3. DO OBJETO</h2>
       <p>
@@ -57,7 +54,6 @@
       </p>
     </section>
 
-    <!-- 4. Fundamentação Legal -->
     <section class="term-section">
       <h2>4. FUNDAMENTAÇÃO LEGAL</h2>
       <ul>
@@ -68,7 +64,6 @@
       </ul>
     </section>
 
-    <!-- 5. Critérios -->
     <section class="term-section">
       <h2>5. CRITÉRIOS</h2>
       <ul>
@@ -78,69 +73,46 @@
       </ul>
     </section>
 
-    <!-- 6. Declarações -->
     <section class="term-section">
       <h2>6. DAS DECLARAÇÕES</h2>
       <ul>
-        <li>
-          Está adimplente com todas as obrigações previdenciárias relativas ao RPPS,
-          inclusive recolhimento de contribuições patronais e repasses destinados
-          à manutenção do Fundo Previdenciário;
-        </li>
-        <li>
-          Encontra-se em dia com a apresentação dos Demonstrativos de Informações
-          Previdenciárias (DIP) e dos Demonstrativos de Repasses (DPR) exigidos
-          pelos órgãos de controle, na forma e nos prazos legais;
-        </li>
-        <li>
-          Não possui passivos previdenciários em aberto que impeçam a concessão
-          da Certidão de Regularidade Previdenciária.
-        </li>
+        <li>Está adimplente com todas as obrigações previdenciárias relativas ao RPPS, inclusive recolhimento de contribuições patronais e repasses destinados à manutenção do Fundo Previdenciário;</li>
+        <li>Encontra-se em dia com a apresentação dos Demonstrativos de Informações Previdenciárias (DIP) e dos Demonstrativos de Repasses (DPR) exigidos pelos órgãos de controle, na forma e nos prazos legais;</li>
+        <li>Não possui passivos previdenciários em aberto que impeçam a concessão da Certidão de Regularidade Previdenciária.</li>
       </ul>
     </section>
 
-    <!-- 7. Vigência -->
     <section class="term-section">
       <h2>7. VIGÊNCIA DA CERTIDÃO</h2>
-      <p>
-        A Certidão de Regularidade Previdenciária (CRP) emitida com base neste Termo
-        terá validade de 90 (noventa) dias, contados da data de sua assinatura.
-      </p>
+      <p>A Certidão de Regularidade Previdenciária (CRP) emitida com base neste Termo terá validade de 90 (noventa) dias, contados da data de sua assinatura.</p>
     </section>
 
-    <!-- 8. Disposições Gerais -->
     <section class="term-section">
       <h2>8. DISPOSIÇÕES GERAIS</h2>
       <ul>
-        <li>
-          O presente Termo não exime o Ente Federativo de futuras obrigações, tampouco
-          de cumprir requisitos adicionais exigidos por legislação ou instruções
-          normativas supervenientes.
-        </li>
-        <li>
-          Eventuais irregularidades constatadas poderão ensejar a cassação ou não
-          renovação da Certidão de Regularidade Previdenciária.
-        </li>
+        <li>O presente Termo não exime o Ente Federativo de futuras obrigações, tampouco de cumprir requisitos adicionais exigidos por legislação ou instruções normativas supervenientes.</li>
+        <li>Eventuais irregularidades constatadas poderão ensejar a cassação ou não renovação da Certidão de Regularidade Previdenciária.</li>
       </ul>
     </section>
 
-    <!-- 9. Foro -->
     <section class="term-section">
       <h2>9. FORO</h2>
-      <p>
-        Para dirimir quaisquer dúvidas ou controvérsias decorrentes deste Termo, fica
-        eleito o Foro da Comarca de {{cidade}}/{{uf}}, renunciando as partes a
-        qualquer outro, por mais privilegiado que seja.
-      </p>
+      <p>Para dirimir quaisquer dúvidas ou controvérsias decorrentes deste Termo, fica eleito o Foro da Comarca de {{cidade}}/{{uf}}, renunciando as partes a qualquer outro, por mais privilegiado que seja.</p>
     </section>
 
-    <!-- Rodapé com data e assinatura -->
     <footer class="term-footer">
       <p>{{cidade}}, {{dia}} de {{mes}} de {{ano}}.</p>
       <p>__________________________________________</p>
       <p>{{responsavel}}</p>
     </footer>
-
   </div>
+
+  <!-- Script para substituir {{campo}} pelos valores da URL -->
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    document.querySelectorAll('.term-container p, .term-container li').forEach(el => {
+      el.innerHTML = el.innerHTML.replace(/\{\{(\w+)\}\}/g, (_, key) => params.get(key) || '');
+    });
+  </script>
 </body>
 </html>
