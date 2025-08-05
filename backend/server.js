@@ -1,5 +1,6 @@
-// server.js
+// backend/server.js
 require('dotenv').config();
+
 const fs    = require('fs');
 const path  = require('path');
 const { spawn } = require('child_process');
@@ -7,6 +8,7 @@ const express = require('express');
 const cors    = require('cors');
 const PizZip  = require('pizzip');
 const Docxtemplater = require('docxtemplater');
+// ⚠️ garanta ter instalado: npm install google-spreadsheet@3.3.0
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const app = express();
@@ -17,11 +19,11 @@ app.use(express.json());
 // 1) Configuração do Google Sheets
 // ——————————————————————————————
 const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
-
-// Decodifica suas credenciais (Base64 ou JSON puro)
+// carrega o JSON da service account
 const creds = require(path.resolve(__dirname, process.env.CREDENTIALS_JSON_PATH));
 
 async function authSheets() {
+  // autentica e carrega metadados
   await doc.useServiceAccountAuth(creds);
   await doc.loadInfo();
 }
@@ -54,9 +56,15 @@ app.post('/api/gerar-termo', async (req, res) => {
     await sheet.addRow(dados);
 
     // 3.2) Carrega e mescla o template .docx
-    const content = fs.readFileSync(path.resolve(__dirname, 'Termo_Regularidade_CRP.docx'), 'binary');
-    const zip     = new PizZip(content);
-    const docx    = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+    const content = fs.readFileSync(
+      path.resolve(__dirname, 'Termo_Regularidade_CRP.docx'),
+      'binary'
+    );
+    const zip = new PizZip(content);
+    const docx = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true
+    });
     docx.setData({
       ente:        dados.ente,
       cnpj:        dados.cnpj,
@@ -85,7 +93,11 @@ app.post('/api/gerar-termo', async (req, res) => {
         '--outdir', tmpDir,
         tmpDocx
       ]);
-      soffice.on('exit', code => code === 0 ? resolve() : reject(new Error('Conversion failed')));
+      soffice.on('exit', code =>
+        code === 0 ?
+          resolve() :
+          reject(new Error('Conversion para PDF falhou'))
+      );
     });
 
     const pdfPath = tmpDocx.replace(/\.docx$/, '.pdf');
