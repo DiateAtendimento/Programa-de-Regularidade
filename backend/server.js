@@ -19,9 +19,7 @@ app.use(express.json());
 const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
 
 // Decodifica suas credenciais (Base64 ou JSON puro)
-const creds = process.env.GOOGLE_CREDENTIALS_B64
-  ? JSON.parse(Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, 'base64').toString('utf8'))
-  : require('./credentials.json');
+const creds = require(path.resolve(__dirname, process.env.CREDENTIALS_JSON_PATH));
 
 async function authSheets() {
   await doc.useServiceAccountAuth(creds);
