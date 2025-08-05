@@ -16,6 +16,7 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "google-spreadsheet": "^3.3.0",
-    "pizzip": "^3.2.0"
+    "pizzip": "^3.2.0",
+    "puppeteer": "^24.15.0"
   }
 }

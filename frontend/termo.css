@@ -1,0 +1,73 @@
+/* Reset básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: 'Inter', sans-serif;
+  color: #333;
+  background: #f2f2f2;
+  padding: 2rem 0;
+}
+
+/* Container */
+.term-container {
+  background: #fff;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 3rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
+  border-radius: 0.5rem;
+}
+
+/* Cabeçalho: logos à direita */
+.term-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.logo.termo-logo {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+}
+
+/* Título */
+.term-title {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+/* Seções */
+.term-section + .term-section {
+  margin-top: 1.25rem;
+}
+.term-section h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+.term-section p,
+.term-section ul {
+  margin-left: 1rem;
+}
+.term-section ul {
+  list-style-type: disc;
+}
+.term-section ul li {
+  margin-bottom: 0.5rem;
+}
+
+/* Rodapé */
+.term-footer {
+  margin-top: 2rem;
+  text-align: center;
+}
+.term-footer p {
+  margin-bottom: 0.5rem;
+}
