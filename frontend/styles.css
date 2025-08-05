@@ -122,3 +122,21 @@ body {
     width: 120px;
   }
 }
+
+/* ************ */
+/* FORM VALIDATION */
+/* ************ */
+
+/* quando o form tiver .was-validated e o campo inválido */
+.was-validated .form-control:invalid {
+  border-color: #dc3545;
+}
+.was-validated .form-select:invalid {
+  border-color: #dc3545;
+}
+
+/* feedback built-in do Bootstrap */
+.was-validated .form-control:invalid ~ .invalid-feedback,
+.was-validated .form-select:invalid ~ .invalid-feedback {
+  display: block;
+}

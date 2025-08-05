@@ -26,8 +26,10 @@
   <div class="container floating-panel">
     <h1>Programa de Regularidade</h1>
 
-    <form id="regularidadeForm">
-      <!-- Identificação -->
+    <!-- novalidate: vamos gerenciar a validação via JS -->
+    <form id="regularidadeForm" novalidate>
+
+      <!-- 1) Identificação -->
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Identificação</div>
         <div class="card-body">
@@ -40,11 +42,15 @@
                 id="cnpj"
                 name="cnpj"
                 placeholder="00.000.000/0000-00"
+                required
               />
+              <div class="invalid-feedback">
+                Informe o CNPJ.
+              </div>
             </div>
             <div class="col-md-4">
               <label for="uf" class="form-label">UF</label>
-              <select id="uf" name="uf" class="form-select">
+              <select id="uf" name="uf" class="form-select" required>
                 <option value="" disabled selected>Selecione a UF</option>
                 <option value="AC">Acre</option>
                 <option value="AL">Alagoas</option>
@@ -74,6 +80,9 @@
                 <option value="SE">Sergipe</option>
                 <option value="TO">Tocantins</option>
               </select>
+              <div class="invalid-feedback">
+                Escolha a UF.
+              </div>
             </div>
             <div class="col-md-4">
               <label for="ente" class="form-label">Ente</label>
@@ -83,43 +92,67 @@
                 id="ente"
                 name="ente"
                 placeholder="Nome do ente"
+                required
               />
-            </div>
-            <!-- Critérios -->
-          <div class="row g-3 mt-3">
-            <div class="col-12">
-              <label class="form-label">Critérios</label>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="criterios" value="I – Instituição do RPPS" id="crit1">
-                <label class="form-check-label" for="crit1">I – Instituição do RPPS</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="criterios" value="II – Recolhimento das contribuições" id="crit2">
-                <label class="form-check-label" for="crit2">II – Recolhimento das contribuições</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="criterios" value="III – Repasse das contribuições retidas" id="crit3">
-                <label class="form-check-label" for="crit3">III – Repasse das contribuições retidas</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="criterios" value="IV – Aplicação dos recursos" id="crit4">
-                <label class="form-check-label" for="crit4">IV – Aplicação dos recursos</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="criterios" value="V – Prestação de contas" id="crit5">
-                <label class="form-check-label" for="crit5">V – Prestação de contas</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="criterios" value="VI – Observância das normas gerais" id="crit6">
-                <label class="form-check-label" for="crit6">VI – Observância das normas gerais</label>
+              <div class="invalid-feedback">
+                Informe o nome do Ente.
               </div>
             </div>
           </div>
-          </div>
+
+          <!-- Critérios (pelo menos 1) -->
+          <fieldset class="mt-4" id="critFieldset" data-required="1">
+            <legend class="form-label">Critérios <span class="text-danger">*</span></legend>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="I – Instituição do RPPS" id="crit1">
+              <label class="form-check-label" for="crit1">
+                I – Instituição do RPPS
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="II – Recolhimento das contribuições" id="crit2">
+              <label class="form-check-label" for="crit2">
+                II – Recolhimento das contribuições
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="III – Repasse das contribuições retidas" id="crit3">
+              <label class="form-check-label" for="crit3">
+                III – Repasse das contribuições retidas
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="IV – Aplicação dos recursos" id="crit4">
+              <label class="form-check-label" for="crit4">
+                IV – Aplicação dos recursos
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="V – Prestação de contas" id="crit5">
+              <label class="form-check-label" for="crit5">
+                V – Prestação de contas
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="VI – Observância das normas gerais" id="crit6">
+              <label class="form-check-label" for="crit6">
+                VI – Observância das normas gerais
+              </label>
+            </div>
+            <div class="invalid-feedback d-block" id="critFeedback" style="display:none">
+              Selecione pelo menos um critério.
+            </div>
+          </fieldset>
         </div>
       </div>
 
-      <!-- Dados Pessoais -->
+      <!-- 2) Dados Pessoais -->
       <div class="card mb-4">
         <div class="card-header bg-secondary text-white">Dados Pessoais</div>
         <div class="card-body">
@@ -132,7 +165,11 @@
                 id="cpf"
                 name="cpf"
                 placeholder="000.000.000-00"
+                required
               />
+              <div class="invalid-feedback">
+                Informe o CPF.
+              </div>
             </div>
             <div class="col-md-6">
               <label for="nome" class="form-label">Nome</label>
@@ -142,11 +179,12 @@
                 id="nome"
                 name="nome"
                 placeholder="Nome completo"
+                required
               />
+              <div class="invalid-feedback">
+                Informe o nome.
+              </div>
             </div>
-          </div>
-
-          <div class="row g-3 mt-3">
             <div class="col-md-6">
               <label for="telefone" class="form-label">Telefone</label>
               <input
@@ -155,7 +193,11 @@
                 id="telefone"
                 name="telefone"
                 placeholder="(00) 00000-0000"
+                required
               />
+              <div class="invalid-feedback">
+                Informe o telefone.
+              </div>
             </div>
             <div class="col-md-6">
               <label for="email" class="form-label">Email</label>
@@ -165,7 +207,11 @@
                 id="email"
                 name="email"
                 placeholder="email@exemplo.com"
+                required
               />
+              <div class="invalid-feedback">
+                Informe um email válido.
+              </div>
             </div>
             <div class="col-12">
               <label for="endereco" class="form-label">Endereço</label>
@@ -175,13 +221,17 @@
                 id="endereco"
                 name="endereco"
                 placeholder="Rua, número, bairro, cidade, CEP"
+                required
               />
+              <div class="invalid-feedback">
+                Informe o endereço.
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Local e Data -->
+      <!-- 3) Local e Data -->
       <div class="card mb-4">
         <div class="card-header bg-secondary text-white">Local e Data</div>
         <div class="card-body">
@@ -194,7 +244,11 @@
                 id="cidade"
                 name="cidade"
                 placeholder="Cidade"
+                required
               />
+              <div class="invalid-feedback">
+                Informe a cidade.
+              </div>
             </div>
             <div class="col-md-2">
               <label for="dia" class="form-label">Dia</label>
@@ -205,7 +259,11 @@
                 name="dia"
                 placeholder="DD"
                 min="1" max="31"
+                required
               />
+              <div class="invalid-feedback">
+                Informe o dia.
+              </div>
             </div>
             <div class="col-md-2">
               <label for="mes" class="form-label">Mês</label>
@@ -215,7 +273,11 @@
                 id="mes"
                 name="mes"
                 placeholder="Mês"
+                required
               />
+              <div class="invalid-feedback">
+                Informe o mês.
+              </div>
             </div>
             <div class="col-md-2">
               <label for="ano" class="form-label">Ano</label>
@@ -225,13 +287,17 @@
                 id="ano"
                 name="ano"
                 placeholder="YYYY"
+                required
               />
+              <div class="invalid-feedback">
+                Informe o ano.
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Responsável -->
+      <!-- 4) Responsável -->
       <div class="card mb-4">
         <div class="card-header bg-secondary text-white">Responsável</div>
         <div class="card-body">
@@ -241,15 +307,17 @@
             id="responsavel"
             name="responsavel"
             placeholder="Nome do responsável"
+            required
           />
+          <div class="invalid-feedback">
+            Informe o responsável.
+          </div>
         </div>
       </div>
 
       <!-- Botões -->
-      <div class="d-flex justify-content-end">
-        <button type="reset" class="btn btn-outline-secondary me-2">
-          Limpar
-        </button>
+      <div class="d-flex justify-content-end mb-5">
+        <button type="reset" class="btn btn-outline-secondary me-2">Limpar</button>
         <button type="submit" class="btn btn-primary">Gerar Termo</button>
       </div>
     </form>
