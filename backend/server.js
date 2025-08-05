@@ -1,12 +1,12 @@
 //server.js
 require('dotenv').config();
 
-const fs    = require('fs');
-const path  = require('path');
+const fs     = require('fs');
+const path   = require('path');
 const { spawn } = require('child_process');
-const express = require('express');
-const cors    = require('cors');
-const PizZip  = require('pizzip');
+const express    = require('express');
+const cors       = require('cors');
+const PizZip     = require('pizzip');
 const Docxtemplater = require('docxtemplater');
 // usar v3.x: npm install google-spreadsheet@3.3.0
 const { GoogleSpreadsheet } = require('google-spreadsheet');
@@ -16,7 +16,9 @@ app.use(cors());
 app.use(express.json());
 app.use('/', express.static(path.join(__dirname, '../frontend')));
 
-// Preparações iniciais
+// ——————————————————————————————
+// preparações iniciais
+// ——————————————————————————————
 const credsPath = path.resolve(__dirname, process.env.CREDENTIALS_JSON_PATH);
 if (!fs.existsSync(credsPath)) {
   console.error(`❌ credentials.json não encontrado em ${credsPath}`);
@@ -27,34 +29,35 @@ const creds = require(credsPath);
 const tmpDir = path.resolve(__dirname, 'tmp');
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
 
-// Configuração do Google Sheets
+// ——————————————————————————————
+// Google Sheets
+// ——————————————————————————————
 const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
-
 async function authSheets() {
   await doc.useServiceAccountAuth(creds);
   await doc.loadInfo();
 }
 
-// Rota principal: gera termo e PDF
+// ——————————————————————————————
+// rota principal: gerar termo e PDF
+// ——————————————————————————————
 app.post('/api/gerar-termo', async (req, res) => {
   const dados = req.body;
 
   try {
-    // grava no Sheets
+    // grava no Google Sheets
     await authSheets();
-    const sheet = doc.sheetsByIndex[0];
-    await sheet.addRow(dados);
+    await doc.sheetsByIndex[0].addRow(dados);
 
-    // mescla template .docx
+    // carrega e mescla template .docx
     const content = fs.readFileSync(
       path.resolve(__dirname, 'Termo_Regularidade_CRP.docx'),
       'binary'
     );
     const zip = new PizZip(content);
-    const docx = new Docxtemplater(zip, {
-      paragraphLoop: true,
-      linebreaks: true
-    });
+    const docx = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    // agora incluindo TODOS os campos
     docx.setData({
       ente:        dados.ente,
       cnpj:        dados.cnpj,
@@ -65,7 +68,14 @@ app.post('/api/gerar-termo', async (req, res) => {
       mes:         dados.mes || '',
       ano:         dados.ano || '',
       responsavel: dados.responsavel || '',
-      criterios:   dados.criterios || []
+      criterios:   dados.criterios   || [],
+
+      // novos campos de Dados Pessoais
+      cpf:         dados.cpf        || '',
+      nome:        dados.nome       || '',
+      telefone:    dados.telefone   || '',
+      email:       dados.email      || '',
+      endereco:    dados.endereco   || ''
     });
     docx.render();
 
@@ -83,18 +93,20 @@ app.post('/api/gerar-termo', async (req, res) => {
         tmpDocx
       ]);
       soffice.on('exit', code =>
-        code === 0 ? resolve() : reject(new Error('Falha na conversão para PDF'))
+        code === 0
+          ? resolve()
+          : reject(new Error('Falha na conversão para PDF'))
       );
     });
 
+    // lê PDF gerado e devolve
     const pdfPath = tmpDocx.replace(/\.docx$/, '.pdf');
     const pdfBuf  = fs.readFileSync(pdfPath);
 
-    // limpeza temporários
+    // limpa temporários
     fs.unlinkSync(tmpDocx);
     fs.unlinkSync(pdfPath);
 
-    // retorna PDF
     res.setHeader('Content-Type', 'application/pdf');
     res.send(pdfBuf);
 
