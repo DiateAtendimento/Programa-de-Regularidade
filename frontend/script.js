@@ -5,7 +5,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
-    const data = Object.fromEntries(new FormData(form).entries());
+    const formData = new FormData(form);
+
+    // coleta todos os critérios como array
+    const criterios = formData.getAll('criterios');
+
+    // coleta demais campos
+    const data = Object.fromEntries(
+      Array.from(formData.entries())
+        .filter(([key]) => key !== 'criterios')
+    );
+    data.criterios = criterios;
 
     try {
       const res = await fetch('/api/gerar-termo', {
@@ -18,16 +28,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
+      const cnpjClean = (data.cnpj || '').replace(/\D/g, '') || 'termo';
       a.href     = url;
-      const cnpj  = (data.cnpj||'').replace(/\D/g,'') || 'termo';
-      a.download = `termo_${cnpj}.pdf`;
+      a.download = `termo_${cnpjClean}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert('Não foi possível gerar o termo. Veja o console.');
+      alert('Não foi possível gerar o termo. Confira o console.');
     }
   });
 });
