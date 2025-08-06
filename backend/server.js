@@ -88,7 +88,7 @@ app.use('/', express.static(path.join(__dirname, '../frontend')));
 
 
 // 6.1) Serve também a pasta animacao/ como estática
-app.use('/animacao', express.static(path.join(__dirname, '../animacao')));
+app.use('/animacao', express.static(path.join(__dirname, '../frontend/animacao')));
 
 // ——————————————————————————————
 // 7) Preparação das credenciais do Google Sheets
