@@ -1,22 +1,22 @@
 // script.js
 
 document.addEventListener('DOMContentLoaded', () => {
-  const form           = document.getElementById('regularidadeForm');
-  const critFeedback   = document.getElementById('critFeedback');
-  const overlay        = document.getElementById('lottie-overlay');
-  const lottiePlayer   = document.getElementById('lottie-player');
-  let animation        = null;
+  const form         = document.getElementById('regularidadeForm');
+  const critFeedback = document.getElementById('critFeedback');
+  const overlay      = document.getElementById('lottie-overlay');
+  const lottiePlayer = document.getElementById('lottie-player');
+  let animation      = null;
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // exibe validação Bootstrap
+    // 1) exibe validação Bootstrap
     form.classList.add('was-validated');
 
-    // validação nativa
+    // 2) validação nativa dos campos required
     const formValid = form.checkValidity();
 
-    // validação de critérios
+    // 3) validação personalizada: pelo menos um critério
     const criterios = Array.from(
       form.querySelectorAll('input[name="criterios"]:checked')
     ).map(el => el.value);
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!formValid || !criteriosValid) return;
 
-    // monta objeto de dados
+    // 4) monta o objeto de dados a partir do form
     const formData = new FormData(form);
     const dados    = {};
     for (let [key, val] of formData.entries()) {
@@ -34,17 +34,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     dados.criterios = criterios;
 
-    // mostra overlay e inicia animação de “processando”
+    // 5) mostra overlay e inicia animação de “processando”
     overlay.style.display = 'flex';
     animation = lottie.loadAnimation({
       container: lottiePlayer,
       renderer: 'svg',
       loop: true,
       autoplay: true,
-      path: '/animacao/confirm-success.json' // ou confirm-error.json em caso de erro
+      path: '/animacao/confirm-success.json' // animação genérica de loading
     });
 
-    // tenta gravar no Sheets
+    // 6) grava no Google Sheets
     let savedOK = true;
     try {
       const resp = await fetch('/api/gerar-termo', {
@@ -57,20 +57,20 @@ document.addEventListener('DOMContentLoaded', () => {
       savedOK = false;
     }
 
-    // troca animação conforme sucesso ou erro
+    // 7) troca animação conforme resultado
     animation.destroy();
-    const filePath = savedOK
-      ? 'animacao/confirm-success.json'
-      : 'animacao/confirm-error.json';
+    const resultPath = savedOK
+      ? '/animacao/confirm-success.json'
+      : '/animacao/confirm-error.json';
     animation = lottie.loadAnimation({
       container: lottiePlayer,
       renderer: 'svg',
       loop: false,
       autoplay: true,
-      path: filePath
+      path: resultPath
     });
 
-    // após 2s, esconde overlay e abre o termo
+    // 8) após 2s, oculta overlay, limpa form e abre termo em caso de sucesso
     setTimeout(() => {
       overlay.style.display = 'none';
       animation.destroy();
@@ -79,8 +79,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // abre termo.html em nova aba
         const qs = new URLSearchParams(dados).toString();
         window.open(`termo.html?${qs}`, '_blank');
+
+        // limpa campos e estado de validação
+        form.reset();
+        form.classList.remove('was-validated');
+        critFeedback.style.display = 'none';
       } else {
-        alert('Ocorreu um erro ao gerar o termo. Refaça o processo.');
+        alert('Ocorreu um erro ao gerar o termo. Tente novamente.');
       }
     }, 2000);
   });
