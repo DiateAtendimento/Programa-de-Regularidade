@@ -17,8 +17,6 @@ const app = express();
 // ——————————————————————————————
 app.disable('x-powered-by');
 app.use(helmet());
-
-// adicional: CSP rigoroso (ajuste conforme suas necessidades)
 app.use(
   helmet.contentSecurityPolicy({
     useDefaults: true,
@@ -26,29 +24,29 @@ app.use(
       "default-src": ["'self'"],
       "script-src": [
         "'self'",
-        "https://cdn.jsdelivr.net",          // Bootstrap JS
-        "https://cdnjs.cloudflare.com",      // html2pdf + lottie
-        "'unsafe-inline'"                    // necessário para plugins que injetam inline scripts
+        "https://cdn.jsdelivr.net",          
+        "https://cdnjs.cloudflare.com",      
+        "'unsafe-inline'"                    
       ],
       "style-src": [
         "'self'",
-        "https://cdn.jsdelivr.net",          // Bootstrap CSS
-        "https://fonts.googleapis.com",      // Google Fonts
-        "'unsafe-inline'"                    // inline styles do Bootstrap
+        "https://cdn.jsdelivr.net",
+        "https://fonts.googleapis.com",
+        "'unsafe-inline'"
       ],
       "font-src": [
         "'self'",
-        "https://fonts.gstatic.com"          // Google Fonts
+        "https://fonts.gstatic.com"
       ],
       "img-src": [
         "'self'",
-        "data:"                              // data URIs (ex: logos SVG inline)
+        "data:"
       ],
       "connect-src": [
-        "'self'"                             // apenas seu próprio backend
+        "'self'"
       ],
-      "frame-src": ["'none'"],               // bloqueia iframes
-      "object-src": ["'none'"]               // bloqueia plugins
+      "frame-src": ["'none'"],
+      "object-src": ["'none'"]
     }
   })
 );
@@ -57,10 +55,10 @@ app.use(
 // 2) Rate Limiting (prevent brute‐force / DoS)
 // ——————————————————————————————
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100,                 // até 100 requisições por IP
-  standardHeaders: true,    // habilita headers RateLimit-*
-  legacyHeaders: false      // desabilita X-RateLimit-* 
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false
 }));
 
 // ——————————————————————————————
@@ -69,16 +67,14 @@ app.use(rateLimit({
 app.use(hpp());
 
 // ——————————————————————————————
-// 4) CORS (apenas seu domínio autorizado)
+// 4) CORS (origens autorizadas)
 // ——————————————————————————————
 const allowedOrigins = [
-  process.env.CORS_ORIGIN,                        // do .env (ex: Render)
-  'https://programa-de-regularidade.netlify.app'  // Netlify sem barra final
+  process.env.CORS_ORIGIN,                        
+  'https://programa-de-regularidade.netlify.app'  
 ];
-
 app.use(cors({
   origin: (origin, callback) => {
-    // permitir solicitações sem origin (curl, Postman, etc)
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -96,8 +92,6 @@ app.use(express.json({ limit: '10kb' }));
 // 6) Serve frontend estático
 // ——————————————————————————————
 app.use('/', express.static(path.join(__dirname, '../frontend')));
-
-// 6.1) Serve também a pasta animacao/ como estática
 app.use('/animacao', express.static(path.join(__dirname, '../frontend/animacao')));
 
 // ——————————————————————————————

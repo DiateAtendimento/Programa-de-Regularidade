@@ -1,4 +1,4 @@
-// script.js
+// frontend/script.js
 
 document.addEventListener('DOMContentLoaded', () => {
   const form         = document.getElementById('regularidadeForm');
@@ -6,28 +6,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const overlay      = document.getElementById('lottie-overlay');
   const lottiePlayer = document.getElementById('lottie-player');
   let animation      = null;
+
+  // URL do seu backend Node (exemplo: Render)
   const BACKEND = 'https://programa-de-regularidade.onrender.com';
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-
-    // 1) exibe validação Bootstrap
     form.classList.add('was-validated');
 
-    // 2) validação nativa dos campos required
+    // validador nativo
     const formValid = form.checkValidity();
-
-    // 3) validação personalizada: pelo menos um critério deve estar marcado
+    // validador de critérios
     const criterios = Array.from(
       form.querySelectorAll('input[name="criterios"]:checked')
     ).map(el => el.value);
     const criteriosValid = criterios.length >= 1;
     critFeedback.style.display = criteriosValid ? 'none' : 'block';
 
-    // se algo inválido, aborta
     if (!formValid || !criteriosValid) return;
 
-    // 4) monta o objeto de dados a partir do form
+    // monta objeto de dados
     const formData = new FormData(form);
     const dados    = {};
     for (let [key, val] of formData.entries()) {
@@ -36,17 +34,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     dados.criterios = criterios;
 
-    // 5) mostra overlay e inicia animação de “processando”
+    // mostra overlay + animação de loading
     overlay.style.display = 'flex';
     animation = lottie.loadAnimation({
       container: lottiePlayer,
       renderer: 'svg',
       loop: true,
       autoplay: true,
-      path: '/animacao/confirm-success.json' // animação genérica de loading
+      path: '/animacao/confirm-success.json'
     });
 
-    // 6) grava no Google Sheets
+    // envia ao Sheets
     let savedOK = true;
     try {
       const resp = await fetch(`${BACKEND}/api/gerar-termo`, {
@@ -59,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
       savedOK = false;
     }
 
-    // 7) troca animação conforme resultado
+    // troca animação conforme resultado
     animation.destroy();
     const resultPath = savedOK
       ? '/animacao/confirm-success.json'
@@ -72,17 +70,14 @@ document.addEventListener('DOMContentLoaded', () => {
       path: resultPath
     });
 
-    // 8) após 2s, oculta overlay, limpa form e abre termo em caso de sucesso
+    // após 2s, oculta overlay / limpa form / abre termo
     setTimeout(() => {
       overlay.style.display = 'none';
       animation.destroy();
 
       if (savedOK) {
-        // abre termo.html em nova aba
         const qs = new URLSearchParams(dados).toString();
         window.open(`termo.html?${qs}`, '_blank');
-
-        // limpa campos e estado de validação
         form.reset();
         form.classList.remove('was-validated');
         critFeedback.style.display = 'none';
