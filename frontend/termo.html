@@ -150,7 +150,7 @@
 
     // Preenche placeholders {{campo}}
     document.querySelectorAll('.term-container p, .term-container li').forEach(el => {
-      el.innerHTML = el.innerHTML.replace(/\{\{(\w+)\}\}/g, (_, key) => params.get(key) || '');
+      el.textContent = el.textContent.replace(/\{\{([^{}]+)\}\}/g, (_, key) => params.get(key) || '');
     });
 
     // Renderiza critérios
