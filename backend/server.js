@@ -86,6 +86,10 @@ app.use(express.json({ limit: '10kb' }));
 // ——————————————————————————————
 app.use('/', express.static(path.join(__dirname, '../frontend')));
 
+
+// 6.1) Serve também a pasta animacao/ como estática
+app.use('/animacao', express.static(path.join(__dirname, '../animacao')));
+
 // ——————————————————————————————
 // 7) Preparação das credenciais do Google Sheets
 // ——————————————————————————————
