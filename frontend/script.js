@@ -1,61 +1,87 @@
 // script.js
 
 document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('regularidadeForm');
-  const critFieldset = document.getElementById('critFieldset');
-  const critFeedback = document.getElementById('critFeedback');
+  const form           = document.getElementById('regularidadeForm');
+  const critFeedback   = document.getElementById('critFeedback');
+  const overlay        = document.getElementById('lottie-overlay');
+  const lottiePlayer   = document.getElementById('lottie-player');
+  let animation        = null;
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // marca o form como validado para exibir estilos de erro do Bootstrap
+    // exibe validação Bootstrap
     form.classList.add('was-validated');
 
-    // 1) validação nativa dos campos required
+    // validação nativa
     const formValid = form.checkValidity();
 
-    // 2) validação personalizada: pelo menos um critério deve estar marcado
+    // validação de critérios
     const criterios = Array.from(
       form.querySelectorAll('input[name="criterios"]:checked')
     ).map(el => el.value);
     const criteriosValid = criterios.length >= 1;
+    critFeedback.style.display = criteriosValid ? 'none' : 'block';
 
-    if (!criteriosValid) {
-      critFeedback.style.display = 'block';
-    } else {
-      critFeedback.style.display = 'none';
-    }
+    if (!formValid || !criteriosValid) return;
 
-    // 3) se algo inválido, interrompe aqui
-    if (!formValid || !criteriosValid) {
-      return;
-    }
-
-    // 4) monta o objeto "dados" para envio
+    // monta objeto de dados
     const formData = new FormData(form);
-    const dados = {};
-    for (let [key, value] of formData.entries()) {
+    const dados    = {};
+    for (let [key, val] of formData.entries()) {
       if (key === 'criterios') continue;
-      dados[key] = value;
+      dados[key] = val;
     }
     dados.criterios = criterios;
 
-    // 5) grava no Google Sheets (fire-and-forget)
+    // mostra overlay e inicia animação de “processando”
+    overlay.style.display = 'flex';
+    animation = lottie.loadAnimation({
+      container: lottiePlayer,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      path: 'animacao/confirm-success.json' // ou confirm-error.json em caso de erro
+    });
+
+    // tenta gravar no Sheets
+    let savedOK = true;
     try {
       const resp = await fetch('/api/gerar-termo', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type':'application/json'},
         body: JSON.stringify(dados),
       });
-      if (!resp.ok) {
-        console.error('Falha ao gravar no Sheets:', resp.status);
-      }
-    } catch (err) {
-      console.error('Erro ao gravar no Sheets:', err);
+      if (!resp.ok) savedOK = false;
+    } catch {
+      savedOK = false;
     }
 
-    // 6) abre o termo em nova aba, passando os dados como query string
-    const qs = new URLSearchParams(dados).toString();
-    window.open(`termo.html?${qs}`, '_blank');
+    // troca animação conforme sucesso ou erro
+    animation.destroy();
+    const filePath = savedOK
+      ? 'animacao/confirm-success.json'
+      : 'animacao/confirm-error.json';
+    animation = lottie.loadAnimation({
+      container: lottiePlayer,
+      renderer: 'svg',
+      loop: false,
+      autoplay: true,
+      path: filePath
+    });
+
+    // após 2s, esconde overlay e abre o termo
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      animation.destroy();
+
+      if (savedOK) {
+        // abre termo.html em nova aba
+        const qs = new URLSearchParams(dados).toString();
+        window.open(`termo.html?${qs}`, '_blank');
+      } else {
+        alert('Ocorreu um erro ao gerar o termo. Refaça o processo.');
+      }
+    }, 2000);
   });
 });
