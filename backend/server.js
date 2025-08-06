@@ -1,14 +1,14 @@
 // backend/server.js
 require('dotenv').config();
 
-const fs                     = require('fs');
-const path                   = require('path');
-const express                = require('express');
-const helmet                 = require('helmet');
-const cors                   = require('cors');
-const rateLimit              = require('express-rate-limit');
-const hpp                    = require('hpp');
-const { GoogleSpreadsheet }  = require('google-spreadsheet');
+const fs                    = require('fs');
+const path                  = require('path');
+const express               = require('express');
+const helmet                = require('helmet');
+const cors                  = require('cors');
+const rateLimit             = require('express-rate-limit');
+const hpp                   = require('hpp');
+const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const app = express();
 
@@ -17,6 +17,7 @@ const app = express();
 // ——————————————————————————————
 app.disable('x-powered-by');
 app.use(helmet());
+
 // adicional: CSP rigoroso (ajuste conforme suas necessidades)
 app.use(
   helmet.contentSecurityPolicy({
@@ -27,13 +28,13 @@ app.use(
         "'self'",
         "https://cdn.jsdelivr.net",          // Bootstrap JS
         "https://cdnjs.cloudflare.com",      // html2pdf + lottie
-        "'unsafe-inline'"                    // necessário para alguns plugins Bootstrap que geram scripts inline
+        "'unsafe-inline'"                    // necessário para plugins que injetam inline scripts
       ],
       "style-src": [
         "'self'",
         "https://cdn.jsdelivr.net",          // Bootstrap CSS
         "https://fonts.googleapis.com",      // Google Fonts
-        "'unsafe-inline'"                    // algumas regras inline de Bootstrap
+        "'unsafe-inline'"                    // inline styles do Bootstrap
       ],
       "font-src": [
         "'self'",
@@ -41,17 +42,16 @@ app.use(
       ],
       "img-src": [
         "'self'",
-        "data:"                              // para imagens em data URI (logo, svg inline, etc)
+        "data:"                              // data URIs (ex: logos SVG inline)
       ],
       "connect-src": [
-        "'self'"                             // só se você fizer fetch/ajax para seu próprio back
+        "'self'"                             // apenas seu próprio backend
       ],
       "frame-src": ["'none'"],               // bloqueia iframes
-      "object-src": ["'none'"],              // bloqueia plugins
-    },
+      "object-src": ["'none'"]               // bloqueia plugins
+    }
   })
 );
-
 
 // ——————————————————————————————
 // 2) Rate Limiting (prevent brute‐force / DoS)
@@ -59,8 +59,8 @@ app.use(
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 100,                 // até 100 requisições por IP
-  standardHeaders: true,    // habilita RateLimit-* headers
-  legacyHeaders: false,     // desabilita X-RateLimit-* headers
+  standardHeaders: true,    // habilita headers RateLimit-*
+  legacyHeaders: false      // desabilita X-RateLimit-* 
 }));
 
 // ——————————————————————————————
@@ -71,8 +71,19 @@ app.use(hpp());
 // ——————————————————————————————
 // 4) CORS (apenas seu domínio autorizado)
 // ——————————————————————————————
+const allowedOrigins = [
+  process.env.CORS_ORIGIN,                        // do .env (ex: Render)
+  'https://programa-de-regularidade.netlify.app'  // Netlify sem barra final
+];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'https://programa-de-regularidade.netlify.app',
+  origin: (origin, callback) => {
+    // permitir solicitações sem origin (curl, Postman, etc)
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error(`Origin ${origin} não autorizada pelo CORS`));
+  },
   methods: ['GET','POST'],
 }));
 
@@ -85,7 +96,6 @@ app.use(express.json({ limit: '10kb' }));
 // 6) Serve frontend estático
 // ——————————————————————————————
 app.use('/', express.static(path.join(__dirname, '../frontend')));
-
 
 // 6.1) Serve também a pasta animacao/ como estática
 app.use('/animacao', express.static(path.join(__dirname, '../frontend/animacao')));
