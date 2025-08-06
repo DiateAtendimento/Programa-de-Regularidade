@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderer: 'svg',
       loop: true,
       autoplay: true,
-      path: 'animacao/confirm-success.json' // ou confirm-error.json em caso de erro
+      path: '/frontend/animacao/confirm-success.json' // ou confirm-error.json em caso de erro
     });
 
     // tenta gravar no Sheets
