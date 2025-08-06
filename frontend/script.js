@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const overlay      = document.getElementById('lottie-overlay');
   const lottiePlayer = document.getElementById('lottie-player');
   let animation      = null;
+  const BACKEND = 'https://programa-de-regularidade.onrender.com';
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -48,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6) grava no Google Sheets
     let savedOK = true;
     try {
-      const resp = await fetch('/api/gerar-termo', {
+      const resp = await fetch(`${BACKEND}/api/gerar-termo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dados),
