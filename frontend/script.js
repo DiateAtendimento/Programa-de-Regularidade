@@ -16,13 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2) validação nativa dos campos required
     const formValid = form.checkValidity();
 
-    // 3) validação personalizada: pelo menos um critério
+    // 3) validação personalizada: pelo menos um critério deve estar marcado
     const criterios = Array.from(
       form.querySelectorAll('input[name="criterios"]:checked')
     ).map(el => el.value);
     const criteriosValid = criterios.length >= 1;
     critFeedback.style.display = criteriosValid ? 'none' : 'block';
 
+    // se algo inválido, aborta
     if (!formValid || !criteriosValid) return;
 
     // 4) monta o objeto de dados a partir do form
@@ -49,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const resp = await fetch('/api/gerar-termo', {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dados),
       });
       if (!resp.ok) savedOK = false;
