@@ -72,7 +72,7 @@ app.use(hpp());
 // 4) CORS (apenas seu domínio autorizado)
 // ——————————————————————————————
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'https://programa-de-regularidade.netlify.app/',
+  origin: process.env.CORS_ORIGIN || 'https://programa-de-regularidade.netlify.app',
   methods: ['GET','POST'],
 }));
 
