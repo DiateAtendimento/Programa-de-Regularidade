@@ -27,7 +27,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cleave.js/1.6.0/cleave.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cleave.js/1.6.0/addons/cleave-phone.br.js"></script>
 
-  <!-- Pré‐popula e bloqueia edição dos campos dia, mês e ano -->
+  <!-- Pré-popula e bloqueia edição dos campos dia, mês e ano -->
   <script>
     function populaDataSistema() {
       const hoje = new Date();
@@ -39,6 +39,16 @@
         el.value = id === 'mes' ? mes : (id === 'dia' ? dia : ano);
         el.readOnly = true;
       });
+
+      // também preenche DATA e HORA hidden
+      const dataBR = hoje.toLocaleDateString('pt-BR');
+      const horaBR = new Intl.DateTimeFormat('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Sao_Paulo'
+      }).format(hoje);
+      document.getElementById('dataSistema').value = dataBR;
+      document.getElementById('horaSistema').value = horaBR;
     }
     document.addEventListener('DOMContentLoaded', populaDataSistema);
   </script>
@@ -70,7 +80,6 @@
         <div class="card-header bg-primary text-white">Identificação</div>
         <div class="card-body">
           <div class="row g-3">
-
             <div class="col-md-4">
               <label for="cnpj" class="form-label">CNPJ</label>
               <input
@@ -84,7 +93,6 @@
               />
               <div class="invalid-feedback">Informe um CNPJ de 14 dígitos.</div>
             </div>
-
             <div class="col-md-4">
               <label for="uf" class="form-label">UF</label>
               <select id="uf" name="uf" class="form-select" required>
@@ -119,7 +127,6 @@
               </select>
               <div class="invalid-feedback">Escolha a UF.</div>
             </div>
-
             <div class="col-md-4">
               <label for="ente" class="form-label">Ente</label>
               <input
@@ -132,7 +139,6 @@
               />
               <div class="invalid-feedback">Informe o nome do Ente.</div>
             </div>
-
           </div>
 
           <!-- Critérios (pelo menos 1) -->
@@ -172,7 +178,6 @@
               Selecione pelo menos um critério.
             </div>
           </fieldset>
-
         </div>
       </div>
 
@@ -181,7 +186,6 @@
         <div class="card-header bg-secondary text-white">Dados Pessoais</div>
         <div class="card-body">
           <div class="row g-3">
-
             <div class="col-md-6">
               <label for="cpf" class="form-label">CPF</label>
               <input
@@ -195,7 +199,6 @@
               />
               <div class="invalid-feedback">Informe um CPF de 11 dígitos.</div>
             </div>
-
             <div class="col-md-6">
               <label for="nome" class="form-label">Nome</label>
               <input
@@ -208,7 +211,6 @@
               />
               <div class="invalid-feedback">Informe o nome.</div>
             </div>
-
             <div class="col-md-6">
               <label for="telefone" class="form-label">Telefone</label>
               <input
@@ -222,7 +224,6 @@
               />
               <div class="invalid-feedback">Informe um telefone válido.</div>
             </div>
-
             <div class="col-md-6">
               <label for="email" class="form-label">Email</label>
               <input
@@ -235,7 +236,6 @@
               />
               <div class="invalid-feedback">Informe um email válido.</div>
             </div>
-
             <div class="col-12">
               <label for="endereco" class="form-label">Endereço</label>
               <input
@@ -248,7 +248,6 @@
               />
               <div class="invalid-feedback">Informe o endereço.</div>
             </div>
-
           </div>
         </div>
       </div>
@@ -258,7 +257,6 @@
         <div class="card-header bg-secondary text-white">Local e Data</div>
         <div class="card-body">
           <div class="row g-3">
-
             <div class="col-md-6">
               <label for="cidade" class="form-label">Cidade</label>
               <input
@@ -271,25 +269,25 @@
               />
               <div class="invalid-feedback">Informe a cidade.</div>
             </div>
-
             <div class="col-md-2">
               <label for="dia" class="form-label">Dia</label>
               <input type="text" class="form-control" id="dia" name="dia" required/>
             </div>
-
             <div class="col-md-2">
               <label for="mes" class="form-label">Mês</label>
               <input type="text" class="form-control" id="mes" name="mes" required/>
             </div>
-
             <div class="col-md-2">
               <label for="ano" class="form-label">Ano</label>
               <input type="text" class="form-control" id="ano" name="ano" required/>
             </div>
-
           </div>
         </div>
       </div>
+
+      <!-- campos hidden para data e hora -->
+      <input type="hidden" id="dataSistema" name="DATA" />
+      <input type="hidden" id="horaSistema" name="HORA" />
 
       <!-- 4) Responsável -->
       <div class="card mb-4">
