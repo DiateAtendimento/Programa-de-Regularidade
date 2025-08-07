@@ -1,24 +1,23 @@
 // frontend/script.js
-
 document.addEventListener('DOMContentLoaded', () => {
-  const form           = document.getElementById('regularidadeForm');
-  const critFeedback   = document.getElementById('critFeedback');
-  const overlay        = document.getElementById('lottie-overlay');
-  const lottiePlayer   = document.getElementById('lottie-player');
-  const BACKEND        = 'https://programa-de-regularidade.onrender.com';
+  const form         = document.getElementById('regularidadeForm');
+  const critFeedback = document.getElementById('critFeedback');
+  const overlay      = document.getElementById('lottie-overlay');
+  const lottiePlayer = document.getElementById('lottie-player');
+  const BACKEND      = 'https://programa-de-regularidade.onrender.com';
 
-  // inicializa máscaras
-  new Cleave('#cnpj', {
+  // inicializa máscaras e guarda instâncias
+  const cnpjMask = new Cleave('#cnpj', {
     numericOnly: true,
     delimiters: ['.', '.', '/', '-'],
-    blocks: [2,3,3,4,2]
+    blocks: [2, 3, 3, 4, 2]
   });
-  new Cleave('#cpf', {
+  const cpfMask = new Cleave('#cpf', {
     numericOnly: true,
     delimiters: ['.', '.', '-'],
-    blocks: [3,3,3,2]
+    blocks: [3, 3, 3, 2]
   });
-  new Cleave('#telefone', {
+  const telMask = new Cleave('#telefone', {
     phone: true,
     phoneRegionCode: 'BR'
   });
@@ -26,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // repopula dia/mês/ano após Reset
   form.addEventListener('reset', () => {
     setTimeout(populaDataSistema, 0);
+    // remove possíveis invalidações manuais
+    ['cnpj','cpf','telefone'].forEach(id => {
+      document.getElementById(id).classList.remove('is-invalid');
+    });
   });
 
   form.addEventListener('submit', async (e) => {
@@ -33,23 +36,23 @@ document.addEventListener('DOMContentLoaded', () => {
     form.classList.add('was-validated');
 
     // 1) validações
-    const formValid = form.checkValidity();
-    const criterios = Array.from(
+    const formValid      = form.checkValidity();
+    const criterios      = Array.from(
       form.querySelectorAll('input[name="criterios"]:checked')
     ).map(el => el.value);
     const criteriosValid = criterios.length >= 1;
 
     // comprimento exato dos campos mascarados
-    const rawCNPJ = Cleave.defaults.getRawValue.call({element: document.querySelector('#cnpj')});
-    const rawCPF  = Cleave.defaults.getRawValue.call({element: document.querySelector('#cpf')});
-    const rawTel  = Cleave.defaults.getRawValue.call({element: document.querySelector('#telefone')});
-
-    const maskValid = rawCNPJ.length===14 && rawCPF.length===11 && (rawTel.length===10 || rawTel.length===11);
+    const rawCNPJ = cnpjMask.getRawValue();
+    const rawCPF  = cpfMask.getRawValue();
+    const rawTel  = telMask.getRawValue();
+    const maskValid = rawCNPJ.length === 14
+                   && rawCPF.length  === 11
+                   && (rawTel.length === 10 || rawTel.length === 11);
 
     if (!maskValid) {
-      // força invalidação manual
-      if (rawCNPJ.length!==14) document.getElementById('cnpj').classList.add('is-invalid');
-      if (rawCPF.length!==11)  document.getElementById('cpf').classList.add('is-invalid');
+      if (rawCNPJ.length !== 14) document.getElementById('cnpj').classList.add('is-invalid');
+      if (rawCPF.length  !== 11) document.getElementById('cpf').classList.add('is-invalid');
       if (![10,11].includes(rawTel.length)) document.getElementById('telefone').classList.add('is-invalid');
     }
 
@@ -95,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const resp = await fetch(`${BACKEND}/api/gerar-termo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sheetPayload),
+        body: JSON.stringify(sheetPayload)
       });
       if (!resp.ok) savedOK = false;
     } catch {
@@ -125,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
           .forEach(k => qs.set(k, dados[k]));
         criterios.forEach(c => qs.append('criterios', c));
 
-        window.open(`termo.html?${qs}`, '_blank');
+        window.open(`termo.html?${qs.toString()}`, '_blank');
         form.reset();
         form.classList.remove('was-validated');
         critFeedback.style.display = 'none';
