@@ -1,11 +1,10 @@
 // frontend/script.js
-
 document.addEventListener('DOMContentLoaded', () => {
   const form         = document.getElementById('regularidadeForm');
   const critFeedback = document.getElementById('critFeedback');
   const overlay      = document.getElementById('lottie-overlay');
   const lottiePlayer = document.getElementById('lottie-player');
-  const BACKEND      = 'https://programa-de-regularidade.onrender.com'; // seu render/netlify
+  const BACKEND      = 'https://programa-de-regularidade.onrender.com';
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -24,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const f     = new FormData(form);
     const dados = Object.fromEntries(f.entries());
 
-    // 3) payload para o Google Sheets (chaves MAIÚSCULAS, conforme aba “Dados”)
+    // 3) payload para o Google Sheets (chaves MAIÚSCULAS conforme aba “Dados”)
     const sheetPayload = {
       CNPJ:        dados.cnpj,
       UF:          dados.uf,
@@ -42,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
       RESPONSAVEL: dados.responsavel
     };
 
-    // 4) overlay + animação de loading
+    // 4) overlay + loading
     overlay.style.display = 'flex';
     let animation = lottie.loadAnimation({
       container: lottiePlayer,
@@ -52,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
       path: '/animacao/confirm-success.json'
     });
 
-    // 5) envia ao backend
+    // 5) POST ao backend
     let savedOK = true;
     try {
       const resp = await fetch(`${BACKEND}/api/gerar-termo`, {
@@ -77,14 +76,14 @@ document.addEventListener('DOMContentLoaded', () => {
         : '/animacao/confirm-error.json'
     });
 
-    // 7) após 2s: fecha overlay, abre termo **com lowercase** e limpa form
+    // 7) depois de 2s: esconde overlay, abre termo e reseta form
     setTimeout(() => {
       overlay.style.display = 'none';
       animation.destroy();
 
       if (savedOK) {
-        // monta query string COM AS MESMAS CHAVES do seu termo.html
         const qs = new URLSearchParams();
+        // mesma ordem/nomes do termo.html:
         qs.set('ente',        dados.ente);
         qs.set('cnpj',        dados.cnpj);
         qs.set('uf',          dados.uf);
@@ -98,13 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
         qs.set('mes',         dados.mes);
         qs.set('ano',         dados.ano);
         qs.set('responsavel', dados.responsavel);
-        // campos repetidos
         criterios.forEach(c => qs.append('criterios', c));
 
-        // abre termo.html com os dados na URL
         window.open(`termo.html?${qs.toString()}`, '_blank');
 
-        // reseta form
         form.reset();
         form.classList.remove('was-validated');
         critFeedback.style.display = 'none';

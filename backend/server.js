@@ -12,7 +12,7 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const app = express();
 
-// 1) Segurança
+// 1) Segurança básica
 app.disable('x-powered-by');
 app.use(helmet());
 app.use(
@@ -41,20 +41,20 @@ app.use(
   })
 );
 
-// 2) Rate limit
+// 2) Rate limiting
 app.use(rateLimit({
-  windowMs: 15*60*1000,
+  windowMs: 15 * 60 * 1000,
   max: 100,
   standardHeaders: true,
   legacyHeaders: false
 }));
 
-// 3) HPP
+// 3) Prevenção de HTTP Parameter Pollution
 app.use(hpp());
 
 // 4) CORS
 const allowedOrigins = [
-  process.env.CORS_ORIGIN,                        
+  process.env.CORS_ORIGIN,
   'https://programa-de-regularidade.netlify.app'
 ];
 app.use(cors({
@@ -71,11 +71,11 @@ app.use(cors({
 // 5) Body parser
 app.use(express.json({ limit: '10kb' }));
 
-// 6) Frontend estático
+// 6) Frontend estático + animações
 app.use('/', express.static(path.join(__dirname, '../frontend')));
 app.use('/animacao', express.static(path.join(__dirname, '../frontend/animacao')));
 
-// 7) Credenciais do Sheets
+// 7) Credenciais do Google Sheets
 const credsPath = path.resolve(__dirname, process.env.CREDENTIALS_JSON_PATH);
 if (!fs.existsSync(credsPath)) {
   console.error(`❌ credentials.json não encontrado em ${credsPath}`);
@@ -83,7 +83,7 @@ if (!fs.existsSync(credsPath)) {
 }
 const creds = require(credsPath);
 
-// 8) GoogleSpreadsheet
+// 8) Configuração do GoogleSpreadsheet
 const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
 async function authSheets() {
   await doc.useServiceAccountAuth(creds);
@@ -94,8 +94,21 @@ async function authSheets() {
 app.post('/api/gerar-termo', async (req, res) => {
   try {
     await authSheets();
-    const sheet = doc.sheetsByTitle["Dados"];
-    await sheet.addRow(req.body);
+    const sheet = doc.sheetsByTitle['Dados'];
+
+    // gera timestamp
+    const now = new Date();
+    const timestampDate = now.toLocaleDateString('pt-BR');
+    const timestampTime = now.toLocaleTimeString('pt-BR', { hour12: false });
+
+    // monta linha incluindo DATA e HORA
+    const row = {
+      ...req.body,
+      DATA: timestampDate,
+      HORA: timestampTime
+    };
+
+    await sheet.addRow(row);
     return res.json({ ok: true });
   } catch (err) {
     console.error('❌ Falha ao gravar no Google Sheets:', err);
