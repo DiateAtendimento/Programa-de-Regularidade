@@ -44,7 +44,7 @@
   </script>
 
   <style>
-    /* centralizar h1 */
+    /* centralizar título no mobile */
     .container.floating-panel > h1 {
       text-align: center;
     }
@@ -70,6 +70,7 @@
         <div class="card-header bg-primary text-white">Identificação</div>
         <div class="card-body">
           <div class="row g-3">
+
             <div class="col-md-4">
               <label for="cnpj" class="form-label">CNPJ</label>
               <input
@@ -79,11 +80,11 @@
                 name="cnpj"
                 placeholder="00.000.000/0000-00"
                 inputmode="numeric"
-                pattern="\d*"
                 required
               />
               <div class="invalid-feedback">Informe um CNPJ de 14 dígitos.</div>
             </div>
+
             <div class="col-md-4">
               <label for="uf" class="form-label">UF</label>
               <select id="uf" name="uf" class="form-select" required>
@@ -118,6 +119,7 @@
               </select>
               <div class="invalid-feedback">Escolha a UF.</div>
             </div>
+
             <div class="col-md-4">
               <label for="ente" class="form-label">Ente</label>
               <input
@@ -130,57 +132,47 @@
               />
               <div class="invalid-feedback">Informe o nome do Ente.</div>
             </div>
+
           </div>
 
-          <!-- Critérios -->
+          <!-- Critérios (pelo menos 1) -->
           <fieldset class="mt-4" id="critFieldset">
             <legend class="form-label">Critérios <span class="text-danger">*</span></legend>
             <div class="form-check">
               <input class="form-check-input" type="checkbox"
                      name="criterios" value="I – Instituição do RPPS" id="crit1">
-              <label class="form-check-label" for="crit1">
-                I – Instituição do RPPS
-              </label>
+              <label class="form-check-label" for="crit1">I – Instituição do RPPS</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox"
                      name="criterios" value="II – Recolhimento das contribuições" id="crit2">
-              <label class="form-check-label" for="crit2">
-                II – Recolhimento das contribuições
-              </label>
+              <label class="form-check-label" for="crit2">II – Recolhimento das contribuições</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox"
                      name="criterios" value="III – Repasse das contribuições retidas" id="crit3">
-              <label class="form-check-label" for="crit3">
-                III – Repasse das contribuições retidas
-              </label>
+              <label class="form-check-label" for="crit3">III – Repasse das contribuições retidas</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox"
                      name="criterios" value="IV – Aplicação dos recursos" id="crit4">
-              <label class="form-check-label" for="crit4">
-                IV – Aplicação dos recursos
-              </label>
+              <label class="form-check-label" for="crit4">IV – Aplicação dos recursos</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox"
                      name="criterios" value="V – Prestação de contas" id="crit5">
-              <label class="form-check-label" for="crit5">
-                V – Prestação de contas
-              </label>
+              <label class="form-check-label" for="crit5">V – Prestação de contas</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox"
                      name="criterios" value="VI – Observância das normas gerais" id="crit6">
-              <label class="form-check-label" for="crit6">
-                VI – Observância das normas gerais
-              </label>
+              <label class="form-check-label" for="crit6">VI – Observância das normas gerais</label>
             </div>
             <div class="invalid-feedback d-block" id="critFeedback" style="display:none">
               Selecione pelo menos um critério.
             </div>
           </fieldset>
+
         </div>
       </div>
 
@@ -189,6 +181,7 @@
         <div class="card-header bg-secondary text-white">Dados Pessoais</div>
         <div class="card-body">
           <div class="row g-3">
+
             <div class="col-md-6">
               <label for="cpf" class="form-label">CPF</label>
               <input
@@ -198,11 +191,11 @@
                 name="cpf"
                 placeholder="000.000.000-00"
                 inputmode="numeric"
-                pattern="\d*"
                 required
               />
               <div class="invalid-feedback">Informe um CPF de 11 dígitos.</div>
             </div>
+
             <div class="col-md-6">
               <label for="nome" class="form-label">Nome</label>
               <input
@@ -215,6 +208,7 @@
               />
               <div class="invalid-feedback">Informe o nome.</div>
             </div>
+
             <div class="col-md-6">
               <label for="telefone" class="form-label">Telefone</label>
               <input
@@ -224,11 +218,11 @@
                 name="telefone"
                 placeholder="(00) 00000-0000"
                 inputmode="numeric"
-                pattern="\d*"
                 required
               />
               <div class="invalid-feedback">Informe um telefone válido.</div>
             </div>
+
             <div class="col-md-6">
               <label for="email" class="form-label">Email</label>
               <input
@@ -241,6 +235,7 @@
               />
               <div class="invalid-feedback">Informe um email válido.</div>
             </div>
+
             <div class="col-12">
               <label for="endereco" class="form-label">Endereço</label>
               <input
@@ -253,6 +248,7 @@
               />
               <div class="invalid-feedback">Informe o endereço.</div>
             </div>
+
           </div>
         </div>
       </div>
@@ -262,6 +258,7 @@
         <div class="card-header bg-secondary text-white">Local e Data</div>
         <div class="card-body">
           <div class="row g-3">
+
             <div class="col-md-6">
               <label for="cidade" class="form-label">Cidade</label>
               <input
@@ -274,18 +271,22 @@
               />
               <div class="invalid-feedback">Informe a cidade.</div>
             </div>
+
             <div class="col-md-2">
               <label for="dia" class="form-label">Dia</label>
               <input type="text" class="form-control" id="dia" name="dia" required/>
             </div>
+
             <div class="col-md-2">
               <label for="mes" class="form-label">Mês</label>
               <input type="text" class="form-control" id="mes" name="mes" required/>
             </div>
+
             <div class="col-md-2">
               <label for="ano" class="form-label">Ano</label>
               <input type="text" class="form-control" id="ano" name="ano" required/>
             </div>
+
           </div>
         </div>
       </div>

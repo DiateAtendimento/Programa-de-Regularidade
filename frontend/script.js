@@ -6,18 +6,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const lottiePlayer = document.getElementById('lottie-player');
   const BACKEND      = 'https://programa-de-regularidade.onrender.com';
 
-  // inicializa máscaras e guarda instâncias
-  const cnpjMask = new Cleave('#cnpj', {
+  // inicializa máscaras via Cleave.js
+  new Cleave('#cnpj', {
     numericOnly: true,
     delimiters: ['.', '.', '/', '-'],
-    blocks: [2, 3, 3, 4, 2]
+    blocks: [2,3,3,4,2]
   });
-  const cpfMask = new Cleave('#cpf', {
+  new Cleave('#cpf', {
     numericOnly: true,
     delimiters: ['.', '.', '-'],
-    blocks: [3, 3, 3, 2]
+    blocks: [3,3,3,2]
   });
-  const telMask = new Cleave('#telefone', {
+  new Cleave('#telefone', {
     phone: true,
     phoneRegionCode: 'BR'
   });
@@ -25,10 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // repopula dia/mês/ano após Reset
   form.addEventListener('reset', () => {
     setTimeout(populaDataSistema, 0);
-    // remove possíveis invalidações manuais
-    ['cnpj','cpf','telefone'].forEach(id => {
-      document.getElementById(id).classList.remove('is-invalid');
-    });
   });
 
   form.addEventListener('submit', async (e) => {
@@ -36,23 +32,25 @@ document.addEventListener('DOMContentLoaded', () => {
     form.classList.add('was-validated');
 
     // 1) validações
-    const formValid      = form.checkValidity();
-    const criterios      = Array.from(
+    const formValid = form.checkValidity();
+    const criterios = Array.from(
       form.querySelectorAll('input[name="criterios"]:checked')
     ).map(el => el.value);
     const criteriosValid = criterios.length >= 1;
 
-    // comprimento exato dos campos mascarados
-    const rawCNPJ = cnpjMask.getRawValue();
-    const rawCPF  = cpfMask.getRawValue();
-    const rawTel  = telMask.getRawValue();
-    const maskValid = rawCNPJ.length === 14
-                   && rawCPF.length  === 11
-                   && (rawTel.length === 10 || rawTel.length === 11);
+    // extração dos valores puros (sem máscara)
+    const rawCNPJ = Cleave.defaults.getRawValue.call({element: document.querySelector('#cnpj')});
+    const rawCPF  = Cleave.defaults.getRawValue.call({element: document.querySelector('#cpf')});
+    const rawTel  = Cleave.defaults.getRawValue.call({element: document.querySelector('#telefone')});
+
+    const maskValid =
+      rawCNPJ.length === 14 &&
+      rawCPF.length === 11 &&
+      (rawTel.length === 10 || rawTel.length === 11);
 
     if (!maskValid) {
-      if (rawCNPJ.length !== 14) document.getElementById('cnpj').classList.add('is-invalid');
-      if (rawCPF.length  !== 11) document.getElementById('cpf').classList.add('is-invalid');
+      if (rawCNPJ.length !== 14)      document.getElementById('cnpj').classList.add('is-invalid');
+      if (rawCPF.length !== 11)       document.getElementById('cpf').classList.add('is-invalid');
       if (![10,11].includes(rawTel.length)) document.getElementById('telefone').classList.add('is-invalid');
     }
 
@@ -64,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const f     = new FormData(form);
     const dados = Object.fromEntries(f.entries());
 
-    // 3) payload para o Sheets
+    // 3) monta payload para o Google Sheets (aba “Dados”)
     const sheetPayload = {
       CNPJ:        dados.cnpj,
       UF:          dados.uf,
@@ -82,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
       RESPONSAVEL: dados.responsavel
     };
 
-    // 4) animação de loading
+    // 4) exibe overlay + animação de loading
     overlay.style.display = 'flex';
     let animation = lottie.loadAnimation({
       container: lottiePlayer,
@@ -92,20 +90,20 @@ document.addEventListener('DOMContentLoaded', () => {
       path: '/animacao/confirm-success.json'
     });
 
-    // 5) POST
+    // 5) envia ao backend
     let savedOK = true;
     try {
       const resp = await fetch(`${BACKEND}/api/gerar-termo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sheetPayload)
+        body: JSON.stringify(sheetPayload),
       });
       if (!resp.ok) savedOK = false;
     } catch {
       savedOK = false;
     }
 
-    // 6) resultado
+    // 6) troca animação de acordo com o resultado
     animation.destroy();
     animation = lottie.loadAnimation({
       container: lottiePlayer,
@@ -117,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : '/animacao/confirm-error.json'
     });
 
-    // 7) final
+    // 7) após 2s: oculta overlay, abre termo e limpa form
     setTimeout(() => {
       overlay.style.display = 'none';
       animation.destroy();
@@ -139,13 +137,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// helper para reset
+// helper para repopular data após reset
 function populaDataSistema() {
   const hoje = new Date();
   const dia  = String(hoje.getDate()).padStart(2, '0');
   const mes  = hoje.toLocaleString('pt-BR', { month: 'long' });
   const ano  = hoje.getFullYear();
-  document.getElementById('dia').value = dia;
-  document.getElementById('mes').value = mes;
-  document.getElementById('ano').value = ano;
+  ['dia','mes','ano'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = id === 'mes' ? mes : (id === 'dia' ? dia : ano);
+  });
 }
