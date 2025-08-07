@@ -1,4 +1,5 @@
 // frontend/script.js
+
 document.addEventListener('DOMContentLoaded', () => {
   const form         = document.getElementById('regularidadeForm');
   const critFeedback = document.getElementById('critFeedback');
@@ -6,79 +7,79 @@ document.addEventListener('DOMContentLoaded', () => {
   const lottiePlayer = document.getElementById('lottie-player');
   const BACKEND      = 'https://programa-de-regularidade.onrender.com';
 
-  //
-  // 0) AUTOCOMPLETE DE ENTES POR UF
-  //
-  // mapa que vai receber { "GO": ["Indiara", "Novo Brasil", ...], "TO": [...], ... }
-  const mapaEntes = {};
-  const ufSelect  = document.getElementById('uf');
-  const dataList  = document.getElementById('listaEntes');
+  // 0) referências para autocomplete de “Ente”
+  const ufSelect     = document.getElementById('uf');
+  const enteInput    = document.getElementById('ente');
+  const datalist     = document.getElementById('entes-list');
+  let todasEntradas  = []; // [{ uf: "...", ente: "..." }, ...]
 
-  // busca lista de entes do backend
+  // 1) carregue a lista Fonte via API
   fetch(`${BACKEND}/api/entes`)
-    .then(res => res.json())
+    .then(resp => resp.json())
     .then(lista => {
-      lista.forEach(({ uf, ente }) => {
-        if (!mapaEntes[uf]) mapaEntes[uf] = [];
-        if (!mapaEntes[uf].includes(ente)) mapaEntes[uf].push(ente);
-      });
+      todasEntradas = lista;
+      atualizarDatalist(); // pré-popula, caso UF já esteja selecionada
     })
-    .catch(err => console.error('Erro ao carregar entes:', err));
+    .catch(err => console.error('Erro ao buscar lista de entes:', err));
 
-  // quando muda a UF, repopula o datalist
-  ufSelect.addEventListener('change', () => {
-    dataList.innerHTML = '';
-    const opcoes = mapaEntes[ ufSelect.value ] || [];
-    opcoes.forEach(nome => {
-      const opt = document.createElement('option');
-      opt.value = nome;
-      dataList.append(opt);
-    });
-  });
-
-  //
-  // 1) Inicializa máscaras
-  //
-  const cleaveCNPJ = new Cleave('#cnpj', {
+  // 2) máscara de CNPJ, CPF e Telefone
+  new Cleave('#cnpj', {
     numericOnly: true,
     delimiters: ['.', '.', '/', '-'],
-    blocks: [2, 3, 3, 4, 2]
+    blocks: [2,3,3,4,2]
   });
-  const cleaveCPF = new Cleave('#cpf', {
+  new Cleave('#cpf', {
     numericOnly: true,
     delimiters: ['.', '.', '-'],
-    blocks: [3, 3, 3, 2]
+    blocks: [3,3,3,2]
   });
-  const cleaveTel = new Cleave('#telefone', {
+  new Cleave('#telefone', {
     phone: true,
     phoneRegionCode: 'BR'
   });
 
-  //
-  // 2) Repopula dia/mês/ano após reset
-  //
+  // 3) ao mudar UF, atualiza sugestões de Ente
+  ufSelect.addEventListener('change', atualizarDatalist);
+
+  function atualizarDatalist() {
+    const ufSel = ufSelect.value;
+    // filtra por UF e extrai nomes únicos
+    const entes = todasEntradas
+      .filter(item => item.uf === ufSel)
+      .map(item => item.ente)
+      .filter((v,i,a) => a.indexOf(v) === i);
+
+    // limpa e popula o <datalist>
+    datalist.innerHTML = '';
+    entes.forEach(nome => {
+      const opt = document.createElement('option');
+      opt.value = nome;
+      datalist.appendChild(opt);
+    });
+  }
+
+  // 4) repopula dia/mês/ano após reset
   form.addEventListener('reset', () => setTimeout(populaDataSistema, 0));
 
-  //
-  // 3) Tratamento do submit
-  //
+  // 5) submit
   form.addEventListener('submit', async e => {
     e.preventDefault();
     form.classList.add('was-validated');
 
     // validações nativas + critérios
     const formValid      = form.checkValidity();
-    const criterios      = Array.from(form.querySelectorAll('input[name="criterios"]:checked'))
-                                 .map(i => i.value);
+    const criterios      = Array.from(
+      form.querySelectorAll('input[name="criterios"]:checked')
+    ).map(i => i.value);
     const criteriosValid = criterios.length >= 1;
 
-    // valida comprimento dos campos mascarados
-    const rawCNPJ = cleaveCNPJ.getRawValue();
-    const rawCPF  = cleaveCPF.getRawValue();
-    const rawTel  = cleaveTel.getRawValue();
+    // valida máscaras
+    const rawCNPJ = Cleave.instances.find(c => c.element.id === 'cnpj').getRawValue();
+    const rawCPF  = Cleave.instances.find(c => c.element.id === 'cpf').getRawValue();
+    const rawTel  = Cleave.instances.find(c => c.element.id === 'telefone').getRawValue();
     const maskValid = rawCNPJ.length === 14
-                    && rawCPF.length  === 11
-                    && (rawTel.length === 10 || rawTel.length === 11);
+                   && rawCPF.length  === 11
+                   && (rawTel.length === 10 || rawTel.length === 11);
 
     if (!maskValid) {
       if (rawCNPJ.length !== 14) document.getElementById('cnpj').classList.add('is-invalid');
@@ -87,52 +88,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     critFeedback.style.display = criteriosValid ? 'none' : 'block';
-
     if (!formValid || !criteriosValid || !maskValid) return;
 
-    // coleta dados
+    // coleta dados do form
     const dados = Object.fromEntries(new FormData(form).entries());
 
     // monta data e hora do sistema (fuso São Paulo)
-    const agora = new Date();
-    const dataSistema = agora.toLocaleDateString('pt-BR');
-    const horaSistema = agora.toLocaleTimeString('pt-BR', {
+    const agora         = new Date();
+    const dataSistema   = agora.toLocaleDateString('pt-BR');
+    const horaSistema   = agora.toLocaleTimeString('pt-BR', {
       hour:   '2-digit',
       minute: '2-digit',
       hour12: false,
       timeZone: 'America/Sao_Paulo'
     });
-    const anoSistema = agora.getFullYear();
+    const anoSistema    = agora.getFullYear();
 
     // payload completo
     const sheetPayload = {
-      CNPJ:         dados.cnpj,
-      UF:           dados.uf,
-      ENTE:         dados.ente,
-      CPF:          dados.cpf,
-      NOME:         dados.nome,
-      "CRITÉRIOS":  criterios.join(', '),
-      TELEFONE:     dados.telefone,
-      EMAIL:        dados.email,
-      ENDEREÇO:     dados.endereco,
-      CIDADE:       dados.cidade,
-      DIA:          dados.dia,
-      MÊS:          dados.mes,
-      ANO:          dados.ano,
-      DATA:         dataSistema,
-      HORA:         horaSistema,
-      ANO_SISTEMA:  anoSistema,
-      RESPONSAVEL:  dados.responsavel
+      CNPJ:        dados.cnpj,
+      UF:          dados.uf,
+      ENTE:        dados.ente,
+      CPF:         dados.cpf,
+      NOME:        dados.nome,
+      "CRITÉRIOS": criterios.join(', '),
+      TELEFONE:    dados.telefone,
+      EMAIL:       dados.email,
+      ENDEREÇO:    dados.endereco,
+      CIDADE:      dados.cidade,
+      DIA:         dados.dia,
+      MÊS:         dados.mes,
+      ANO:         dados.ano,         // vindo do usuário (readonly)
+      DATA:        dataSistema,       // nova coluna
+      HORA:        horaSistema,       // nova coluna
+      ANO_SISTEMA: anoSistema,        // nova coluna
+      RESPONSAVEL: dados.responsavel
     };
 
-    // overlay + animação de loading
+    // overlay + loading
     overlay.style.display = 'flex';
     let anim = lottie.loadAnimation({
-      container: lottiePlayer,
-      renderer:  'svg',
-      loop:      true,
-      autoplay:  true,
-      path:      '/animacao/confirm-success.json'
+      container:  lottiePlayer,
+      renderer:   'svg',
+      loop:       true,
+      autoplay:   true,
+      path:       '/animacao/confirm-success.json'
     });
 
     // envia ao backend
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const resp = await fetch(`${BACKEND}/api/gerar-termo`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type':'application/json' },
         body:    JSON.stringify(sheetPayload)
       });
       if (!resp.ok) savedOK = false;
@@ -148,30 +148,28 @@ document.addEventListener('DOMContentLoaded', () => {
       savedOK = false;
     }
 
-    // animação de resultado
+    // resultado
     anim.destroy();
     anim = lottie.loadAnimation({
-      container: lottiePlayer,
-      renderer:  'svg',
-      loop:      false,
-      autoplay:  true,
-      path:      savedOK
-                 ? '/animacao/confirm-success.json'
-                 : '/animacao/confirm-error.json'
+      container:  lottiePlayer,
+      renderer:   'svg',
+      loop:       false,
+      autoplay:   true,
+      path:       savedOK
+                ? '/animacao/confirm-success.json'
+                : '/animacao/confirm-error.json'
     });
 
-    // após 2s: fecha overlay e abre termo
+    // final
     setTimeout(() => {
       overlay.style.display = 'none';
       anim.destroy();
-
       if (savedOK) {
         const qs = new URLSearchParams();
         ['ente','cnpj','uf','cpf','nome','telefone','email','endereco','cidade','dia','mes','ano','responsavel']
           .forEach(k => qs.set(k, dados[k]));
         criterios.forEach(c => qs.append('criterios', c));
         window.open(`termo.html?${qs.toString()}`, '_blank');
-
         form.reset();
         form.classList.remove('was-validated');
         critFeedback.style.display = 'none';
@@ -182,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// helper para preencher dia/mês/ano no formulário
+// repopula data do sistema
 function populaDataSistema() {
   const hoje = new Date();
   const dia  = String(hoje.getDate()).padStart(2,'0');
@@ -190,9 +188,7 @@ function populaDataSistema() {
   const ano  = hoje.getFullYear();
   ['dia','mes','ano'].forEach(id => {
     const el = document.getElementById(id);
-    el.value  = id === 'mes' ? mes
-               : id === 'dia' ? dia
-               :                ano;
+    el.value = id === 'mes' ? mes : (id === 'dia' ? dia : ano);
     el.readOnly = true;
   });
 }
