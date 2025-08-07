@@ -6,63 +6,60 @@ document.addEventListener('DOMContentLoaded', () => {
   const lottiePlayer = document.getElementById('lottie-player');
   const BACKEND      = 'https://programa-de-regularidade.onrender.com';
 
-  // inicializa máscaras via Cleave.js
-  new Cleave('#cnpj', {
+  // 1) inicializa máscaras e guarda instâncias
+  const cleaveCNPJ = new Cleave('#cnpj', {
     numericOnly: true,
     delimiters: ['.', '.', '/', '-'],
-    blocks: [2,3,3,4,2]
+    blocks: [2, 3, 3, 4, 2]
   });
-  new Cleave('#cpf', {
+  const cleaveCPF = new Cleave('#cpf', {
     numericOnly: true,
     delimiters: ['.', '.', '-'],
-    blocks: [3,3,3,2]
+    blocks: [3, 3, 3, 2]
   });
-  new Cleave('#telefone', {
+  const cleaveTel = new Cleave('#telefone', {
     phone: true,
     phoneRegionCode: 'BR'
   });
 
-  // repopula dia/mês/ano após Reset
-  form.addEventListener('reset', () => {
-    setTimeout(populaDataSistema, 0);
-  });
+  // 2) repopula dia/mês/ano após reset
+  form.addEventListener('reset', () => setTimeout(populaDataSistema, 0));
 
+  // 3) submit
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     form.classList.add('was-validated');
 
-    // 1) validações
+    // 3.1 validações nativas + critérios
     const formValid = form.checkValidity();
     const criterios = Array.from(
       form.querySelectorAll('input[name="criterios"]:checked')
     ).map(el => el.value);
     const criteriosValid = criterios.length >= 1;
 
-    // extração dos valores puros (sem máscara)
-    const rawCNPJ = Cleave.defaults.getRawValue.call({element: document.querySelector('#cnpj')});
-    const rawCPF  = Cleave.defaults.getRawValue.call({element: document.querySelector('#cpf')});
-    const rawTel  = Cleave.defaults.getRawValue.call({element: document.querySelector('#telefone')});
-
+    // 3.2 verifica comprimento puro das máscaras
+    const rawCNPJ = cleaveCNPJ.getRawValue();
+    const rawCPF  = cleaveCPF.getRawValue();
+    const rawTel  = cleaveTel.getRawValue();
     const maskValid =
       rawCNPJ.length === 14 &&
       rawCPF.length === 11 &&
       (rawTel.length === 10 || rawTel.length === 11);
 
     if (!maskValid) {
-      if (rawCNPJ.length !== 14)      document.getElementById('cnpj').classList.add('is-invalid');
-      if (rawCPF.length !== 11)       document.getElementById('cpf').classList.add('is-invalid');
+      if (rawCNPJ.length !== 14) document.getElementById('cnpj').classList.add('is-invalid');
+      if (rawCPF.length  !== 11) document.getElementById('cpf').classList.add('is-invalid');
       if (![10,11].includes(rawTel.length)) document.getElementById('telefone').classList.add('is-invalid');
     }
 
     critFeedback.style.display = criteriosValid ? 'none' : 'block';
-
     if (!formValid || !criteriosValid || !maskValid) return;
 
-    // 2) coleta dados
+    // 4) coleta dados
     const f     = new FormData(form);
     const dados = Object.fromEntries(f.entries());
 
-    // 3) monta payload para o Google Sheets (aba “Dados”)
+    // 5) monta payload
     const sheetPayload = {
       CNPJ:        dados.cnpj,
       UF:          dados.uf,
@@ -80,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
       RESPONSAVEL: dados.responsavel
     };
 
-    // 4) exibe overlay + animação de loading
+    // 6) overlay + loading
     overlay.style.display = 'flex';
     let animation = lottie.loadAnimation({
       container: lottiePlayer,
@@ -90,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
       path: '/animacao/confirm-success.json'
     });
 
-    // 5) envia ao backend
+    // 7) envia
     let savedOK = true;
     try {
       const resp = await fetch(`${BACKEND}/api/gerar-termo`, {
@@ -103,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
       savedOK = false;
     }
 
-    // 6) troca animação de acordo com o resultado
+    // 8) resultado
     animation.destroy();
     animation = lottie.loadAnimation({
       container: lottiePlayer,
@@ -115,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : '/animacao/confirm-error.json'
     });
 
-    // 7) após 2s: oculta overlay, abre termo e limpa form
+    // 9) finaliza
     setTimeout(() => {
       overlay.style.display = 'none';
       animation.destroy();
