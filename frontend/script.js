@@ -1,20 +1,17 @@
-// script.js
+// frontend/script.js
 
 document.addEventListener('DOMContentLoaded', () => {
   const form         = document.getElementById('regularidadeForm');
   const critFeedback = document.getElementById('critFeedback');
   const overlay      = document.getElementById('lottie-overlay');
   const lottiePlayer = document.getElementById('lottie-player');
-  let animation      = null;
-
-  // apontar para o seu backend (aqui Render)
-  const BACKEND = 'https://programa-de-regularidade.onrender.com';
+  const BACKEND      = 'https://programa-de-regularidade.onrender.com'; // seu render/netlify
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     form.classList.add('was-validated');
 
-    // validação nativa + critérios
+    // 1) validação nativa + critérios
     const formValid = form.checkValidity();
     const criterios = Array.from(
       form.querySelectorAll('input[name="criterios"]:checked')
@@ -23,11 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
     critFeedback.style.display = criteriosValid ? 'none' : 'block';
     if (!formValid || !criteriosValid) return;
 
-    // monta o objeto de dados com as **mesmas chaves** do cabeçalho da aba "Dados"
-    const f = new FormData(form);
+    // 2) coleta dados do form
+    const f     = new FormData(form);
     const dados = Object.fromEntries(f.entries());
-    // f.entries() retorna pares [key, val], mas precisamos ajustar:
-    const payload = {
+
+    // 3) payload para o Google Sheets (chaves MAIÚSCULAS, conforme aba “Dados”)
+    const sheetPayload = {
       CNPJ:        dados.cnpj,
       UF:          dados.uf,
       ENTE:        dados.ente,
@@ -44,9 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
       RESPONSAVEL: dados.responsavel
     };
 
-    // overlay + animação de loading
+    // 4) overlay + animação de loading
     overlay.style.display = 'flex';
-    animation = lottie.loadAnimation({
+    let animation = lottie.loadAnimation({
       container: lottiePlayer,
       renderer: 'svg',
       loop: true,
@@ -54,20 +52,20 @@ document.addEventListener('DOMContentLoaded', () => {
       path: '/animacao/confirm-success.json'
     });
 
-    // POST pro seu backend
+    // 5) envia ao backend
     let savedOK = true;
     try {
       const resp = await fetch(`${BACKEND}/api/gerar-termo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(sheetPayload),
       });
       if (!resp.ok) savedOK = false;
     } catch {
       savedOK = false;
     }
 
-    // troca animação
+    // 6) troca animação
     animation.destroy();
     animation = lottie.loadAnimation({
       container: lottiePlayer,
@@ -79,14 +77,34 @@ document.addEventListener('DOMContentLoaded', () => {
         : '/animacao/confirm-error.json'
     });
 
-    // após 2s, fecha overlay, limpa form e abre termo
+    // 7) após 2s: fecha overlay, abre termo **com lowercase** e limpa form
     setTimeout(() => {
       overlay.style.display = 'none';
       animation.destroy();
 
       if (savedOK) {
-        const qs = new URLSearchParams(payload).toString();
-        window.open(`termo.html?${qs}`, '_blank');
+        // monta query string COM AS MESMAS CHAVES do seu termo.html
+        const qs = new URLSearchParams();
+        qs.set('ente',        dados.ente);
+        qs.set('cnpj',        dados.cnpj);
+        qs.set('uf',          dados.uf);
+        qs.set('cpf',         dados.cpf);
+        qs.set('nome',        dados.nome);
+        qs.set('telefone',    dados.telefone);
+        qs.set('email',       dados.email);
+        qs.set('endereco',    dados.endereco);
+        qs.set('cidade',      dados.cidade);
+        qs.set('dia',         dados.dia);
+        qs.set('mes',         dados.mes);
+        qs.set('ano',         dados.ano);
+        qs.set('responsavel', dados.responsavel);
+        // campos repetidos
+        criterios.forEach(c => qs.append('criterios', c));
+
+        // abre termo.html com os dados na URL
+        window.open(`termo.html?${qs.toString()}`, '_blank');
+
+        // reseta form
         form.reset();
         form.classList.remove('was-validated');
         critFeedback.style.display = 'none';
