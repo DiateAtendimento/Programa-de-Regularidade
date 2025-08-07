@@ -34,20 +34,20 @@
       const dia  = String(hoje.getDate()).padStart(2, '0');
       const mes  = hoje.toLocaleString('pt-BR', { month: 'long' });
       const ano  = hoje.getFullYear();
-
       ['dia','mes','ano'].forEach(id => {
         const el = document.getElementById(id);
-        el.value = id==='mes' ? mes : (id==='dia' ? dia : ano);
+        el.value = id === 'mes' ? mes : (id === 'dia' ? dia : ano);
         el.readOnly = true;
       });
     }
-
     document.addEventListener('DOMContentLoaded', populaDataSistema);
   </script>
 
   <style>
-    /* centralizar h1 sobre o form */
-    .container.floating-panel > h1 { text-align: center; }
+    /* centralizar h1 */
+    .container.floating-panel > h1 {
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -64,12 +64,12 @@
     <h1>Cadastro Termo de Regularidade - CRP</h1>
 
     <form id="regularidadeForm" novalidate>
+
       <!-- 1) Identificação -->
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Identificação</div>
         <div class="card-body">
           <div class="row g-3">
-
             <div class="col-md-4">
               <label for="cnpj" class="form-label">CNPJ</label>
               <input
@@ -84,18 +84,40 @@
               />
               <div class="invalid-feedback">Informe um CNPJ de 14 dígitos.</div>
             </div>
-
             <div class="col-md-4">
               <label for="uf" class="form-label">UF</label>
               <select id="uf" name="uf" class="form-select" required>
                 <option value="" disabled selected>Selecione a UF</option>
-                <!-- opções... -->
+                <option value="AC">Acre</option>
+                <option value="AL">Alagoas</option>
+                <option value="AP">Amapá</option>
+                <option value="AM">Amazonas</option>
+                <option value="BA">Bahia</option>
+                <option value="CE">Ceará</option>
+                <option value="DF">Distrito Federal</option>
+                <option value="ES">Espírito Santo</option>
+                <option value="GO">Goiás</option>
+                <option value="MA">Maranhão</option>
+                <option value="MT">Mato Grosso</option>
+                <option value="MS">Mato Grosso do Sul</option>
+                <option value="MG">Minas Gerais</option>
+                <option value="PA">Pará</option>
+                <option value="PB">Paraíba</option>
+                <option value="PR">Paraná</option>
+                <option value="PE">Pernambuco</option>
+                <option value="PI">Piauí</option>
+                <option value="RJ">Rio de Janeiro</option>
+                <option value="RN">Rio Grande do Norte</option>
+                <option value="RS">Rio Grande do Sul</option>
+                <option value="RO">Rondônia</option>
+                <option value="RR">Roraima</option>
+                <option value="SC">Santa Catarina</option>
                 <option value="SP">São Paulo</option>
-                <!-- resto omitido -->
+                <option value="SE">Sergipe</option>
+                <option value="TO">Tocantins</option>
               </select>
               <div class="invalid-feedback">Escolha a UF.</div>
             </div>
-
             <div class="col-md-4">
               <label for="ente" class="form-label">Ente</label>
               <input
@@ -108,13 +130,53 @@
               />
               <div class="invalid-feedback">Informe o nome do Ente.</div>
             </div>
-
           </div>
 
           <!-- Critérios -->
           <fieldset class="mt-4" id="critFieldset">
             <legend class="form-label">Critérios <span class="text-danger">*</span></legend>
-            <!-- checkboxes... -->
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="I – Instituição do RPPS" id="crit1">
+              <label class="form-check-label" for="crit1">
+                I – Instituição do RPPS
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="II – Recolhimento das contribuições" id="crit2">
+              <label class="form-check-label" for="crit2">
+                II – Recolhimento das contribuições
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="III – Repasse das contribuições retidas" id="crit3">
+              <label class="form-check-label" for="crit3">
+                III – Repasse das contribuições retidas
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="IV – Aplicação dos recursos" id="crit4">
+              <label class="form-check-label" for="crit4">
+                IV – Aplicação dos recursos
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="V – Prestação de contas" id="crit5">
+              <label class="form-check-label" for="crit5">
+                V – Prestação de contas
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="VI – Observância das normas gerais" id="crit6">
+              <label class="form-check-label" for="crit6">
+                VI – Observância das normas gerais
+              </label>
+            </div>
             <div class="invalid-feedback d-block" id="critFeedback" style="display:none">
               Selecione pelo menos um critério.
             </div>
@@ -127,7 +189,6 @@
         <div class="card-header bg-secondary text-white">Dados Pessoais</div>
         <div class="card-body">
           <div class="row g-3">
-
             <div class="col-md-6">
               <label for="cpf" class="form-label">CPF</label>
               <input
@@ -142,7 +203,6 @@
               />
               <div class="invalid-feedback">Informe um CPF de 11 dígitos.</div>
             </div>
-
             <div class="col-md-6">
               <label for="nome" class="form-label">Nome</label>
               <input
@@ -155,7 +215,6 @@
               />
               <div class="invalid-feedback">Informe o nome.</div>
             </div>
-
             <div class="col-md-6">
               <label for="telefone" class="form-label">Telefone</label>
               <input
@@ -170,7 +229,6 @@
               />
               <div class="invalid-feedback">Informe um telefone válido.</div>
             </div>
-
             <div class="col-md-6">
               <label for="email" class="form-label">Email</label>
               <input
@@ -183,7 +241,6 @@
               />
               <div class="invalid-feedback">Informe um email válido.</div>
             </div>
-
             <div class="col-12">
               <label for="endereco" class="form-label">Endereço</label>
               <input
@@ -196,7 +253,6 @@
               />
               <div class="invalid-feedback">Informe o endereço.</div>
             </div>
-
           </div>
         </div>
       </div>
@@ -206,7 +262,6 @@
         <div class="card-header bg-secondary text-white">Local e Data</div>
         <div class="card-body">
           <div class="row g-3">
-
             <div class="col-md-6">
               <label for="cidade" class="form-label">Cidade</label>
               <input
@@ -219,22 +274,18 @@
               />
               <div class="invalid-feedback">Informe a cidade.</div>
             </div>
-
             <div class="col-md-2">
               <label for="dia" class="form-label">Dia</label>
               <input type="text" class="form-control" id="dia" name="dia" required/>
             </div>
-
             <div class="col-md-2">
               <label for="mes" class="form-label">Mês</label>
               <input type="text" class="form-control" id="mes" name="mes" required/>
             </div>
-
             <div class="col-md-2">
               <label for="ano" class="form-label">Ano</label>
               <input type="text" class="form-control" id="ano" name="ano" required/>
             </div>
-
           </div>
         </div>
       </div>
@@ -260,6 +311,7 @@
         <button type="reset" class="btn btn-outline-secondary me-2">Limpar</button>
         <button type="submit" class="btn btn-primary">Gerar Termo</button>
       </div>
+
     </form>
   </div>
 
