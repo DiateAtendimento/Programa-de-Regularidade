@@ -96,10 +96,13 @@ app.post('/api/gerar-termo', async (req, res) => {
     await authSheets();
     const sheet = doc.sheetsByTitle['Dados'];
 
-    // gera timestamp
+    // gera timestamp no fuso de São Paulo
     const now = new Date();
     const timestampDate = now.toLocaleDateString('pt-BR');
-    const timestampTime = now.toLocaleTimeString('pt-BR', { hour12: false });
+    const timestampTime = now.toLocaleTimeString('pt-BR', {
+      hour12:   false,
+      timeZone: 'America/Sao_Paulo'
+    });
 
     // monta linha incluindo DATA e HORA
     const row = {
