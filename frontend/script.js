@@ -54,12 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // monta data e hora do sistema (fuso São Paulo)
     const agora = new Date();
-    const dataSistema = agora.toLocaleDateString('pt-BR'); 
-    const horaSistema = new Intl.DateTimeFormat('pt-BR',{
+    const dataSistema = agora.toLocaleDateString('pt-BR');
+    const horaSistema = agora.toLocaleTimeString('pt-BR', {
       hour:   '2-digit',
       minute: '2-digit',
+      hour12: false,
       timeZone: 'America/Sao_Paulo'
-    }).format(agora);
+    });
+
     const anoSistema = agora.getFullYear();
 
     // payload completo
