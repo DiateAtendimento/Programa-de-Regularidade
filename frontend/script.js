@@ -1,29 +1,67 @@
 // frontend/script.js
+
 document.addEventListener('DOMContentLoaded', () => {
-  const form         = document.getElementById('regularidadeForm');
-  const critFeedback = document.getElementById('critFeedback');
-  const overlay      = document.getElementById('lottie-overlay');
-  const lottiePlayer = document.getElementById('lottie-player');
-  const BACKEND      = 'https://programa-de-regularidade.onrender.com';
+  const form           = document.getElementById('regularidadeForm');
+  const critFeedback   = document.getElementById('critFeedback');
+  const overlay        = document.getElementById('lottie-overlay');
+  const lottiePlayer   = document.getElementById('lottie-player');
+  const BACKEND        = 'https://programa-de-regularidade.onrender.com';
+
+  // inicializa máscaras
+  new Cleave('#cnpj', {
+    numericOnly: true,
+    delimiters: ['.', '.', '/', '-'],
+    blocks: [2,3,3,4,2]
+  });
+  new Cleave('#cpf', {
+    numericOnly: true,
+    delimiters: ['.', '.', '-'],
+    blocks: [3,3,3,2]
+  });
+  new Cleave('#telefone', {
+    phone: true,
+    phoneRegionCode: 'BR'
+  });
+
+  // repopula dia/mês/ano após Reset
+  form.addEventListener('reset', () => {
+    setTimeout(populaDataSistema, 0);
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     form.classList.add('was-validated');
 
-    // 1) validação nativa + critérios
+    // 1) validações
     const formValid = form.checkValidity();
     const criterios = Array.from(
       form.querySelectorAll('input[name="criterios"]:checked')
     ).map(el => el.value);
     const criteriosValid = criterios.length >= 1;
-    critFeedback.style.display = criteriosValid ? 'none' : 'block';
-    if (!formValid || !criteriosValid) return;
 
-    // 2) coleta dados do form
+    // comprimento exato dos campos mascarados
+    const rawCNPJ = Cleave.defaults.getRawValue.call({element: document.querySelector('#cnpj')});
+    const rawCPF  = Cleave.defaults.getRawValue.call({element: document.querySelector('#cpf')});
+    const rawTel  = Cleave.defaults.getRawValue.call({element: document.querySelector('#telefone')});
+
+    const maskValid = rawCNPJ.length===14 && rawCPF.length===11 && (rawTel.length===10 || rawTel.length===11);
+
+    if (!maskValid) {
+      // força invalidação manual
+      if (rawCNPJ.length!==14) document.getElementById('cnpj').classList.add('is-invalid');
+      if (rawCPF.length!==11)  document.getElementById('cpf').classList.add('is-invalid');
+      if (![10,11].includes(rawTel.length)) document.getElementById('telefone').classList.add('is-invalid');
+    }
+
+    critFeedback.style.display = criteriosValid ? 'none' : 'block';
+
+    if (!formValid || !criteriosValid || !maskValid) return;
+
+    // 2) coleta dados
     const f     = new FormData(form);
     const dados = Object.fromEntries(f.entries());
 
-    // 3) payload para o Google Sheets (chaves MAIÚSCULAS conforme aba “Dados”)
+    // 3) payload para o Sheets
     const sheetPayload = {
       CNPJ:        dados.cnpj,
       UF:          dados.uf,
@@ -41,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
       RESPONSAVEL: dados.responsavel
     };
 
-    // 4) overlay + loading
+    // 4) animação de loading
     overlay.style.display = 'flex';
     let animation = lottie.loadAnimation({
       container: lottiePlayer,
@@ -51,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
       path: '/animacao/confirm-success.json'
     });
 
-    // 5) POST ao backend
+    // 5) POST
     let savedOK = true;
     try {
       const resp = await fetch(`${BACKEND}/api/gerar-termo`, {
@@ -64,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
       savedOK = false;
     }
 
-    // 6) troca animação
+    // 6) resultado
     animation.destroy();
     animation = lottie.loadAnimation({
       container: lottiePlayer,
@@ -76,31 +114,18 @@ document.addEventListener('DOMContentLoaded', () => {
         : '/animacao/confirm-error.json'
     });
 
-    // 7) depois de 2s: esconde overlay, abre termo e reseta form
+    // 7) final
     setTimeout(() => {
       overlay.style.display = 'none';
       animation.destroy();
 
       if (savedOK) {
         const qs = new URLSearchParams();
-        // mesma ordem/nomes do termo.html:
-        qs.set('ente',        dados.ente);
-        qs.set('cnpj',        dados.cnpj);
-        qs.set('uf',          dados.uf);
-        qs.set('cpf',         dados.cpf);
-        qs.set('nome',        dados.nome);
-        qs.set('telefone',    dados.telefone);
-        qs.set('email',       dados.email);
-        qs.set('endereco',    dados.endereco);
-        qs.set('cidade',      dados.cidade);
-        qs.set('dia',         dados.dia);
-        qs.set('mes',         dados.mes);
-        qs.set('ano',         dados.ano);
-        qs.set('responsavel', dados.responsavel);
+        ['ente','cnpj','uf','cpf','nome','telefone','email','endereco','cidade','dia','mes','ano','responsavel']
+          .forEach(k => qs.set(k, dados[k]));
         criterios.forEach(c => qs.append('criterios', c));
 
-        window.open(`termo.html?${qs.toString()}`, '_blank');
-
+        window.open(`termo.html?${qs}`, '_blank');
         form.reset();
         form.classList.remove('was-validated');
         critFeedback.style.display = 'none';
@@ -110,3 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2000);
   });
 });
+
+// helper para reset
+function populaDataSistema() {
+  const hoje = new Date();
+  const dia  = String(hoje.getDate()).padStart(2, '0');
+  const mes  = hoje.toLocaleString('pt-BR', { month: 'long' });
+  const ano  = hoje.getFullYear();
+  document.getElementById('dia').value = dia;
+  document.getElementById('mes').value = mes;
+  document.getElementById('ano').value = ano;
+}
