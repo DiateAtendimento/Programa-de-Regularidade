@@ -16,36 +16,40 @@ const app = express();
 // 1) Segurança básica
 app.disable('x-powered-by');
 app.use(helmet());
-app.use(
-  helmet.contentSecurityPolicy({
-    useDefaults: true,
-    directives: {
-      "default-src": ["'self'"],
-      "script-src": [
-        "'self'",
-        "https://cdn.jsdelivr.net",
-        "https://cdnjs.cloudflare.com",
-        "'unsafe-inline'"
-      ],
-      "style-src": [
-        "'self'",
-        "https://cdn.jsdelivr.net",
-        "https://fonts.googleapis.com",
-        "'unsafe-inline'"
-      ],
-      "font-src": ["'self'", "https://fonts.gstatic.com"],
-      "img-src": ["'self'", "data:"],
-      "connect-src": ["'self'"],
-      "frame-src": ["'none'"],
-      "object-src": ["'none'"]
-    }
-  })
-);
+
+// 1.1) CSP ajustada para permitir chamadas ao Render
+app.use(helmet.contentSecurityPolicy({
+  useDefaults: true,
+  directives: {
+    "default-src": ["'self'"],
+    "script-src": [
+      "'self'",
+      "https://cdn.jsdelivr.net",
+      "https://cdnjs.cloudflare.com",
+      "'unsafe-inline'"
+    ],
+    "style-src": [
+      "'self'",
+      "https://cdn.jsdelivr.net",
+      "https://fonts.googleapis.com",
+      "'unsafe-inline'"
+    ],
+    "font-src": ["'self'", "https://fonts.gstatic.com"],
+    "img-src": ["'self'", "data:"],
+    // aqui: permitimos nosso próprio domínio e o backend no Render
+    "connect-src": [
+      "'self'",
+      "https://programa-de-regularidade.onrender.com"
+    ],
+    "frame-src": ["'none'"],
+    "object-src": ["'none'"]
+  }
+}));
 
 // 2) Rate limiting
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100,                 // no máximo 100 requisições por IP
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false
 }));
@@ -55,8 +59,9 @@ app.use(hpp());
 
 // 4) CORS
 const allowedOrigins = [
-  process.env.CORS_ORIGIN,
-  'https://programa-de-regularidade.netlify.app'
+  process.env.CORS_ORIGIN,                             // pode apontar para o Render
+  'https://programa-de-regularidade.netlify.app',      // seu site Netlify
+  'https://programa-de-regularidade.onrender.com'      // *também* autorizamos chamadas diretas aqui
 ];
 app.use(cors({
   origin: (origin, cb) => {
@@ -97,7 +102,7 @@ app.post('/api/gerar-termo', async (req, res) => {
     await authSheets();
     const sheet = doc.sheetsByTitle['Dados'];
 
-    // gera timestamp no fuso de São Paulo
+    // timestamp no fuso de São Paulo
     const now           = new Date();
     const timestampDate = now.toLocaleDateString('pt-BR');
     const timestampTime = now.toLocaleTimeString('pt-BR', {
@@ -105,9 +110,8 @@ app.post('/api/gerar-termo', async (req, res) => {
       timeZone: 'America/Sao_Paulo'
     });
 
-    // inclui todos os campos do form (inclusive CARGO) + DATA + HORA
     const row = {
-      ...req.body,
+      ...req.body,      // inclui CARGO e demais campos
       DATA: timestampDate,
       HORA: timestampTime
     };
