@@ -1,4 +1,3 @@
-// backend/server.js
 require('dotenv').config();
 
 const fs                    = require('fs');
@@ -34,7 +33,7 @@ app.use(
       ],
       "font-src": ["'self'", "https://fonts.gstatic.com"],
       "img-src": ["'self'", "data:"],
-      "connect-src": ["'self'"],
+      "connect-src": ["'self'", "https://programa-de-regularidade.onrender.com"],
       "frame-src": ["'none'"],
       "object-src": ["'none'"]
     }
@@ -97,14 +96,13 @@ app.post('/api/gerar-termo', async (req, res) => {
     const sheet = doc.sheetsByTitle['Dados'];
 
     // gera timestamp no fuso de São Paulo
-    const now = new Date();
+    const now           = new Date();
     const timestampDate = now.toLocaleDateString('pt-BR');
     const timestampTime = now.toLocaleTimeString('pt-BR', {
       hour12:   false,
       timeZone: 'America/Sao_Paulo'
     });
 
-    // monta linha incluindo DATA e HORA
     const row = {
       ...req.body,
       DATA: timestampDate,
@@ -119,25 +117,20 @@ app.post('/api/gerar-termo', async (req, res) => {
   }
 });
 
-// 9.1) Endpoint para fornecer lista de entes (para autocomplete)
-// Reaproveita o mesmo CORS e a função authSheets()
+// 9.1) Endpoint para fornecer lista de entes (autocomplete)
 app.get('/api/entes', async (req, res) => {
   try {
     await authSheets();
-    // Pega a aba "Fonte"
     const fonteSheet = doc.sheetsByTitle['Fonte'];
-    // Carrega todas as linhas (GET)
-    const rows = await fonteSheet.getRows();
-    // Mapeia apenas os campos UF e ENTE
-    const entes = rows.map(r => ({
-      uf:    r.UF.trim(),
-      ente:  r.ENTE.trim()
+    const rows       = await fonteSheet.getRows();
+    const entes      = rows.map(r => ({
+      uf:   r.UF.trim(),
+      ente: r.ENTE.trim()
     }));
-    // Retorna JSON
-    res.json(entes);
+    return res.json(entes);
   } catch (err) {
     console.error('❌ Falha ao buscar entes:', err);
-    res.status(500).json({ error: 'Erro interno ao obter lista de entes.' });
+    return res.status(500).json({ error: 'Erro interno ao obter lista de entes.' });
   }
 });
 
