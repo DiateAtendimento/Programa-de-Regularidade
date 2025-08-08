@@ -50,37 +50,15 @@
     }
     document.addEventListener('DOMContentLoaded', populaDataSistema);
   </script>
-
-  <style>
-    .container.floating-panel > h1 { text-align: center; }
-    /* posicione a lista de autocompletar */
-    .position-relative .autocomplete-list {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      max-height: 200px;
-      overflow-y: auto;
-      background: #fff;
-      border: 1px solid #ced4da;
-      border-radius: .375rem;
-      z-index: 10;
-      display: none;
-      list-style: none;
-    }
-    .position-relative .autocomplete-list li {
-      padding: .5rem;
-      cursor: pointer;
-    }
-    .position-relative .autocomplete-list li:hover {
-      background: #f1f1f1;
-    }
-  </style>
 </head>
 <body>
   <!-- Overlay de animação -->
-  <div id="lottie-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.8);z-index:9999;justify-content:center;align-items:center;">
-    <div id="lottie-player" style="width:300px;height:300px;"></div>
+  <div id="lottie-overlay"
+       style="display:none;
+              position:fixed; top:0; left:0; width:100%; height:100%;
+              background:rgba(255,255,255,0.8); z-index:9999;
+              justify-content:center; align-items:center;">
+    <div id="lottie-player" style="width:300px; height:300px;"></div>
   </div>
 
   <div class="container floating-panel">
@@ -97,8 +75,15 @@
             <!-- CNPJ -->
             <div class="col-md-4">
               <label for="cnpj" class="form-label">CNPJ</label>
-              <input type="text" class="form-control" id="cnpj" name="cnpj"
-                     placeholder="00.000.000/0000-00" inputmode="numeric" required>
+              <input
+                type="text"
+                class="form-control"
+                id="cnpj"
+                name="cnpj"
+                placeholder="00.000.000/0000-00"
+                inputmode="numeric"
+                required
+              />
               <div class="invalid-feedback">Informe um CNPJ de 14 dígitos.</div>
             </div>
 
@@ -141,14 +126,60 @@
             <!-- Ente + Autocomplete -->
             <div class="col-md-4 position-relative">
               <label for="ente" class="form-label">Ente</label>
-              <input type="text" id="ente" name="ente" class="form-control"
-                     placeholder="Nome do ente" autocomplete="off" required>
+              <input
+                type="text"
+                id="ente"
+                name="ente"
+                class="form-control"
+                placeholder="Nome do ente"
+                autocomplete="off"
+                required
+              />
               <ul class="autocomplete-list" id="entes-list"></ul>
               <div class="invalid-feedback">Informe o nome do Ente.</div>
             </div>
 
+          </div>
+        </div>
+      </div>
+
+      <!-- 2) Dados Pessoais -->
+      <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">Dados Pessoais</div>
+        <div class="card-body">
+          <div class="row g-3">
+
+            <!-- CPF -->
+            <div class="col-md-6">
+              <label for="cpf" class="form-label">CPF</label>
+              <input
+                type="text"
+                class="form-control"
+                id="cpf"
+                name="cpf"
+                placeholder="000.000.000-00"
+                inputmode="numeric"
+                required
+              />
+              <div class="invalid-feedback">Informe um CPF de 11 dígitos.</div>
+            </div>
+
+            <!-- Nome -->
+            <div class="col-md-6">
+              <label for="nome" class="form-label">Nome</label>
+              <input
+                type="text"
+                class="form-control"
+                id="nome"
+                name="nome"
+                placeholder="Nome completo"
+                required
+              />
+              <div class="invalid-feedback">Informe o nome.</div>
+            </div>
+
             <!-- Cargo -->
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label for="cargo" class="form-label">Cargo</label>
               <select id="cargo" name="cargo" class="form-select" required>
                 <option value="" disabled selected>Selecione o Cargo</option>
@@ -173,58 +204,48 @@
               <div class="invalid-feedback">Escolha o cargo.</div>
             </div>
 
-          </div>
-        </div>
-      </div>
-
-      <!-- 2) Dados Pessoais -->
-      <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">Dados Pessoais</div>
-        <div class="card-body">
-          <div class="row g-3">
-
-            <div class="col-md-6">
-              <label for="cpf" class="form-label">CPF</label>
-              <input type="text" class="form-control" id="cpf" name="cpf"
-                     placeholder="000.000.000-00" inputmode="numeric" required>
-              <div class="invalid-feedback">Informe um CPF de 11 dígitos.</div>
-            </div>
-
-            <div class="col-md-6">
-              <label for="nome" class="form-label">Nome</label>
-              <input type="text" class="form-control" id="nome" name="nome"
-                     placeholder="Nome completo" required>
-              <div class="invalid-feedback">Informe o nome.</div>
-            </div>
-
+            <!-- Telefone -->
             <div class="col-md-6">
               <label for="telefone" class="form-label">Telefone</label>
-              <input type="tel" class="form-control" id="telefone" name="telefone"
-                     placeholder="(00) 00000-0000" inputmode="numeric" required>
+              <input
+                type="tel"
+                class="form-control"
+                id="telefone"
+                name="telefone"
+                placeholder="(00) 00000-0000"
+                inputmode="numeric"
+                required
+              />
               <div class="invalid-feedback">Informe um telefone válido.</div>
             </div>
 
+            <!-- Email -->
             <div class="col-md-6">
               <label for="email" class="form-label">Email</label>
-              <input type="email" class="form-control" id="email" name="email"
-                     placeholder="email@exemplo.com" required>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                placeholder="email@exemplo.com"
+                required
+              />
               <div class="invalid-feedback">Informe um email válido.</div>
             </div>
 
-            <div class="col-md-6">
+            <!-- Endereço -->
+            <div class="col-12">
               <label for="endereco" class="form-label">Endereço</label>
-              <input type="text" class="form-control" id="endereco" name="endereco"
-                     placeholder="Rua, número, bairro, cidade, CEP" required>
+              <input
+                type="text"
+                class="form-control"
+                id="endereco"
+                name="endereco"
+                placeholder="Rua, número, bairro, cidade, CEP"
+                required
+              />
               <div class="invalid-feedback">Informe o endereço.</div>
             </div>
-
-            <div class="col-md-6">
-              <label for="responsavel" class="form-label">Responsável</label>
-              <input type="text" class="form-control" id="responsavel" name="responsavel"
-                     placeholder="Nome do responsável" required>
-              <div class="invalid-feedback">Informe o responsável.</div>
-            </div>
-
           </div>
         </div>
       </div>
@@ -235,28 +256,38 @@
         <div class="card-body">
           <div class="row g-3">
 
+            <!-- Cidade (auto) -->
             <div class="col-md-6">
               <label for="cidade" class="form-label">Cidade</label>
-              <input type="text" class="form-control" id="cidade" name="cidade"
-                     placeholder="Cidade/UF" readonly required>
+              <input
+                type="text"
+                class="form-control"
+                id="cidade"
+                name="cidade"
+                placeholder="Cidade/UF"
+                readonly
+                required
+              />
               <div class="invalid-feedback">Informe a cidade.</div>
             </div>
 
+            <!-- Dia -->
             <div class="col-md-2">
               <label for="dia" class="form-label">Dia</label>
-              <input type="text" class="form-control" id="dia" name="dia" required>
+              <input type="text" class="form-control" id="dia" name="dia" required />
             </div>
 
+            <!-- Mês -->
             <div class="col-md-2">
               <label for="mes" class="form-label">Mês</label>
-              <input type="text" class="form-control" id="mes" name="mes" required>
+              <input type="text" class="form-control" id="mes" name="mes" required />
             </div>
 
+            <!-- Ano -->
             <div class="col-md-2">
               <label for="ano" class="form-label">Ano</label>
-              <input type="text" class="form-control" id="ano" name="ano" required>
+              <input type="text" class="form-control" id="ano" name="ano" required />
             </div>
-
           </div>
         </div>
       </div>
@@ -264,6 +295,22 @@
       <!-- campos hidden para data e hora -->
       <input type="hidden" id="dataSistema" name="DATA" />
       <input type="hidden" id="horaSistema" name="HORA" />
+
+      <!-- 4) Responsável -->
+      <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">Responsável</div>
+        <div class="card-body">
+          <input
+            type="text"
+            class="form-control"
+            id="responsavel"
+            name="responsavel"
+            placeholder="Nome do responsável"
+            required
+          />
+          <div class="invalid-feedback">Informe o responsável.</div>
+        </div>
+      </div>
 
       <!-- Botões -->
       <div class="d-flex justify-content-end mb-5">

@@ -8,12 +8,13 @@
 </head>
 <body>
 
-  <!-- Botão de download no topo -->
+  <!-- 5) Botão de download no topo -->
   <div class="download-wrap top">
     <button id="btn-download" class="btn-download">📥 Baixar PDF</button>
   </div>
 
   <div class="term-container" id="term-content">
+
     <header class="term-header">
       <img src="imagens/logo-termo-mps.svg" alt="Logo MPS" class="logo" />
       <img src="imagens/logo-termo-drpps.svg" alt="Logo DRPPS" class="logo" />
@@ -21,43 +22,149 @@
 
     <h1 class="term-title">TERMO DE REGULARIDADE PREVIDENCIÁRIA – CRP</h1>
 
+    <!-- 1. IDENTIFICAÇÃO -->
     <section class="term-section">
       <h2>1. IDENTIFICAÇÃO</h2>
       <p><strong>1.1. Ente Federativo:</strong> {{ente}}</p>
       <p><strong>1.2. CNPJ:</strong> {{cnpj}}</p>
       <p><strong>1.3. Unidade da Federação:</strong> {{uf}}</p>
-      <p><strong>1.4. Cargo:</strong> {{cargo}}</p>
     </section>
 
-    <!-- demais seções inalteradas -->
+    <!-- 2. DADOS PESSOAIS -->
+    <section class="term-section">
+      <h2>2. DADOS PESSOAIS</h2>
+      <p><strong>2.1. CPF:</strong> {{cpf}}</p>
+      <p><strong>2.2. Nome:</strong> {{nome}}</p>
+      <p><strong>2.3. Cargo:</strong> {{cargo}}</p>
+      <p><strong>2.4. Telefone:</strong> {{telefone}}</p>
+      <p><strong>2.5. Email:</strong> {{email}}</p>
+      <p><strong>2.6. Endereço:</strong> {{endereco}}</p>
+    </section>
 
+    <!-- 3. DO OBJETO -->
+    <section class="term-section">
+      <h2>3. DO OBJETO</h2>
+      <p>
+        O presente Termo tem por objeto atestar a regularidade previdenciária do
+        Regime Próprio de Previdência Social (RPPS) referido no item 1, com vistas
+        à emissão da Certidão de Regularidade Previdenciária (CRP), conforme disposto
+        no art. 8º, § 1º, da Lei 10.887/2004 e na Portaria MPS nº 403/2016.
+      </p>
+    </section>
+
+    <!-- 4. FUNDAMENTAÇÃO LEGAL -->
+    <section class="term-section">
+      <h2>4. FUNDAMENTAÇÃO LEGAL</h2>
+      <ul>
+        <li>Constituição Federal, art. 40, § 1º, inciso III, alíneas “a” e “b”.</li>
+        <li>Lei Complementar nº 101/2000 (Lei de Responsabilidade Fiscal), art. 55.</li>
+        <li>Lei nº 10.887/2004, art. 8º e seguintes.</li>
+        <li>Portaria MPS nº 403/2016, arts. 2º e 3º.</li>
+      </ul>
+    </section>
+
+    <!-- 5. CRITÉRIOS -->
+    <section class="term-section">
+      <h2>5. CRITÉRIOS</h2>
+      <ul id="criterios-list">
+        <!-- Será preenchido via JS -->
+      </ul>
+    </section>
+    <br><br><br><br>
+    <!-- 6. DAS DECLARAÇÕES -->
+    <section class="term-section">
+      <h2>6. DAS DECLARAÇÕES</h2>
+      <ul>
+        <li>
+          Está adimplente com todas as obrigações previdenciárias relativas ao RPPS,
+          inclusive recolhimento de contribuições patronais e repasses destinados
+          à manutenção do Fundo Previdenciário;
+        </li>
+        <li>
+          Encontra-se em dia com a apresentação dos Demonstrativos de Informações
+          Previdenciárias (DIP) e dos Demonstrativos de Repasses (DPR) exigidos
+          pelos órgãos de controle, na forma e nos prazos legais;
+        </li>
+        <li>
+          Não possui passivos previdenciários em aberto que impeçam a concessão
+          da Certidão de Regularidade Previdenciária.
+        </li>
+      </ul>
+    </section>
+
+    <!-- 7. VIGÊNCIA DA CERTIDÃO -->
+    <section class="term-section">
+      <h2>7. VIGÊNCIA DA CERTIDÃO</h2>
+      <p>
+        A Certidão de Regularidade Previdenciária (CRP) emitida com base neste Termo
+        terá validade de 90 (noventa) dias, contados da data de sua assinatura.
+      </p>
+    </section>
+
+    <!-- 8. DISPOSIÇÕES GERAIS -->
+    <section class="term-section">
+      <h2>8. DISPOSIÇÕES GERAIS</h2>
+      <ul>
+        <li>
+          O presente Termo não exime o Ente Federativo de futuras obrigações, tampouco
+          de cumprir requisitos adicionais exigidos por legislação ou instruções
+          normativas supervenientes.
+        </li>
+        <li>
+          Eventuais irregularidades constatadas poderão ensejar a cassação ou não
+          renovação da Certidão de Regularidade Previdenciária.
+        </li>
+      </ul>
+    </section>
+
+    <!-- 9. FORO -->
+    <section class="term-section">
+      <h2>9. FORO</h2>
+      <p>
+        Para dirimir quaisquer dúvidas ou controvérsias decorrentes deste Termo, fica
+        eleito o Foro da Comarca de {{cidade}}/{{uf}}, renunciando as partes a
+        qualquer outro, por mais privilegiado que seja.
+      </p>
+    </section>
+
+    <!-- RODAPÉ: data e assinatura -->
     <footer class="term-footer">
       <p>{{cidade}}, {{dia}} de {{mes}} de {{ano}}.</p>
       <p>__________________________________________</p>
+      <p>Responsável Legal do Aderente ou Representante do RPPS</p>
       <p>{{responsavel}}</p>
     </footer>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
   <script>
-    // preenche placeholders
     const params = new URLSearchParams(window.location.search);
+
+    // Preenche placeholders {{campo}}
     document.querySelectorAll('.term-container p, .term-container li').forEach(el => {
       el.textContent = el.textContent.replace(/\{\{([^{}]+)\}\}/g, (_, key) =>
         params.get(key) || ''
       );
     });
-    // critérios
+
+    // Renderiza critérios
     const ul = document.getElementById('criterios-list');
     params.getAll('criterios').forEach(text => {
       const li = document.createElement('li');
       li.textContent = text;
       ul.appendChild(li);
     });
-    // download
+
+    // Download
     document.getElementById('btn-download').addEventListener('click', () => {
-      html2pdf().set({ margin:10, filename:'termo_crp.pdf', html2canvas:{scale:2}, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' } })
-                .from(document.getElementById('term-content')).save();
+      html2pdf().set({
+        margin: 10,
+        filename: 'termo_crp.pdf',
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      })
+      .from(document.getElementById('term-content'))
+      .save();
     });
   </script>
 </body>
