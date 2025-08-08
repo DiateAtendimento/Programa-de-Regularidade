@@ -119,6 +119,28 @@ app.post('/api/gerar-termo', async (req, res) => {
   }
 });
 
+// 9.1) Endpoint para fornecer lista de entes (para autocomplete)
+// Reaproveita o mesmo CORS e a função authSheets()
+app.get('/api/entes', async (req, res) => {
+  try {
+    await authSheets();
+    // Pega a aba "Fonte"
+    const fonteSheet = doc.sheetsByTitle['Fonte'];
+    // Carrega todas as linhas (GET)
+    const rows = await fonteSheet.getRows();
+    // Mapeia apenas os campos UF e ENTE
+    const entes = rows.map(r => ({
+      uf:    r.UF.trim(),
+      ente:  r.ENTE.trim()
+    }));
+    // Retorna JSON
+    res.json(entes);
+  } catch (err) {
+    console.error('❌ Falha ao buscar entes:', err);
+    res.status(500).json({ error: 'Erro interno ao obter lista de entes.' });
+  }
+});
+
 // 10) Inicia servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
