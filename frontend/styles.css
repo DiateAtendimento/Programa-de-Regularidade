@@ -99,6 +99,59 @@ body {
   height: auto;
 }
 
+/* ************ */
+/* FORM VALIDATION */
+/* ************ */
+
+/* quando o form tiver .was-validated e o campo inválido */
+.was-validated .form-control:invalid {
+  border-color: #dc3545;
+}
+.was-validated .form-select:invalid {
+  border-color: #dc3545;
+}
+
+/* feedback built-in do Bootstrap */
+.was-validated .form-control:invalid ~ .invalid-feedback,
+.was-validated .form-select:invalid ~ .invalid-feedback {
+  display: block;
+}
+
+/* ************ */
+/* ENTE LISTA */
+/* ************ */
+
+/* garante que o pai posicione o dropdown */
+.col-md-4 { 
+  position: relative; 
+}
+
+/* estiliza o datalist para aparecer logo abaixo do input */
+#entes-list {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 0.25rem;
+  z-index: 1000;
+  /* esconder as setinhas nativas */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#entes-list option {
+  padding: 0.5rem;
+  cursor: pointer;
+}
+#entes-list option:hover {
+  background: #f0f0f0;
+}
+
+
 /* 8) Ajustes para mobile */
 @media (max-width: 576px) {
   .container.floating-panel {
@@ -123,20 +176,3 @@ body {
   }
 }
 
-/* ************ */
-/* FORM VALIDATION */
-/* ************ */
-
-/* quando o form tiver .was-validated e o campo inválido */
-.was-validated .form-control:invalid {
-  border-color: #dc3545;
-}
-.was-validated .form-select:invalid {
-  border-color: #dc3545;
-}
-
-/* feedback built-in do Bootstrap */
-.was-validated .form-control:invalid ~ .invalid-feedback,
-.was-validated .form-select:invalid ~ .invalid-feedback {
-  display: block;
-}
