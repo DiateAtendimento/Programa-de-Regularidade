@@ -1,141 +1,71 @@
 require('dotenv').config();
-
-const fs                    = require('fs');
-const path                  = require('path');
-const express               = require('express');
-const helmet                = require('helmet');
-const cors                  = require('cors');
-const rateLimit             = require('express-rate-limit');
-const hpp                   = require('hpp');
+const fs = require('fs');
+const path = require('path');
+const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const hpp = require('hpp');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const app = express();
-
-// 1) Segurança básica
 app.disable('x-powered-by');
 app.use(helmet());
-app.use(
-  helmet.contentSecurityPolicy({
-    useDefaults: true,
-    directives: {
-      "default-src": ["'self'"],
-      "script-src": [
-        "'self'",
-        "https://cdn.jsdelivr.net",
-        "https://cdnjs.cloudflare.com",
-        "'unsafe-inline'"
-      ],
-      "style-src": [
-        "'self'",
-        "https://cdn.jsdelivr.net",
-        "https://fonts.googleapis.com",
-        "'unsafe-inline'"
-      ],
-      "font-src": ["'self'", "https://fonts.gstatic.com"],
-      "img-src": ["'self'", "data:"],
-      "connect-src": ["'self'", "https://programa-de-regularidade.onrender.com"],
-      "frame-src": ["'none'"],
-      "object-src": ["'none'"]
-    }
-  })
-);
-
-// 2) Rate limiting
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false
-}));
-
-// 3) Prevenção de HTTP Parameter Pollution
+app.use(helmet.contentSecurityPolicy({ useDefaults:true }));
+app.use(rateLimit({ windowMs:15*60*1000, max:100 }));
 app.use(hpp());
 
-// 4) CORS
 const allowedOrigins = [
   process.env.CORS_ORIGIN,
   'https://programa-de-regularidade.netlify.app'
 ];
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Origin ${origin} não autorizada pelo CORS`));
-    }
-  },
+  origin: (origin, cb) => !origin||allowedOrigins.includes(origin)? cb(null,true): cb(new Error('CORS')),
   methods: ['GET','POST']
 }));
 
-// 5) Body parser
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit:'10kb' }));
+app.use('/', express.static(path.join(__dirname,'../frontend')));
+app.use('/animacao', express.static(path.join(__dirname,'../frontend/animacao')));
 
-// 6) Frontend estático + animações
-app.use('/', express.static(path.join(__dirname, '../frontend')));
-app.use('/animacao', express.static(path.join(__dirname, '../frontend/animacao')));
-
-// 7) Credenciais do Google Sheets
 const credsPath = path.resolve(__dirname, process.env.CREDENTIALS_JSON_PATH);
 if (!fs.existsSync(credsPath)) {
-  console.error(`❌ credentials.json não encontrado em ${credsPath}`);
-  process.exit(1);
+  console.error('❌ credentials.json não encontrado'); process.exit(1);
 }
 const creds = require(credsPath);
-
-// 8) Configuração do GoogleSpreadsheet
 const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
-async function authSheets() {
-  await doc.useServiceAccountAuth(creds);
-  await doc.loadInfo();
-}
+async function authSheets(){ await doc.useServiceAccountAuth(creds); await doc.loadInfo(); }
 
-// 9) Endpoint para gravar na aba "Dados"
-app.post('/api/gerar-termo', async (req, res) => {
+// grava dados do formulário
+app.post('/api/gerar-termo', async (req,res) => {
   try {
     await authSheets();
     const sheet = doc.sheetsByTitle['Dados'];
-
-    // gera timestamp no fuso de São Paulo
-    const now           = new Date();
+    const now = new Date();
     const timestampDate = now.toLocaleDateString('pt-BR');
-    const timestampTime = now.toLocaleTimeString('pt-BR', {
-      hour12:   false,
-      timeZone: 'America/Sao_Paulo'
-    });
-
-    const row = {
-      ...req.body,
-      DATA: timestampDate,
-      HORA: timestampTime
-    };
-
+    const timestampTime = now.toLocaleTimeString('pt-BR',{hour12:false, timeZone:'America/Sao_Paulo'});
+    const row = { ...req.body, DATA:timestampDate, HORA:timestampTime };
     await sheet.addRow(row);
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error('❌ Falha ao gravar no Google Sheets:', err);
-    return res.status(500).json({ error: 'Failed to write to Google Sheets.' });
+    res.json({ ok:true });
+  } catch(err) {
+    console.error('❌ Falha ao gravar:', err);
+    res.status(500).json({ error:'Failed to write to Google Sheets.' });
   }
 });
 
-// 9.1) Endpoint para fornecer lista de entes (autocomplete)
-app.get('/api/entes', async (req, res) => {
+// fornece lista de entes
+app.get('/api/entes', async (req,res) => {
   try {
     await authSheets();
-    const fonteSheet = doc.sheetsByTitle['Fonte'];
-    const rows       = await fonteSheet.getRows();
-    const entes      = rows.map(r => ({
-      uf:   r.UF.trim(),
-      ente: r.ENTE.trim()
-    }));
-    return res.json(entes);
-  } catch (err) {
-    console.error('❌ Falha ao buscar entes:', err);
-    return res.status(500).json({ error: 'Erro interno ao obter lista de entes.' });
+    const fonte = doc.sheetsByTitle['Fonte'];
+    const rows = await fonte.getRows();
+    const entes = rows.map(r=>({ uf:r.UF.trim(), ente:r.ENTE.trim() }));
+    res.json(entes);
+  } catch(err) {
+    console.error('❌ Falha ao obter entes:', err);
+    res.status(500).json({ error:'Erro interno.' });
   }
 });
 
-// 10) Inicia servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server rodando na porta ${PORT}`);
-});
+const PORT = process.env.PORT||3000;
+app.listen(PORT,()=> console.log(`🚀 Server rodando na porta ${PORT}`));
