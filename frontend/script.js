@@ -22,18 +22,18 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .catch(err => console.error('Erro ao buscar lista de entes:', err));
 
-  // 2) máscara de CNPJ, CPF e Telefone
-  new Cleave('#cnpj', {
+  // 2) máscara de CNPJ, CPF e Telefone (armazenando as instâncias)
+  const cleaveCNPJ = new Cleave('#cnpj', {
     numericOnly: true,
     delimiters: ['.', '.', '/', '-'],
     blocks: [2,3,3,4,2]
   });
-  new Cleave('#cpf', {
+  const cleaveCPF = new Cleave('#cpf', {
     numericOnly: true,
     delimiters: ['.', '.', '-'],
     blocks: [3,3,3,2]
   });
-  new Cleave('#telefone', {
+  const cleaveTel = new Cleave('#telefone', {
     phone: true,
     phoneRegionCode: 'BR'
   });
@@ -73,10 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
     ).map(i => i.value);
     const criteriosValid = criterios.length >= 1;
 
-    // valida máscaras
-    const rawCNPJ = Cleave.instances.find(c => c.element.id === 'cnpj').getRawValue();
-    const rawCPF  = Cleave.instances.find(c => c.element.id === 'cpf').getRawValue();
-    const rawTel  = Cleave.instances.find(c => c.element.id === 'telefone').getRawValue();
+    // valida máscaras usando as instâncias
+    const rawCNPJ = cleaveCNPJ.getRawValue();
+    const rawCPF  = cleaveCPF.getRawValue();
+    const rawTel  = cleaveTel.getRawValue();
     const maskValid = rawCNPJ.length === 14
                    && rawCPF.length  === 11
                    && (rawTel.length === 10 || rawTel.length === 11);
