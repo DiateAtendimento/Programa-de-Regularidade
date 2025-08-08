@@ -118,41 +118,43 @@ body {
 }
 
 
-/*lista*/
+/* coloque isso no seu styles.css, depois das regras atuais */
 
 /* garante que o container do Ente tenha position:relative */
 .position-relative {
   position: relative;
 }
 
-/* Esconde por padrão */
+/* 1) transforma o <ul> num dropdown */
 .autocomplete-list {
-  display: none;
   position: absolute;
-  top: calc(100% + 0.25rem);
-  left: 0; right: 0;
+  top: calc(100% + 0.25rem); /* um pouquinho abaixo do input */
+  left: 0;
+  right: 0;
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 0.25rem;
-  box-shadow: 0 .5rem 1rem rgba(0,0,0,0.1);
+  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, 0.1);
   max-height: 200px;
   overflow-y: auto;
   z-index: 1000;
+
+  /* remove bullets e espaçamentos */
   list-style: none;
-  margin: 0; padding: 0;
+  margin: 0;
+  padding: 0;
 }
 
-/* Itens */
+/* 2) estiliza cada item */
 .autocomplete-list li {
-  padding: .5rem 1rem;
+  padding: 0.5rem 1rem;
   cursor: pointer;
 }
 
-/* Hover */
+/* 3) hover */
 .autocomplete-list li:hover {
   background: #f1f5f9;
 }
-
 
 
 
