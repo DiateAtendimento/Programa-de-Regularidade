@@ -117,17 +117,9 @@ body {
   display: block;
 }
 
-/* ************ */
-/* ENTE LISTA */
-/* ************ */
 
-/* garante que o pai posicione o dropdown */
-.col-md-4 { 
-  position: relative; 
-}
-
-/* estiliza o datalist para aparecer logo abaixo do input */
-#entes-list {
+/*lista*/
+.position-relative .autocomplete-list {
   position: absolute;
   top: calc(100% + 0.25rem);
   left: 0;
@@ -138,16 +130,15 @@ body {
   border: 1px solid #ccc;
   border-radius: 0.25rem;
   z-index: 1000;
-  /* esconder as setinhas nativas */
   list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
 }
-#entes-list option {
+.autocomplete-list li {
   padding: 0.5rem;
   cursor: pointer;
 }
-#entes-list option:hover {
+.autocomplete-list li:hover {
   background: #f0f0f0;
 }
 

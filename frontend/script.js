@@ -43,18 +43,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function atualizarDatalist() {
     const ufSel = ufSelect.value;
-    // filtra por UF e extrai nomes únicos
     const entes = todasEntradas
       .filter(item => item.uf === ufSel)
       .map(item => item.ente)
       .filter((v,i,a) => a.indexOf(v) === i);
 
-    // limpa e popula o <datalist>
+    // limpa UL
     datalist.innerHTML = '';
+
+    // popula UL com <li>
     entes.forEach(nome => {
-      const opt = document.createElement('option');
-      opt.value = nome;
-      datalist.appendChild(opt);
+      const li = document.createElement('li');
+      li.textContent = nome;
+      li.addEventListener('click', () => {
+        enteInput.value = nome;
+        datalist.innerHTML = '';
+      });
+      datalist.appendChild(li);
     });
   }
 
