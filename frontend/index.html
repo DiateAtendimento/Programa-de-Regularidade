@@ -45,11 +45,30 @@
         minute: '2-digit',
         timeZone: 'America/Sao_Paulo'
       }).format(hoje);
-      document.getElementById('dataSistema').value = dataBR;
-      document.getElementById('horaSistema').value = horaBR;
+      const d = document.getElementById('dataSistema');
+      const h = document.getElementById('horaSistema');
+      if (d) d.value = dataBR;
+      if (h) h.value = horaBR;
     }
     document.addEventListener('DOMContentLoaded', populaDataSistema);
   </script>
+
+  <!-- CSS do dropdown de autocomplete do Ente -->
+  <style>
+    .position-relative .autocomplete-list{
+      position:absolute; top:100%; left:0; right:0;
+      background:#fff; border:1px solid #ced4da; border-radius:.375rem;
+      margin-top:.25rem; z-index:1000;
+      max-height:240px; overflow-y:auto;
+      list-style:none; padding:0; display:none;
+    }
+    .position-relative .autocomplete-list li{
+      padding:.5rem .75rem; cursor:pointer;
+    }
+    .position-relative .autocomplete-list li:hover{
+      background:#f8f9fa;
+    }
+  </style>
 </head>
 <body>
   <!-- Overlay de animação -->
@@ -140,6 +159,51 @@
             </div>
 
           </div>
+
+          <!-- Critérios (pelo menos 1) -->
+          <fieldset class="mt-4" id="critFieldset">
+            <legend class="form-label">Critérios <span class="text-danger">*</span></legend>
+
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="I – Instituição do RPPS" id="crit1">
+              <label class="form-check-label" for="crit1">I – Instituição do RPPS</label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="II – Recolhimento das contribuições" id="crit2">
+              <label class="form-check-label" for="crit2">II – Recolhimento das contribuições</label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="III – Repasse das contribuições retidas" id="crit3">
+              <label class="form-check-label" for="crit3">III – Repasse das contribuições retidas</label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="IV – Aplicação dos recursos" id="crit4">
+              <label class="form-check-label" for="crit4">IV – Aplicação dos recursos</label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="V – Prestação de contas" id="crit5">
+              <label class="form-check-label" for="crit5">V – Prestação de contas</label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     name="criterios" value="VI – Observância das normas gerais" id="crit6">
+              <label class="form-check-label" for="crit6">VI – Observância das normas gerais</label>
+            </div>
+
+            <div class="invalid-feedback d-block" id="critFeedback" style="display:none">
+              Selecione pelo menos um critério.
+            </div>
+          </fieldset>
         </div>
       </div>
 

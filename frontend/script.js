@@ -1,5 +1,3 @@
-// frontend/script.js
-
 document.addEventListener('DOMContentLoaded', () => {
   const form         = document.getElementById('regularidadeForm');
   const critFeedback = document.getElementById('critFeedback');
@@ -40,12 +38,20 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .catch(err => console.error('Erro ao buscar lista de entes:', err));
 
-  // 2) ao mudar UF ou digitar no Ente
+  // 2) ao mudar UF ou interagir com Ente
   ufSelect.addEventListener('change', () => {
     atualizarDatalist();
     preencherCidade();
   });
+
+  // ao digitar no Ente, mostra/atualiza lista
   enteInput.addEventListener('input', () => {
+    ulList.style.display = 'block';
+    atualizarDatalist();
+  });
+
+  // ao focar no Ente (sem digitar), mostra lista também
+  enteInput.addEventListener('focus', () => {
     ulList.style.display = 'block';
     atualizarDatalist();
   });
@@ -82,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       ulList.appendChild(li);
     });
+
     ulList.style.display = entes.length ? 'block' : 'none';
   }
 
@@ -124,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (![10,11].includes(rawTel.length)) document.getElementById('telefone').classList.add('is-invalid');
     }
 
-    critFeedback.style.display = criteriosValid ? 'none' : 'block';
+    if (critFeedback) critFeedback.style.display = criteriosValid ? 'none' : 'block';
     if (!formValid || !criteriosValid || !maskValid) return;
 
     // coleta dados do form
@@ -141,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const anoSistema  = agora.getFullYear();
 
-    // payload completo, incluindo novo campo CARGO
+    // payload completo, incluindo campo CARGO
     const sheetPayload = {
       CNPJ:        dados.cnpj,
       UF:          dados.uf,
@@ -210,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(`termo.html?${qs.toString()}`, '_blank');
         form.reset();
         form.classList.remove('was-validated');
-        critFeedback.style.display = 'none';
+        if (critFeedback) critFeedback.style.display = 'none';
       } else {
         alert('Erro ao gravar no Google Sheets. Tente novamente.');
       }
