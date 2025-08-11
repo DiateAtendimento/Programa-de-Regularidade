@@ -80,7 +80,6 @@ const corsOpts = {
 };
 
 app.use(cors(corsOpts));
-app.options('*', cors(corsOpts)); // libera preflight globalmente
 
 /* ================================
  * 5) Body parser (limite de JSON)
