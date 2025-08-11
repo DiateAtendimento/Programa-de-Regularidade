@@ -117,18 +117,24 @@ body {
   display: block;
 }
 
+/* Critérios (mensagem genérica, caso use #critFeedback) */
+#critFeedback {
+  color: #dc3545;
+  font-size: .9rem;
+}
 
-/* coloque isso no seu styles.css, depois das regras atuais */
+/* ===== Autocomplete do ENTE ===== */
 
 /* garante que o container do Ente tenha position:relative */
 .position-relative {
   position: relative;
 }
 
-/* 1) transforma o <ul> num dropdown */
+/* dropdown de sugestões  */
 .autocomplete-list {
+  display: none;                /* fica oculto até o JS abrir */
   position: absolute;
-  top: calc(100% + 0.25rem); /* um pouquinho abaixo do input */
+  top: calc(100% + 0.25rem);    /* um pouquinho abaixo do input */
   left: 0;
   right: 0;
   background: #fff;
@@ -139,24 +145,21 @@ body {
   overflow-y: auto;
   z-index: 1000;
 
-  /* remove bullets e espaçamentos */
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-/* 2) estiliza cada item */
+/* item da lista */
 .autocomplete-list li {
   padding: 0.5rem 1rem;
   cursor: pointer;
 }
 
-/* 3) hover */
+/* hover */
 .autocomplete-list li:hover {
   background: #f1f5f9;
 }
-
-
 
 /* 8) Ajustes para mobile */
 @media (max-width: 576px) {
@@ -181,4 +184,3 @@ body {
     width: 120px;
   }
 }
-

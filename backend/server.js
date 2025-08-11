@@ -11,26 +11,25 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const app = express();
 
-// 1) Segurança básica
+/* ================================
+ * 1) Segurança básica (Helmet + headers)
+ * ================================ */
 app.disable('x-powered-by');
-app.use(helmet());
+
+// ajustes para evitar conflitos com pdf/canvas e recursos externos
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginEmbedderPolicy: false
+}));
+
+// CSP enxuta; ajuste domínios se precisar
 app.use(
   helmet.contentSecurityPolicy({
     useDefaults: true,
     directives: {
       "default-src": ["'self'"],
-      "script-src": [
-        "'self'",
-        "https://cdn.jsdelivr.net",
-        "https://cdnjs.cloudflare.com",
-        "'unsafe-inline'"
-      ],
-      "style-src": [
-        "'self'",
-        "https://cdn.jsdelivr.net",
-        "https://fonts.googleapis.com",
-        "'unsafe-inline'"
-      ],
+      "script-src": ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
+      "style-src": ["'self'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com", "'unsafe-inline'"],
       "font-src": ["'self'", "https://fonts.gstatic.com"],
       "img-src": ["'self'", "data:"],
       "connect-src": ["'self'", "https://programa-de-regularidade.onrender.com"],
@@ -40,7 +39,9 @@ app.use(
   })
 );
 
-// 2) Rate limiting
+/* ================================
+ * 2) Rate limiting
+ * ================================ */
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
@@ -50,62 +51,78 @@ app.use(
   })
 );
 
-// 3) Prevenção de HTTP Parameter Pollution
+/* ================================
+ * 3) Prevenção de HTTP Parameter Pollution
+ * ================================ */
 app.use(hpp());
 
-// 4) CORS
+/* ================================
+ * 4) CORS (inclui OPTIONS / preflight)
+ * ================================ */
 const allowedOrigins = [
-  process.env.CORS_ORIGIN,
   "https://programa-de-regularidade.netlify.app",
-];
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        cb(null, true);
-      } else {
-        cb(new Error(`Origin ${origin} não autorizada pelo CORS`));
-      }
-    },
-    methods: ["GET", "POST"],
-  })
-);
+  process.env.CORS_ORIGIN // opcional via .env
+].filter(Boolean);
 
-// 5) Body parser
+const corsOpts = {
+  origin: (origin, cb) => {
+    // permite requisições sem Origin (ex.: curl, healthchecks)
+    if (!origin) return cb(null, true);
+
+    const ok = allowedOrigins.some(o =>
+      origin === o || (o.endsWith('.netlify.app') && origin.endsWith('.netlify.app'))
+    );
+    return ok ? cb(null, true) : cb(new Error(`Origin não autorizada: ${origin}`));
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false
+};
+
+app.use(cors(corsOpts));
+app.options('*', cors(corsOpts)); // libera preflight globalmente
+
+/* ================================
+ * 5) Body parser (limite de JSON)
+ * ================================ */
 app.use(express.json({ limit: "10kb" }));
 
-// 6) Servir frontend estático + animações
+/* ================================
+ * 6) Arquivos estáticos (frontend + animações)
+ * ================================ */
 app.use("/", express.static(path.join(__dirname, "../frontend")));
-app.use(
-  "/animacao",
-  express.static(path.join(__dirname, "../frontend/animacao"))
-);
+app.use("/animacao", express.static(path.join(__dirname, "../frontend/animacao")));
 
-// 7) Carrega credenciais do Google Sheets
-const credsPath = path.resolve(
-  __dirname,
-  process.env.CREDENTIALS_JSON_PATH
-);
+/* ================================
+ * 7) Credenciais do Google Sheets
+ * ================================ */
+const credsPath = path.resolve(__dirname, process.env.CREDENTIALS_JSON_PATH);
 if (!fs.existsSync(credsPath)) {
   console.error(`❌ credentials.json não encontrado em ${credsPath}`);
   process.exit(1);
 }
 const creds = require(credsPath);
 
-// 8) Configuração do GoogleSpreadsheet
+/* ================================
+ * 8) Configuração do GoogleSpreadsheet
+ * ================================ */
 const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
 async function authSheets() {
   await doc.useServiceAccountAuth(creds);
   await doc.loadInfo();
 }
 
-// 9) Endpoint para gravar na aba "Dados"
+/* ================================
+ * 9) Endpoints
+ * ================================ */
+
+// 9.0) Gravar na aba "Dados"
 app.post("/api/gerar-termo", async (req, res) => {
   try {
     await authSheets();
     const sheet = doc.sheetsByTitle["Dados"];
 
-    // gerar timestamp PT-BR / São Paulo
+    // timestamp PT-BR (fuso São Paulo)
     const now = new Date();
     const timestampDate = now.toLocaleDateString("pt-BR");
     const timestampTime = now.toLocaleTimeString("pt-BR", {
@@ -113,9 +130,8 @@ app.post("/api/gerar-termo", async (req, res) => {
       timeZone: "America/Sao_Paulo",
     });
 
-    // req.body já contém CNPJ, UF, ENTE, CARGO, CPF, NOME, etc.
     const row = {
-      ...req.body,
+      ...req.body,   // CNPJ, UF, ENTE, CARGO, CPF, NOME, etc.
       DATA: timestampDate,
       HORA: timestampTime,
     };
@@ -124,32 +140,30 @@ app.post("/api/gerar-termo", async (req, res) => {
     return res.json({ ok: true });
   } catch (err) {
     console.error("❌ Falha ao gravar no Google Sheets:", err);
-    return res
-      .status(500)
-      .json({ error: "Failed to write to Google Sheets." });
+    return res.status(500).json({ error: "Failed to write to Google Sheets." });
   }
 });
 
-// 9.1) Endpoint para fornecer lista de entes (autocomplete)
-app.get("/api/entes", async (req, res) => {
+// 9.1) Lista de entes para autocomplete (aba "Fonte")
+app.get("/api/entes", async (_req, res) => {
   try {
     await authSheets();
     const fonteSheet = doc.sheetsByTitle["Fonte"];
     const rows = await fonteSheet.getRows();
     const entes = rows.map((r) => ({
-      uf: r.UF.trim(),
-      ente: r.ENTE.trim(),
+      uf: (r.UF || '').toString().trim(),
+      ente: (r.ENTE || '').toString().trim(),
     }));
     return res.json(entes);
   } catch (err) {
     console.error("❌ Falha ao buscar entes:", err);
-    return res
-      .status(500)
-      .json({ error: "Erro interno ao obter lista de entes." });
+    return res.status(500).json({ error: "Erro interno ao obter lista de entes." });
   }
 });
 
-// 10) Inicia servidor
+/* ================================
+ * 10) Inicia servidor
+ * ================================ */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server rodando na porta ${PORT}`);
