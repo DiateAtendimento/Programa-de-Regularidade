@@ -4,25 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Termo de Regularidade Previdenciária – CRP</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="termo.css" />
 </head>
 <body>
 
-  <!-- 5) Botão de download no topo -->
-  <div class="download-wrap top">
+  <!-- Botão de download -->
+  <div class="download-wrap">
     <button id="btn-download" class="btn-download">📥 Baixar PDF</button>
   </div>
 
-  <div class="term-container" id="term-content">
+  <!-- Raiz do conteúdo a ser convertido -->
+  <main id="pdf-root" class="term-wrap">
 
-    <header class="term-header">
-      <img src="imagens/logo-termo-mps.svg" alt="Logo MPS" class="logo" />
-      <img src="imagens/logo-termo-drpps.svg" alt="Logo DRPPS" class="logo" />
+    <!-- Cabeçalho (logo na tela + título em 1 linha) -->
+    <header class="page-head">
+      <h1 id="term-title" class="term-title" title="TERMO DE REGULARIDADE PREVIDENCIÁRIA – CRP">
+        TERMO DE REGULARIDADE PREVIDENCIÁRIA – CRP
+      </h1>
+
+      <!-- Logo para a TELA (SVG). Escondido no momento de gerar o PDF -->
+      <img id="logoScreen" class="mps-logo screen-only"
+           src="imagens/logo-termo-mps.svg"
+           alt="Ministério da Previdência Social" />
     </header>
 
-    <h1 class="term-title">TERMO DE REGULARIDADE PREVIDENCIÁRIA – CRP</h1>
-
-    <!-- 1. IDENTIFICAÇÃO -->
     <section class="term-section">
       <h2>1. IDENTIFICAÇÃO</h2>
       <p><strong>1.1. Ente Federativo:</strong> {{ente}}</p>
@@ -30,7 +38,6 @@
       <p><strong>1.3. Unidade da Federação:</strong> {{uf}}</p>
     </section>
 
-    <!-- 2. DADOS PESSOAIS -->
     <section class="term-section">
       <h2>2. DADOS PESSOAIS</h2>
       <p><strong>2.1. CPF:</strong> {{cpf}}</p>
@@ -41,7 +48,6 @@
       <p><strong>2.6. Endereço:</strong> {{endereco}}</p>
     </section>
 
-    <!-- 3. DO OBJETO -->
     <section class="term-section">
       <h2>3. DO OBJETO</h2>
       <p>
@@ -52,7 +58,6 @@
       </p>
     </section>
 
-    <!-- 4. FUNDAMENTAÇÃO LEGAL -->
     <section class="term-section">
       <h2>4. FUNDAMENTAÇÃO LEGAL</h2>
       <ul>
@@ -63,15 +68,11 @@
       </ul>
     </section>
 
-    <!-- 5. CRITÉRIOS -->
     <section class="term-section">
       <h2>5. CRITÉRIOS</h2>
-      <ul id="criterios-list">
-        <!-- Será preenchido via JS -->
-      </ul>
+      <ul id="criterios-list"><!-- preenchido via JS --></ul>
     </section>
-    
-    <!-- 6. DAS DECLARAÇÕES -->
+
     <section class="term-section">
       <h2>6. DAS DECLARAÇÕES</h2>
       <ul>
@@ -92,7 +93,6 @@
       </ul>
     </section>
 
-    <!-- 7. VIGÊNCIA DA CERTIDÃO -->
     <section class="term-section">
       <h2>7. VIGÊNCIA DA CERTIDÃO</h2>
       <p>
@@ -101,7 +101,6 @@
       </p>
     </section>
 
-    <!-- 8. DISPOSIÇÕES GERAIS -->
     <section class="term-section">
       <h2>8. DISPOSIÇÕES GERAIS</h2>
       <ul>
@@ -117,7 +116,6 @@
       </ul>
     </section>
 
-    <!-- 9. FORO -->
     <section class="term-section">
       <h2>9. FORO</h2>
       <p>
@@ -127,44 +125,121 @@
       </p>
     </section>
 
-    <!-- RODAPÉ: data e assinatura -->
+    <!-- Rodapé: data e assinatura -->
     <footer class="term-footer">
-      <p>{{cidade}}, {{dia}} de {{mes}} de {{ano}}.</p><br><br>
-      <p>__________________________________________</p>
-      <p>Responsável Legal do Aderente ou Representante do RPPS</p>
-      <p>{{responsavel}}</p>
+      <p class="place-date">{{cidade}}, {{dia}} de {{mes}} de {{ano}}.</p>
+      <div class="signature-line" aria-hidden="true"></div>
+      <p class="signature-caption">Responsável Legal do Aderente ou Representante do RPPS</p>
+      <p class="signature-name">{{responsavel}}</p>
     </footer>
-  </div>
+  </main>
 
+  <!-- Pré-carrega a logo PNG (usada para carimbar no PDF) -->
+  <img id="logoPng" src="imagens/logo-termo-mps.png" alt="" crossOrigin="anonymous" style="display:none" />
+
+  <!-- libs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+
   <script>
-    const params = new URLSearchParams(window.location.search);
+    // ======= util: substitui {{chaves}} e lista de critérios =======
+    (function hydrateFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      // placeholders
+      document.querySelectorAll('.term-wrap p, .term-wrap li, .term-wrap h2').forEach(el => {
+        el.innerHTML = el.innerHTML.replace(/\{\{([^{}]+)\}\}/g, (_, key) => {
+          return (params.get(key) || '').toString();
+        });
+      });
+      // critérios
+      const ul = document.getElementById('criterios-list');
+      const criterios = params.getAll('criterios');
+      criterios.forEach(text => {
+        const li = document.createElement('li');
+        li.textContent = text;
+        ul.appendChild(li);
+      });
+    })();
 
-    // Preenche placeholders {{campo}}
-    document.querySelectorAll('.term-container p, .term-container li').forEach(el => {
-      el.textContent = el.textContent.replace(/\{\{([^{}]+)\}\}/g, (_, key) =>
-        params.get(key) || ''
-      );
-    });
+    // ======= deixa o H1 sempre em uma linha (reduzindo fonte se necessário) =======
+    function fitTitleOneLine() {
+      const title = document.getElementById('term-title');
+      const maxPx = 28; // topo
+      const minPx = 18; // piso de legibilidade
+      title.style.whiteSpace = 'nowrap';
+      title.style.fontSize = maxPx + 'px';
+      // reduz até caber
+      while (title.scrollWidth > title.clientWidth && parseFloat(title.style.fontSize) > minPx) {
+        title.style.fontSize = (parseFloat(title.style.fontSize) - 0.5) + 'px';
+      }
+    }
+    window.addEventListener('load', fitTitleOneLine);
+    window.addEventListener('resize', fitTitleOneLine);
 
-    // Renderiza critérios
-    const ul = document.getElementById('criterios-list');
-    params.getAll('criterios').forEach(text => {
-      const li = document.createElement('li');
-      li.textContent = text;
-      ul.appendChild(li);
-    });
+    // ======= helper: converte <img> em dataURL para jsPDF.addImage =======
+    function imgToDataURL(imgEl) {
+      return new Promise((resolve) => {
+        if (imgEl.complete) {
+          const canvas = document.createElement('canvas');
+          canvas.width = imgEl.naturalWidth;
+          canvas.height = imgEl.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(imgEl, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          imgEl.onload = () => resolve(imgToDataURL(imgEl));
+        }
+      });
+    }
 
-    // Download
-    document.getElementById('btn-download').addEventListener('click', () => {
-      html2pdf().set({
-        margin: 10,
+    // ======= gerar PDF, centralizado e com logo em TODAS as páginas =======
+    document.getElementById('btn-download').addEventListener('click', async () => {
+      fitTitleOneLine();
+
+      const root = document.getElementById('pdf-root');
+      // oculta a logo SVG de tela para não duplicar no PDF
+      root.classList.add('pdf-export');
+
+      // carrega a logo PNG como dataURL para carimbar via jsPDF
+      const logoImg = document.getElementById('logoPng');
+      const logoDataUrl = await imgToDataURL(logoImg);
+      const logoRatio = logoImg.naturalHeight / logoImg.naturalWidth;
+
+      const opt = {
+        margin: 0, // margens controladas pela própria .term-wrap (padding em mm)
         filename: 'termo_crp.pdf',
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      })
-      .from(document.getElementById('term-content'))
-      .save();
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0,
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      };
+
+      // pipeline: gera PDF -> injeta logo em cada página -> salva
+      const worker = html2pdf().set(opt).from(root).toPdf();
+
+      worker.get('pdf').then(pdf => {
+        const getPages = pdf.getNumberOfPages ? pdf.getNumberOfPages() : pdf.internal.getNumberOfPages();
+        const pageW = pdf.internal.pageSize.getWidth();
+
+        // mesma posição/tamanho em todas as páginas
+        const rightPadding = 15;     // mm (mesma da .term-wrap)
+        const topPadding   = 15;     // mm
+        const logoWmm      = 25;     // mm (ajuste fino aqui)
+        const logoHmm      = logoWmm * logoRatio;
+
+        for (let i = 1; i <= getPages; i++) {
+          pdf.setPage(i);
+          pdf.addImage(logoDataUrl, 'PNG', pageW - rightPadding - logoWmm, topPadding, logoWmm, logoHmm, undefined, 'FAST');
+        }
+      }).save().then(() => {
+        root.classList.remove('pdf-export');
+      }).catch(() => {
+        root.classList.remove('pdf-export');
+      });
     });
   </script>
 </body>

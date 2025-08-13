@@ -1,92 +1,138 @@
+/* ---------- Variáveis de página A4 ---------- */
+:root{
+  --page-w: 210mm;
+  --page-h: 297mm;
+  --pad: 15mm;                 /* “margem” visual (usada também no PDF) */
+  --content-w: calc(var(--page-w) - 2 * var(--pad));
+  --brand: #0b2240;            /* azul do título */
+  --text: #333;
+}
+
 /* Reset básico */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-body {
-  font-family: 'Inter', sans-serif;
-  color: #333;
-  background: #f2f2f2;
-  padding: 2rem 0;
+*{ box-sizing: border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+body{
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+  background: #eef3f9;
 }
 
-/* Container principal do termo */
-.term-container {
-  background: #fff;
-  max-width: 800px;
+/* Botão topo */
+.download-wrap{
+  text-align:center;
+  margin: 1.2rem 0;
+}
+.btn-download{
+  background:#2563eb;
+  color:#fff;
+  border:none;
+  padding:.8rem 1.2rem;
+  font-size:1rem;
+  border-radius:.6rem;
+  box-shadow: 0 8px 24px rgba(37,99,235,.25);
+  cursor:pointer;
+}
+.btn-download:hover{ background:#1e4db7; }
+
+/* ---------- Página container (tela e PDF) ---------- */
+.term-wrap{
+  position: relative;
+  width: var(--content-w);
+  padding: var(--pad);
   margin: 0 auto;
-  padding: 2rem 3rem;
-  box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
-  border-radius: 0.5rem;
+  background:#fff;
+  border-radius: 12px;
+  /* Sombras só na tela; removidas no PDF pela classe .pdf-export */
+  box-shadow: 0 20px 45px rgba(2,22,58,.10), 0 8px 14px rgba(2,22,58,.06);
 }
 
-/* Cabeçalho: logos alinhadas à direita */
-.term-header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+/* Ao exportar PDF, esconda decorações de tela */
+.pdf-export{
+  box-shadow:none !important;
 }
-.logo.termo-logo {
-  width: 200px;
-  height: 200px;
-  object-fit: contain;
+.pdf-export .screen-only{
+  display:none !important;
 }
 
-/* Título */
-.term-title {
-  text-align: center;
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
+/* ---------- Cabeçalho ---------- */
+.page-head{
+  display:flex;
+  align-items:baseline;
+  gap: 12mm;
+  margin-bottom: 10mm;
+}
+.term-title{
+  color: var(--brand);
+  font-weight: 800;
+  /* Começa nessa fonte; JS diminui se precisar caber em 1 linha */
+  font-size: 28px;
+  line-height: 1.2;
+  white-space: nowrap;  /* garantir uma linha */
+  flex: 1 1 auto;
+  min-width: 0;         /* permite encolher */
+  padding-right: 30mm;
+  margin-top: 6rem;
+}
+.mps-logo{
+  position: absolute;
+  top: var(--pad);
+  right: var(--pad);
+  width: 25mm;
+  height: auto;
 }
 
-/* Seções do termo */
-.term-section + .term-section {
-  margin-top: 1.25rem;
+/* ---------- Tipografia ---------- */
+.term-section + .term-section{ margin-top: 8mm; }
+.term-section h2{
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--brand);
+  margin-bottom: 3mm;
 }
-.term-section h2 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-}
+
+/* Justificar texto dos parágrafos e itens de lista das seções */
 .term-section p,
-.term-section ul {
-  margin-left: 1rem;
-}
-.term-section ul {
-  list-style-type: disc;
-}
-.term-section ul li {
-  margin-bottom: 0.5rem;
-}
-
-/* Rodapé centralizado */
-.term-footer {
-  margin-top: 2rem;
-  text-align: center;
-}
-.term-footer p {
-  margin-bottom: 0.5rem;
+.term-section li {
+  text-align: justify;
+  text-justify: inter-word;   /* melhora distribuição entre palavras */
+  hyphens: auto;              /* hifenização automática */
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  overflow-wrap: anywhere;    /* evita estouro em palavras muito longas */
 }
 
-.download-wrap {
-  text-align: center;
-  margin-top: 2rem;
+.term-section p{ margin: 1.5mm 0; }
+.term-section ul{ margin-left: 6mm; }
+.term-section ul li{ margin: 1.5mm 0; }
+
+/* ---------- Rodapé (centralizado) ---------- */
+.term-footer{
+  margin-top: 12mm;
+  text-align:center;
 }
-.btn-download {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: background 0.2s;
+.place-date{ margin: 6mm 0; }
+.signature-line{
+  width: 70%;
+  height: 0;
+  border-bottom: 1.8px solid #0b2240;
+  margin: 8mm auto 3mm auto;
 }
-.btn-download:hover {
-  background: #1e4db7;
+.signature-caption{
+  font-size: 14px;
+  color:#374151;
+  margin-bottom: 2mm;
+}
+.signature-name{
+  font-weight: 600;
 }
 
+/* ---------- Regras utilitárias ---------- */
+/* Evita quebras ruins perto dos subtítulos */
+.term-section h2{ break-after: avoid; }
+
+/* Pequenas melhorias em telas estreitas (visualização mobile) */
+@media (max-width: 900px){
+  .term-wrap{ width: 100%; border-radius:10px; }
+  .page-head{ gap: 16px; }
+  .mps-logo{ width: 100px; flex-basis: 100px; }
+}
