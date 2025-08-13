@@ -212,13 +212,12 @@ document.addEventListener('DOMContentLoaded', () => {
       overlay.style.display = 'none';
       anim.destroy();
       if (savedOK) {
-        // 🔽 ALTERAÇÃO PRINCIPAL: adiciona auto=1 para baixar direto
         const qs = new URLSearchParams();
         ['cnpj','uf','ente','cargo','cpf','nome','telefone','email','endereco','cidade','dia','mes','ano','responsavel']
           .forEach(k => qs.set(k, dados[k]));
         criterios.forEach(c => qs.append('criterios', c));
 
-        // abre em nova aba para o navegador permitir o download automático
+        // 👉 Alteração: abre o termo com auto=1 para baixar direto, em nova aba
         window.open(`termo.html?auto=1&${qs.toString()}`, '_blank', 'noopener');
 
         form.reset();
