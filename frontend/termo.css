@@ -15,6 +15,10 @@ body{
   font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: var(--text);
   background: #eef3f9;
+  font-weight: 400;
+  font-synthesis: none; /* evita negrito/itálico sintéticos */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Botão topo */
@@ -70,7 +74,7 @@ body{
   white-space: nowrap;  /* garantir uma linha */
   flex: 1 1 auto;
   min-width: 0;         /* permite encolher */
-  padding-right: 30mm;
+  padding-right: 30mm;  /* espaço visual do lado da logo */
   margin-top: 6rem;
 }
 .mps-logo{
@@ -89,21 +93,37 @@ body{
   color: var(--brand);
   margin-bottom: 3mm;
 }
+strong, b { font-weight: 700; }
 
 /* Justificar texto dos parágrafos e itens de lista das seções */
 .term-section p,
 .term-section li {
   text-align: justify;
-  text-justify: inter-word;   /* melhora distribuição entre palavras */
-  hyphens: auto;              /* hifenização automática */
+  text-justify: inter-word;
+  hyphens: auto;
   -webkit-hyphens: auto;
   -ms-hyphens: auto;
-  overflow-wrap: anywhere;    /* evita estouro em palavras muito longas */
+  overflow-wrap: break-word;     /* evita estouro mantendo naturalidade */
+}
+
+.pdf-export .term-section p,
+.pdf-export .term-section li{
+  hyphens: none;                 /* evita micro sobreposição no raster */
+  overflow-wrap: break-word;
 }
 
 .term-section p{ margin: 1.5mm 0; }
 .term-section ul{ margin-left: 6mm; }
 .term-section ul li{ margin: 1.5mm 0; }
+
+/* ---------- Regras de quebra de página ---------- */
+.keep-together{ break-inside: avoid; page-break-inside: avoid; } /* Seção 5 não quebra */
+.break-before{ break-before: page; page-break-before: always; }
+
+/* Espaçador no topo da PÁGINA 2 para o conteúdo começar abaixo da logo carimbada */
+.logo-guard{
+  height: 30mm;     /* ajuste fino conforme o tamanho da sua logo no PDF */
+}
 
 /* ---------- Rodapé (centralizado) ---------- */
 .term-footer{
@@ -126,13 +146,9 @@ body{
   font-weight: 600;
 }
 
-/* ---------- Regras utilitárias ---------- */
-/* Evita quebras ruins perto dos subtítulos */
-.term-section h2{ break-after: avoid; }
-
 /* Pequenas melhorias em telas estreitas (visualização mobile) */
 @media (max-width: 900px){
   .term-wrap{ width: 100%; border-radius:10px; }
   .page-head{ gap: 16px; }
-  .mps-logo{ width: 100px; flex-basis: 100px; }
+  .mps-logo{ width: 100px; }
 }

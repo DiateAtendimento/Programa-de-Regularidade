@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Termo de Regularidade Previdenciária – CRP</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <!-- Webfonts (todos os pesos usados) -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=block" rel="stylesheet">
 
   <link rel="stylesheet" href="termo.css" />
 </head>
@@ -48,6 +50,11 @@
       <p><strong>2.6. Endereço:</strong> {{endereco}}</p>
     </section>
 
+    <section class="term-section keep-together" id="sec-5">
+      <h2>5. CRITÉRIOS</h2>
+      <ul id="criterios-list"><!-- preenchido via JS --></ul>
+    </section>
+
     <section class="term-section">
       <h2>3. DO OBJETO</h2>
       <p>
@@ -68,12 +75,10 @@
       </ul>
     </section>
 
-    <section class="term-section">
-      <h2>5. CRITÉRIOS</h2>
-      <ul id="criterios-list"><!-- preenchido via JS --></ul>
-    </section>
-    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-    <section class="term-section">
+    <!-- Força nova página ANTES da seção 6 e reserva espaço para a logo do PDF -->
+    <div class="logo-guard break-before" aria-hidden="true"></div>
+
+    <section class="term-section" id="sec-6">
       <h2>6. DAS DECLARAÇÕES</h2>
       <ul>
         <li>
@@ -82,7 +87,7 @@
           à manutenção do Fundo Previdenciário;
         </li>
         <li>
-          Encontra-se em dia com a apresentação dos Demonstrativos de Informações 
+          Encontra-se em dia com a apresentação dos Demonstrativos de Informações
           Previdenciárias (DIP) e dos Demonstrativos de Repasses (DPR) exigidos
           pelos órgãos de controle, na forma e nos prazos legais;
         </li>
@@ -134,7 +139,7 @@
     </footer>
   </main>
 
-  <!-- Pré-carrega a logo PNG (usada para carimbar no PDF) -->
+  <!-- Logo PNG usada para carimbar no PDF -->
   <img id="logoPng" src="imagens/logo-termo-mps.png" alt="" crossOrigin="anonymous" style="display:none" />
 
   <!-- libs -->
@@ -196,6 +201,10 @@
       fitTitleOneLine();
 
       const root = document.getElementById('pdf-root');
+
+      // aguarda as webfonts para não “trocar” peso no PDF
+      try { await document.fonts.ready; } catch {}
+
       // oculta a logo SVG de tela para não duplicar no PDF
       root.classList.add('pdf-export');
 
@@ -209,10 +218,11 @@
         filename: 'termo_crp.pdf',
         html2canvas: {
           scale: 2,
+          letterRendering: 1,
           useCORS: true,
           backgroundColor: '#ffffff',
           scrollX: 0,
-          scrollY: 0,
+          scrollY: 0
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
@@ -228,7 +238,7 @@
         // mesma posição/tamanho em todas as páginas
         const rightPadding = 15;     // mm (mesma da .term-wrap)
         const topPadding   = 15;     // mm
-        const logoWmm      = 25;     // mm (ajuste fino aqui)
+        const logoWmm      = 25;     // mm
         const logoHmm      = logoWmm * logoRatio;
 
         for (let i = 1; i <= getPages; i++) {
