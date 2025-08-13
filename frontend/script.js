@@ -1,3 +1,5 @@
+// script.js
+
 document.addEventListener('DOMContentLoaded', () => {
   const form         = document.getElementById('regularidadeForm');
   const critFeedback = document.getElementById('critFeedback');
@@ -210,11 +212,15 @@ document.addEventListener('DOMContentLoaded', () => {
       overlay.style.display = 'none';
       anim.destroy();
       if (savedOK) {
+        // 🔽 ALTERAÇÃO PRINCIPAL: adiciona auto=1 para baixar direto
         const qs = new URLSearchParams();
         ['cnpj','uf','ente','cargo','cpf','nome','telefone','email','endereco','cidade','dia','mes','ano','responsavel']
           .forEach(k => qs.set(k, dados[k]));
         criterios.forEach(c => qs.append('criterios', c));
-        window.open(`termo.html?${qs.toString()}`, '_blank');
+
+        // abre em nova aba para o navegador permitir o download automático
+        window.open(`termo.html?auto=1&${qs.toString()}`, '_blank', 'noopener');
+
         form.reset();
         form.classList.remove('was-validated');
         if (critFeedback) critFeedback.style.display = 'none';

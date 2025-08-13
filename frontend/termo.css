@@ -69,7 +69,7 @@ body{
   color: var(--brand);
   font-weight: 800;
   /* Começa nessa fonte; JS diminui se precisar caber em 1 linha */
-  font-size: 28px;
+  font-size: 20px;
   line-height: 1.2;
   white-space: nowrap;  /* garantir uma linha */
   flex: 1 1 auto;
@@ -145,6 +145,12 @@ strong, b { font-weight: 700; }
 .signature-name{
   font-weight: 600;
 }
+
+
+/* Modo auto: não mostra nada enquanto gera */
+.auto-download .download-wrap,
+.auto-download .term-wrap{ display:none !important; }
+
 
 /* Pequenas melhorias em telas estreitas (visualização mobile) */
 @media (max-width: 900px){

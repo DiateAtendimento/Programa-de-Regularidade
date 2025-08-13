@@ -251,6 +251,23 @@
         root.classList.remove('pdf-export');
       });
     });
+
+    // ----- Modo automático -----
+    (async function init() {
+      hydrateFromQuery();
+      window.addEventListener('load', fitTitleOneLine);
+      window.addEventListener('resize', fitTitleOneLine);
+
+      document.getElementById('btn-download').addEventListener('click', generatePdf);
+
+      const auto = new URLSearchParams(location.search).get('auto');
+      if (auto !== null) {
+        document.documentElement.classList.add('auto-download'); // esconde enquanto gera
+        await generatePdf();
+        try { window.close(); } catch {}
+      }
+    })();
+
   </script>
 </body>
 </html>
