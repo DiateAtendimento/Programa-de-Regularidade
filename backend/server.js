@@ -1,4 +1,6 @@
-// server.js — API RPPS (multi-etapas)
+// server.js — API RPPS (multi-etapas): CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP,
+// gravação em Termos_registrados e log em Reg_alteracao_dados_ente_ug
+
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
@@ -11,22 +13,20 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const app = express();
 
-/* ───────── Segurança ───────── */
+/* ───────────────── Segurança ──────────────── */
 app.disable('x-powered-by');
 
-// helper: quebra em lista (vírgula ou espaço) e remove barra final
-const splitList = (s='') => s.split(/[,\s]+/).map(v=>v.trim().replace(/\/+$/,'')).filter(Boolean);
+// util: lista de origens sem barra final
+const splitList = (s = '') =>
+  s.split(/[\s,]+/).map(v => v.trim().replace(/\/+$/, '')).filter(Boolean);
 
-// >>> une CORS_ORIGIN e CORS_ORIGIN_LIST
-const originList = splitList(
-  [process.env.CORS_ORIGIN, process.env.CORS_ORIGIN_LIST].filter(Boolean).join(' ')
-);
-const connectExtra = originList.slice();
+const connectExtra = splitList(process.env.CORS_ORIGIN || process.env.CORS_ORIGIN_LIST || '');
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   crossOriginEmbedderPolicy: false,
 }));
+
 app.use(helmet.contentSecurityPolicy({
   useDefaults: true,
   directives: {
@@ -45,218 +45,396 @@ app.use(helmet.contentSecurityPolicy({
   },
 }));
 
-app.use(rateLimit({ windowMs: 15*60*1000, max: 300, standardHeaders: true, legacyHeaders: false }));
+app.use(rateLimit({ windowMs: 15*60*1000, max: 400, standardHeaders: true, legacyHeaders: false }));
 app.use(hpp());
-app.use(express.json({ limit: '200kb' }));
+app.use(express.json({ limit: '300kb' }));
 
-/* ───────── CORS ───────── */
+/* ───────────────── CORS ───────────────── */
+const allowed = [
+  ...(splitList(process.env.CORS_ORIGIN_LIST || '')),
+  ...(splitList(process.env.CORS_ORIGIN || ''))
+].filter(Boolean);
+
+console.log('🔐 CORS liberado para:', JSON.stringify(allowed, null, 2));
+
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin) return cb(null, true); // same-origin
-    const o = origin.replace(/\/+$/,'');
-    const ok = originList.length ? originList.includes(o) : true;
-    if (ok) return cb(null, true);
-    return cb(new Error(`Origin não autorizada: ${origin}. Permitidas: ${originList.join(', ') || 'todas'}`));
+    if (!origin) return cb(null, true);
+    const o = origin.replace(/\/+$/, '');
+    const ok = allowed.length ? allowed.includes(o) : true;
+    return ok ? cb(null, true) : cb(new Error(`Origin não autorizada: ${origin}`));
   },
   methods: ['GET','POST','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
-  credentials: false,
+  allowedHeaders: ['Content-Type','Authorization']
 }));
-console.log('🔐 CORS liberado para:', originList.length ? originList : '(todas as origens)');
 
-/* ───────── Static ───────── */
+/* ─────────────── Static ─────────────── */
 app.use('/', express.static(path.join(__dirname, '../frontend')));
 
-/* ───────── Google Sheets ───────── */
+/* ───────────── Google Sheets ───────────── */
 const SHEET_ID = process.env.SHEET_ID;
-if (!SHEET_ID) { console.error('❌ Defina SHEET_ID no .env'); process.exit(1); }
+if (!SHEET_ID) {
+  console.error('❌ Defina SHEET_ID no .env');
+  process.exit(1);
+}
 
+// credenciais: arquivo ou base64
 let creds;
 if (process.env.GOOGLE_CREDENTIALS_B64) {
-  try { creds = JSON.parse(Buffer.from(process.env.GOOGLE_CREDENTIALS_B64,'base64').toString('utf8')); }
-  catch { console.error('❌ GOOGLE_CREDENTIALS_B64 inválido.'); process.exit(1); }
+  try {
+    creds = JSON.parse(Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, 'base64').toString('utf8'));
+  } catch {
+    console.error('❌ GOOGLE_CREDENTIALS_B64 inválido.');
+    process.exit(1);
+  }
 } else {
   const credsPath = path.resolve(__dirname, process.env.CREDENTIALS_JSON_PATH || 'credentials.json');
-  if (!fs.existsSync(credsPath)) { console.error(`❌ credentials.json não encontrado em ${credsPath}`); process.exit(1); }
+  if (!fs.existsSync(credsPath)) {
+    console.error(`❌ credentials.json não encontrado em ${credsPath}`);
+    process.exit(1);
+  }
   creds = require(credsPath);
 }
 
 const doc = new GoogleSpreadsheet(SHEET_ID);
-async function authSheets(){ await doc.useServiceAccountAuth(creds); await doc.loadInfo(); }
+
+async function authSheets() {
+  await doc.useServiceAccountAuth(creds);
+  await doc.loadInfo();
+}
+
 const norm = v => (v ?? '').toString().trim();
 const low  = v => norm(v).toLowerCase();
 const digits = v => norm(v).replace(/\D+/g,'');
 
 function nowBR(){
-  const tz='America/Sao_Paulo', d=new Date();
+  const tz = 'America/Sao_Paulo';
+  const d = new Date();
   return {
-    DATA: d.toLocaleDateString('pt-BR',{timeZone:tz}),
-    HORA: d.toLocaleTimeString('pt-BR',{hour12:false,timeZone:tz}),
-    ANO: d.getFullYear(),
-    MES: String(d.getMonth()+1).padStart(2,'0'),
+    DATA: d.toLocaleDateString('pt-BR',{ timeZone: tz }),
+    HORA: d.toLocaleTimeString('pt-BR',{ timeZone: tz, hour12: false }),
+    ANO:  d.getFullYear(),
+    MES:  String(d.getMonth()+1).padStart(2,'0')
   };
 }
-async function getSheet(title){ const s = doc.sheetsByTitle[title]; if(!s) throw new Error(`Aba '${title}' não encontrada.`); return s; }
-function esferaFromEnte(ente){ return low(ente).includes('governo do estado') ? 'Estadual/Distrital' : 'RPPS Municipal'; }
 
-function findHeader(headers, ...contains){
-  const hnorm = headers.map(h=>({raw:h, n: low(h)}));
-  for(const h of hnorm){ if(contains.every(c=>h.n.includes(c))) return h.raw; }
-  return null;
-}
-function parseDateYMDorDMY(s){
-  const v = norm(s); if(!v) return null;
-  if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(v+'T00:00:00');
-  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if(m) return new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00`);
-  const d = new Date(v); return isNaN(d)?null:d;
+async function getSheet(title){
+  const s = doc.sheetsByTitle[title];
+  if(!s) throw new Error(`Aba '${title}' não encontrada.`);
+  return s;
 }
 
-/* ───────── ROTAS ───────── */
+function esferaFromEnte(ente){
+  return low(ente).includes('governo do estado') ? 'Estadual/Distrital' : 'RPPS Municipal';
+}
 
-// GET /api/consulta?cnpj=...
-app.get('/api/consulta', async (req,res)=>{
-  try{
-    const cnpj = digits(req.query.cnpj||'');
-    if(cnpj.length!==14) return res.status(400).json({error:'CNPJ inválido.'});
+/* ───── Helpers p/ cabeçalhos duplicados ───── */
+
+// Fallback baseado em cells quando getRows() falha por headers duplicados
+async function getRowsViaCells(sheet) {
+  await sheet.loadHeaderRow();
+  const headers = (sheet.headerValues || []).map(h => norm(h));
+
+  // gera nomes únicos: Header, Header__2, Header__3 ...
+  const seen = {};
+  const headersUnique = headers.map(h => {
+    if (!h) return ''; // coluna vazia
+    seen[h] = (seen[h] || 0) + 1;
+    return seen[h] === 1 ? h : `${h}__${seen[h]}`;
+  });
+
+  const cols = headersUnique.length || sheet.columnCount || 26;
+  const endRow = sheet.rowCount || 2000;
+
+  // carrega toda a área de dados (linha 2 em diante)
+  await sheet.loadCells({ startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: cols });
+
+  const rows = [];
+  for (let r = 1; r < endRow; r++) {
+    let empty = true;
+    const obj = {};
+    for (let c = 0; c < cols; c++) {
+      const key = headersUnique[c];
+      if (!key) continue;
+      const cell = sheet.getCell(r, c);
+      const val = cell?.value ?? '';
+      if (val !== '' && val !== null) empty = false;
+      obj[key] = val === null ? '' : String(val);
+    }
+    if (!empty) rows.push(obj);
+  }
+  return rows;
+}
+
+async function getRowsSafe(sheet) {
+  try {
+    return await sheet.getRows(); // caminho rápido
+  } catch (e) {
+    if (String(e?.message || '').toLowerCase().includes('duplicate header')) {
+      return await getRowsViaCells(sheet); // fallback
+    }
+    throw e;
+  }
+}
+
+// procura primeiro valor de propriedade candidata (aceita Header__2 etc.)
+function getVal(row, ...candidates) {
+  const keys = Object.keys(row);
+  for (const cand of candidates) {
+    const k = keys.find(k =>
+      low(k) === low(cand) || low(k).startsWith(low(cand) + '__')
+    );
+    if (k) return row[k];
+  }
+  return undefined;
+}
+// procura valor por "palavras contidas" no nome do header
+function getValByIncludes(row, words = []) {
+  const keys = Object.keys(row);
+  const k = keys.find(k => {
+    const l = low(k);
+    return words.every(w => l.includes(low(w)));
+  });
+  return k ? row[k] : undefined;
+}
+
+/* ─────────────── ROTAS ─────────────── */
+
+/**
+ * GET /api/consulta?cnpj=NNNNNNNNNNNNNN
+ * Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG e CRP (tolerante a headers duplicados)
+ */
+app.get('/api/consulta', async (req, res) => {
+  try {
+    const cnpj = digits(req.query.cnpj || '');
+    if (cnpj.length !== 14) return res.status(400).json({ error: 'CNPJ inválido.' });
 
     await authSheets();
+
     const sCnpj = await getSheet('CNPJ_ENTE_UG');
     const sReps = await getSheet('Dados_REP_ENTE_UG');
     const sCrp  = await getSheet('CRP');
 
-    const cnpjRows = await sCnpj.getRows();
-    const base = cnpjRows.find(r => digits(r.CNPJ_ENTE)===cnpj);
-    if(!base) return res.status(404).json({error:'CNPJ não encontrado em CNPJ_ENTE_UG.'});
+    // CNPJ_ENTE_UG
+    const cnpjRows = await getRowsSafe(sCnpj);
+    const base = cnpjRows.find(r => digits(getVal(r, 'CNPJ_ENTE')) === cnpj);
+    if (!base) return res.status(404).json({ error: 'CNPJ não encontrado em CNPJ_ENTE_UG.' });
 
-    const UF = norm(base.UF), ENTE = norm(base.ENTE), UG = norm(base.UG);
-    const CNPJ_ENTE = digits(base.CNPJ_ENTE), CNPJ_UG = digits(base.CNPJ_UG);
+    const UF        = norm(getVal(base, 'UF'));
+    const ENTE      = norm(getVal(base, 'ENTE'));
+    const UG        = norm(getVal(base, 'UG'));
+    const CNPJ_ENTE = digits(getVal(base, 'CNPJ_ENTE'));
+    const CNPJ_UG   = digits(getVal(base, 'CNPJ_UG'));
 
-    const repRows = (await sReps.getRows()).filter(r => low(r.UF)===low(UF) && low(r.ENTE)===low(ENTE));
-    const repUG   = repRows.find(r => low(r.UG)===low(UG)) || repRows[0] || {};
-    const repEnte = repRows.find(r => ['','ente','adm direta','administração direta','administracao direta'].includes(low(r.UG)))
-                  || repRows.find(r => low(r.UG)!==low(UG)) || repRows[0] || {};
+    // Dados_REP_ENTE_UG (por UF+ENTE)
+    const repsAll = await getRowsSafe(sReps);
+    const reps = repsAll.filter(r => low(getVal(r,'UF')) === low(UF) && low(getVal(r,'ENTE')) === low(ENTE));
 
-    const crpRows = (await sCrp.getRows()).filter(r => digits(r.CNPJ_ENTE)===CNPJ_ENTE);
-    let crp={};
-    if(crpRows.length){
-      const headerVals = sCrp.headerValues || [];
-      const djHeader = findHeader(headerVals,'deci','judi') || headerVals.find(h=>low(h).includes('judicial')) || null;
-      crpRows.sort((a,b)=>{
-        const da = parseDateYMDorDMY(a.DATA_VALIDADE) || new Date(0);
-        const db = parseDateYMDorDMY(b.DATA_VALIDADE) || new Date(0);
-        return db-da;
+    const repUG = reps.find(r => low(getVal(r,'UG')) === low(UG)) || reps[0] || {};
+    const repEnte =
+      reps.find(r => ['','ente','adm direta','administração direta','administracao direta'].includes(low(getVal(r,'UG')||''))) ||
+      reps.find(r => low(getVal(r,'UG')||'') !== low(UG)) || reps[0] || {};
+
+    // CRP (pode ter headers duplicados)
+    const crpAll = await getRowsSafe(sCrp);
+    const crpCandidates = crpAll.filter(r => digits(getVal(r, 'CNPJ_ENTE')) === CNPJ_ENTE);
+
+    let crp = {};
+    if (crpCandidates.length) {
+      // pega a de maior DATA_VALIDADE
+      crpCandidates.sort((a,b) => {
+        const av = norm(getValByIncludes(a, ['valid'])); // DATA_VALIDADE
+        const bv = norm(getValByIncludes(b, ['valid']));
+        const ad = parseDMYorYMD(av);
+        const bd = parseDMYorYMD(bv);
+        return (bd - ad);
       });
-      const top = crpRows[0];
-      crp = { DATA_VALIDADE: norm(top.DATA_VALIDADE||''), DECISAO_JUDICIAL: djHeader ? norm(top[djHeader]) : '' };
+      const top = crpCandidates[0];
+      crp.DATA_VALIDADE   = norm(getValByIncludes(top, ['valid'])) || '';
+      crp.DECISAO_JUDICIAL= norm(getValByIncludes(top, ['deci','judi'])) || '';
+    }
+
+    // normaliza formato data validade para yyyy-mm-dd se vier dd/mm/yyyy
+    if (crp.DATA_VALIDADE) {
       const m = crp.DATA_VALIDADE.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if(m) crp.DATA_VALIDADE = `${m[3]}-${m[2]}-${m[1]}`;
+      if (m) crp.DATA_VALIDADE = `${m[3]}-${m[2]}-${m[1]}`;
     }
 
     const out = {
       UF, ENTE, CNPJ_ENTE, UG, CNPJ_UG,
-      NOME_REP_ENTE: norm(repEnte.NOME), CPF_REP_ENTE: digits(repEnte.CPF),
-      EMAIL_REP_ENTE: norm(repEnte.EMAIL), TEL_REP_ENTE: norm(repEnte.TELEFONE_MOVEL || repEnte.TELEFONE), CARGO_REP_ENTE: norm(repEnte.CARGO),
-      NOME_REP_UG: norm(repUG.NOME), CPF_REP_UG: digits(repUG.CPF),
-      EMAIL_REP_UG: norm(repUG.EMAIL), TEL_REP_UG: norm(repUG.TELEFONE_MOVEL || repUG.TELEFONE), CARGO_REP_UG: norm(repUG.CARGO),
-      CRP_DATA_VALIDADE: norm(crp.DATA_VALIDADE||''), CRP_DECISAO_JUDICIAL: norm(crp.DECISAO_JUDICIAL||''),
+      // Rep ENTE
+      NOME_REP_ENTE: norm(getVal(repEnte,'NOME')),
+      CPF_REP_ENTE:  digits(getVal(repEnte,'CPF')),
+      EMAIL_REP_ENTE:norm(getVal(repEnte,'EMAIL')),
+      TEL_REP_ENTE:  norm(getVal(repEnte,'TELEFONE_MOVEL') || getVal(repEnte,'TELEFONE')),
+      CARGO_REP_ENTE:norm(getVal(repEnte,'CARGO')),
+      // Rep UG
+      NOME_REP_UG: norm(getVal(repUG,'NOME')),
+      CPF_REP_UG:  digits(getVal(repUG,'CPF')),
+      EMAIL_REP_UG:norm(getVal(repUG,'EMAIL')),
+      TEL_REP_UG:  norm(getVal(repUG,'TELEFONE_MOVEL') || getVal(repUG,'TELEFONE')),
+      CARGO_REP_UG:norm(getVal(repUG,'CARGO')),
+      // CRP
+      CRP_DATA_VALIDADE:   norm(crp.DATA_VALIDADE || ''),
+      CRP_DECISAO_JUDICIAL:norm(crp.DECISAO_JUDICIAL || ''),
       ESFERA_SUGERIDA: esferaFromEnte(ENTE),
+
       __snapshot: {
         UF, ENTE, CNPJ_ENTE, UG, CNPJ_UG,
-        NOME_REP_ENTE: norm(repEnte.NOME), CPF_REP_ENTE: digits(repEnte.CPF),
-        TEL_REP_ENTE: norm(repEnte.TELEFONE_MOVEL || repEnte.TELEFONE), EMAIL_REP_ENTE: norm(repEnte.EMAIL), CARGO_REP_ENTE: norm(repEnte.CARGO),
-        NOME_REP_UG: norm(repUG.NOME), CPF_REP_UG: digits(repUG.CPF),
-        TEL_REP_UG: norm(repUG.TELEFONE_MOVEL || repUG.TELEFONE), EMAIL_REP_UG: norm(repUG.EMAIL), CARGO_REP_UG: norm(repUG.CARGO),
-        CRP: norm(crp.DECISAO_JUDICIAL||''), CRP_VALIDADE: norm(crp.DATA_VALIDADE||'')
+        NOME_REP_ENTE: norm(getVal(repEnte,'NOME')),
+        CPF_REP_ENTE:  digits(getVal(repEnte,'CPF')),
+        TEL_REP_ENTE:  norm(getVal(repEnte,'TELEFONE_MOVEL') || getVal(repEnte,'TELEFONE')),
+        EMAIL_REP_ENTE:norm(getVal(repEnte,'EMAIL')),
+        CARGO_REP_ENTE:norm(getVal(repEnte,'CARGO')),
+
+        NOME_REP_UG: norm(getVal(repUG,'NOME')),
+        CPF_REP_UG:  digits(getVal(repUG,'CPF')),
+        TEL_REP_UG:  norm(getVal(repUG,'TELEFONE_MOVEL') || getVal(repUG,'TELEFONE')),
+        EMAIL_REP_UG:norm(getVal(repUG,'EMAIL')),
+        CARGO_REP_UG:norm(getVal(repUG,'CARGO')),
+
+        CRP:           norm(crp.DECISAO_JUDICIAL || ''),
+        CRP_VALIDADE:  norm(crp.DATA_VALIDADE || '')
       }
     };
 
     return res.json({ ok:true, data: out });
-  }catch(err){
+  } catch (err) {
     console.error('❌ /api/consulta:', err);
-    res.status(500).json({error:'Falha interna.'});
+    res.status(500).json({ error:'Falha interna.' });
   }
 });
 
-// GET /api/rep-by-cpf?cpf=...
+// parser simples para datas
+function parseDMYorYMD(s) {
+  const v = norm(s);
+  if (!v) return new Date(0);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(v+'T00:00:00');
+  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00`);
+  const d = new Date(v);
+  return isNaN(d) ? new Date(0) : d;
+}
+
+/**
+ * GET /api/rep-by-cpf?cpf=NNNNNNNNNNN
+ */
 app.get('/api/rep-by-cpf', async (req,res)=>{
   try{
-    const cpf = digits(req.query.cpf||'');
-    if(cpf.length!==11) return res.status(400).json({error:'CPF inválido.'});
+    const cpf = digits(req.query.cpf || '');
+    if (cpf.length !== 11) return res.status(400).json({ error: 'CPF inválido.' });
+
     await authSheets();
     const sReps = await getSheet('Dados_REP_ENTE_UG');
-    const rows = await sReps.getRows();
-    const found = rows.find(r => digits(r.CPF)===cpf);
-    if(!found) return res.status(404).json({error:'CPF não encontrado.'});
-    return res.json({ ok:true, data:{
-      UF:norm(found.UF), ENTE:norm(found.ENTE), UG:norm(found.UG),
-      NOME:norm(found.NOME), CPF:digits(found.CPF),
-      EMAIL:norm(found.EMAIL), TELEFONE:norm(found.TELEFONE_MOVEL || found.TELEFONE),
-      CARGO:norm(found.CARGO)
-    }});
+    const rows = await getRowsSafe(sReps);
+    const found = rows.find(r => digits(getVal(r,'CPF')) === cpf);
+    if(!found) return res.status(404).json({ error:'CPF não encontrado.' });
+
+    return res.json({
+      ok:true,
+      data:{
+        UF: norm(getVal(found,'UF')),
+        ENTE: norm(getVal(found,'ENTE')),
+        UG: norm(getVal(found,'UG')),
+        NOME: norm(getVal(found,'NOME')),
+        CPF: digits(getVal(found,'CPF')),
+        EMAIL: norm(getVal(found,'EMAIL')),
+        TELEFONE: norm(getVal(found,'TELEFONE_MOVEL') || getVal(found,'TELEFONE')),
+        CARGO: norm(getVal(found,'CARGO')),
+      }
+    });
   }catch(err){
     console.error('❌ /api/rep-by-cpf:', err);
-    res.status(500).json({error:'Falha interna.'});
+    res.status(500).json({ error:'Falha interna.' });
   }
 });
 
-// POST /api/gerar-termo
+/**
+ * POST /api/gerar-termo
+ */
 app.post('/api/gerar-termo', async (req,res)=>{
   try{
-    const p = req.body||{};
-    const must = ['UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG','NOME_REP_ENTE','CPF_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','NOME_REP_UG','CPF_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP'];
-    for(const k of must){ if(!norm(p[k])) return res.status(400).json({error:`Campo obrigatório ausente: ${k}`}); }
+    const p = req.body || {};
+    const must = [
+      'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
+      'NOME_REP_ENTE','CPF_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE',
+      'NOME_REP_UG','CPF_REP_UG','CARGO_REP_UG','EMAIL_REP_UG',
+      'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP'
+    ];
+    for(const k of must){
+      if(!norm(p[k])) return res.status(400).json({ error:`Campo obrigatório ausente: ${k}` });
+    }
 
     await authSheets();
     const sTermos = await getSheet('Termos_registrados');
     const sLog    = await getSheet('Reg_alteracao_dados_ente_ug');
 
-    const { DATA,HORA,ANO,MES } = nowBR();
-    const criterios = Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES
-      : String(p.CRITERIOS_IRREGULARES||'').split(',').map(s=>s.trim()).filter(Boolean);
+    const { DATA, HORA, ANO, MES } = nowBR();
+    const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
+      ? p.CRITERIOS_IRREGULARES
+      : String(p.CRITERIOS_IRREGULARES || '').split(',').map(s=>s.trim()).filter(Boolean);
 
     await sTermos.addRow({
-      ENTE:norm(p.ENTE), UF:norm(p.UF),
-      CNPJ_ENTE:digits(p.CNPJ_ENTE), EMAIL_ENTE:norm(p.EMAIL_ENTE),
-      NOME_REP_ENTE:norm(p.NOME_REP_ENTE), CARGO_REP_ENTE:norm(p.CARGO_REP_ENTE),
-      CPF_REP_ENTE:digits(p.CPF_REP_ENTE), EMAIL_REP_ENTE:norm(p.EMAIL_REP_ENTE),
-      UG:norm(p.UG), CNPJ_UG:digits(p.CNPJ_UG), EMAIL_UG:norm(p.EMAIL_UG),
-      NOME_REP_UG:norm(p.NOME_REP_UG), CARGO_REP_UG:norm(p.CARGO_REP_UG),
-      CPF_REP_UG:digits(p.CPF_REP_UG), EMAIL_REP_UG:norm(p.EMAIL_REP_UG),
-      DATA_VENCIMENTO_ULTIMO_CRP:norm(p.DATA_VENCIMENTO_ULTIMO_CRP),
-      TIPO_EMISSAO_ULTIMO_CRP:norm(p.TIPO_EMISSAO_ULTIMO_CRP),
-      CRITERIOS_IRREGULARES:criterios.join(', '),
-      CELEBRACAO_TERMO_PARCELA_DEBITOS:norm(p.CELEBRACAO_TERMO_PARCELA_DEBITOS),
-      REGULARIZACAO_PENDEN_ADMINISTRATIVA:norm(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA),
-      DEFICIT_ATUARIAL:norm(p.DEFICIT_ATUARIAL),
-      CRITERIOS_ESTRUT_ESTABELECIDOS:norm(p.CRITERIOS_ESTRUT_ESTABELECIDOS),
-      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS:norm(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS),
-      COMPROMISSO_FIRMADO_ADESAO:norm(p.COMPROMISSO_FIRMADO_ADESAO),
-      PROVIDENCIA_NECESS_ADESAO:norm(p.PROVIDENCIA_NECESS_ADESAO),
-      CONDICAO_VIGENCIA:norm(p.CONDICAO_VIGENCIA),
-      MES, DATA_TERMO_GERADO:DATA, HORA_TERMO_GERADO:HORA, ANO_TERMO_GERADO:ANO
+      ENTE: norm(p.ENTE),
+      UF: norm(p.UF),
+      CNPJ_ENTE: digits(p.CNPJ_ENTE),
+      EMAIL_ENTE: norm(p.EMAIL_ENTE),
+      NOME_REP_ENTE: norm(p.NOME_REP_ENTE),
+      CARGO_REP_ENTE: norm(p.CARGO_REP_ENTE),
+      CPF_REP_ENTE: digits(p.CPF_REP_ENTE),
+      EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE),
+      UG: norm(p.UG),
+      CNPJ_UG: digits(p.CNPJ_UG),
+      EMAIL_UG: norm(p.EMAIL_UG),
+      NOME_REP_UG: norm(p.NOME_REP_UG),
+      CARGO_REP_UG: norm(p.CARGO_REP_UG),
+      CPF_REP_UG: digits(p.CPF_REP_UG),
+      EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
+      DATA_VENCIMENTO_ULTIMO_CRP: norm(p.DATA_VENCIMENTO_ULTIMO_CRP),
+      TIPO_EMISSAO_ULTIMO_CRP: norm(p.TIPO_EMISSAO_ULTIMO_CRP),
+      CRITERIOS_IRREGULARES: criterios.join(', '),
+      CELEBRACAO_TERMO_PARCELA_DEBITOS: norm(p.CELEBRACAO_TERMO_PARCELA_DEBITOS),
+      REGULARIZACAO_PENDEN_ADMINISTRATIVA: norm(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA),
+      DEFICIT_ATUARIAL: norm(p.DEFICIT_ATUARIAL),
+      CRITERIOS_ESTRUT_ESTABELECIDOS: norm(p.CRITERIOS_ESTRUT_ESTABELECIDOS),
+      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: norm(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS),
+      COMPROMISSO_FIRMADO_ADESAO: norm(p.COMPROMISSO_FIRMADO_ADESAO),
+      PROVIDENCIA_NECESS_ADESAO: norm(p.PROVIDENCIA_NECESS_ADESAO),
+      CONDICAO_VIGENCIA: norm(p.CONDICAO_VIGENCIA),
+      MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO
     });
 
+    // Log de alterações com base no snapshot enviado
     const snap = p.__snapshot_base || {};
-    const compareCols = ['UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG','NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE','NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG'];
-    const changed=[];
-    for(const col of compareCols){
-      const a = (col.includes('CPF')||col.includes('CNPJ')) ? digits(snap[col]||'') : norm(snap[col]||'');
-      const b = (col.includes('CPF')||col.includes('CNPJ')) ? digits(p[col]||'')   : norm(p[col]||'');
-      if(low(a)!==low(b)) changed.push(col);
+    const compareCols = [
+      'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
+      'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
+      'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG'
+    ];
+    const changed = [];
+    for (const col of compareCols) {
+      const a = (col.includes('CPF') || col.includes('CNPJ')) ? digits(snap[col] || '') : norm(snap[col] || '');
+      const b = (col.includes('CPF') || col.includes('CNPJ')) ? digits(p[col] || '')   : norm(p[col] || '');
+      if (low(a) !== low(b)) changed.push(col);
     }
-    if(changed.length){
-      const { DATA:dlog, HORA:hlog, MES:mlog } = nowBR();
-      await sLog.addRow({ UF:norm(p.UF), ENTE:norm(p.ENTE), 'CAMPOS ALTERADOS':changed.join(', '), 'QTD_CAMPOS_ALTERADOS':changed.length, MES:mlog, DATA:dlog, HORA:hlog });
+    if (changed.length) {
+      const t = nowBR();
+      await sLog.addRow({
+        UF: norm(p.UF),
+        ENTE: norm(p.ENTE),
+        'CAMPOS ALTERADOS': changed.join(', '),
+        'QTD_CAMPOS_ALTERADOS': changed.length,
+        MES: t.MES, DATA: t.DATA, HORA: t.HORA
+      });
     }
 
-    return res.json({ok:true});
-  }catch(err){
+    return res.json({ ok:true });
+  } catch (err) {
     console.error('❌ /api/gerar-termo:', err);
-    res.status(500).json({error:'Falha ao registrar o termo.'});
+    res.status(500).json({ error:'Falha ao registrar o termo.' });
   }
 });
 
-/* ───────── Start ───────── */
+/* ─────────────── Start ─────────────── */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, ()=> console.log(`🚀 Server rodando na porta ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server rodando na porta ${PORT}`));
