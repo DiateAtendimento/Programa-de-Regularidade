@@ -15,42 +15,55 @@ const app = express();
 
 /* ───────────────────────────── Segurança ───────────────────────────── */
 app.disable('x-powered-by');
+
+// util: aceita lista de origens no .env (separadas por vírgula ou espaço) e remove barras finais
+const splitList = (s = '') =>
+  s.split(/[,\s]+/).map(v => v.trim().replace(/\/+$/, '')).filter(Boolean);
+
+// use CORS_ORIGIN (um único host) OU CORS_ORIGIN_LIST (vários hosts)
+const originList = splitList(process.env.CORS_ORIGIN || process.env.CORS_ORIGIN_LIST);
+const connectExtra = originList;
+
+// Helmet base
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
-  crossOriginEmbedderPolicy: false,
+  crossOriginEmbedderPolicy: false, // necessário p/ html2canvas/html2pdf
 }));
+
+// CSP em camelCase
 app.use(helmet.contentSecurityPolicy({
   useDefaults: true,
   directives: {
-    "default-src": ["'self'"],
-    "script-src": ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
-    "style-src": ["'self'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com", "'unsafe-inline'"],
-    "font-src": ["'self'", "https://fonts.gstatic.com"],
-    "img-src": ["'self'", "data:"],
-    "connect-src": ["'self'", process.env.CORS_ORIGIN || "'self'"],
-    "frame-src": ["'none'"],
-    "object-src": ["'none'"],
+    defaultSrc: ["'self'"],
+    scriptSrc:  ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
+    styleSrc:   ["'self'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com", "'unsafe-inline'"],
+    fontSrc:    ["'self'", "https://fonts.gstatic.com"],
+    imgSrc:     ["'self'", "data:", "blob:"],
+    connectSrc: ["'self'", ...connectExtra], // hosts permitidos para XHR/fetch
+    workerSrc:  ["'self'", "blob:"],
+    objectSrc:  ["'none'"],
+    frameSrc:   ["'none'"],
+    frameAncestors: ["'none'"],
+    baseUri:    ["'self'"],
+    formAction: ["'self'"],
   },
 }));
+
+// Proteções adicionais
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false }));
 app.use(hpp());
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 250,
-  standardHeaders: true,
-  legacyHeaders: false
-}));
-app.use(express.json({ limit: '300kb' }));
+app.use(express.json({ limit: '200kb' }));
 
 /* ───────────────────────────── CORS ───────────────────────────── */
-const allowedOrigins = [process.env.CORS_ORIGIN].filter(Boolean);
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    const ok = allowedOrigins.length ? allowedOrigins.includes(origin) : true;
+    if (!origin) return cb(null, true); // same-origin
+    const ok = originList.length ? originList.includes(origin) : true;
     return ok ? cb(null, true) : cb(new Error(`Origin não autorizada: ${origin}`));
   },
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false,
 }));
 
 /* ───────────────────────── Static (frontend) ───────────────────────── */
@@ -125,9 +138,7 @@ function findHeader(headers, ...contains) {
 function parseDateYMDorDMY(s) {
   const v = norm(s);
   if (!v) return null;
-  // yyyy-mm-dd
   if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(v + 'T00:00:00');
-  // dd/mm/yyyy
   const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00`);
   const d = new Date(v);

@@ -1,5 +1,14 @@
 // script.js — Multi-etapas: máscaras, stepper, busca nas abas, validação e submissão
 (() => {
+  /* ========= Config API ========= */
+  // Se rodar no Netlify, usa o backend no Render; se rodar local, usa localhost:3000; se o front vier do próprio Express, usa caminho relativo.
+  const API_BASE = (() => {
+    const h = location.hostname;
+    if (h.endsWith('netlify.app')) return 'https://programa-de-regularidade.onrender.com';
+    if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:3000';
+    return ''; // mesmo host/porta (quando servido pelo Express)
+  })();
+
   /* ========= Helpers ========= */
   const $  = (s, r=document)=> r.querySelector(s);
   const $$ = (s, r=document)=> Array.from(r.querySelectorAll(s));
@@ -191,7 +200,7 @@
     markValid($('#CNPJ_ENTE_PESQ'));
 
     try{
-      const r = await fetch(`/api/consulta?cnpj=${cnpj}`);
+      const r = await fetch(`${API_BASE}/api/consulta?cnpj=${cnpj}`);
       if(!r.ok){ modalBusca.show(); return; }
       const { data } = await r.json();
       snapshotBase = data.__snapshot || null;
@@ -237,7 +246,7 @@
   async function buscarRepByCPF(cpf, fillPrefix){
     const cpfd = digits(cpf||'');
     if(cpfd.length!==11) { showErro(['Informe um CPF válido.']); return; }
-    const r = await fetch(`/api/rep-by-cpf?cpf=${cpfd}`);
+    const r = await fetch(`${API_BASE}/api/rep-by-cpf?cpf=${cpfd}`);
     if(!r.ok){ modalBusca.show(); return; }
     const { data } = await r.json();
     if(fillPrefix==='ENTE'){
@@ -307,7 +316,7 @@
     };
 
     try{
-      const res = await fetch('/api/gerar-termo', {
+      const res = await fetch(`${API_BASE}/api/gerar-termo`, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify(payload)
