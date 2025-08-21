@@ -3,396 +3,381 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Cadastro Termo de Regularidade - CRP</title>
+  <title>Formulário – Programa de Regularidade Previdenciária (RPPS)</title>
 
-  <!-- Bootstrap CSS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
-
-  <!-- Google Fonts -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap"
-    rel="stylesheet"
-  />
-
-  <!-- Seu CSS customizado -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- Lottie -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.10.2/lottie.min.js"></script>
-
-  <!-- Cleave.js para máscaras -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cleave.js/1.6.0/cleave.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cleave.js/1.6.0/addons/cleave-phone.br.js"></script>
-
-  <!-- Pré-popula e bloqueia edição dos campos dia, mês e ano -->
-  <script>
-    function populaDataSistema() {
-      const hoje = new Date();
-      const dia  = String(hoje.getDate()).padStart(2, '0');
-      const mes  = hoje.toLocaleString('pt-BR', { month: 'long' });
-      const ano  = hoje.getFullYear();
-      ['dia','mes','ano'].forEach(id => {
-        const el = document.getElementById(id);
-        el.value = id === 'mes' ? mes : (id === 'dia' ? dia : ano);
-        el.readOnly = true;
-      });
-      const dataBR = hoje.toLocaleDateString('pt-BR');
-      const horaBR = new Intl.DateTimeFormat('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'America/Sao_Paulo'
-      }).format(hoje);
-      const d = document.getElementById('dataSistema');
-      const h = document.getElementById('horaSistema');
-      if (d) d.value = dataBR;
-      if (h) h.value = horaBR;
-    }
-    document.addEventListener('DOMContentLoaded', populaDataSistema);
-  </script>
-
-  <!-- CSS do dropdown de autocomplete do Ente -->
-  <style>
-    .position-relative .autocomplete-list{
-      position:absolute; top:100%; left:0; right:0;
-      background:#fff; border:1px solid #ced4da; border-radius:.375rem;
-      margin-top:.25rem; z-index:1000;
-      max-height:240px; overflow-y:auto;
-      list-style:none; padding:0; display:none;
-    }
-    .position-relative .autocomplete-list li{
-      padding:.5rem .75rem; cursor:pointer;
-    }
-    .position-relative .autocomplete-list li:hover{
-      background:#f8f9fa;
-    }
-  </style>
 </head>
 <body>
-  <!-- Overlay de animação -->
-  <div id="lottie-overlay"
-       style="display:none;
-              position:fixed; top:0; left:0; width:100%; height:100%;
-              background:rgba(255,255,255,0.8); z-index:9999;
-              justify-content:center; align-items:center;">
-    <div id="lottie-player" style="width:300px; height:300px;"></div>
-  </div>
+  <div class="container py-4">
+    <header class="mb-4 text-center">
+      <div class="brand mb-2">
+        <img src="imagens/logo-mps.svg" alt="MPS" height="56">
+      </div>
+      <h1 class="h3 fw-800 mb-2">
+        Formulário para a emissão do Termo de Adesão ao Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social (RPPS)
+      </h1>
+      <p class="mb-0 small text-muted">Preencha conforme o modelo oficial. Máscaras de CPF/CNPJ são aplicadas automaticamente.</p>
+    </header>
 
-  <div class="container floating-panel">
-    <h1>Cadastro Termo de Regularidade - CRP</h1>
+    <!-- Stepper -->
+    <div id="stepper" class="app-stepper mb-3">
+      <div class="step active">1</div>
+      <div class="divider"></div>
+      <div class="step">2</div>
+      <div class="divider"></div>
+      <div class="step">3</div>
+      <div class="divider"></div>
+      <div class="step">4</div>
+      <div class="divider"></div>
+      <div class="step">5</div>
+      <div class="divider"></div>
+      <div class="step">6</div>
+      <div class="divider"></div>
+      <div class="step">7</div>
+    </div>
 
-    <form id="regularidadeForm" novalidate>
+    <div class="card app-card">
+      <div class="card-body">
+        <form id="regularidadeForm" novalidate>
+          <!-- ETAPA 0: Pesquisa -->
+          <section class="app-section" data-step="0">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-5">
+                <label for="CNPJ_ENTE_PESQ" class="form-label">CNPJ do Ente (Pesquisar)</label>
+                <input type="text" class="form-control" id="CNPJ_ENTE_PESQ" placeholder="00.000.000/0000-00" />
+              </div>
+              <div class="col-md-3">
+                <button type="button" id="btnPesquisar" class="btn btn-primary w-100">Pesquisar</button>
+              </div>
+              <div class="col-md-4">
+                <div class="form-text">Usa as abas <strong>CNPJ_ENTE_UG</strong>, <strong>Dados_REP_ENTE_UG</strong> e <strong>CRP</strong>.</div>
+              </div>
+            </div>
+          </section>
 
-      <!-- 1) Identificação -->
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">Identificação</div>
-        <div class="card-body">
-          <div class="row g-3">
+          <!-- ETAPA 1: Identificação -->
+          <section class="app-section" data-step="1">
+            <div class="section-head"><h2 class="section-title">1. Identificação do ente federativo</h2></div>
 
-            <!-- CNPJ -->
-            <div class="col-md-4">
-              <label for="cnpj" class="form-label">CNPJ</label>
-              <input
-                type="text"
-                class="form-control"
-                id="cnpj"
-                name="cnpj"
-                placeholder="00.000.000/0000-00"
-                inputmode="numeric"
-                required
-              />
-              <div class="invalid-feedback">Informe um CNPJ de 14 dígitos.</div>
+            <div class="mb-3" id="grpESFERA">
+              <div class="sub-title mb-2">1.1 Esfera de Governo</div>
+              <div class="d-flex flex-wrap gap-4">
+                <div class="form-check">
+                  <input class="form-check-input esf-only-one" type="checkbox" id="esf_mun" name="ESFERA_GOVERNO[]" value="RPPS Municipal">
+                  <label class="form-check-label" for="esf_mun">RPPS Municipal</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input esf-only-one" type="checkbox" id="esf_est" name="ESFERA_GOVERNO[]" value="Estadual/Distrital">
+                  <label class="form-check-label" for="esf_est">Estadual/Distrital</label>
+                </div>
+              </div>
             </div>
 
-            <!-- UF -->
-            <div class="col-md-4">
-              <label for="uf" class="form-label">UF</label>
-              <select id="uf" name="uf" class="form-select" required>
-                <option value="" disabled selected>Selecione a UF</option>
-                <option value="AC">Acre</option>
-                <option value="AL">Alagoas</option>
-                <option value="AP">Amapá</option>
-                <option value="AM">Amazonas</option>
-                <option value="BA">Bahia</option>
-                <option value="CE">Ceará</option>
-                <option value="DF">Distrito Federal</option>
-                <option value="ES">Espírito Santo</option>
-                <option value="GO">Goiás</option>
-                <option value="MA">Maranhão</option>
-                <option value="MT">Mato Grosso</option>
-                <option value="MS">Mato Grosso do Sul</option>
-                <option value="MG">Minas Gerais</option>
-                <option value="PA">Pará</option>
-                <option value="PB">Paraíba</option>
-                <option value="PR">Paraná</option>
-                <option value="PE">Pernambuco</option>
-                <option value="PI">Piauí</option>
-                <option value="RJ">Rio de Janeiro</option>
-                <option value="RN">Rio Grande do Norte</option>
-                <option value="RS">Rio Grande do Sul</option>
-                <option value="RO">Rondônia</option>
-                <option value="RR">Roraima</option>
-                <option value="SC">Santa Catarina</option>
-                <option value="SP">São Paulo</option>
-                <option value="SE">Sergipe</option>
-                <option value="TO">Tocantins</option>
-              </select>
-              <div class="invalid-feedback">Escolha a UF.</div>
+            <div class="row g-3">
+              <div class="col-12"><div class="sub-title">1.2 Ente Federativo</div></div>
+
+              <div class="col-md-2">
+                <label class="form-label" for="UF">UF</label>
+                <select id="UF" class="form-select">
+                  <option value="">Selecione…</option>
+                  <option>AC</option><option>AL</option><option>AM</option><option>AP</option>
+                  <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+                  <option>GO</option><option>MA</option><option>MG</option><option>MS</option>
+                  <option>MT</option><option>PA</option><option>PB</option><option>PE</option>
+                  <option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+                  <option>RO</option><option>RR</option><option>RS</option><option>SC</option>
+                  <option>SE</option><option>SP</option><option>TO</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="ENTE">Ente</label>
+                <input type="text" id="ENTE" class="form-control" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="CNPJ_ENTE">CNPJ</label>
+                <input type="text" id="CNPJ_ENTE" class="form-control" placeholder="00.000.000/0000-00" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="EMAIL_ENTE">E-mail</label>
+                <input type="email" id="EMAIL_ENTE" class="form-control" placeholder="ente@exemplo.gov.br" />
+              </div>
+
+              <div class="col-12 mt-2"><div class="sub-title">1.3 Regime Próprio de Previdência Social (RPPS)</div></div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="UG">Unidade Gestora</label>
+                <input type="text" id="UG" class="form-control" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="CNPJ_UG">CNPJ</label>
+                <input type="text" id="CNPJ_UG" class="form-control" placeholder="00.000.000/0000-00" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="EMAIL_UG">E-mail</label>
+                <input type="email" id="EMAIL_UG" class="form-control" placeholder="ug@exemplo.gov.br" />
+              </div>
+            </div>
+          </section>
+
+          <!-- ETAPA 2: Responsáveis -->
+          <section class="app-section" data-step="2">
+            <div class="section-head"><h2 class="section-title">2. Identificação dos responsáveis</h2></div>
+
+            <div class="card-subblock mb-3">
+              <div class="sub-title">2.1 Representante legal do ente federativo</div>
+              <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                  <label class="form-label" for="CPF_REP_ENTE">CPF</label>
+                  <input type="text" id="CPF_REP_ENTE" class="form-control" placeholder="000.000.000-00" />
+                </div>
+                <div class="col-md-3">
+                  <button type="button" id="btnPesqRepEnte" class="btn btn-outline-primary w-100">Pesquisar</button>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="NOME_REP_ENTE">Nome</label>
+                  <input id="NOME_REP_ENTE" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="CARGO_REP_ENTE">Cargo/Função</label>
+                  <input id="CARGO_REP_ENTE" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="EMAIL_REP_ENTE">E-mail</label>
+                  <input type="email" id="EMAIL_REP_ENTE" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="TEL_REP_ENTE">Telefone</label>
+                  <input type="text" id="TEL_REP_ENTE" class="form-control" placeholder="(00) 0000-0000" />
+                </div>
+              </div>
             </div>
 
-            <!-- Ente + Autocomplete -->
-            <div class="col-md-4 position-relative">
-              <label for="ente" class="form-label">Ente</label>
-              <input
-                type="text"
-                id="ente"
-                name="ente"
-                class="form-control"
-                placeholder="Nome do ente"
-                autocomplete="off"
-                required
-              />
-              <ul class="autocomplete-list" id="entes-list"></ul>
-              <div class="invalid-feedback">Informe o nome do Ente.</div>
+            <div class="card-subblock">
+              <div class="sub-title">2.2 Representante legal do RPPS</div>
+              <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                  <label class="form-label" for="CPF_REP_UG">CPF</label>
+                  <input type="text" id="CPF_REP_UG" class="form-control" placeholder="000.000.000-00" />
+                </div>
+                <div class="col-md-3">
+                  <button type="button" id="btnPesqRepUg" class="btn btn-outline-primary w-100">Pesquisar</button>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="NOME_REP_UG">Nome</label>
+                  <input id="NOME_REP_UG" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="CARGO_REP_UG">Cargo/Função</label>
+                  <input id="CARGO_REP_UG" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="EMAIL_REP_UG">E-mail</label>
+                  <input type="email" id="EMAIL_REP_UG" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="TEL_REP_UG">Telefone</label>
+                  <input type="text" id="TEL_REP_UG" class="form-control" placeholder="(00) 0000-0000" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ETAPA 3: CRP -->
+          <section class="app-section" data-step="3">
+            <div class="section-head"><h2 class="section-title">3. Situação relativa ao CRP</h2></div>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label" for="DATA_VENCIMENTO_ULTIMO_CRP">3.1 Data de vencimento do último CRP</label>
+                <input type="date" id="DATA_VENCIMENTO_ULTIMO_CRP" class="form-control" />
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="sub-title">3.2 Tipo de emissão do último CRP</div>
+              <div class="d-flex flex-column gap-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="TIPO_EMISSAO_ULTIMO_CRP" id="em_adm" value="Administrativa">
+                  <label class="form-check-label" for="em_adm">Administrativa</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="TIPO_EMISSAO_ULTIMO_CRP" id="em_jud" value="Judicial">
+                  <label class="form-check-label" for="em_jud">Judicial</label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ETAPA 4: Finalidades -->
+          <section class="app-section" data-step="4">
+            <div class="section-head"><h2 class="section-title">4. Finalidade(s) inicial(is)</h2></div>
+
+            <p class="fw-semibold mb-2">4.1 Celebração de termos de parcelamento de débitos</p>
+            <div class="form-check mb-2">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="parc60" name="FINALIDADES[]" value="Até 60 parcelas (arts. 14 e 15 do ADCT)">
+              <label class="form-check-label" for="parc60">Até 60 parcelas (arts. 14 e 15 do ADCT)</label>
+            </div>
+            <div class="form-check mb-4">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="parc300" name="FINALIDADES[]" value="Até 300 parcelas (arts. 115 e 117 do ADCT)">
+              <label class="form-check-label" for="parc300">Até 300 parcelas (arts. 115 e 117 do ADCT)</label>
             </div>
 
+            <p class="fw-semibold mb-2">4.2 Regularização de pendências para emissão do CRP</p>
+            <div class="form-check mb-2">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="reg_sem_jud" value="Regularização sem decisão judicial">
+              <label class="form-check-label" for="reg_sem_jud">Para entes sem decisão judicial</label>
+            </div>
+            <div class="form-check mb-4">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="reg_com_jud" value="Regularização com decisão judicial (RE 1.007.271, Tema 968)">
+              <label class="form-check-label" for="reg_com_jud">Para entes com decisão judicial</label>
+            </div>
+
+            <p class="fw-semibold mt-2 mb-2">4.3 Equacionamento de déficit atuarial</p>
+            <div class="form-check mb-2">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_implano" value="Implementação de plano de equacionamento">
+              <label class="form-check-label" for="eq_implano">Implementação de plano de equacionamento</label>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_prazos" value="Prazos adicionais para comprovação de medidas">
+              <label class="form-check-label" for="eq_prazos">Prazos adicionais para comprovação de medidas</label>
+            </div>
+            <div class="form-check mb-4">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_plano_alt" value="Plano alternativo de equacionamento (art. 55, §7º)">
+              <label class="form-check-label" for="eq_plano_alt">Plano alternativo de equacionamento (art. 55, §7º)</label>
+            </div>
+
+            <p class="fw-semibold mt-2 mb-2">4.4 Critérios estruturantes / organização do RPPS</p>
+            <div class="form-check mb-2">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="org_ugu" value="Adequação da Unidade Gestora Única (CF art. 40, §20)">
+              <label class="form-check-label" for="org_ugu">Adequação da Unidade Gestora Única (CF art. 40, §20)</label>
+            </div>
+            <div class="form-check mb-4">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="org_outros" value="Outro critério de maior complexidade">
+              <label class="form-check-label" for="org_outros">Outro critério de maior complexidade</label>
+            </div>
+
+            <p class="fw-semibold mt-2 mb-2">4.5 Manutenção da conformidade</p>
+            <div class="form-check mb-2">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="man_cert" value="Pró-Gestão RPPS (nível II/III/IV)">
+              <label class="form-check-label" for="man_cert">Pró-Gestão RPPS (nível II/III/IV)</label>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="man_melhoria" value="Melhora nos indicadores do ISP-RPPS">
+              <label class="form-check-label" for="man_melhoria">Melhora nos indicadores do ISP-RPPS</label>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="man_acomp" value="Medidas de acompanhamento atuarial (arts. 67 a 69)">
+              <label class="form-check-label" for="man_acomp">Medidas de acompanhamento atuarial (arts. 67 a 69)</label>
+            </div>
+          </section>
+
+          <!-- ETAPA 5: Compromissos -->
+          <section class="app-section" data-step="5">
+            <div class="section-head"><h2 class="section-title">5. Compromissos firmados</h2></div>
+            <div class="d-flex flex-column gap-3" id="grpCOMPROMISSOS">
+              <label class="form-check">
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Regularidade nos repasses e parcelas de acordos">
+                <span class="form-check-label">Regularidade nos repasses e parcelas de acordos</span>
+              </label>
+              <label class="form-check">
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Regularidade no encaminhamento de documentos (art. 241)">
+                <span class="form-check-label">Regularidade no encaminhamento de documentos (art. 241)</span>
+              </label>
+              <label class="form-check">
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Adequações na legislação do RPPS">
+                <span class="form-check-label">Adequações na legislação do RPPS</span>
+              </label>
+              <label class="form-check">
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Cumprimento de Planos de Ação">
+                <span class="form-check-label">Cumprimento de Planos de Ação</span>
+              </label>
+            </div>
+          </section>
+
+          <!-- ETAPA 6: Providências e Condições -->
+          <section class="app-section" data-step="6">
+            <div class="section-head"><h2 class="section-title">6. Providências e 7. Condições</h2></div>
+
+            <div class="d-flex flex-column gap-3 mb-3" id="grpPROVIDENCIAS">
+              <label class="form-check">
+                <input class="form-check-input me-2 grp-prov" type="checkbox" name="PROVIDENCIAS[]" value="Incluídos todos os débitos no Cadprev">
+                <span class="form-check-label">Incluídos todos os débitos no Cadprev</span>
+              </label>
+              <label class="form-check">
+                <input class="form-check-input me-2 grp-prov" type="checkbox" name="PROVIDENCIAS[]" value="Não possui débitos até a data da adesão (ou já regularizados)">
+                <span class="form-check-label">Não possui débitos até a data da adesão (ou já regularizados)</span>
+              </label>
+            </div>
+
+            <div class="form-check mb-3" id="grpCONDICOES">
+              <input class="form-check-input me-2" type="checkbox" id="DECL_CIENCIA" name="CONDICOES_VIGENCIA" value="Declaro ciência das condições do art. 60 do Anexo XVIII da Portaria MTP 1.467/2022">
+              <label class="form-check-label" for="DECL_CIENCIA">Declaro ciência das condições do art. 60 do Anexo XVIII da Portaria MTP nº 1.467/2022.</label>
+            </div>
+          </section>
+
+          <!-- Controles de navegação -->
+          <div class="d-flex justify-content-between mt-2">
+            <button type="button" id="btnPrev" class="btn btn-outline-secondary">Voltar</button>
+            <button type="button" id="btnNext" class="btn btn-primary">Próximo</button>
+            <button type="submit" id="btnSubmit" class="btn btn-success d-none">Gerar Termo</button>
           </div>
 
-          <!-- Critérios (pelo menos 1) -->
-          <fieldset class="mt-4" id="critFieldset">
-            <legend class="form-label">Critérios <span class="text-danger">*</span></legend>
-
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox"
-                     name="criterios" value="I – Instituição do RPPS" id="crit1">
-              <label class="form-check-label" for="crit1">I – Instituição do RPPS</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox"
-                     name="criterios" value="II – Recolhimento das contribuições" id="crit2">
-              <label class="form-check-label" for="crit2">II – Recolhimento das contribuições</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox"
-                     name="criterios" value="III – Repasse das contribuições retidas" id="crit3">
-              <label class="form-check-label" for="crit3">III – Repasse das contribuições retidas</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox"
-                     name="criterios" value="IV – Aplicação dos recursos" id="crit4">
-              <label class="form-check-label" for="crit4">IV – Aplicação dos recursos</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox"
-                     name="criterios" value="V – Prestação de contas" id="crit5">
-              <label class="form-check-label" for="crit5">V – Prestação de contas</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox"
-                     name="criterios" value="VI – Observância das normas gerais" id="crit6">
-              <label class="form-check-label" for="crit6">VI – Observância das normas gerais</label>
-            </div>
-
-            <div class="invalid-feedback d-block" id="critFeedback" style="display:none">
-              Selecione pelo menos um critério.
-            </div>
-          </fieldset>
-        </div>
+          <!-- carimbos de sistema -->
+          <input type="hidden" id="MES" />
+          <input type="hidden" id="DATA_TERMO_GERADO" />
+          <input type="hidden" id="HORA_TERMO_GERADO" />
+          <input type="hidden" id="ANO_TERMO_GERADO" />
+        </form>
       </div>
-
-      <!-- 2) Dados Pessoais -->
-      <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">Dados Pessoais</div>
-        <div class="card-body">
-          <div class="row g-3">
-
-            <!-- CPF -->
-            <div class="col-md-6">
-              <label for="cpf" class="form-label">CPF</label>
-              <input
-                type="text"
-                class="form-control"
-                id="cpf"
-                name="cpf"
-                placeholder="000.000.000-00"
-                inputmode="numeric"
-                required
-              />
-              <div class="invalid-feedback">Informe um CPF de 11 dígitos.</div>
-            </div>
-
-            <!-- Nome -->
-            <div class="col-md-6">
-              <label for="nome" class="form-label">Nome</label>
-              <input
-                type="text"
-                class="form-control"
-                id="nome"
-                name="nome"
-                placeholder="Nome completo"
-                required
-              />
-              <div class="invalid-feedback">Informe o nome.</div>
-            </div>
-
-            <!-- Cargo -->
-            <div class="col-md-6">
-              <label for="cargo" class="form-label">Cargo</label>
-              <select id="cargo" name="cargo" class="form-select" required>
-                <option value="" disabled selected>Selecione o Cargo</option>
-                <option>Assistente</option>
-                <option>Chefe</option>
-                <option>Contador</option>
-                <option>Controlador</option>
-                <option>Coordenador</option>
-                <option>Diretor</option>
-                <option>Gerente</option>
-                <option>Gestor</option>
-                <option>Membro do Conselho</option>
-                <option>Prefeito</option>
-                <option>Governador</option>
-                <option>Superintendente</option>
-                <option>Tesoureiro</option>
-                <option>Vice-Prefeito</option>
-                <option>Vice-Presidente</option>
-                <option>Vice-Governador</option>
-                <option>Chefe de Divisão</option>
-              </select>
-              <div class="invalid-feedback">Escolha o cargo.</div>
-            </div>
-
-            <!-- Telefone -->
-            <div class="col-md-6">
-              <label for="telefone" class="form-label">Telefone</label>
-              <input
-                type="tel"
-                class="form-control"
-                id="telefone"
-                name="telefone"
-                placeholder="(00) 00000-0000"
-                inputmode="numeric"
-                required
-              />
-              <div class="invalid-feedback">Informe um telefone válido.</div>
-            </div>
-
-            <!-- Email -->
-            <div class="col-md-6">
-              <label for="email" class="form-label">Email</label>
-              <input
-                type="email"
-                class="form-control"
-                id="email"
-                name="email"
-                placeholder="email@exemplo.com"
-                required
-              />
-              <div class="invalid-feedback">Informe um email válido.</div>
-            </div>
-
-            <!-- Endereço -->
-            <div class="col-12">
-              <label for="endereco" class="form-label">Endereço</label>
-              <input
-                type="text"
-                class="form-control"
-                id="endereco"
-                name="endereco"
-                placeholder="Rua, número, bairro, cidade, CEP"
-                required
-              />
-              <div class="invalid-feedback">Informe o endereço.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3) Local e Data -->
-      <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">Local e Data</div>
-        <div class="card-body">
-          <div class="row g-3">
-
-            <!-- Cidade (auto) -->
-            <div class="col-md-6">
-              <label for="cidade" class="form-label">Cidade</label>
-              <input
-                type="text"
-                class="form-control"
-                id="cidade"
-                name="cidade"
-                placeholder="Cidade/UF"
-                readonly
-                required
-              />
-              <div class="invalid-feedback">Informe a cidade.</div>
-            </div>
-
-            <!-- Dia -->
-            <div class="col-md-2">
-              <label for="dia" class="form-label">Dia</label>
-              <input type="text" class="form-control" id="dia" name="dia" required />
-            </div>
-
-            <!-- Mês -->
-            <div class="col-md-2">
-              <label for="mes" class="form-label">Mês</label>
-              <input type="text" class="form-control" id="mes" name="mes" required />
-            </div>
-
-            <!-- Ano -->
-            <div class="col-md-2">
-              <label for="ano" class="form-label">Ano</label>
-              <input type="text" class="form-control" id="ano" name="ano" required />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- campos hidden para data e hora -->
-      <input type="hidden" id="dataSistema" name="DATA" />
-      <input type="hidden" id="horaSistema" name="HORA" />
-
-      <!-- 4) Responsável -->
-      <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">Responsável</div>
-        <div class="card-body">
-          <input
-            type="text"
-            class="form-control"
-            id="responsavel"
-            name="responsavel"
-            placeholder="Nome do responsável"
-            required
-          />
-          <div class="invalid-feedback">Informe o responsável.</div>
-        </div>
-      </div>
-
-      <!-- Botões -->
-      <div class="d-flex justify-content-end mb-5">
-        <button type="reset" class="btn btn-outline-secondary me-2">Limpar</button>
-        <button type="submit" class="btn btn-primary">Gerar Termo</button>
-      </div>
-
-    </form>
+    </div>
   </div>
 
-  <!-- Logos rodapé -->
-  <div class="logo-bottom text-center my-4">
-    <img src="imagens/logo-mps.svg" alt="Logo MPS" class="me-3" width="100"/>
-    <img src="imagens/logo-drpps.svg" alt="Logo DRPPS" width="100"/>
+  <!-- Modais -->
+  <div class="modal fade" id="modalErro" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Revise os itens em vermelho</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body"><ul id="modalErroLista" class="mb-0"></ul></div>
+        <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Ok</button></div>
+      </div>
+    </div>
   </div>
 
-  <!-- Bootstrap JS + seu script -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <div class="modal fade" id="modalBusca" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">Registro não encontrado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body"><p class="mb-0">Verifique o número informado ou preencha manualmente.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalSucesso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">Termo registrado</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Os dados foram salvos em <strong>Termos_registrados</strong> e possíveis alterações foram registradas em <strong>Reg_alteracao_dados_ente_ug</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

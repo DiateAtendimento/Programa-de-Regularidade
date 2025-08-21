@@ -1,186 +1,64 @@
-/* 0) Reset e fonte */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ====== Enterprise Look & Feel ====== */
+:root{
+  --brand:#1e3a8a;
+  --brand-600:#2563eb;
+  --brand-700:#1e40af;
+  --ok:#16a34a;
+  --err:#dc2626;
+  --muted:#6b7280;
+  --bg:#f4f6f9;
+  --card:#fff;
+  --divider:#e5e7eb;
+  --shadow:0 10px 28px rgba(0,0,0,.08);
 }
-html, body {
-  height: 100%;
-  overflow-x: hidden; /* remove scroll lateral */
-}
-body {
-  font-family: 'Inter', sans-serif;
+*{box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:#111827}
+.container{max-width:1120px}
 
-  /* ondas de fundo */
-  background: url('imagens/bg.svg') top center no-repeat;
-  background-size: cover;
-  min-height: 100vh;
+/* Stepper */
+.app-stepper{display:flex;align-items:center;justify-content:center;gap:.5rem}
+.app-stepper .step{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;background:#e5e7eb;color:#374151;
 }
+.app-stepper .step.active{background:var(--brand-600);color:#fff}
+.app-stepper .divider{flex:1;height:3px;background:#e5e7eb}
 
-/* 1) Painel flutuante */
-.container.floating-panel {
-  position: relative;
-  width: 90%;
-  max-width: 900px;
-  margin: 12vh auto 0;   /* empurra o form mais para cima */
-  padding: 0 1rem;
-  z-index: 1;
-}
+/* Card */
+.app-card{border:none;border-radius:14px;background:var(--card);box-shadow:var(--shadow)}
 
-/* 2) Título “encaixado” */
-.container.floating-panel > h1 {
-  position: absolute;
-  top: 0;
-  left: 1rem;
-  transform: translateY(-50%);
-  background: #fff;
-  padding: 0 0.5rem;
-  color: #2563eb;
-  font-size: 1.75rem;
-  font-weight: 600;
-  z-index: 2;
+/* Sections */
+.app-section{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--divider)}
+.section-title{font-size:1.25rem;font-weight:700;color:var(--brand)}
+.sub-title{font-weight:600;margin-bottom:.35rem;color:#374151}
+
+/* Inputs focus */
+.form-control:focus,.form-select:focus{
+  border-color:var(--brand-600);
+  box-shadow:0 0 0 .2rem rgba(37,99,235,.18);
 }
 
-/* 3) Formulário */
-#regularidadeForm {
-  margin-top: 1.5rem;
-  background: #fff;
-  border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
-}
+/* Validation (texto/email/date/select) */
+input[type="text"].is-invalid,
+input[type="email"].is-invalid,
+input[type="date"].is-invalid,
+textarea.is-invalid,
+select.is-invalid{border-color:var(--err)!important}
+input[type="text"].is-valid,
+input[type="email"].is-valid,
+input[type="date"].is-valid,
+textarea.is-valid,
+select.is-valid{border-color:var(--ok)!important}
 
-/* 4) Cards internos */
-.card {
-  border: none;
-  border-radius: .75rem;
-  box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, 0.08);
-  transition: transform .2s, box-shadow .2s;
-}
+/* Check/Radio outline */
+input[type="checkbox"].is-invalid,
+input[type="radio"].is-invalid{outline:2px solid var(--err)!important;border-radius:4px}
+input[type="checkbox"].is-valid,
+input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius:4px}
 
-.card-header {
-  font-weight: 600;
-  font-size: 1.1rem;
-}
+/* Buttons */
+.btn-primary{background:var(--brand-600);border-color:var(--brand-600)}
+.btn-primary:hover{background:var(--brand-700);border-color:var(--brand-700)}
 
-/* 5) Inputs e selects */
-.form-control,
-.form-select {
-  border-radius: .375rem;
-  box-shadow: none;
-  transition: border-color .2s, box-shadow .2s;
-}
-.form-control:focus,
-.form-select:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 .2rem rgba(37,99,235,0.25);
-}
-
-/* 6) Botões */
-.btn-primary {
-  background: #2563eb;
-  border-color: #2563eb;
-}
-.btn-primary:hover {
-  background: #1e4db7;
-  border-color: #1e4db7;
-}
-
-/* 7) Logo abaixo do formulário */
-.logo-bottom {
-  text-align: center;
-  margin: 2rem auto;
-  position: relative;
-  z-index: 1;
-}
-.logo-bottom img {
-  width: 160px;
-  height: auto;
-}
-
-/* ************ */
-/* FORM VALIDATION */
-/* ************ */
-
-/* quando o form tiver .was-validated e o campo inválido */
-.was-validated .form-control:invalid {
-  border-color: #dc3545;
-}
-.was-validated .form-select:invalid {
-  border-color: #dc3545;
-}
-
-/* feedback built-in do Bootstrap */
-.was-validated .form-control:invalid ~ .invalid-feedback,
-.was-validated .form-select:invalid ~ .invalid-feedback {
-  display: block;
-}
-
-/* Critérios (mensagem genérica, caso use #critFeedback) */
-#critFeedback {
-  color: #dc3545;
-  font-size: .9rem;
-}
-
-/* ===== Autocomplete do ENTE ===== */
-
-/* garante que o container do Ente tenha position:relative */
-.position-relative {
-  position: relative;
-}
-
-/* dropdown de sugestões  */
-.autocomplete-list {
-  display: none;                /* fica oculto até o JS abrir */
-  position: absolute;
-  top: calc(100% + 0.25rem);    /* um pouquinho abaixo do input */
-  left: 0;
-  right: 0;
-  background: #fff;
-  border: 1px solid #cccccc00;
-  border-radius: 0.25rem;
-  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, 0.1);
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 1000;
-
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-/* item da lista */
-.autocomplete-list li {
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
-
-/* hover */
-.autocomplete-list li:hover {
-  background: #f1f5f9;
-}
-
-/* 8) Ajustes para mobile */
-@media (max-width: 576px) {
-  .container.floating-panel {
-    margin: 8vh auto 0;
-  }
-  .container.floating-panel > h1 {
-    left: .75rem;
-    font-size: 1.5rem;
-  }
-  #regularidadeForm {
-    margin-top: 1rem;
-    padding: 1.5rem;
-  }
-  .card-body .row > [class*="col-"] {
-    margin-bottom: 1rem;
-  }
-  .logo-bottom {
-    margin: 1.5rem auto;
-  }
-  .logo-bottom img {
-    width: 120px;
-  }
-}
+.card-subblock{padding:1rem;border:1px dashed var(--divider);border-radius:10px}
