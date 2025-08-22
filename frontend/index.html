@@ -23,7 +23,7 @@
       </p>
     </header>
 
-    <!-- Stepper -->
+    <!-- Stepper (etapas 1..7 do formulário oficial; a pesquisa é etapa 0 oculta) -->
     <div id="stepper" class="app-stepper mb-3">
       <div class="step active">1</div><div class="divider"></div>
       <div class="step">2</div><div class="divider"></div>
@@ -41,7 +41,7 @@
           <section class="app-section" data-step="0">
             <div class="row g-2 align-items-end">
               <div class="col-md-5">
-                <label for="CNPJ_ENTE_PESQ" class="form-label">CNPJ do Ente (Pesquisar)</label>
+                <label for="CNPJ_ENTE_PESQ" class="form-label">CNPJ do ente federativo (pesquisa)</label>
                 <input type="text" class="form-control" id="CNPJ_ENTE_PESQ" placeholder="00.000.000/0000-00" />
               </div>
               <div class="col-md-3">
@@ -57,15 +57,18 @@
 
           <!-- ETAPA 1 -->
           <section class="app-section" data-step="1">
-            <div class="section-head">
-              <h2 class="section-title">1. Identificação do ente federativo</h2>
-              <p class="small text-muted mb-0">
-                Esta etapa identifica a esfera de governo, o ente federativo e, quando existir, sua Unidade Gestora do RPPS.
-              </p>
+            <div class="section-head d-flex align-items-center justify-content-between">
+              <div>
+                <h2 class="section-title mb-1">1. Identificação do ente federativo</h2>
+                <p class="small text-muted mb-0">
+                  Identificação da esfera de governo, do ente federativo e, quando houver, da Unidade Gestora do RPPS (UG).
+                </p>
+              </div>
+              <!-- aparece "Voltar" global; aqui nada -->
             </div>
 
             <div class="mb-3" id="grpESFERA">
-              <div class="sub-title mb-2">1.1 Esfera de Governo</div>
+              <div class="sub-title mb-2">1.1 Esfera de governo</div>
               <div class="d-flex flex-wrap gap-4">
                 <div class="form-check">
                   <input class="form-check-input esf-only-one" type="checkbox" id="esf_mun" name="ESFERA_GOVERNO[]" value="RPPS Municipal">
@@ -77,12 +80,12 @@
                 </div>
               </div>
               <p class="small text-muted mt-1 mb-0">
-                Se o nome do ente contiver “Governo do Estado de …”, a esfera sugerida é <em>Estadual/Distrital</em>. Caso contrário, <em>RPPS Municipal</em>.
+                Dica: se o nome do ente contiver “Governo do Estado de …”, a esfera sugerida é <em>Estadual/Distrital</em>. Caso contrário, <em>RPPS Municipal</em>.
               </p>
             </div>
 
             <div class="row g-3">
-              <div class="col-12"><div class="sub-title">1.2 Ente Federativo</div></div>
+              <div class="col-12"><div class="sub-title">1.2 Ente federativo</div></div>
 
               <div class="col-md-2">
                 <label class="form-label" for="UF">UF</label>
@@ -116,7 +119,7 @@
               <div class="col-12 mt-2"><div class="sub-title">1.3 Regime Próprio de Previdência Social (RPPS)</div></div>
 
               <div class="col-md-6">
-                <label class="form-label" for="UG">Unidade Gestora</label>
+                <label class="form-label" for="UG">Unidade Gestora (UG)</label>
                 <input type="text" id="UG" class="form-control" />
               </div>
 
@@ -134,11 +137,14 @@
 
           <!-- ETAPA 2 -->
           <section class="app-section" data-step="2">
-            <div class="section-head">
-              <h2 class="section-title">2. Identificação dos responsáveis</h2>
-              <p class="small text-muted mb-0">
-                Informe (ou confirme) os dados do representante legal do ente federativo e do representante legal do RPPS (UG).
-              </p>
+            <div class="section-head d-flex align-items-center justify-content-between">
+              <div>
+                <h2 class="section-title mb-1">2. Identificação dos responsáveis</h2>
+                <p class="small text-muted mb-0">
+                  Os campos abaixo são preenchidos <strong>somente após</strong> a pesquisa por CPF (itens 2.1 e 2.2).
+                </p>
+              </div>
+              <button type="button" class="btn btn-link p-0" id="btnBackToStep1">← Voltar para a etapa 1</button>
             </div>
 
             <div class="card-subblock mb-3">
@@ -171,7 +177,7 @@
             </div>
 
             <div class="card-subblock">
-              <div class="sub-title">2.2 Representante legal do RPPS</div>
+              <div class="sub-title">2.2 Representante legal do RPPS (UG)</div>
               <div class="row g-3 align-items-end">
                 <div class="col-md-3">
                   <label class="form-label" for="CPF_REP_UG">CPF</label>
@@ -205,15 +211,15 @@
             <div class="section-head">
               <h2 class="section-title">3. Situação relativa ao CRP</h2>
               <p class="small text-muted mb-0">
-                Esta etapa usa o CNPJ do ente informado na etapa 1 para localizar o último CRP na aba “CRP”.
-                O tipo de emissão é <em>Administrativa</em> quando a coluna “Decisão Judicial” for “Não”; e <em>Judicial</em> quando for “Sim”.
+                Usa o CNPJ informado na etapa 1 para localizar o último CRP na aba “CRP”.
+                O tipo de emissão é <em>Administrativa</em> quando “Decisão Judicial” = “Não”; e <em>Judicial</em> quando = “Sim”.
               </p>
             </div>
 
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label" for="DATA_VENCIMENTO_ULTIMO_CRP">3.1 Data de vencimento do último CRP</label>
-                <input type="date" id="DATA_VENCIMENTO_ULTIMO_CRP" class="form-control" />
+                <input type="text" id="DATA_VENCIMENTO_ULTIMO_CRP" class="form-control" placeholder="dd/mm/aaaa" />
               </div>
             </div>
 
@@ -230,73 +236,79 @@
                 </div>
               </div>
             </div>
+
+            <div class="mt-4">
+              <div class="sub-title">3.3 Critério(s) irregular(es) no extrato previdenciário</div>
+              <p class="small text-muted">Selecione os critérios assinalados como irregulares no extrato.</p>
+              <div id="grpIrregularesList" class="d-grid gap-2"></div>
+            </div>
           </section>
 
           <!-- ETAPA 4 -->
           <section class="app-section" data-step="4">
             <div class="section-head">
-              <h2 class="section-title">4. Finalidade(s) inicial(is)</h2>
+              <h2 class="section-title">4. Finalidade(s) inicial(is) da adesão</h2>
               <p class="small text-muted mb-0">
-                Assinale as finalidades que motivam a adesão inicial ao Programa de Regularidade Previdenciária.
+                Assinale as finalidades que motivam a adesão inicial ao Programa.
               </p>
             </div>
 
             <p class="fw-semibold mb-2">4.1 Celebração de termos de parcelamento de débitos</p>
             <div class="form-check mb-2">
               <input class="form-check-input grp-finalidade" type="checkbox" id="parc60" name="FINALIDADES[]" value="Até 60 parcelas (arts. 14 e 15 do ADCT)">
-              <label class="form-check-label" for="parc60">Até 60 parcelas (arts. 14 e 15 do ADCT)</label>
+              <label class="form-check-label" for="parc60">Em até sessenta parcelas (arts. 14 e 15 do ADCT).</label>
             </div>
             <div class="form-check mb-4">
               <input class="form-check-input grp-finalidade" type="checkbox" id="parc300" name="FINALIDADES[]" value="Até 300 parcelas (arts. 115 e 117 do ADCT)">
-              <label class="form-check-label" for="parc300">Até 300 parcelas (arts. 115 e 117 do ADCT)</label>
+              <label class="form-check-label" for="parc300">Em até trezentas parcelas (arts. 115 e 117 do ADCT).</label>
             </div>
 
             <p class="fw-semibold mb-2">4.2 Regularização de pendências para emissão do CRP</p>
             <div class="form-check mb-2">
               <input class="form-check-input grp-finalidade" type="checkbox" id="reg_sem_jud" value="Regularização sem decisão judicial">
-              <label class="form-check-label" for="reg_sem_jud">Para entes sem decisão judicial</label>
+              <label class="form-check-label" for="reg_sem_jud">Para entes sem decisão judicial.</label>
             </div>
             <div class="form-check mb-4">
               <input class="form-check-input grp-finalidade" type="checkbox" id="reg_com_jud" value="Regularização com decisão judicial (RE 1.007.271, Tema 968)">
-              <label class="form-check-label" for="reg_com_jud">Para entes com decisão judicial</label>
+              <label class="form-check-label" for="reg_com_jud">Para entes com decisão judicial (RE 1.007.271, Tema 968).</label>
             </div>
 
-            <p class="fw-semibold mt-2 mb-2">4.3 Equacionamento de déficit atuarial</p>
+            <p class="fw-semibold mt-2 mb-2">4.3 Equacionamento de déficit atuarial do RPPS</p>
             <div class="form-check mb-2">
               <input class="form-check-input grp-finalidade" type="checkbox" id="eq_implano" value="Implementação de plano de equacionamento">
-              <label class="form-check-label" for="eq_implano">Implementação de plano de equacionamento</label>
+              <label class="form-check-label" for="eq_implano">Apresentação/implementação de plano de equacionamento.</label>
             </div>
             <div class="form-check mb-2">
               <input class="form-check-input grp-finalidade" type="checkbox" id="eq_prazos" value="Prazos adicionais para comprovação de medidas">
-              <label class="form-check-label" for="eq_prazos">Prazos adicionais para comprovação de medidas</label>
+              <label class="form-check-label" for="eq_prazos">Prazos adicionais para comprovação de medidas.</label>
             </div>
             <div class="form-check mb-4">
               <input class="form-check-input grp-finalidade" type="checkbox" id="eq_plano_alt" value="Plano alternativo de equacionamento (art. 55, §7º)">
-              <label class="form-check-label" for="eq_plano_alt">Plano alternativo de equacionamento (art. 55, §7º)</label>
+              <label class="form-check-label" for="eq_plano_alt">Plano alternativo (art. 55, §7º).</label>
             </div>
 
-            <p class="fw-semibold mt-2 mb-2">4.4 Critérios estruturantes / organização do RPPS</p>
+            <p class="fw-semibold mt-2 mb-2">4.4 Organização do RPPS conforme critérios estruturantes</p>
             <div class="form-check mb-2">
               <input class="form-check-input grp-finalidade" type="checkbox" id="org_ugu" value="Adequação da Unidade Gestora Única (CF art. 40, §20)">
-              <label class="form-check-label" for="org_ugu">Adequação da Unidade Gestora Única (CF art. 40, §20)</label>
+              <label class="form-check-label" for="org_ugu">Adequação da Unidade Gestora Única (CF art. 40, §20).</label>
             </div>
             <div class="form-check mb-4">
               <input class="form-check-input grp-finalidade" type="checkbox" id="org_outros" value="Outro critério de maior complexidade">
-              <label class="form-check-label" for="org_outros">Outro critério de maior complexidade</label>
+              <label class="form-check-label" for="org_outros">Outro critério de maior complexidade.</label>
             </div>
 
-            <p class="fw-semibold mt-2 mb-2">4.5 Manutenção da conformidade</p>
+            <p class="fw-semibold mt-2 mb-2">4.5 Manutenção da conformidade do RPPS nas normas gerais</p>
             <div class="form-check mb-2">
               <input class="form-check-input grp-finalidade" type="checkbox" id="man_cert" value="Pró-Gestão RPPS (nível II/III/IV)">
-              <label class="form-check-label" for="man_cert">Pró-Gestão RPPS (nível II/III/IV)</label>
+              <label class="form-check-label" for="man_cert">Certificação no Pró-Gestão RPPS (nível II/III/IV).</label>
             </div>
             <div class="form-check mb-2">
               <input class="form-check-input grp-finalidade" type="checkbox" id="man_melhoria" value="Melhora nos indicadores do ISP-RPPS">
-              <label class="form-check-label" for="man_melhoria">Melhora nos indicadores do ISP-RPPS</label>
+              <label class="form-check-label" for="man_melhoria">Melhoria nos indicadores do ISP-RPPS.</label>
             </div>
             <div class="form-check mb-2">
               <input class="form-check-input grp-finalidade" type="checkbox" id="man_acomp" value="Medidas de acompanhamento atuarial (arts. 67 a 69)">
-              <label class="form-check-label" for="man_acomp">Medidas de acompanhamento atuarial (arts. 67 a 69)</label>
+              <label class="form-check-label" for="man_acomp">Adoção de medidas de acompanhamento atuarial (arts. 67 a 69).</label>
             </div>
           </section>
 
@@ -304,26 +316,25 @@
           <section class="app-section" data-step="5">
             <div class="section-head">
               <h2 class="section-title">5. Compromissos firmados</h2>
-              <p class="small text-muted mb-0">
-                Selecione os compromissos que o ente assume ao aderir ao Programa.
-              </p>
+              <p class="small text-muted mb-0">Selecione os compromissos assumidos na adesão ao Programa.</p>
             </div>
             <div class="d-flex flex-column gap-3" id="grpCOMPROMISSOS">
+              <!-- preenchido/expandido via JS também, se quiser -->
               <label class="form-check">
                 <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Regularidade nos repasses e parcelas de acordos">
-                <span class="form-check-label">Regularidade nos repasses e parcelas de acordos</span>
+                <span class="form-check-label">Manter a regularidade nos repasses ao RPPS e nas parcelas de acordos/parcelamentos celebrados.</span>
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Regularidade no encaminhamento de documentos (art. 241)">
-                <span class="form-check-label">Regularidade no encaminhamento de documentos (art. 241)</span>
+                <span class="form-check-label">Regularidade no encaminhamento de documentos, demonstrativos e informações (art. 241).</span>
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Adequações na legislação do RPPS">
-                <span class="form-check-label">Adequações na legislação do RPPS</span>
+                <span class="form-check-label">Adequar a legislação do RPPS quando identificado pela Secretaria.</span>
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Cumprimento de Planos de Ação">
-                <span class="form-check-label">Cumprimento de Planos de Ação</span>
+                <span class="form-check-label">Cumprir os Planos de Ação apresentados nas fases específicas do Programa.</span>
               </label>
             </div>
           </section>
@@ -333,18 +344,18 @@
             <div class="section-head">
               <h2 class="section-title">6. Providências e 7. Condições</h2>
               <p class="small text-muted mb-0">
-                Assinale as providências já adotadas e confirme ciência das condições de vigência do art. 60 do Anexo XVIII da Portaria MTP nº 1.467/2022.
+                Assinale as providências adotadas e confirme ciência das condições de vigência (art. 60 do Anexo XVIII da Portaria MTP nº 1.467/2022).
               </p>
             </div>
 
             <div class="d-flex flex-column gap-3 mb-3" id="grpPROVIDENCIAS">
               <label class="form-check">
                 <input class="form-check-input me-2 grp-prov" type="checkbox" name="PROVIDENCIAS[]" value="Incluídos todos os débitos no Cadprev">
-                <span class="form-check-label">Incluídos todos os débitos no Cadprev</span>
+                <span class="form-check-label">Incluídos, no Cadprev, todos os débitos de contribuições e quaisquer outros valores devidos ao RPPS.</span>
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2 grp-prov" type="checkbox" name="PROVIDENCIAS[]" value="Não possui débitos até a data da adesão (ou já regularizados)">
-                <span class="form-check-label">Não possui débitos até a data da adesão (ou já regularizados)</span>
+                <span class="form-check-label">Declaração de que não possui débitos de contribuições ou outros valores devidos ao RPPS até a data da adesão (ou já regularizados).</span>
               </label>
             </div>
 
@@ -359,8 +370,10 @@
           <!-- Controles -->
           <div class="d-flex justify-content-between mt-2">
             <button type="button" id="btnPrev" class="btn btn-outline-secondary">Voltar</button>
-            <button type="button" id="btnNext" class="btn btn-primary">Próximo</button>
-            <button type="submit" id="btnSubmit" class="btn btn-success d-none">Gerar Termo</button>
+            <div class="d-flex gap-2">
+              <button type="button" id="btnNext" class="btn btn-primary">Próximo</button>
+              <button type="submit" id="btnSubmit" class="btn btn-success d-none">Gerar Termo</button>
+            </div>
           </div>
 
           <!-- carimbos -->

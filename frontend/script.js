@@ -1,4 +1,5 @@
-// script.js — Multi-etapas com: máscaras, stepper, busca nas abas, loading, edição com ✎, confirmação de alterações e submissão
+// script.js — Multi-etapas com: máscaras, stepper, busca (CNPJ), busca por CPF (2.1 e 2.2),
+// validação e submissão. Inclui lista 3.3 dinâmica e máscara dd/mm/aaaa.
 (() => {
   /* ========= Config API ========= */
   const API_BASE = (() => {
@@ -17,17 +18,10 @@
   const fmtHR = d => d.toLocaleTimeString('pt-BR',{hour12:false,timeZone:'America/Sao_Paulo'});
   const rmAcc = s => String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
 
-  // Modais do HTML
-  const modalErro    = new bootstrap.Modal($('#modalErro'));
-  const modalBusca   = new bootstrap.Modal($('#modalBusca'));
-  const modalSucesso = new bootstrap.Modal($('#modalSucesso'));
-  const modalLoading = new bootstrap.Modal($('#modalLoading'), {backdrop:'static', keyboard:false});
-  const modalConfirm = new bootstrap.Modal($('#modalConfirm'));
-
   function showErro(msgs){
     const ul = $('#modalErroLista'); ul.innerHTML='';
     msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
-    modalErro.show();
+    new bootstrap.Modal($('#modalErro')).show();
   }
 
   /* ========= Máscaras ========= */
@@ -48,11 +42,19 @@
     if (d.length>12) o = o.slice(0,15)+'-'+o.slice(15);
     return o;
   };
+  const maskDMY = v => {
+    const d = digits(v).slice(0,8);
+    let o = d;
+    if (d.length>2)  o = d.slice(0,2)+'/'+d.slice(2);
+    if (d.length>4)  o = o.slice(0,5)+'/'+o.slice(5);
+    return o;
+  };
+
   function applyMask(id, kind){
     const el = document.getElementById(id); if(!el) return;
-    const need = kind==='cpf'?11:14;
-    el.setAttribute('maxlength', kind==='cpf'?'14':'18');
-    const fmt = kind==='cpf'?maskCPF:maskCNPJ;
+    const need = kind==='cpf'?11:(kind==='cnpj'?14:8);
+    el.setAttribute('maxlength', kind==='cpf'?'14': kind==='cnpj'?'18':'10');
+    const fmt = kind==='cpf'?maskCPF: kind==='cnpj'?maskCNPJ: maskDMY;
     el.addEventListener('input', ()=> el.value = fmt(el.value));
     el.addEventListener('blur', ()=>{
       const ok = digits(el.value).length===need || (!el.value && kind==='cpf');
@@ -62,6 +64,7 @@
   }
   ['CNPJ_ENTE_PESQ','CNPJ_ENTE','CNPJ_UG'].forEach(id=>applyMask(id,'cnpj'));
   ['CPF_REP_ENTE','CPF_REP_UG'].forEach(id=>applyMask(id,'cpf'));
+  applyMask('DATA_VENCIMENTO_ULTIMO_CRP','dmy');
 
   // Telefones
   function maskPhone(v){
@@ -81,7 +84,6 @@
   /* ========= Stepper / Navegação ========= */
   let step = 0;                 // 0..6
   let cnpjOK = false;           // libera “Próximo” na etapa 0
-  let awaitingConfirm = null;   // cache do que está em confirmação
 
   const sections = $$('[data-step]');
   const stepsUI  = $$('#stepper .step');
@@ -90,13 +92,11 @@
   const btnSubmit= $('#btnSubmit');
 
   function updateNavButtons(){
-    // mostrar/ocultar "Voltar" (somente a partir da etapa 2)
-    btnPrev.classList.toggle('d-none', step <= 1);
+    if (step >= 1) btnPrev.classList.remove('d-none');
+    else btnPrev.classList.add('d-none');
 
-    // habilitar/desabilitar "Próximo"
-    btnNext.disabled = (step === 0 && !cnpjOK);
+    btnNext.disabled = (step === 0 ? !cnpjOK : false);
 
-    // alterna Next/Submit na última etapa
     btnNext.classList.toggle('d-none', step===6);
     btnSubmit.classList.toggle('d-none', step!==6);
   }
@@ -109,54 +109,16 @@
   }
   showStep(0);
 
-  // digitar novo CNPJ volta a travar o "Próximo"
-  $('#CNPJ_ENTE_PESQ')?.addEventListener('input', ()=>{ cnpjOK = false; updateNavButtons(); });
-
+  $('#btnBackToStep1')?.addEventListener('click', ()=> showStep(1));
   btnPrev?.addEventListener('click', ()=> showStep(step-1));
 
-  btnNext?.addEventListener('click', async ()=>{
-    // Etapa 0: só avança se CNPJ foi encontrado
-    if (step === 0 && !cnpjOK) {
-      return showErro(['Pesquise e selecione um CNPJ válido antes de prosseguir.']);
-    }
-
-    // Etapas 1 e 2: se houve alterações em campos auto-preenchidos, pedir confirmação
-    if (step === 1 || step === 2) {
-      const changes = listChangedAuto(step);
-      if (changes.length) {
-        const ul = document.createElement('ul');
-        ul.className = 'mb-0';
-        changes.forEach(ch => {
-          const li = document.createElement('li');
-          li.innerHTML = `<strong>${ch.label}:</strong> “${ch.before}” → “${ch.after}”`;
-          ul.appendChild(li);
-        });
-        $('#confirmChangesList').innerHTML = '';
-        $('#confirmChangesList').appendChild(ul);
-        awaitingConfirm = { nextStep: step+1 };
-        modalConfirm.show();
-        return; // aguarda clique em "Confirmar"
-      }
-    }
-
-    // Validações fortes das etapas 1..3
-    if (step>=1 && step<=3) {
-      if (!validateStep(step)) return;
-    }
-
+  btnNext?.addEventListener('click', ()=>{
+    if (step === 0 && !cnpjOK) return showErro(['Pesquise e selecione um CNPJ válido antes de prosseguir.']);
+    if (step>=1 && step<=3) { if(!validateStep(step)) return; }
     showStep(step+1);
   });
 
-  // "Confirmar e continuar" do modal de alterações
-  $('#btnConfirmProceed')?.addEventListener('click', ()=>{
-    modalConfirm.hide();
-    if (awaitingConfirm && Number.isInteger(awaitingConfirm.nextStep)) {
-      showStep(awaitingConfirm.nextStep);
-    }
-    awaitingConfirm = null;
-  });
-
-  /* ========= Esfera (apenas 1) ========= */
+  /* ========= Esfera ========= */
   $$('.esf-only-one').forEach(chk=>{
     chk.addEventListener('change', ()=>{
       if(chk.checked){
@@ -178,7 +140,7 @@
     }
   }
 
-  /* ========= Validações por etapa ========= */
+  /* ========= Validações (1..3) ========= */
   const reqAll = {
     1: [
       {id:'UF', type:'select', label:'UF'},
@@ -197,9 +159,7 @@
       {id:'CARGO_REP_UG', type:'text', label:'Cargo do Rep. da UG'},
       {id:'EMAIL_REP_UG', type:'email', label:'E-mail do Rep. da UG'}
     ],
-    3: [
-      {id:'DATA_VENCIMENTO_ULTIMO_CRP', type:'date', label:'Data do último CRP'}
-    ]
+    3: [{id:'DATA_VENCIMENTO_ULTIMO_CRP', type:'dmy', label:'Data do último CRP'}]
   };
   function checkField(id,type){
     const el = document.getElementById(id); if(!el) return true;
@@ -207,7 +167,7 @@
     let ok=false;
     if(type==='text') ok = v.trim().length>0;
     else if(type==='email') ok = !!v && isEmail(v);
-    else if(type==='date') ok = !!v.trim();
+    else if(type==='dmy') ok = /^\d{2}\/\d{2}\/\d{4}$/.test(v.trim());
     else if(type==='select') ok = !!v.trim();
     else if(type==='cpf') ok = digits(v).length===11;
     else if(type==='cnpj') ok = digits(v).length===14;
@@ -223,122 +183,61 @@
       items.forEach(i => i.classList.toggle('is-invalid', !ok));
       if(!ok) msgs.push('Esfera de Governo');
     }
-    if (s===3) {
-      const radios = $$('input[name="TIPO_EMISSAO_ULTIMO_CRP"]');
-      const ok = radios.some(r=>r.checked);
-      if(!ok) msgs.push('Tipo de emissão do CRP');
-    }
     if (msgs.length){ showErro(msgs); return false; }
     return true;
   }
 
-  /* ========= Snapshot base + campos auto (para confirmação) ========= */
+  /* ========= Snapshot base (apenas etapa 1) ========= */
   let snapshotBase = null;
-  const autoFields = [
-    // Etapa 1
-    {id:'UF', label:'UF', norm:v=>String(v||'').trim()},
-    {id:'ENTE', label:'Ente', norm:v=>String(v||'').trim()},
-    {id:'CNPJ_ENTE', label:'CNPJ do Ente', norm:v=>digits(v)},
-    {id:'UG', label:'UG', norm:v=>String(v||'').trim()},
-    {id:'CNPJ_UG', label:'CNPJ da UG', norm:v=>digits(v)},
-    // Etapa 2 — Representantes
-    {id:'CPF_REP_ENTE', label:'CPF do Rep. do Ente', norm:v=>digits(v)},
-    {id:'NOME_REP_ENTE', label:'Nome do Rep. do Ente', norm:v=>String(v||'').trim()},
-    {id:'CARGO_REP_ENTE', label:'Cargo do Rep. do Ente', norm:v=>String(v||'').trim()},
-    {id:'EMAIL_REP_ENTE', label:'E-mail do Rep. do Ente', norm:v=>String(v||'').trim()},
-    {id:'TEL_REP_ENTE', label:'Telefone do Rep. do Ente', norm:v=>digits(v)},
-    {id:'CPF_REP_UG', label:'CPF do Rep. da UG', norm:v=>digits(v)},
-    {id:'NOME_REP_UG', label:'Nome do Rep. da UG', norm:v=>String(v||'').trim()},
-    {id:'CARGO_REP_UG', label:'Cargo do Rep. da UG', norm:v=>String(v||'').trim()},
-    {id:'EMAIL_REP_UG', label:'E-mail do Rep. da UG', norm:v=>String(v||'').trim()},
-    {id:'TEL_REP_UG', label:'Telefone do Rep. da UG', norm:v=>digits(v)},
+
+  /* ========= Render 3.3 – critérios irregulares ========= */
+  const CRITERIOS_33 = [
+    // (lista ampliada; adicione/ajuste livremente os textos conforme o extrato oficial)
+    'Aplicações Financeiras – CMN (DAIR/Política de Investimentos – objeto de PAP)',
+    'Atendimento à fiscalização',
+    'Atendimento a solicitação de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar',
+    'Caráter contributivo – Repasses (objeto de Processo Administrativo Previdenciário)',
+    'Demonstrativo da Política de Investimentos – DPIN (consistência)',
+    'Demonstrativo da Política de Investimentos – DPIN (encaminhamento)',
+    'Demonstrativo das Aplicações e Investimentos dos Recursos – DAR (consistência)',
+    'Demonstrativo das Aplicações e Investimentos dos Recursos – DAIR (encaminhamento)',
+    'Demonstrativo de Informações Previdenciárias e Repasses – DIPR (consistência e caráter contributivo)',
+    'Demonstrativo de Informações Previdenciárias e Repasses – DIPR (encaminhamento)',
+    'Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi',
+    'Equilíbrio Financeiro e Atuarial – encaminhamento NTA/DRAA e resultados das análises',
+    'Existência e funcionamento de unidade gestora e regime próprio únicos',
+    'Filiação ao RPPS e regras de concessão, cálculo e reajustamento dos benefícios, nos termos do art. 40 da CF',
+    'Instituição do regime de previdência complementar – aprovação da lei',
+    'Observância dos limites de contribuição do ente',
+    'Observância dos limites de contribuição dos segurados e beneficiários',
+    'Operacionalização da compensação previdenciária – termo de adesão e contrato com a empresa de tecnologia',
+    'Plano de benefícios integrado apenas para aposentadorias e pensões por morte',
+    'Requisitos para dirigentes, membros dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS',
+    'Utilização dos recursos previdenciários (objeto de PAP)'
   ];
-  let autoSnapshotCompare = {};
-  function buildAutoSnapshotCompare(from){
-    autoSnapshotCompare = {
-      UF: from?.UF || '',
-      ENTE: from?.ENTE || '',
-      CNPJ_ENTE: from?.CNPJ_ENTE || '',
-      UG: from?.UG || '',
-      CNPJ_UG: from?.CNPJ_UG || '',
-      NOME_REP_ENTE: from?.NOME_REP_ENTE || '',
-      CPF_REP_ENTE: from?.CPF_REP_ENTE || '',
-      TEL_REP_ENTE: from?.TEL_REP_ENTE || '',
-      EMAIL_REP_ENTE: from?.EMAIL_REP_ENTE || '',
-      CARGO_REP_ENTE: from?.CARGO_REP_ENTE || '',
-      NOME_REP_UG: from?.NOME_REP_UG || '',
-      CPF_REP_UG: from?.CPF_REP_UG || '',
-      TEL_REP_UG: from?.TEL_REP_UG || '',
-      EMAIL_REP_UG: from?.EMAIL_REP_UG || '',
-      CARGO_REP_UG: from?.CARGO_REP_UG || ''
-    };
-    for (const f of autoFields) {
-      autoSnapshotCompare[f.id] = f.norm(autoSnapshotCompare[f.id] || '');
-    }
-  }
-
-  // “Travar” campos auto-preenchidos e adicionar botão ✎
-  function decorateAutoFields(){
-    autoFields.forEach(({id})=>{
-      const el = document.getElementById(id);
-      if (!el || el.dataset.decorated === '1') return;
-
-      el.dataset.decorated = '1';
-      el.readOnly = true;
-      el.classList.add('bg-light');
-
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn btn-sm btn-outline-secondary ms-2';
-      btn.textContent = '✎';
-      btn.title = 'Permitir edição deste campo';
-      el.insertAdjacentElement('afterend', btn);
-      btn.addEventListener('click', ()=>{
-        el.readOnly = !el.readOnly;
-        btn.classList.toggle('btn-outline-secondary', el.readOnly);
-        btn.classList.toggle('btn-warning', !el.readOnly);
-        btn.title = el.readOnly ? 'Permitir edição deste campo' : 'Bloquear edição deste campo';
-        if (!el.readOnly) el.focus();
-      });
+  const grpIrregularesList = $('#grpIrregularesList');
+  if (grpIrregularesList) {
+    CRITERIOS_33.forEach((txt, i) => {
+      const id = `crit_${i}`;
+      const wrap = document.createElement('label');
+      wrap.className = 'form-check';
+      wrap.innerHTML = `
+        <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="${txt}">
+        <span class="form-check-label">${txt}</span>
+      `;
+      grpIrregularesList.appendChild(wrap);
     });
   }
 
-  // Lista alterações nos campos auto da etapa atual
-  function listChangedAuto(currentStep){
-    const idsByStep = currentStep===1
-      ? ['UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG']
-      : currentStep===2
-        ? ['CPF_REP_ENTE','NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG']
-        : [];
-    const changes = [];
-    idsByStep.forEach(id=>{
-      const def = autoFields.find(f=>f.id===id);
-      if(!def) return;
-      const before = autoSnapshotCompare[id] || '';
-      const after  = def.norm($('#'+id).value || '');
-      if (String(before) !== String(after)) {
-        const prettyBefore = (id.includes('CNPJ') ? maskCNPJ(before) :
-                             id.includes('CPF')  ? maskCPF(before)  :
-                             id.includes('TEL')  ? maskPhone(before) : before);
-        const prettyAfter  = (id.includes('CNPJ') ? maskCNPJ(after) :
-                             id.includes('CPF')  ? maskCPF(after)  :
-                             id.includes('TEL')  ? maskPhone(after) : after);
-        changes.push({ id, label:def.label, before:prettyBefore, after:prettyAfter });
-      }
-    });
-    return changes;
-  }
-
-  /* ========= Busca por CNPJ ========= */
+  /* ========= Busca por CNPJ (preenche etapa 1 + CRP; reps NÃO) ========= */
   $('#btnPesquisar')?.addEventListener('click', async ()=>{
     const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
     if(cnpj.length!==14) { markInvalid($('#CNPJ_ENTE_PESQ')); return showErro(['Informe um CNPJ válido.']); }
     markValid($('#CNPJ_ENTE_PESQ'));
 
     try{
-      modalLoading.show();
       const r = await fetch(`${API_BASE}/api/consulta?cnpj=${cnpj}`);
-      if(!r.ok){ modalLoading.hide(); modalBusca.show(); cnpjOK = false; updateNavButtons(); return; }
+      if(!r.ok){ new bootstrap.Modal($('#modalBusca')).show(); cnpjOK = false; updateNavButtons(); return; }
       const { data } = await r.json();
       snapshotBase = data.__snapshot || null;
 
@@ -349,72 +248,54 @@
       $('#UG').value = data.UG || '';
       $('#CNPJ_UG').value = maskCNPJ(data.CNPJ_UG || '');
 
-      // Etapa 2
-      $('#NOME_REP_ENTE').value = data.NOME_REP_ENTE || '';
-      $('#CPF_REP_ENTE').value  = maskCPF(data.CPF_REP_ENTE || '');
-      $('#EMAIL_REP_ENTE').value= data.EMAIL_REP_ENTE || '';
-      $('#TEL_REP_ENTE').value  = data.TEL_REP_ENTE || '';
-      $('#CARGO_REP_ENTE').value= data.CARGO_REP_ENTE || '';
-
-      $('#NOME_REP_UG').value = data.NOME_REP_UG || '';
-      $('#CPF_REP_UG').value  = maskCPF(data.CPF_REP_UG || '');
-      $('#EMAIL_REP_UG').value= data.EMAIL_REP_UG || '';
-      $('#TEL_REP_UG').value  = data.TEL_REP_UG || '';
-      $('#CARGO_REP_UG').value= data.CARGO_REP_UG || '';
-
-      // Etapa 3 — CRP
-      if(data.CRP_DATA_VALIDADE) $('#DATA_VENCIMENTO_ULTIMO_CRP').value = data.CRP_DATA_VALIDADE;
+      // Etapa 3 — CRP (dd/mm/aaaa)
+      if(data.CRP_DATA_VALIDADE){
+        $('#DATA_VENCIMENTO_ULTIMO_CRP').value = data.CRP_DATA_VALIDADE;
+        markValid($('#DATA_VENCIMENTO_ULTIMO_CRP'));
+      }
       const dj = rmAcc(String(data.CRP_DECISAO_JUDICIAL || ''));
       if (dj === 'nao') $('#em_adm').checked = true;
       else if (dj === 'sim') $('#em_jud').checked = true;
 
-      // Esfera sugerida
+      // Esfera (1.1)
       autoselectEsferaByEnte(data.ENTE);
 
-      // Feedback visual + travas
+      // Validação visual
       Object.values(reqAll).flat().forEach(({id,type})=> checkField(id,type));
-      decorateAutoFields();
-      buildAutoSnapshotCompare({
-        UF: data.UF, ENTE: data.ENTE, CNPJ_ENTE: data.CNPJ_ENTE, UG: data.UG, CNPJ_UG: data.CNPJ_UG,
-        NOME_REP_ENTE: data.NOME_REP_ENTE, CPF_REP_ENTE: data.CPF_REP_ENTE, TEL_REP_ENTE: data.TEL_REP_ENTE,
-        EMAIL_REP_ENTE: data.EMAIL_REP_ENTE, CARGO_REP_ENTE: data.CARGO_REP_ENTE,
-        NOME_REP_UG: data.NOME_REP_UG, CPF_REP_UG: data.CPF_REP_UG, TEL_REP_UG: data.TEL_REP_UG,
-        EMAIL_REP_UG: data.EMAIL_REP_UG, CARGO_REP_UG: data.CARGO_REP_UG
-      });
 
       cnpjOK = true;
-      modalLoading.hide();
       showStep(1);
     }catch{
-      modalLoading.hide();
-      modalBusca.show();
+      new bootstrap.Modal($('#modalBusca')).show();
       cnpjOK = false; updateNavButtons();
     }
   });
 
-  // Busca reps por CPF
+  // Busca reps por CPF (2.1 e 2.2, independentes)
   async function buscarRepByCPF(cpf, fillPrefix){
     const cpfd = digits(cpf||'');
     if(cpfd.length!==11) { showErro(['Informe um CPF válido.']); return; }
     try{
-      modalLoading.show();
       const r = await fetch(`${API_BASE}/api/rep-by-cpf?cpf=${cpfd}`);
-      modalLoading.hide();
-      if(!r.ok){ modalBusca.show(); return; }
+      if(!r.ok){ new bootstrap.Modal($('#modalBusca')).show(); return; }
       const { data } = await r.json();
       if(fillPrefix==='ENTE'){
         $('#NOME_REP_ENTE').value = data.NOME || '';
         $('#CARGO_REP_ENTE').value = data.CARGO || '';
         $('#EMAIL_REP_ENTE').value = data.EMAIL || '';
-        $('#TEL_REP_ENTE').value = data.TELEFONE || '';
+        $('#TEL_REP_ENTE').value   = data.TELEFONE || '';
       }else{
         $('#NOME_REP_UG').value = data.NOME || '';
         $('#CARGO_REP_UG').value = data.CARGO || '';
         $('#EMAIL_REP_UG').value = data.EMAIL || '';
-        $('#TEL_REP_UG').value = data.TELEFONE || '';
+        $('#TEL_REP_UG').value   = data.TELEFONE || '';
       }
+      // valida visualmente campos preenchidos
+      const ids = fillPrefix==='ENTE'
+        ? ['NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE']
+        : ['NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG'];
+      ids.forEach(id => { const el = $('#'+id); if(el) markValid(el); });
     }catch{
-      modalLoading.hide();
       showErro(['Falha ao consultar CPF.']);
     }
   }
@@ -424,15 +305,13 @@
   /* ========= Submit ========= */
   $('#regularidadeForm')?.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    // valida minimamente até a etapa 3
     if(!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
 
-    // carimbos
     const now = new Date();
-    $('#MES').value = String(now.getMonth()+1).padStart(2,'0');
+    $('#MES').value               = String(now.getMonth()+1).padStart(2,'0');
     $('#DATA_TERMO_GERADO').value = fmtBR(now);
     $('#HORA_TERMO_GERADO').value = fmtHR(now);
-    $('#ANO_TERMO_GERADO').value = String(now.getFullYear());
+    $('#ANO_TERMO_GERADO').value  = String(now.getFullYear());
 
     const outroTxt = '';
     const payload = {
@@ -456,7 +335,6 @@
         ($('#em_adm').checked && 'Administrativa') ||
         ($('#em_jud').checked && 'Judicial') ||
         (outroTxt || ''),
-      // campos 4..6 são livres; enviamos concatenados
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i=>i.value),
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300').filter(i=>i.checked).map(i=>i.value).join('; '),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$('input#reg_sem_jud, input#reg_com_jud').filter(i=>i.checked).map(i=>i.value).join('; '),
@@ -474,32 +352,24 @@
     };
 
     try{
-      modalLoading.show();
       const res = await fetch(`${API_BASE}/api/gerar-termo`, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify(payload)
       });
-      modalLoading.hide();
       if(!res.ok){
         const err = await res.json().catch(()=>({error:'Erro ao salvar.'}));
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
+      // abre a prévia (se houver termo.html)
       const qs = new URLSearchParams({
-        uf: payload.UF,
-        ente: payload.ENTE,
-        cnpj_ente: $('#CNPJ_ENTE').value,
-        ug: payload.UG,
-        cnpj_ug: $('#CNPJ_UG').value,
-        nome_rep_ente: payload.NOME_REP_ENTE,
-        cpf_rep_ente: $('#CPF_REP_ENTE').value,
-        cargo_rep_ente: payload.CARGO_REP_ENTE,
-        email_rep_ente: payload.EMAIL_REP_ENTE,
-        nome_rep_ug: payload.NOME_REP_UG,
-        cpf_rep_ug: $('#CPF_REP_UG').value,
-        cargo_rep_ug: payload.CARGO_REP_UG,
-        email_rep_ug: payload.EMAIL_REP_UG,
+        uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
+        ug: payload.UG, cnpj_ug: $('#CNPJ_UG').value,
+        nome_rep_ente: payload.NOME_REP_ENTE, cpf_rep_ente: $('#CPF_REP_ENTE').value,
+        cargo_rep_ente: payload.CARGO_REP_ENTE, email_rep_ente: payload.EMAIL_REP_ENTE,
+        nome_rep_ug: payload.NOME_REP_UG, cpf_rep_ug: $('#CPF_REP_UG').value,
+        cargo_rep_ug: payload.CARGO_REP_UG, email_rep_ug: payload.EMAIL_REP_UG,
         venc_ult_crp: $('#DATA_VENCIMENTO_ULTIMO_CRP').value,
         tipo_emissao_crp: payload.TIPO_EMISSAO_ULTIMO_CRP,
         celebracao: payload.CELEBRACAO_TERMO_PARCELA_DEBITOS,
@@ -513,11 +383,10 @@
         data_termo: $('#DATA_TERMO_GERADO').value,
         auto: '1'
       }).toString();
-      window.open(`termo.html?${qs}`, '_blank', 'noopener');
+      if (window.open) window.open(`termo.html?${qs}`, '_blank', 'noopener');
 
-      modalSucesso.show();
+      new bootstrap.Modal($('#modalSucesso')).show();
     }catch{
-      modalLoading.hide();
       showErro(['Falha de comunicação com o servidor.']);
     }
   });

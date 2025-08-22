@@ -14,13 +14,11 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const app = express();
 
 /* ───────────────── Segurança ──────────────── */
-app.set('trust proxy', 1);
+app.set('trust proxy', 1);               // evita ERR_ERL_UNEXPECTED_X_FORWARDED_FOR atrás de proxy
 app.disable('x-powered-by');
 
 // util: lista de origens sem barra final
-const splitList = (s = '') =>
-  s.split(/[\s,]+/).map(v => v.trim().replace(/\/+$/, '')).filter(Boolean);
-
+const splitList = (s = '') => s.split(/[\s,]+/).map(v => v.trim().replace(/\/+$/, '')).filter(Boolean);
 const connectExtra = splitList(process.env.CORS_ORIGIN || process.env.CORS_ORIGIN_LIST || '');
 
 app.use(helmet({
@@ -104,8 +102,8 @@ async function authSheets() {
   await doc.loadInfo();
 }
 
-const norm = v => (v ?? '').toString().trim();
-const low  = v => norm(v).toLowerCase();
+const norm   = v => (v ?? '').toString().trim();
+const low    = v => norm(v).toLowerCase();
 const digits = v => norm(v).replace(/\D+/g,'');
 
 function nowBR(){
@@ -129,17 +127,14 @@ function esferaFromEnte(ente){
   return low(ente).includes('governo do estado') ? 'Estadual/Distrital' : 'RPPS Municipal';
 }
 
-/* ───── Helpers p/ headers duplicados (CNPJ_ENTE_UG e Dados_REP_ENTE_UG) ───── */
-
-// Fallback baseado em cells quando getRows() falha por headers duplicados
+/* ───── Helpers (headers duplicados) ───── */
 async function getRowsViaCells(sheet) {
   await sheet.loadHeaderRow();
   const headers = (sheet.headerValues || []).map(h => norm(h));
 
-  // gera nomes únicos: Header, Header__2, Header__3 ...
   const seen = {};
   const headersUnique = headers.map(h => {
-    if (!h) return ''; // coluna vazia
+    if (!h) return '';
     seen[h] = (seen[h] || 0) + 1;
     return seen[h] === 1 ? h : `${h}__${seen[h]}`;
   });
@@ -147,7 +142,6 @@ async function getRowsViaCells(sheet) {
   const cols = headersUnique.length || sheet.columnCount || 26;
   const endRow = sheet.rowCount || 2000;
 
-  // carrega toda a área de dados (linha 2 em diante)
   await sheet.loadCells({ startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: cols });
 
   const rows = [];
@@ -155,8 +149,7 @@ async function getRowsViaCells(sheet) {
     let empty = true;
     const obj = {};
     for (let c = 0; c < cols; c++) {
-      const key = headersUnique[c];
-      if (!key) continue;
+      const key = headersUnique[c]; if (!key) continue;
       const cell = sheet.getCell(r, c);
       const val = cell?.value ?? '';
       if (val !== '' && val !== null) empty = false;
@@ -169,16 +162,15 @@ async function getRowsViaCells(sheet) {
 
 async function getRowsSafe(sheet) {
   try {
-    return await sheet.getRows(); // caminho rápido
+    return await sheet.getRows();
   } catch (e) {
     if (String(e?.message || '').toLowerCase().includes('duplicate header')) {
-      return await getRowsViaCells(sheet); // fallback
+      return await getRowsViaCells(sheet);
     }
     throw e;
   }
 }
 
-// procura primeiro valor de propriedade candidata (aceita Header__2 etc.)
 function getVal(row, ...candidates) {
   const keys = Object.keys(row);
   for (const cand of candidates) {
@@ -190,31 +182,7 @@ function getVal(row, ...candidates) {
   return undefined;
 }
 
-/* ───── Leitura da aba CRP por COLUNAS fixas (B, F, G) ─────
-   B = CNPJ_ENTE, F = DATA_VALIDADE, G = DECISAO_JUDICIAL
-   (0-based: 1, 5, 6)
----------------------------------------------------------------- */
-async function readCRPByFixedColumns(sheet) {
-  const colCNPJ = 1, colVal = 5, colDec = 6; // índices 0-based
-  const endRow = sheet.rowCount || 2000;
-  const endCol = Math.max(colCNPJ, colVal, colDec) + 1;
-  await sheet.loadCells({ startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol });
-
-  const rows = [];
-  for (let r = 1; r < endRow; r++) {
-    const cnpjCell = sheet.getCell(r, colCNPJ);
-    const valCell  = sheet.getCell(r, colVal);
-    const decCell  = sheet.getCell(r, colDec);
-    const cnpj = digits(cnpjCell?.value ?? '');
-    const validade = norm(valCell?.value ?? '');
-    const decisao  = norm(decCell?.value ?? '');
-    if (!cnpj && !validade && !decisao) continue; // linha vazia
-    rows.push({ CNPJ_ENTE: cnpj, DATA_VALIDADE: validade, DECISAO_JUDICIAL: decisao });
-  }
-  return rows;
-}
-
-// parser simples para datas
+/* ───── Datas ───── */
 function parseDMYorYMD(s) {
   const v = norm(s);
   if (!v) return new Date(0);
@@ -224,13 +192,55 @@ function parseDMYorYMD(s) {
   const d = new Date(v);
   return isNaN(d) ? new Date(0) : d;
 }
+const formatDateDMY = d => {
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yy = d.getFullYear();
+  return `${dd}/${mm}/${yy}`;
+};
+
+/* ───── Leitura CRP (colunas fixas B/F/G = 1/5/6) ───── */
+async function readCRPByFixedColumns(sheet) {
+  const colCNPJ = 1, colVal = 5, colDec = 6; // 0-based
+  const endRow = sheet.rowCount || 2000;
+  const endCol = Math.max(colCNPJ, colVal, colDec) + 1;
+
+  await sheet.loadCells({ startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol });
+
+  const rows = [];
+  for (let r = 1; r < endRow; r++) {
+    const cnpjCell = sheet.getCell(r, colCNPJ);
+    const valCell  = sheet.getCell(r, colVal);
+    const decCell  = sheet.getCell(r, colDec);
+
+    const cnpj = digits(cnpjCell?.value ?? '');
+
+    // normaliza validade para dd/mm/aaaa
+    let validade = '';
+    const fv = valCell?.formattedValue;
+    if (fv && /^\d{2}\/\d{2}\/\d{4}$/.test(String(fv))) {
+      validade = String(fv);
+    } else if (valCell?.value instanceof Date) {
+      validade = formatDateDMY(valCell.value);
+    } else if (typeof valCell?.value === 'number') { // serial -> Date
+      const epoch = new Date(Date.UTC(1899, 11, 30));
+      const d = new Date(epoch.getTime() + valCell.value * 86400000);
+      validade = formatDateDMY(d);
+    } else if (typeof valCell?.value === 'string') {
+      validade = valCell.value;
+    }
+
+    const decisao  = norm(valCell?.note) ? norm(valCell.note) : norm(decCell?.formattedValue ?? decCell?.value ?? '');
+
+    if (!cnpj && !validade && !decisao) continue;
+    rows.push({ CNPJ_ENTE: cnpj, DATA_VALIDADE: validade, DECISAO_JUDICIAL: decisao });
+  }
+  return rows;
+}
 
 /* ─────────────── ROTAS ─────────────── */
 
-/**
- * GET /api/consulta?cnpj=NNNNNNNNNNNNNN
- * Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG e CRP (CRP por colunas B/F/G)
- */
+/** GET /api/consulta?cnpj=NNNNNNNNNNNNNN */
 app.get('/api/consulta', async (req, res) => {
   try {
     const cnpj = digits(req.query.cnpj || '');
@@ -242,7 +252,6 @@ app.get('/api/consulta', async (req, res) => {
     const sReps = await getSheet('Dados_REP_ENTE_UG');
     const sCrp  = await getSheet('CRP');
 
-    // CNPJ_ENTE_UG (tolerante a headers duplicados) — aceita CNPJ do ENTE ou da UG
     const cnpjRows = await getRowsSafe(sCnpj);
     let base = cnpjRows.find(r => digits(getVal(r,'CNPJ_ENTE')) === cnpj);
     if (!base) base = cnpjRows.find(r => digits(getVal(r,'CNPJ_UG')) === cnpj);
@@ -254,19 +263,17 @@ app.get('/api/consulta', async (req, res) => {
     const CNPJ_ENTE = digits(getVal(base, 'CNPJ_ENTE'));
     const CNPJ_UG   = digits(getVal(base, 'CNPJ_UG'));
 
-    // Dados_REP_ENTE_UG (por UF+ENTE, tolerante a duplicados)
+    // Reps para snapshot (não auto-preenche no frontend)
     const repsAll = await getRowsSafe(sReps);
     const reps = repsAll.filter(r => low(getVal(r,'UF')) === low(UF) && low(getVal(r,'ENTE')) === low(ENTE));
-
     const repUG = reps.find(r => low(getVal(r,'UG')) === low(UG)) || reps[0] || {};
     const repEnte =
       reps.find(r => ['','ente','adm direta','administração direta','administracao direta'].includes(low(getVal(r,'UG')||''))) ||
       reps.find(r => low(getVal(r,'UG')||'') !== low(UG)) || reps[0] || {};
 
-    // CRP por colunas fixas (B/F/G)
+    // CRP (B/F/G)
     const crpAll = await readCRPByFixedColumns(sCrp);
     const crpCandidates = crpAll.filter(r => digits(r.CNPJ_ENTE) === CNPJ_ENTE);
-
     let crp = {};
     if (crpCandidates.length) {
       crpCandidates.sort((a,b) => (parseDMYorYMD(b.DATA_VALIDADE) - parseDMYorYMD(a.DATA_VALIDADE)));
@@ -275,29 +282,17 @@ app.get('/api/consulta', async (req, res) => {
       crp.DECISAO_JUDICIAL = norm(top.DECISAO_JUDICIAL || '');
     }
 
-    // normaliza formato data validade para yyyy-mm-dd se vier dd/mm/yyyy
-    if (crp.DATA_VALIDADE) {
-      const m = crp.DATA_VALIDADE.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if (m) crp.DATA_VALIDADE = `${m[3]}-${m[2]}-${m[1]}`;
-    }
+    // converte para yyyy-mm-dd só se o input do front for <input type="date">
+    // (o front agora usa campo de texto com máscara dd/mm/aaaa, então mandamos dd/mm/aaaa)
+    let crpValOut = crp.DATA_VALIDADE || '';
+    // se por acaso vier yyyy-mm-dd, normaliza:
+    const m = crpValOut.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) crpValOut = `${m[3]}/${m[2]}/${m[1]}`;
 
     const out = {
       UF, ENTE, CNPJ_ENTE, UG, CNPJ_UG,
-      // Rep ENTE
-      NOME_REP_ENTE: norm(getVal(repEnte,'NOME')),
-      CPF_REP_ENTE:  digits(getVal(repEnte,'CPF')),
-      EMAIL_REP_ENTE:norm(getVal(repEnte,'EMAIL')),
-      TEL_REP_ENTE:  norm(getVal(repEnte,'TELEFONE_MOVEL') || getVal(repEnte,'TELEFONE')),
-      CARGO_REP_ENTE:norm(getVal(repEnte,'CARGO')),
-      // Rep UG
-      NOME_REP_UG: norm(getVal(repUG,'NOME')),
-      CPF_REP_UG:  digits(getVal(repUG,'CPF')),
-      EMAIL_REP_UG:norm(getVal(repUG,'EMAIL')),
-      TEL_REP_UG:  norm(getVal(repUG,'TELEFONE_MOVEL') || getVal(repUG,'TELEFONE')),
-      CARGO_REP_UG:norm(getVal(repUG,'CARGO')),
-      // CRP
-      CRP_DATA_VALIDADE:   norm(crp.DATA_VALIDADE || ''),
-      CRP_DECISAO_JUDICIAL:norm(crp.DECISAO_JUDICIAL || ''),
+      CRP_DATA_VALIDADE:   crpValOut,
+      CRP_DECISAO_JUDICIAL: norm(crp.DECISAO_JUDICIAL || ''),
       ESFERA_SUGERIDA: esferaFromEnte(ENTE),
 
       __snapshot: {
@@ -307,15 +302,13 @@ app.get('/api/consulta', async (req, res) => {
         TEL_REP_ENTE:  norm(getVal(repEnte,'TELEFONE_MOVEL') || getVal(repEnte,'TELEFONE')),
         EMAIL_REP_ENTE:norm(getVal(repEnte,'EMAIL')),
         CARGO_REP_ENTE:norm(getVal(repEnte,'CARGO')),
-
-        NOME_REP_UG: norm(getVal(repUG,'NOME')),
-        CPF_REP_UG:  digits(getVal(repUG,'CPF')),
-        TEL_REP_UG:  norm(getVal(repUG,'TELEFONE_MOVEL') || getVal(repUG,'TELEFONE')),
-        EMAIL_REP_UG:norm(getVal(repUG,'EMAIL')),
-        CARGO_REP_UG:norm(getVal(repUG,'CARGO')),
-
+        NOME_REP_UG:   norm(getVal(repUG,'NOME')),
+        CPF_REP_UG:    digits(getVal(repUG,'CPF')),
+        TEL_REP_UG:    norm(getVal(repUG,'TELEFONE_MOVEL') || getVal(repUG,'TELEFONE')),
+        EMAIL_REP_UG:  norm(getVal(repUG,'EMAIL')),
+        CARGO_REP_UG:  norm(getVal(repUG,'CARGO')),
         CRP:           norm(crp.DECISAO_JUDICIAL || ''),
-        CRP_VALIDADE:  norm(crp.DATA_VALIDADE || '')
+        CRP_VALIDADE:  crpValOut
       }
     };
 
@@ -326,9 +319,7 @@ app.get('/api/consulta', async (req, res) => {
   }
 });
 
-/**
- * GET /api/rep-by-cpf?cpf=NNNNNNNNNNN
- */
+/** GET /api/rep-by-cpf?cpf=NNNNNNNNNNN */
 app.get('/api/rep-by-cpf', async (req,res)=>{
   try{
     const cpf = digits(req.query.cpf || '');
@@ -359,9 +350,7 @@ app.get('/api/rep-by-cpf', async (req,res)=>{
   }
 });
 
-/**
- * POST /api/gerar-termo
- */
+/** POST /api/gerar-termo */
 app.post('/api/gerar-termo', async (req,res)=>{
   try{
     const p = req.body || {};
