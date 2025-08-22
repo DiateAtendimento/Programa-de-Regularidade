@@ -93,11 +93,6 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
 /* Sub-blocos com borda tracejada */
 .card-subblock{padding:1rem;border:1px dashed var(--divider);border-radius:10px;background:#fff}
 
-/* Tabela/resumo de alterações no modal de confirmação */
-#confirmChangesList{display:block}
-#confirmChangesList ul{margin:0;padding-left:1.1rem}
-#confirmChangesList li{margin:.25rem 0}
-
 /* Modais */
 .modal-content{border-radius:14px}
 .modal-header{border-bottom:none}
@@ -130,5 +125,5 @@ input::placeholder{color:#9ca3af}
 /* Spinner no modal “Carregando informações” */
 #modalLoading .spinner-border{width:1.8rem;height:1.8rem}
 
-/* Estados de passos (opcional: o JS pode alternar .done) */
+/* Estados de passos (transição do divisor) */
 #stepper .step.active + .divider{background:linear-gradient(90deg,var(--brand-600),#e5e7eb)}

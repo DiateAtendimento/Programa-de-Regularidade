@@ -138,7 +138,6 @@
                   Digite o CPF e clique em <em>Pesquisar</em> em cada subitem. Os campos serão preenchidos automaticamente apenas após a consulta.
                 </p>
               </div>
-              <!-- ✨ botão dedicado para voltar ao passo 1 -->
               <button type="button" id="btnBackTo1" class="btn btn-link">← Voltar para o passo 1</button>
             </div>
 
@@ -231,13 +230,11 @@
               </div>
             </div>
 
-            <!-- ✨ 3.3 Critérios irregulares (texto completo) -->
             <div class="mt-4">
               <div class="sub-title">3.3 Critério(s) irregular(es) no extrato previdenciário</div>
               <div class="small text-muted mb-2">Selecione todos os itens apontados como irregulares no extrato.</div>
 
               <div class="d-flex flex-column gap-2" id="grpCRITERIOS">
-                <!-- (lista completa) -->
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)"><span class="form-check-label">Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Atendimento à fiscalização"><span class="form-check-label">Atendimento à fiscalização</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar"><span class="form-check-label">Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar</span></label>
@@ -263,15 +260,13 @@
             </div>
           </section>
 
-          <!-- ETAPA 4, 5 e 6 permanecem; apenas enunciados já estavam ampliados no envio anterior -->
-
           <!-- ETAPA 4 -->
           <section class="app-section" data-step="4">
             <div class="section-head">
               <h2 class="section-title">4. Finalidade(s) inicial(is)</h2>
               <p class="small text-muted mb-0">Assinale as finalidades iniciais da adesão.</p>
             </div>
-            <!-- (lista igual à anterior) -->
+
             <p class="fw-semibold mb-2">4.1 Celebração de termos de parcelamento de débitos</p>
             <div class="form-check mb-2">
               <input class="form-check-input grp-finalidade" type="checkbox" id="parc60" name="FINALIDADES[]" value="Até 60 parcelas (arts. 14 e 15 do ADCT)">
@@ -357,13 +352,11 @@
             </div>
           </section>
 
-          <!-- ETAPAS 6 e 7 -->
+          <!-- ETAPA 6 -->
           <section class="app-section" data-step="6">
             <div class="section-head">
-              <h2 class="section-title">6. Providências e 7. Condições</h2>
-              <p class="small text-muted mb-0">
-                Marque as providências já adotadas e confirme ciência das condições de vigência do art. 60 do Anexo XVIII da Portaria MTP nº 1.467/2022.
-              </p>
+              <h2 class="section-title">6. Providências</h2>
+              <p class="small text-muted mb-0">Marque as providências já adotadas.</p>
             </div>
 
             <div class="d-flex flex-column gap-3 mb-3" id="grpPROVIDENCIAS">
@@ -375,6 +368,16 @@
                 <input class="form-check-input me-2 grp-prov" type="checkbox" name="PROVIDENCIAS[]" value="Não possui débitos até a data da adesão (ou já regularizados)">
                 <span class="form-check-label">Não possui débitos até a data da adesão (ou já regularizados)</span>
               </label>
+            </div>
+          </section>
+
+          <!-- ETAPA 7 -->
+          <section class="app-section" data-step="7">
+            <div class="section-head">
+              <h2 class="section-title">7. Condições de vigência</h2>
+              <p class="small text-muted mb-0">
+                Confirme ciência das condições do art. 60 do Anexo XVIII da Portaria MTP nº 1.467/2022.
+              </p>
             </div>
 
             <div class="form-check mb-3" id="grpCONDICOES">
@@ -400,7 +403,7 @@
     </div>
   </div>
 
-  <!-- Modais (iguais) -->
+  <!-- Modais padrão -->
   <div class="modal fade" id="modalErro" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
@@ -435,6 +438,21 @@
         </div>
         <div class="modal-body">
           <p class="mb-0">Os dados foram salvos em <strong>Termos_registrados</strong> e possíveis alterações foram registradas em <strong>Reg_alteracao_dados_ente_ug</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal "Carregando" -->
+  <div class="modal fade" id="modalLoading" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">Carregando informações…</h5>
+        </div>
+        <div class="modal-body d-flex align-items-center gap-2">
+          <div class="spinner-border" role="status" aria-hidden="true"></div>
+          <span>Consultando dados. Aguarde alguns segundos.</span>
         </div>
       </div>
     </div>

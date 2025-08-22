@@ -198,6 +198,12 @@ const formatDateDMY = d => {
   const yy = d.getFullYear();
   return `${dd}/${mm}/${yy}`;
 };
+const formatDateISO = d => {
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yy = d.getFullYear();
+  return `${yy}-${mm}-${dd}`;
+};
 
 /* ───── Leitura CRP (colunas fixas B/F/G = 1/5/6) ───── */
 async function readCRPByFixedColumns(sheet) {
@@ -215,25 +221,31 @@ async function readCRPByFixedColumns(sheet) {
 
     const cnpj = digits(cnpjCell?.value ?? '');
 
-    // normaliza validade para dd/mm/aaaa
-    let validade = '';
+    // normaliza validade
+    let validadeDMY = '';
     const fv = valCell?.formattedValue;
     if (fv && /^\d{2}\/\d{2}\/\d{4}$/.test(String(fv))) {
-      validade = String(fv);
+      validadeDMY = String(fv);
     } else if (valCell?.value instanceof Date) {
-      validade = formatDateDMY(valCell.value);
+      validadeDMY = formatDateDMY(valCell.value);
     } else if (typeof valCell?.value === 'number') { // serial -> Date
       const epoch = new Date(Date.UTC(1899, 11, 30));
       const d = new Date(epoch.getTime() + valCell.value * 86400000);
-      validade = formatDateDMY(d);
+      validadeDMY = formatDateDMY(d);
     } else if (typeof valCell?.value === 'string') {
-      validade = valCell.value;
+      validadeDMY = valCell.value;
     }
+    const validadeISO = formatDateISO(parseDMYorYMD(validadeDMY));
 
-    const decisao  = norm(valCell?.note) ? norm(valCell.note) : norm(decCell?.formattedValue ?? decCell?.value ?? '');
+    const decisao  = norm(decCell?.formattedValue ?? decCell?.value ?? '');
 
-    if (!cnpj && !validade && !decisao) continue;
-    rows.push({ CNPJ_ENTE: cnpj, DATA_VALIDADE: validade, DECISAO_JUDICIAL: decisao });
+    if (!cnpj && !validadeDMY && !decisao) continue;
+    rows.push({
+      CNPJ_ENTE: cnpj,
+      DATA_VALIDADE_DMY: validadeDMY,
+      DATA_VALIDADE_ISO: validadeISO,
+      DECISAO_JUDICIAL: decisao
+    });
   }
   return rows;
 }
@@ -263,7 +275,7 @@ app.get('/api/consulta', async (req, res) => {
     const CNPJ_ENTE = digits(getVal(base, 'CNPJ_ENTE'));
     const CNPJ_UG   = digits(getVal(base, 'CNPJ_UG'));
 
-    // Reps para snapshot (não auto-preenche no frontend)
+    // Reps para snapshot
     const repsAll = await getRowsSafe(sReps);
     const reps = repsAll.filter(r => low(getVal(r,'UF')) === low(UF) && low(getVal(r,'ENTE')) === low(ENTE));
     const repUG = reps.find(r => low(getVal(r,'UG')) === low(UG)) || reps[0] || {};
@@ -276,23 +288,18 @@ app.get('/api/consulta', async (req, res) => {
     const crpCandidates = crpAll.filter(r => digits(r.CNPJ_ENTE) === CNPJ_ENTE);
     let crp = {};
     if (crpCandidates.length) {
-      crpCandidates.sort((a,b) => (parseDMYorYMD(b.DATA_VALIDADE) - parseDMYorYMD(a.DATA_VALIDADE)));
+      crpCandidates.sort((a,b) => (parseDMYorYMD(b.DATA_VALIDADE_DMY) - parseDMYorYMD(a.DATA_VALIDADE_DMY)));
       const top = crpCandidates[0];
-      crp.DATA_VALIDADE    = norm(top.DATA_VALIDADE || '');
-      crp.DECISAO_JUDICIAL = norm(top.DECISAO_JUDICIAL || '');
+      crp.DATA_VALIDADE_DMY = norm(top.DATA_VALIDADE_DMY || '');
+      crp.DATA_VALIDADE_ISO = norm(top.DATA_VALIDADE_ISO || '');
+      crp.DECISAO_JUDICIAL  = norm(top.DECISAO_JUDICIAL || '');
     }
-
-    // converte para yyyy-mm-dd só se o input do front for <input type="date">
-    // (o front agora usa campo de texto com máscara dd/mm/aaaa, então mandamos dd/mm/aaaa)
-    let crpValOut = crp.DATA_VALIDADE || '';
-    // se por acaso vier yyyy-mm-dd, normaliza:
-    const m = crpValOut.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (m) crpValOut = `${m[3]}/${m[2]}/${m[1]}`;
 
     const out = {
       UF, ENTE, CNPJ_ENTE, UG, CNPJ_UG,
-      CRP_DATA_VALIDADE:   crpValOut,
-      CRP_DECISAO_JUDICIAL: norm(crp.DECISAO_JUDICIAL || ''),
+      CRP_DATA_VALIDADE: crp.DATA_VALIDADE_ISO,           // yyyy-mm-dd para <input type="date">
+      CRP_DATA_VALIDADE_BR: crp.DATA_VALIDADE_DMY,        // dd/mm/aaaa (se precisar exibir)
+      CRP_DECISAO_JUDICIAL: crp.DECISAO_JUDICIAL,
       ESFERA_SUGERIDA: esferaFromEnte(ENTE),
 
       __snapshot: {
@@ -308,7 +315,7 @@ app.get('/api/consulta', async (req, res) => {
         EMAIL_REP_UG:  norm(getVal(repUG,'EMAIL')),
         CARGO_REP_UG:  norm(getVal(repUG,'CARGO')),
         CRP:           norm(crp.DECISAO_JUDICIAL || ''),
-        CRP_VALIDADE:  crpValOut
+        CRP_VALIDADE:  crp.DATA_VALIDADE_DMY
       }
     };
 

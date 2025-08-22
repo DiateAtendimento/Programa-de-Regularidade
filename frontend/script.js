@@ -1,4 +1,4 @@
-// script.js — Multi-etapas (ajustes pedidos)
+// script.js — Multi-etapas com: máscaras, stepper, modais de loading, buscas e validação
 (() => {
   /* ========= Config API ========= */
   const API_BASE = (() => {
@@ -18,9 +18,10 @@
   const rmAcc = s => String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
 
   // Modais
-  const modalErro    = new bootstrap.Modal($('#modalErro'));
-  const modalBusca   = new bootstrap.Modal($('#modalBusca'));
-  const modalSucesso = new bootstrap.Modal($('#modalSucesso'));
+  const modalErro     = new bootstrap.Modal($('#modalErro'));
+  const modalBusca    = new bootstrap.Modal($('#modalBusca'));
+  const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
+  const modalLoading  = new bootstrap.Modal($('#modalLoading'), { backdrop:'static', keyboard:false });
 
   function showErro(msgs){
     const ul = $('#modalErroLista'); ul.innerHTML='';
@@ -77,8 +78,8 @@
   const neutral     = el => el.classList.remove('is-valid','is-invalid');
 
   /* ========= Stepper / Navegação ========= */
-  let step = 0;           // 0..6
-  let cnpjOK = false;     // controla avanço a partir da etapa 0
+  let step = 0;            // 0..7 (0 = tela de pesquisa)
+  let cnpjOK = false;
 
   const sections = $$('[data-step]');
   const stepsUI  = $$('#stepper .step');
@@ -87,25 +88,23 @@
   const btnSubmit= $('#btnSubmit');
 
   function updateNavButtons(){
-    // ✨ mostrar "Voltar" desde o passo 1
-    if (step >= 1) { btnPrev.classList.remove('d-none'); }
-    else           { btnPrev.classList.add('d-none'); }
-
+    btnPrev.classList.toggle('d-none', step < 1);
     btnNext.disabled = (step === 0 && !cnpjOK);
-    btnNext.classList.toggle('d-none', step===6);
-    btnSubmit.classList.toggle('d-none', step!==6);
+    btnNext.classList.toggle('d-none', step===7);
+    btnSubmit.classList.toggle('d-none', step!==7);
   }
 
   function showStep(n){
-    step = Math.max(0, Math.min(6, n));
+    step = Math.max(0, Math.min(7, n));
     sections.forEach(sec => sec.style.display = (Number(sec.dataset.step)===step ? '' : 'none'));
-    stepsUI.forEach((s,i)=> s.classList.toggle('active', i===step));
+    const activeIdx = Math.min(step, stepsUI.length-1); // mapeia steps 0..7 para 0..6 do stepper
+    stepsUI.forEach((s,i)=> s.classList.toggle('active', i===activeIdx));
     updateNavButtons();
   }
   showStep(0);
 
   btnPrev?.addEventListener('click', ()=> showStep(step-1));
-  $('#btnBackTo1')?.addEventListener('click', ()=> showStep(1)); // botão dedicado no passo 2
+  $('#btnBackTo1')?.addEventListener('click', ()=> showStep(1));
   btnNext?.addEventListener('click', ()=>{
     if (step>=1 && step<=3) { if (!validateStep(step)) return; }
     if (step===0 && !cnpjOK) { showErro(['Pesquise e selecione um CNPJ válido antes de prosseguir.']); return; }
@@ -176,25 +175,26 @@
     return true;
   }
 
-  /* ========= Busca por CNPJ (identificação e CRP apenas) ========= */
+  /* ========= Busca por CNPJ ========= */
   $('#btnPesquisar')?.addEventListener('click', async ()=>{
     const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
     if(cnpj.length!==14) { markInvalid($('#CNPJ_ENTE_PESQ')); return showErro(['Informe um CNPJ válido.']); }
     markValid($('#CNPJ_ENTE_PESQ'));
 
     try{
+      modalLoading.show();
       const r = await fetch(`${API_BASE}/api/consulta?cnpj=${cnpj}`);
       if(!r.ok){ modalBusca.show(); cnpjOK = false; updateNavButtons(); return; }
       const { data } = await r.json();
 
-      // ✨ preenche somente a ETAPA 1 (identificação) e CRP
+      // ETAPA 1
       $('#UF').value = data.UF || '';
       $('#ENTE').value = data.ENTE || '';
       $('#CNPJ_ENTE').value = maskCNPJ(data.CNPJ_ENTE || '');
       $('#UG').value = data.UG || '';
       $('#CNPJ_UG').value = maskCNPJ(data.CNPJ_UG || '');
 
-      // limpa representantes — serão preenchidos apenas via CPF
+      // limpar representantes (serão buscados por CPF)
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
        'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
@@ -208,22 +208,25 @@
       // esfera sugerida
       autoselectEsferaByEnte(data.ENTE);
 
-      // valida visualmente etapa 1
-      Object.values(reqAll).flat().forEach(({id,type})=> checkField(id,type));
+      // valida apenas os campos do passo 1 (para não "pintar" o passo 2 antes do usuário interagir)
+      reqAll[1].forEach(({id,type})=> checkField(id,type));
 
       cnpjOK = true;
       showStep(1);
     }catch{
       modalBusca.show();
       cnpjOK = false; updateNavButtons();
+    }finally{
+      modalLoading.hide();
     }
   });
 
-  // ========= Busca reps por CPF (preenche 2.1 e 2.2 separadamente) =========
+  // ========= Busca reps por CPF =========
   async function buscarRepByCPF(cpf, target){
     const cpfd = digits(cpf||'');
     if(cpfd.length!==11) { showErro(['Informe um CPF válido.']); return; }
     try{
+      modalLoading.show();
       const r = await fetch(`${API_BASE}/api/rep-by-cpf?cpf=${cpfd}`);
       if(!r.ok){ modalBusca.show(); return; }
       const { data } = await r.json();
@@ -231,17 +234,21 @@
         $('#NOME_REP_ENTE').value = data.NOME || '';
         $('#CARGO_REP_ENTE').value = data.CARGO || '';
         $('#EMAIL_REP_ENTE').value = data.EMAIL || '';
-        $('#TEL_REP_ENTE').value = data.TELEFONE || '';
-        ['NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CPF_REP_ENTE'].forEach(id=>checkField(id, id.includes('EMAIL')?'email': id.includes('CPF')?'cpf':'text'));
+        $('#TEL_REP_ENTE').value   = data.TELEFONE || '';
+        ['NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CPF_REP_ENTE']
+          .forEach(id=>checkField(id, id.includes('EMAIL')?'email': id.includes('CPF')?'cpf':'text'));
       }else{
         $('#NOME_REP_UG').value = data.NOME || '';
         $('#CARGO_REP_UG').value = data.CARGO || '';
         $('#EMAIL_REP_UG').value = data.EMAIL || '';
-        $('#TEL_REP_UG').value = data.TELEFONE || '';
-        ['NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CPF_REP_UG'].forEach(id=>checkField(id, id.includes('EMAIL')?'email': id.includes('CPF')?'cpf':'text'));
+        $('#TEL_REP_UG').value   = data.TELEFONE || '';
+        ['NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CPF_REP_UG']
+          .forEach(id=>checkField(id, id.includes('EMAIL')?'email': id.includes('CPF')?'cpf':'text'));
       }
     }catch{
       showErro(['Falha ao consultar CPF.']);
+    }finally{
+      modalLoading.hide();
     }
   }
   $('#btnPesqRepEnte')?.addEventListener('click', ()=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE'));
@@ -253,10 +260,10 @@
     if(!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
 
     const now = new Date();
-    $('#MES').value = String(now.getMonth()+1).padStart(2,'0');
+    $('#MES').value               = String(now.getMonth()+1).padStart(2,'0');
     $('#DATA_TERMO_GERADO').value = fmtBR(now);
     $('#HORA_TERMO_GERADO').value = fmtHR(now);
-    $('#ANO_TERMO_GERADO').value = String(now.getFullYear());
+    $('#ANO_TERMO_GERADO').value  = String(now.getFullYear());
 
     const outroTxt = '';
     const payload = {
@@ -293,10 +300,11 @@
       DATA_TERMO_GERADO: $('#DATA_TERMO_GERADO').value,
       HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO').value,
       ANO_TERMO_GERADO: $('#ANO_TERMO_GERADO').value,
-      __snapshot_base: null // representantes agora vêm só via CPF; snapshot não é necessário
+      __snapshot_base: null
     };
 
     try{
+      modalLoading.show();
       const res = await fetch(`${API_BASE}/api/gerar-termo`, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -332,6 +340,8 @@
       modalSucesso.show();
     }catch{
       showErro(['Falha de comunicação com o servidor.']);
+    }finally{
+      modalLoading.hide();
     }
   });
 })();
