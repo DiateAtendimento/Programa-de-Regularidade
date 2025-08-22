@@ -1,5 +1,4 @@
-// script.js — Multi-etapas com: máscaras, stepper, busca (CNPJ), busca por CPF (2.1 e 2.2),
-// validação e submissão. Inclui lista 3.3 dinâmica e máscara dd/mm/aaaa.
+// script.js — Multi-etapas (ajustes pedidos)
 (() => {
   /* ========= Config API ========= */
   const API_BASE = (() => {
@@ -18,10 +17,15 @@
   const fmtHR = d => d.toLocaleTimeString('pt-BR',{hour12:false,timeZone:'America/Sao_Paulo'});
   const rmAcc = s => String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
 
+  // Modais
+  const modalErro    = new bootstrap.Modal($('#modalErro'));
+  const modalBusca   = new bootstrap.Modal($('#modalBusca'));
+  const modalSucesso = new bootstrap.Modal($('#modalSucesso'));
+
   function showErro(msgs){
     const ul = $('#modalErroLista'); ul.innerHTML='';
     msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
-    new bootstrap.Modal($('#modalErro')).show();
+    modalErro.show();
   }
 
   /* ========= Máscaras ========= */
@@ -42,19 +46,11 @@
     if (d.length>12) o = o.slice(0,15)+'-'+o.slice(15);
     return o;
   };
-  const maskDMY = v => {
-    const d = digits(v).slice(0,8);
-    let o = d;
-    if (d.length>2)  o = d.slice(0,2)+'/'+d.slice(2);
-    if (d.length>4)  o = o.slice(0,5)+'/'+o.slice(5);
-    return o;
-  };
-
   function applyMask(id, kind){
     const el = document.getElementById(id); if(!el) return;
-    const need = kind==='cpf'?11:(kind==='cnpj'?14:8);
-    el.setAttribute('maxlength', kind==='cpf'?'14': kind==='cnpj'?'18':'10');
-    const fmt = kind==='cpf'?maskCPF: kind==='cnpj'?maskCNPJ: maskDMY;
+    const need = kind==='cpf'?11:14;
+    el.setAttribute('maxlength', kind==='cpf'?'14':'18');
+    const fmt = kind==='cpf'?maskCPF:maskCNPJ;
     el.addEventListener('input', ()=> el.value = fmt(el.value));
     el.addEventListener('blur', ()=>{
       const ok = digits(el.value).length===need || (!el.value && kind==='cpf');
@@ -64,7 +60,6 @@
   }
   ['CNPJ_ENTE_PESQ','CNPJ_ENTE','CNPJ_UG'].forEach(id=>applyMask(id,'cnpj'));
   ['CPF_REP_ENTE','CPF_REP_UG'].forEach(id=>applyMask(id,'cpf'));
-  applyMask('DATA_VENCIMENTO_ULTIMO_CRP','dmy');
 
   // Telefones
   function maskPhone(v){
@@ -82,8 +77,8 @@
   const neutral     = el => el.classList.remove('is-valid','is-invalid');
 
   /* ========= Stepper / Navegação ========= */
-  let step = 0;                 // 0..6
-  let cnpjOK = false;           // libera “Próximo” na etapa 0
+  let step = 0;           // 0..6
+  let cnpjOK = false;     // controla avanço a partir da etapa 0
 
   const sections = $$('[data-step]');
   const stepsUI  = $$('#stepper .step');
@@ -92,11 +87,11 @@
   const btnSubmit= $('#btnSubmit');
 
   function updateNavButtons(){
-    if (step >= 1) btnPrev.classList.remove('d-none');
-    else btnPrev.classList.add('d-none');
+    // ✨ mostrar "Voltar" desde o passo 1
+    if (step >= 1) { btnPrev.classList.remove('d-none'); }
+    else           { btnPrev.classList.add('d-none'); }
 
-    btnNext.disabled = (step === 0 ? !cnpjOK : false);
-
+    btnNext.disabled = (step === 0 && !cnpjOK);
     btnNext.classList.toggle('d-none', step===6);
     btnSubmit.classList.toggle('d-none', step!==6);
   }
@@ -109,38 +104,32 @@
   }
   showStep(0);
 
-  $('#btnBackToStep1')?.addEventListener('click', ()=> showStep(1));
   btnPrev?.addEventListener('click', ()=> showStep(step-1));
-
+  $('#btnBackTo1')?.addEventListener('click', ()=> showStep(1)); // botão dedicado no passo 2
   btnNext?.addEventListener('click', ()=>{
-    if (step === 0 && !cnpjOK) return showErro(['Pesquise e selecione um CNPJ válido antes de prosseguir.']);
-    if (step>=1 && step<=3) { if(!validateStep(step)) return; }
+    if (step>=1 && step<=3) { if (!validateStep(step)) return; }
+    if (step===0 && !cnpjOK) { showErro(['Pesquise e selecione um CNPJ válido antes de prosseguir.']); return; }
     showStep(step+1);
   });
 
   /* ========= Esfera ========= */
   $$('.esf-only-one').forEach(chk=>{
     chk.addEventListener('change', ()=>{
-      if(chk.checked){
-        $$('.esf-only-one').forEach(o=>{ if(o!==chk) o.checked=false; });
-        markValid(chk);
-      } else {
-        neutral(chk);
-      }
+      if(chk.checked){ $$('.esf-only-one').forEach(o=>{ if(o!==chk) o.checked=false; }); markValid(chk); }
+      else { neutral(chk); }
     });
   });
   function autoselectEsferaByEnte(ente){
     const estadual = rmAcc(ente).includes('governo do estado');
     const chkEst = $('#esf_est'), chkMun = $('#esf_mun');
     if (chkEst && chkMun) {
-      chkEst.checked = estadual;
-      chkMun.checked = !estadual;
+      chkEst.checked = estadual; chkMun.checked = !estadual;
       [chkEst,chkMun].forEach(neutral);
       markValid(estadual?chkEst:chkMun);
     }
   }
 
-  /* ========= Validações (1..3) ========= */
+  /* ========= Validações ========= */
   const reqAll = {
     1: [
       {id:'UF', type:'select', label:'UF'},
@@ -159,7 +148,7 @@
       {id:'CARGO_REP_UG', type:'text', label:'Cargo do Rep. da UG'},
       {id:'EMAIL_REP_UG', type:'email', label:'E-mail do Rep. da UG'}
     ],
-    3: [{id:'DATA_VENCIMENTO_ULTIMO_CRP', type:'dmy', label:'Data do último CRP'}]
+    3: [{id:'DATA_VENCIMENTO_ULTIMO_CRP', type:'date', label:'Data do último CRP'}]
   };
   function checkField(id,type){
     const el = document.getElementById(id); if(!el) return true;
@@ -167,7 +156,7 @@
     let ok=false;
     if(type==='text') ok = v.trim().length>0;
     else if(type==='email') ok = !!v && isEmail(v);
-    else if(type==='dmy') ok = /^\d{2}\/\d{2}\/\d{4}$/.test(v.trim());
+    else if(type==='date') ok = !!v.trim();
     else if(type==='select') ok = !!v.trim();
     else if(type==='cpf') ok = digits(v).length===11;
     else if(type==='cnpj') ok = digits(v).length===14;
@@ -187,49 +176,7 @@
     return true;
   }
 
-  /* ========= Snapshot base (apenas etapa 1) ========= */
-  let snapshotBase = null;
-
-  /* ========= Render 3.3 – critérios irregulares ========= */
-  const CRITERIOS_33 = [
-    // (lista ampliada; adicione/ajuste livremente os textos conforme o extrato oficial)
-    'Aplicações Financeiras – CMN (DAIR/Política de Investimentos – objeto de PAP)',
-    'Atendimento à fiscalização',
-    'Atendimento a solicitação de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar',
-    'Caráter contributivo – Repasses (objeto de Processo Administrativo Previdenciário)',
-    'Demonstrativo da Política de Investimentos – DPIN (consistência)',
-    'Demonstrativo da Política de Investimentos – DPIN (encaminhamento)',
-    'Demonstrativo das Aplicações e Investimentos dos Recursos – DAR (consistência)',
-    'Demonstrativo das Aplicações e Investimentos dos Recursos – DAIR (encaminhamento)',
-    'Demonstrativo de Informações Previdenciárias e Repasses – DIPR (consistência e caráter contributivo)',
-    'Demonstrativo de Informações Previdenciárias e Repasses – DIPR (encaminhamento)',
-    'Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi',
-    'Equilíbrio Financeiro e Atuarial – encaminhamento NTA/DRAA e resultados das análises',
-    'Existência e funcionamento de unidade gestora e regime próprio únicos',
-    'Filiação ao RPPS e regras de concessão, cálculo e reajustamento dos benefícios, nos termos do art. 40 da CF',
-    'Instituição do regime de previdência complementar – aprovação da lei',
-    'Observância dos limites de contribuição do ente',
-    'Observância dos limites de contribuição dos segurados e beneficiários',
-    'Operacionalização da compensação previdenciária – termo de adesão e contrato com a empresa de tecnologia',
-    'Plano de benefícios integrado apenas para aposentadorias e pensões por morte',
-    'Requisitos para dirigentes, membros dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS',
-    'Utilização dos recursos previdenciários (objeto de PAP)'
-  ];
-  const grpIrregularesList = $('#grpIrregularesList');
-  if (grpIrregularesList) {
-    CRITERIOS_33.forEach((txt, i) => {
-      const id = `crit_${i}`;
-      const wrap = document.createElement('label');
-      wrap.className = 'form-check';
-      wrap.innerHTML = `
-        <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="${txt}">
-        <span class="form-check-label">${txt}</span>
-      `;
-      grpIrregularesList.appendChild(wrap);
-    });
-  }
-
-  /* ========= Busca por CNPJ (preenche etapa 1 + CRP; reps NÃO) ========= */
+  /* ========= Busca por CNPJ (identificação e CRP apenas) ========= */
   $('#btnPesquisar')?.addEventListener('click', async ()=>{
     const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
     if(cnpj.length!==14) { markInvalid($('#CNPJ_ENTE_PESQ')); return showErro(['Informe um CNPJ válido.']); }
@@ -237,64 +184,62 @@
 
     try{
       const r = await fetch(`${API_BASE}/api/consulta?cnpj=${cnpj}`);
-      if(!r.ok){ new bootstrap.Modal($('#modalBusca')).show(); cnpjOK = false; updateNavButtons(); return; }
+      if(!r.ok){ modalBusca.show(); cnpjOK = false; updateNavButtons(); return; }
       const { data } = await r.json();
-      snapshotBase = data.__snapshot || null;
 
-      // Etapa 1
+      // ✨ preenche somente a ETAPA 1 (identificação) e CRP
       $('#UF').value = data.UF || '';
       $('#ENTE').value = data.ENTE || '';
       $('#CNPJ_ENTE').value = maskCNPJ(data.CNPJ_ENTE || '');
       $('#UG').value = data.UG || '';
       $('#CNPJ_UG').value = maskCNPJ(data.CNPJ_UG || '');
 
-      // Etapa 3 — CRP (dd/mm/aaaa)
-      if(data.CRP_DATA_VALIDADE){
-        $('#DATA_VENCIMENTO_ULTIMO_CRP').value = data.CRP_DATA_VALIDADE;
-        markValid($('#DATA_VENCIMENTO_ULTIMO_CRP'));
-      }
-      const dj = rmAcc(String(data.CRP_DECISAO_JUDICIAL || ''));
-      if (dj === 'nao') $('#em_adm').checked = true;
-      else if (dj === 'sim') $('#em_jud').checked = true;
+      // limpa representantes — serão preenchidos apenas via CPF
+      ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
+       'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
+      ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
 
-      // Esfera (1.1)
+      // CRP
+      if (data.CRP_DATA_VALIDADE) $('#DATA_VENCIMENTO_ULTIMO_CRP').value = data.CRP_DATA_VALIDADE;
+      const dj = rmAcc(String(data.CRP_DECISAO_JUDICIAL || ''));
+      $('#em_adm').checked = (dj==='nao');
+      $('#em_jud').checked = (dj==='sim');
+
+      // esfera sugerida
       autoselectEsferaByEnte(data.ENTE);
 
-      // Validação visual
+      // valida visualmente etapa 1
       Object.values(reqAll).flat().forEach(({id,type})=> checkField(id,type));
 
       cnpjOK = true;
       showStep(1);
     }catch{
-      new bootstrap.Modal($('#modalBusca')).show();
+      modalBusca.show();
       cnpjOK = false; updateNavButtons();
     }
   });
 
-  // Busca reps por CPF (2.1 e 2.2, independentes)
-  async function buscarRepByCPF(cpf, fillPrefix){
+  // ========= Busca reps por CPF (preenche 2.1 e 2.2 separadamente) =========
+  async function buscarRepByCPF(cpf, target){
     const cpfd = digits(cpf||'');
     if(cpfd.length!==11) { showErro(['Informe um CPF válido.']); return; }
     try{
       const r = await fetch(`${API_BASE}/api/rep-by-cpf?cpf=${cpfd}`);
-      if(!r.ok){ new bootstrap.Modal($('#modalBusca')).show(); return; }
+      if(!r.ok){ modalBusca.show(); return; }
       const { data } = await r.json();
-      if(fillPrefix==='ENTE'){
+      if(target==='ENTE'){
         $('#NOME_REP_ENTE').value = data.NOME || '';
         $('#CARGO_REP_ENTE').value = data.CARGO || '';
         $('#EMAIL_REP_ENTE').value = data.EMAIL || '';
-        $('#TEL_REP_ENTE').value   = data.TELEFONE || '';
+        $('#TEL_REP_ENTE').value = data.TELEFONE || '';
+        ['NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CPF_REP_ENTE'].forEach(id=>checkField(id, id.includes('EMAIL')?'email': id.includes('CPF')?'cpf':'text'));
       }else{
         $('#NOME_REP_UG').value = data.NOME || '';
         $('#CARGO_REP_UG').value = data.CARGO || '';
         $('#EMAIL_REP_UG').value = data.EMAIL || '';
-        $('#TEL_REP_UG').value   = data.TELEFONE || '';
+        $('#TEL_REP_UG').value = data.TELEFONE || '';
+        ['NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CPF_REP_UG'].forEach(id=>checkField(id, id.includes('EMAIL')?'email': id.includes('CPF')?'cpf':'text'));
       }
-      // valida visualmente campos preenchidos
-      const ids = fillPrefix==='ENTE'
-        ? ['NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE']
-        : ['NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG'];
-      ids.forEach(id => { const el = $('#'+id); if(el) markValid(el); });
     }catch{
       showErro(['Falha ao consultar CPF.']);
     }
@@ -308,10 +253,10 @@
     if(!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
 
     const now = new Date();
-    $('#MES').value               = String(now.getMonth()+1).padStart(2,'0');
+    $('#MES').value = String(now.getMonth()+1).padStart(2,'0');
     $('#DATA_TERMO_GERADO').value = fmtBR(now);
     $('#HORA_TERMO_GERADO').value = fmtHR(now);
-    $('#ANO_TERMO_GERADO').value  = String(now.getFullYear());
+    $('#ANO_TERMO_GERADO').value = String(now.getFullYear());
 
     const outroTxt = '';
     const payload = {
@@ -348,7 +293,7 @@
       DATA_TERMO_GERADO: $('#DATA_TERMO_GERADO').value,
       HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO').value,
       ANO_TERMO_GERADO: $('#ANO_TERMO_GERADO').value,
-      __snapshot_base: snapshotBase || null
+      __snapshot_base: null // representantes agora vêm só via CPF; snapshot não é necessário
     };
 
     try{
@@ -362,7 +307,6 @@
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
-      // abre a prévia (se houver termo.html)
       const qs = new URLSearchParams({
         uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
         ug: payload.UG, cnpj_ug: $('#CNPJ_UG').value,
@@ -383,9 +327,9 @@
         data_termo: $('#DATA_TERMO_GERADO').value,
         auto: '1'
       }).toString();
-      if (window.open) window.open(`termo.html?${qs}`, '_blank', 'noopener');
+      window.open(`termo.html?${qs}`, '_blank', 'noopener');
 
-      new bootstrap.Modal($('#modalSucesso')).show();
+      modalSucesso.show();
     }catch{
       showErro(['Falha de comunicação com o servidor.']);
     }
