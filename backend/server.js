@@ -14,6 +14,7 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const app = express();
 
 /* ───────────────── Segurança ──────────────── */
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
 // util: lista de origens sem barra final
