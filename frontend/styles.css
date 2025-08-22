@@ -5,14 +5,17 @@
   --brand-700:#1e40af;
   --ok:#16a34a;
   --err:#dc2626;
+  --warn:#f59e0b;
   --muted:#6b7280;
+  --fg:#111827;
+  --ghost:#f9fafb;
   --bg:#f4f6f9;
   --card:#fff;
   --divider:#e5e7eb;
   --shadow:0 10px 28px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:#111827}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--fg)}
 .container{max-width:1120px}
 
 /* Stepper */
@@ -20,17 +23,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:#111827}
 .app-stepper .step{
   width:34px;height:34px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-weight:700;background:#e5e7eb;color:#374151;
+  font-weight:700;background:#e5e7eb;color:#374151; user-select:none;
 }
 .app-stepper .step.active{background:var(--brand-600);color:#fff}
-.app-stepper .divider{flex:1;height:3px;background:#e5e7eb}
+.app-stepper .step.done{background:#a7f3d0;color:#065f46}
+.app-stepper .divider{flex:1;height:3px;background:#e5e7eb;border-radius:2px}
 
 /* Card */
 .app-card{border:none;border-radius:14px;background:var(--card);box-shadow:var(--shadow)}
 
 /* Sections */
 .app-section{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--divider)}
-.section-title{font-size:1.25rem;font-weight:700;color:var(--brand)}
+.section-title{font-size:1.25rem;font-weight:700;color:var(--brand);margin-bottom:.25rem}
 .sub-title{font-weight:600;margin-bottom:.35rem;color:#374151}
 
 /* Inputs focus */
@@ -39,26 +43,93 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:#111827}
   box-shadow:0 0 0 .2rem rgba(37,99,235,.18);
 }
 
+/* Inputs “aparência bloqueada” para campos preenchidos automaticamente
+   (aplique a classe .autofilled via JS quando o sistema preencher o campo) */
+.form-control.autofilled{
+  background:var(--ghost);
+  border-color:#d1d5db;
+  color:#111827;
+  padding-right:2.25rem; /* espaço p/ ícone do lápis */
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='21' height='21' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 20h9'/><path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right .6rem center;
+  background-size:18px 18px;
+}
+.form-control.autofilled:focus{
+  background-color:#eef2ff;
+  border-color:var(--brand-600);
+}
+
+/* Placeholders e help text */
+.form-text{color:var(--muted)}
+
 /* Validation (texto/email/date/select) */
 input[type="text"].is-invalid,
 input[type="email"].is-invalid,
 input[type="date"].is-invalid,
+input[type="search"].is-invalid,
 textarea.is-invalid,
 select.is-invalid{border-color:var(--err)!important}
 input[type="text"].is-valid,
 input[type="email"].is-valid,
 input[type="date"].is-valid,
+input[type="search"].is-valid,
 textarea.is-valid,
 select.is-valid{border-color:var(--ok)!important}
 
 /* Check/Radio outline */
 input[type="checkbox"].is-invalid,
-input[type="radio"].is-invalid{outline:2px solid var(--err)!important;border-radius:4px}
+input[type="radio"].is-invalid{outline:2px solid var(--err)!important;border-radius:6px}
 input[type="checkbox"].is-valid,
-input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius:4px}
+input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius:6px}
 
 /* Buttons */
+.btn{font-weight:600;border-radius:.66rem}
 .btn-primary{background:var(--brand-600);border-color:var(--brand-600)}
 .btn-primary:hover{background:var(--brand-700);border-color:var(--brand-700)}
+.btn-outline-secondary{border-color:#cbd5e1;color:#334155}
+.btn-outline-secondary:hover{background:#e5e7eb;color:#111827}
+.btn:disabled,.btn[disabled]{opacity:.6!important;cursor:not-allowed}
 
-.card-subblock{padding:1rem;border:1px dashed var(--divider);border-radius:10px}
+/* Sub-blocos com borda tracejada */
+.card-subblock{padding:1rem;border:1px dashed var(--divider);border-radius:10px;background:#fff}
+
+/* Tabela/resumo de alterações no modal de confirmação */
+#confirmChangesList{display:block}
+#confirmChangesList ul{margin:0;padding-left:1.1rem}
+#confirmChangesList li{margin:.25rem 0}
+
+/* Modais – cabeçalhos coloridos já vêm do HTML (bg-*) */
+.modal-content{border-radius:14px}
+.modal-header{border-bottom:none}
+.modal-footer{border-top:none}
+.bg-warning{background:var(--warn)!important;color:#111827}
+.bg-success{background:var(--ok)!important}
+.bg-danger{background:var(--err)!important}
+
+/* Navegação do formulário (rodapé do form) */
+#regularidadeForm .mt-2{margin-top:1.25rem!important}
+#btnSubmit.d-none{display:none!important}
+
+/* Utilidades responsivas */
+@media (max-width: 576px){
+  .app-stepper .divider{display:none}
+  .app-stepper{gap:.25rem}
+  .section-title{font-size:1.1rem}
+}
+
+/* Acentos visuais extras para inputs obrigatórios inválidos no passo atual */
+.app-section input.is-invalid,
+.app-section select.is-invalid{
+  box-shadow:0 0 0 .1rem rgba(220,38,38,.08);
+}
+
+/* Pequenos ajustes de formulário */
+label.form-label{font-weight:600}
+input::placeholder{color:#9ca3af}
+
+/* Spinner no modal “Carregando informações” */
+#modalLoading .spinner-border{width:1.8rem;height:1.8rem}
+
+/* Estados de passos (opcional: o JS pode alternar .done) */
+#stepper .step.active + .divider{background:linear-gradient(90deg,var(--brand-600),#e5e7eb)}

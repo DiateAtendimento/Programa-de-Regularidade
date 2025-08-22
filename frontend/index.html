@@ -18,10 +18,12 @@
       <h1 class="h3 fw-800 mb-2">
         Formulário para a emissão do Termo de Adesão ao Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social (RPPS)
       </h1>
-      <p class="mb-0 small text-muted">Preencha conforme o modelo oficial. Máscaras de CPF/CNPJ são aplicadas automaticamente.</p>
+      <p class="mb-0 small text-muted">
+        Preencha conforme o modelo oficial. Máscaras de CPF/CNPJ são aplicadas automaticamente.
+      </p>
     </header>
 
-    <!-- Stepper -->
+    <!-- Stepper (1 a 7; a pesquisa é a etapa 0, não exibida aqui) -->
     <div id="stepper" class="app-stepper mb-3">
       <div class="step active">1</div>
       <div class="divider"></div>
@@ -41,7 +43,7 @@
     <div class="card app-card">
       <div class="card-body">
         <form id="regularidadeForm" novalidate>
-          <!-- ETAPA 0: Pesquisa -->
+          <!-- ETAPA 0: Pesquisa (pré-etapa) -->
           <section class="app-section" data-step="0">
             <div class="row g-2 align-items-end">
               <div class="col-md-5">
@@ -52,15 +54,23 @@
                 <button type="button" id="btnPesquisar" class="btn btn-primary w-100">Pesquisar</button>
               </div>
               <div class="col-md-4">
-                <div class="form-text">Usa as abas <strong>CNPJ_ENTE_UG</strong>, <strong>Dados_REP_ENTE_UG</strong> e <strong>CRP</strong>.</div>
+                <div class="form-text">
+                  A pesquisa consulta as abas <strong>CNPJ_ENTE_UG</strong>, <strong>Dados_REP_ENTE_UG</strong> e <strong>CRP</strong>.
+                </div>
               </div>
             </div>
           </section>
 
-          <!-- ETAPA 1: Identificação -->
+          <!-- ETAPA 1: Identificação do ente federativo -->
           <section class="app-section" data-step="1">
-            <div class="section-head"><h2 class="section-title">1. Identificação do ente federativo</h2></div>
+            <div class="section-head">
+              <h2 class="section-title">1. Identificação do ente federativo</h2>
+              <p class="small text-muted mb-0">
+                Esta etapa identifica a esfera de governo, o ente federativo e, quando existir, sua Unidade Gestora do RPPS.
+              </p>
+            </div>
 
+            <!-- 1.1 Esfera de Governo -->
             <div class="mb-3" id="grpESFERA">
               <div class="sub-title mb-2">1.1 Esfera de Governo</div>
               <div class="d-flex flex-wrap gap-4">
@@ -73,8 +83,12 @@
                   <label class="form-check-label" for="esf_est">Estadual/Distrital</label>
                 </div>
               </div>
+              <p class="small text-muted mt-1 mb-0">
+                Se o nome do ente contiver “Governo do Estado de …”, a esfera sugerida é <em>Estadual/Distrital</em>. Caso contrário, <em>RPPS Municipal</em>.
+              </p>
             </div>
 
+            <!-- 1.2 Ente Federativo -->
             <div class="row g-3">
               <div class="col-12"><div class="sub-title">1.2 Ente Federativo</div></div>
 
@@ -126,10 +140,16 @@
             </div>
           </section>
 
-          <!-- ETAPA 2: Responsáveis -->
+          <!-- ETAPA 2: Identificação dos responsáveis -->
           <section class="app-section" data-step="2">
-            <div class="section-head"><h2 class="section-title">2. Identificação dos responsáveis</h2></div>
+            <div class="section-head">
+              <h2 class="section-title">2. Identificação dos responsáveis</h2>
+              <p class="small text-muted mb-0">
+                Informe (ou confirme) os dados do representante legal do ente federativo e do representante legal do RPPS (UG).
+              </p>
+            </div>
 
+            <!-- 2.1 Representante legal do ente federativo -->
             <div class="card-subblock mb-3">
               <div class="sub-title">2.1 Representante legal do ente federativo</div>
               <div class="row g-3 align-items-end">
@@ -159,6 +179,7 @@
               </div>
             </div>
 
+            <!-- 2.2 Representante legal do RPPS -->
             <div class="card-subblock">
               <div class="sub-title">2.2 Representante legal do RPPS</div>
               <div class="row g-3 align-items-end">
@@ -189,15 +210,23 @@
             </div>
           </section>
 
-          <!-- ETAPA 3: CRP -->
+          <!-- ETAPA 3: Situação relativa ao CRP -->
           <section class="app-section" data-step="3">
-            <div class="section-head"><h2 class="section-title">3. Situação relativa ao CRP</h2></div>
+            <div class="section-head">
+              <h2 class="section-title">3. Situação relativa ao CRP</h2>
+              <p class="small text-muted mb-0">
+                Esta etapa usa o CNPJ do ente informado na etapa 1 para localizar o último CRP na aba “CRP”.
+                O tipo de emissão é <em>Administrativa</em> quando a coluna “Decisão Judicial” for “Não”; e <em>Judicial</em> quando for “Sim”.
+              </p>
+            </div>
+
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label" for="DATA_VENCIMENTO_ULTIMO_CRP">3.1 Data de vencimento do último CRP</label>
                 <input type="date" id="DATA_VENCIMENTO_ULTIMO_CRP" class="form-control" />
               </div>
             </div>
+
             <div class="mt-3">
               <div class="sub-title">3.2 Tipo de emissão do último CRP</div>
               <div class="d-flex flex-column gap-2">
@@ -213,9 +242,14 @@
             </div>
           </section>
 
-          <!-- ETAPA 4: Finalidades -->
+          <!-- ETAPA 4: Finalidade(s) inicial(is) -->
           <section class="app-section" data-step="4">
-            <div class="section-head"><h2 class="section-title">4. Finalidade(s) inicial(is)</h2></div>
+            <div class="section-head">
+              <h2 class="section-title">4. Finalidade(s) inicial(is)</h2>
+              <p class="small text-muted mb-0">
+                Assinale as finalidades que motivam a adesão inicial ao Programa de Regularidade Previdenciária.
+              </p>
+            </div>
 
             <p class="fw-semibold mb-2">4.1 Celebração de termos de parcelamento de débitos</p>
             <div class="form-check mb-2">
@@ -276,9 +310,14 @@
             </div>
           </section>
 
-          <!-- ETAPA 5: Compromissos -->
+          <!-- ETAPA 5: Compromissos firmados -->
           <section class="app-section" data-step="5">
-            <div class="section-head"><h2 class="section-title">5. Compromissos firmados</h2></div>
+            <div class="section-head">
+              <h2 class="section-title">5. Compromissos firmados</h2>
+              <p class="small text-muted mb-0">
+                Selecione os compromissos que o ente assume ao aderir ao Programa.
+              </p>
+            </div>
             <div class="d-flex flex-column gap-3" id="grpCOMPROMISSOS">
               <label class="form-check">
                 <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Regularidade nos repasses e parcelas de acordos">
@@ -299,9 +338,14 @@
             </div>
           </section>
 
-          <!-- ETAPA 6: Providências e Condições -->
+          <!-- ETAPA 6 e 7: Providências e Condições -->
           <section class="app-section" data-step="6">
-            <div class="section-head"><h2 class="section-title">6. Providências e 7. Condições</h2></div>
+            <div class="section-head">
+              <h2 class="section-title">6. Providências e 7. Condições</h2>
+              <p class="small text-muted mb-0">
+                Assinale as providências já adotadas e confirme ciência das condições de vigência do art. 60 do Anexo XVIII da Portaria MTP nº 1.467/2022.
+              </p>
+            </div>
 
             <div class="d-flex flex-column gap-3 mb-3" id="grpPROVIDENCIAS">
               <label class="form-check">
@@ -316,7 +360,9 @@
 
             <div class="form-check mb-3" id="grpCONDICOES">
               <input class="form-check-input me-2" type="checkbox" id="DECL_CIENCIA" name="CONDICOES_VIGENCIA" value="Declaro ciência das condições do art. 60 do Anexo XVIII da Portaria MTP 1.467/2022">
-              <label class="form-check-label" for="DECL_CIENCIA">Declaro ciência das condições do art. 60 do Anexo XVIII da Portaria MTP nº 1.467/2022.</label>
+              <label class="form-check-label" for="DECL_CIENCIA">
+                Declaro ciência das condições do art. 60 do Anexo XVIII da Portaria MTP nº 1.467/2022.
+              </label>
             </div>
           </section>
 
@@ -327,7 +373,7 @@
             <button type="submit" id="btnSubmit" class="btn btn-success d-none">Gerar Termo</button>
           </div>
 
-          <!-- carimbos de sistema -->
+          <!-- Carimbos de sistema (preenchidos no envio) -->
           <input type="hidden" id="MES" />
           <input type="hidden" id="DATA_TERMO_GERADO" />
           <input type="hidden" id="HORA_TERMO_GERADO" />
@@ -377,6 +423,44 @@
     </div>
   </div>
 
+  <!-- Modal "Carregando informações" -->
+  <div class="modal fade" id="modalLoading" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <h5 class="modal-title">Carregando informações</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex align-items-center gap-3">
+            <div class="spinner-border" role="status" aria-label="Carregando"></div>
+            <div>Consultando a base…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmação de alterações -->
+  <div class="modal fade" id="modalConfirm" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmar alterações</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="confirmChangesList" class="small"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btnConfirmProceed" class="btn btn-primary">Confirmar e continuar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="script.js"></script>
 </body>

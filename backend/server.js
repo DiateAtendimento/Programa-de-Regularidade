@@ -1,4 +1,4 @@
-// server.js — API RPPS (multi-etapas): CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP,
+// server.js — API RPPS (multi-etapas): CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP (colunas fixas B/F/G),
 // gravação em Termos_registrados e log em Reg_alteracao_dados_ente_ug
 
 require('dotenv').config();
@@ -128,7 +128,7 @@ function esferaFromEnte(ente){
   return low(ente).includes('governo do estado') ? 'Estadual/Distrital' : 'RPPS Municipal';
 }
 
-/* ───── Helpers p/ cabeçalhos duplicados ───── */
+/* ───── Helpers p/ headers duplicados (CNPJ_ENTE_UG e Dados_REP_ENTE_UG) ───── */
 
 // Fallback baseado em cells quando getRows() falha por headers duplicados
 async function getRowsViaCells(sheet) {
@@ -188,21 +188,47 @@ function getVal(row, ...candidates) {
   }
   return undefined;
 }
-// procura valor por "palavras contidas" no nome do header
-function getValByIncludes(row, words = []) {
-  const keys = Object.keys(row);
-  const k = keys.find(k => {
-    const l = low(k);
-    return words.every(w => l.includes(low(w)));
-  });
-  return k ? row[k] : undefined;
+
+/* ───── Leitura da aba CRP por COLUNAS fixas (B, F, G) ─────
+   B = CNPJ_ENTE, F = DATA_VALIDADE, G = DECISAO_JUDICIAL
+   (0-based: 1, 5, 6)
+---------------------------------------------------------------- */
+async function readCRPByFixedColumns(sheet) {
+  const colCNPJ = 1, colVal = 5, colDec = 6; // índices 0-based
+  const endRow = sheet.rowCount || 2000;
+  const endCol = Math.max(colCNPJ, colVal, colDec) + 1;
+  await sheet.loadCells({ startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol });
+
+  const rows = [];
+  for (let r = 1; r < endRow; r++) {
+    const cnpjCell = sheet.getCell(r, colCNPJ);
+    const valCell  = sheet.getCell(r, colVal);
+    const decCell  = sheet.getCell(r, colDec);
+    const cnpj = digits(cnpjCell?.value ?? '');
+    const validade = norm(valCell?.value ?? '');
+    const decisao  = norm(decCell?.value ?? '');
+    if (!cnpj && !validade && !decisao) continue; // linha vazia
+    rows.push({ CNPJ_ENTE: cnpj, DATA_VALIDADE: validade, DECISAO_JUDICIAL: decisao });
+  }
+  return rows;
+}
+
+// parser simples para datas
+function parseDMYorYMD(s) {
+  const v = norm(s);
+  if (!v) return new Date(0);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(v+'T00:00:00');
+  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00`);
+  const d = new Date(v);
+  return isNaN(d) ? new Date(0) : d;
 }
 
 /* ─────────────── ROTAS ─────────────── */
 
 /**
  * GET /api/consulta?cnpj=NNNNNNNNNNNNNN
- * Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG e CRP (tolerante a headers duplicados)
+ * Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG e CRP (CRP por colunas B/F/G)
  */
 app.get('/api/consulta', async (req, res) => {
   try {
@@ -215,7 +241,7 @@ app.get('/api/consulta', async (req, res) => {
     const sReps = await getSheet('Dados_REP_ENTE_UG');
     const sCrp  = await getSheet('CRP');
 
-    // CNPJ_ENTE_UG
+    // CNPJ_ENTE_UG (tolerante a headers duplicados)
     const cnpjRows = await getRowsSafe(sCnpj);
     const base = cnpjRows.find(r => digits(getVal(r, 'CNPJ_ENTE')) === cnpj);
     if (!base) return res.status(404).json({ error: 'CNPJ não encontrado em CNPJ_ENTE_UG.' });
@@ -226,7 +252,7 @@ app.get('/api/consulta', async (req, res) => {
     const CNPJ_ENTE = digits(getVal(base, 'CNPJ_ENTE'));
     const CNPJ_UG   = digits(getVal(base, 'CNPJ_UG'));
 
-    // Dados_REP_ENTE_UG (por UF+ENTE)
+    // Dados_REP_ENTE_UG (por UF+ENTE, tolerante a duplicados)
     const repsAll = await getRowsSafe(sReps);
     const reps = repsAll.filter(r => low(getVal(r,'UF')) === low(UF) && low(getVal(r,'ENTE')) === low(ENTE));
 
@@ -235,23 +261,16 @@ app.get('/api/consulta', async (req, res) => {
       reps.find(r => ['','ente','adm direta','administração direta','administracao direta'].includes(low(getVal(r,'UG')||''))) ||
       reps.find(r => low(getVal(r,'UG')||'') !== low(UG)) || reps[0] || {};
 
-    // CRP (pode ter headers duplicados)
-    const crpAll = await getRowsSafe(sCrp);
-    const crpCandidates = crpAll.filter(r => digits(getVal(r, 'CNPJ_ENTE')) === CNPJ_ENTE);
+    // CRP por colunas fixas (B/F/G)
+    const crpAll = await readCRPByFixedColumns(sCrp);
+    const crpCandidates = crpAll.filter(r => digits(r.CNPJ_ENTE) === CNPJ_ENTE);
 
     let crp = {};
     if (crpCandidates.length) {
-      // pega a de maior DATA_VALIDADE
-      crpCandidates.sort((a,b) => {
-        const av = norm(getValByIncludes(a, ['valid'])); // DATA_VALIDADE
-        const bv = norm(getValByIncludes(b, ['valid']));
-        const ad = parseDMYorYMD(av);
-        const bd = parseDMYorYMD(bv);
-        return (bd - ad);
-      });
+      crpCandidates.sort((a,b) => (parseDMYorYMD(b.DATA_VALIDADE) - parseDMYorYMD(a.DATA_VALIDADE)));
       const top = crpCandidates[0];
-      crp.DATA_VALIDADE   = norm(getValByIncludes(top, ['valid'])) || '';
-      crp.DECISAO_JUDICIAL= norm(getValByIncludes(top, ['deci','judi'])) || '';
+      crp.DATA_VALIDADE    = norm(top.DATA_VALIDADE || '');
+      crp.DECISAO_JUDICIAL = norm(top.DECISAO_JUDICIAL || '');
     }
 
     // normaliza formato data validade para yyyy-mm-dd se vier dd/mm/yyyy
@@ -304,17 +323,6 @@ app.get('/api/consulta', async (req, res) => {
     res.status(500).json({ error:'Falha interna.' });
   }
 });
-
-// parser simples para datas
-function parseDMYorYMD(s) {
-  const v = norm(s);
-  if (!v) return new Date(0);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(v+'T00:00:00');
-  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00`);
-  const d = new Date(v);
-  return isNaN(d) ? new Date(0) : d;
-}
 
 /**
  * GET /api/rep-by-cpf?cpf=NNNNNNNNNNN
@@ -413,8 +421,8 @@ app.post('/api/gerar-termo', async (req,res)=>{
     ];
     const changed = [];
     for (const col of compareCols) {
-      const a = (col.includes('CPF') || col.includes('CNPJ')) ? digits(snap[col] || '') : norm(snap[col] || '');
-      const b = (col.includes('CPF') || col.includes('CNPJ')) ? digits(p[col] || '')   : norm(p[col] || '');
+      const a = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(snap[col] || '') : norm(snap[col] || '');
+      const b = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(p[col] || '')   : norm(p[col] || '');
       if (low(a) !== low(b)) changed.push(col);
     }
     if (changed.length) {
