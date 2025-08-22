@@ -241,9 +241,10 @@ app.get('/api/consulta', async (req, res) => {
     const sReps = await getSheet('Dados_REP_ENTE_UG');
     const sCrp  = await getSheet('CRP');
 
-    // CNPJ_ENTE_UG (tolerante a headers duplicados)
+    // CNPJ_ENTE_UG (tolerante a headers duplicados) — aceita CNPJ do ENTE ou da UG
     const cnpjRows = await getRowsSafe(sCnpj);
-    const base = cnpjRows.find(r => digits(getVal(r, 'CNPJ_ENTE')) === cnpj);
+    let base = cnpjRows.find(r => digits(getVal(r,'CNPJ_ENTE')) === cnpj);
+    if (!base) base = cnpjRows.find(r => digits(getVal(r,'CNPJ_UG')) === cnpj);
     if (!base) return res.status(404).json({ error: 'CNPJ não encontrado em CNPJ_ENTE_UG.' });
 
     const UF        = norm(getVal(base, 'UF'));

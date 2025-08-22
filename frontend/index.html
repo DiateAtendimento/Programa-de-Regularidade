@@ -23,27 +23,21 @@
       </p>
     </header>
 
-    <!-- Stepper (1 a 7; a pesquisa é a etapa 0, não exibida aqui) -->
+    <!-- Stepper -->
     <div id="stepper" class="app-stepper mb-3">
-      <div class="step active">1</div>
-      <div class="divider"></div>
-      <div class="step">2</div>
-      <div class="divider"></div>
-      <div class="step">3</div>
-      <div class="divider"></div>
-      <div class="step">4</div>
-      <div class="divider"></div>
-      <div class="step">5</div>
-      <div class="divider"></div>
-      <div class="step">6</div>
-      <div class="divider"></div>
+      <div class="step active">1</div><div class="divider"></div>
+      <div class="step">2</div><div class="divider"></div>
+      <div class="step">3</div><div class="divider"></div>
+      <div class="step">4</div><div class="divider"></div>
+      <div class="step">5</div><div class="divider"></div>
+      <div class="step">6</div><div class="divider"></div>
       <div class="step">7</div>
     </div>
 
     <div class="card app-card">
       <div class="card-body">
         <form id="regularidadeForm" novalidate>
-          <!-- ETAPA 0: Pesquisa (pré-etapa) -->
+          <!-- ETAPA 0: Pesquisa -->
           <section class="app-section" data-step="0">
             <div class="row g-2 align-items-end">
               <div class="col-md-5">
@@ -61,7 +55,7 @@
             </div>
           </section>
 
-          <!-- ETAPA 1: Identificação do ente federativo -->
+          <!-- ETAPA 1 -->
           <section class="app-section" data-step="1">
             <div class="section-head">
               <h2 class="section-title">1. Identificação do ente federativo</h2>
@@ -70,7 +64,6 @@
               </p>
             </div>
 
-            <!-- 1.1 Esfera de Governo -->
             <div class="mb-3" id="grpESFERA">
               <div class="sub-title mb-2">1.1 Esfera de Governo</div>
               <div class="d-flex flex-wrap gap-4">
@@ -88,7 +81,6 @@
               </p>
             </div>
 
-            <!-- 1.2 Ente Federativo -->
             <div class="row g-3">
               <div class="col-12"><div class="sub-title">1.2 Ente Federativo</div></div>
 
@@ -140,7 +132,7 @@
             </div>
           </section>
 
-          <!-- ETAPA 2: Identificação dos responsáveis -->
+          <!-- ETAPA 2 -->
           <section class="app-section" data-step="2">
             <div class="section-head">
               <h2 class="section-title">2. Identificação dos responsáveis</h2>
@@ -149,7 +141,6 @@
               </p>
             </div>
 
-            <!-- 2.1 Representante legal do ente federativo -->
             <div class="card-subblock mb-3">
               <div class="sub-title">2.1 Representante legal do ente federativo</div>
               <div class="row g-3 align-items-end">
@@ -179,7 +170,6 @@
               </div>
             </div>
 
-            <!-- 2.2 Representante legal do RPPS -->
             <div class="card-subblock">
               <div class="sub-title">2.2 Representante legal do RPPS</div>
               <div class="row g-3 align-items-end">
@@ -210,7 +200,7 @@
             </div>
           </section>
 
-          <!-- ETAPA 3: Situação relativa ao CRP -->
+          <!-- ETAPA 3 -->
           <section class="app-section" data-step="3">
             <div class="section-head">
               <h2 class="section-title">3. Situação relativa ao CRP</h2>
@@ -242,7 +232,7 @@
             </div>
           </section>
 
-          <!-- ETAPA 4: Finalidade(s) inicial(is) -->
+          <!-- ETAPA 4 -->
           <section class="app-section" data-step="4">
             <div class="section-head">
               <h2 class="section-title">4. Finalidade(s) inicial(is)</h2>
@@ -310,7 +300,7 @@
             </div>
           </section>
 
-          <!-- ETAPA 5: Compromissos firmados -->
+          <!-- ETAPA 5 -->
           <section class="app-section" data-step="5">
             <div class="section-head">
               <h2 class="section-title">5. Compromissos firmados</h2>
@@ -338,7 +328,7 @@
             </div>
           </section>
 
-          <!-- ETAPA 6 e 7: Providências e Condições -->
+          <!-- ETAPA 6 e 7 -->
           <section class="app-section" data-step="6">
             <div class="section-head">
               <h2 class="section-title">6. Providências e 7. Condições</h2>
@@ -366,14 +356,14 @@
             </div>
           </section>
 
-          <!-- Controles de navegação -->
+          <!-- Controles -->
           <div class="d-flex justify-content-between mt-2">
             <button type="button" id="btnPrev" class="btn btn-outline-secondary">Voltar</button>
             <button type="button" id="btnNext" class="btn btn-primary">Próximo</button>
             <button type="submit" id="btnSubmit" class="btn btn-success d-none">Gerar Termo</button>
           </div>
 
-          <!-- Carimbos de sistema (preenchidos no envio) -->
+          <!-- carimbos -->
           <input type="hidden" id="MES" />
           <input type="hidden" id="DATA_TERMO_GERADO" />
           <input type="hidden" id="HORA_TERMO_GERADO" />
@@ -383,7 +373,7 @@
     </div>
   </div>
 
-  <!-- Modais -->
+  <!-- Modais padrão -->
   <div class="modal fade" id="modalErro" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
@@ -423,25 +413,22 @@
     </div>
   </div>
 
-  <!-- Modal "Carregando informações" -->
+  <!-- Modal "Carregando" -->
   <div class="modal fade" id="modalLoading" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-sm">
       <div class="modal-content border-0 shadow">
-        <div class="modal-header">
-          <h5 class="modal-title">Carregando informações</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">Carregando informações…</h5>
         </div>
-        <div class="modal-body">
-          <div class="d-flex align-items-center gap-3">
-            <div class="spinner-border" role="status" aria-label="Carregando"></div>
-            <div>Consultando a base…</div>
-          </div>
+        <div class="modal-body d-flex align-items-center gap-2">
+          <div class="spinner-border" role="status" aria-hidden="true"></div>
+          <span>Consultando as abas <strong>CNPJ_ENTE_UG</strong>, <strong>Dados_REP_ENTE_UG</strong> e <strong>CRP</strong>.</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal de confirmação de alterações -->
+  <!-- Modal confirmação -->
   <div class="modal fade" id="modalConfirm" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog">
       <div class="modal-content border-0 shadow">

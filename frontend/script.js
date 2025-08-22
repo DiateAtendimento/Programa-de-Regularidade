@@ -17,57 +17,12 @@
   const fmtHR = d => d.toLocaleTimeString('pt-BR',{hour12:false,timeZone:'America/Sao_Paulo'});
   const rmAcc = s => String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
 
-  // cria modal genérico se não existir
-  function ensureModal(id, {title='', bodyHTML='', backdrop='static', keyboard=false, size=''} = {}){
-    if ($(id)) return $(id);
-    const wrap = document.createElement('div');
-    wrap.className='modal fade';
-    wrap.id = id.replace('#','');
-    wrap.tabIndex = -1;
-    wrap.innerHTML = `
-      <div class="modal-dialog ${size}">
-        <div class="modal-content border-0 shadow">
-          <div class="modal-header">
-            <h5 class="modal-title">${title}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">${bodyHTML}</div>
-          <div class="modal-footer d-none"></div>
-        </div>
-      </div>`;
-    document.body.appendChild(wrap);
-    const m = new bootstrap.Modal(wrap, { backdrop, keyboard });
-    // fixa cabeçalho conforme contexto
-    return $(id);
-  }
-
-  // Modais fixos existentes
+  // Modais do HTML
   const modalErro    = new bootstrap.Modal($('#modalErro'));
   const modalBusca   = new bootstrap.Modal($('#modalBusca'));
   const modalSucesso = new bootstrap.Modal($('#modalSucesso'));
-
-  // Modal "Carregando…"
-  ensureModal('#modalLoading',{
-    title:'Carregando informações',
-    bodyHTML:'<div class="d-flex align-items-center gap-3"><div class="spinner-border" role="status"></div><div>Consultando a base…</div></div>',
-    backdrop:'static', keyboard:false, size:'modal-sm'
-  });
   const modalLoading = new bootstrap.Modal($('#modalLoading'), {backdrop:'static', keyboard:false});
-
-  // Modal de confirmação de alterações
-  ensureModal('#modalConfirm',{
-    title:'Confirmar alterações',
-    bodyHTML:'<div id="confirmChangesList" class="small"></div>',
-    backdrop:'static', keyboard:false
-  });
-  const modalConfirmEl = $('#modalConfirm');
-  const confirmFooter = modalConfirmEl.querySelector('.modal-footer');
-  confirmFooter.classList.remove('d-none');
-  confirmFooter.innerHTML = `
-    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-    <button type="button" id="btnConfirmProceed" class="btn btn-primary">Confirmar e continuar</button>
-  `;
-  const modalConfirm = new bootstrap.Modal(modalConfirmEl);
+  const modalConfirm = new bootstrap.Modal($('#modalConfirm'));
 
   function showErro(msgs){
     const ul = $('#modalErroLista'); ul.innerHTML='';
@@ -135,18 +90,12 @@
   const btnSubmit= $('#btnSubmit');
 
   function updateNavButtons(){
-    // mostrar/ocultar "Voltar"
-    if (step >= 2) {
-      btnPrev.classList.remove('invisible'); btnPrev.classList.remove('d-none');
-    } else {
-      btnPrev.classList.add('d-none');
-    }
+    // mostrar/ocultar "Voltar" (somente a partir da etapa 2)
+    btnPrev.classList.toggle('d-none', step <= 1);
+
     // habilitar/desabilitar "Próximo"
-    if (step === 0) {
-      btnNext.disabled = !cnpjOK;
-    } else {
-      btnNext.disabled = false;
-    }
+    btnNext.disabled = (step === 0 && !cnpjOK);
+
     // alterna Next/Submit na última etapa
     btnNext.classList.toggle('d-none', step===6);
     btnSubmit.classList.toggle('d-none', step!==6);
@@ -159,6 +108,9 @@
     updateNavButtons();
   }
   showStep(0);
+
+  // digitar novo CNPJ volta a travar o "Próximo"
+  $('#CNPJ_ENTE_PESQ')?.addEventListener('input', ()=>{ cnpjOK = false; updateNavButtons(); });
 
   btnPrev?.addEventListener('click', ()=> showStep(step-1));
 
@@ -187,7 +139,7 @@
       }
     }
 
-    // Etapas com validação “forte”: 1..3
+    // Validações fortes das etapas 1..3
     if (step>=1 && step<=3) {
       if (!validateStep(step)) return;
     }
@@ -226,7 +178,7 @@
     }
   }
 
-  /* ========= Validações por etapa (foco 1..3) ========= */
+  /* ========= Validações por etapa ========= */
   const reqAll = {
     1: [
       {id:'UF', type:'select', label:'UF'},
@@ -246,8 +198,7 @@
       {id:'EMAIL_REP_UG', type:'email', label:'E-mail do Rep. da UG'}
     ],
     3: [
-      {id:'DATA_VENCIMENTO_ULTIMO_CRP', type:'date', label:'Data do último CRP'},
-      // Tipos (rádio) não são obrigatórios aqui porque o backend decide por “Sim/Não” vindo da aba CRP
+      {id:'DATA_VENCIMENTO_ULTIMO_CRP', type:'date', label:'Data do último CRP'}
     ]
   };
   function checkField(id,type){
@@ -271,6 +222,11 @@
       const ok = items.some(i=>i.checked);
       items.forEach(i => i.classList.toggle('is-invalid', !ok));
       if(!ok) msgs.push('Esfera de Governo');
+    }
+    if (s===3) {
+      const radios = $$('input[name="TIPO_EMISSAO_ULTIMO_CRP"]');
+      const ok = radios.some(r=>r.checked);
+      if(!ok) msgs.push('Tipo de emissão do CRP');
     }
     if (msgs.length){ showErro(msgs); return false; }
     return true;
@@ -297,7 +253,7 @@
     {id:'EMAIL_REP_UG', label:'E-mail do Rep. da UG', norm:v=>String(v||'').trim()},
     {id:'TEL_REP_UG', label:'Telefone do Rep. da UG', norm:v=>digits(v)},
   ];
-  let autoSnapshotCompare = {}; // {id: valorNormalizado}
+  let autoSnapshotCompare = {};
   function buildAutoSnapshotCompare(from){
     autoSnapshotCompare = {
       UF: from?.UF || '',
@@ -316,7 +272,6 @@
       EMAIL_REP_UG: from?.EMAIL_REP_UG || '',
       CARGO_REP_UG: from?.CARGO_REP_UG || ''
     };
-    // normaliza para comparação
     for (const f of autoFields) {
       autoSnapshotCompare[f.id] = f.norm(autoSnapshotCompare[f.id] || '');
     }
@@ -326,21 +281,17 @@
   function decorateAutoFields(){
     autoFields.forEach(({id})=>{
       const el = document.getElementById(id);
-      if (!el) return;
-      // evita duplicar decoração
-      if (el.dataset.decorated === '1') return;
+      if (!el || el.dataset.decorated === '1') return;
+
       el.dataset.decorated = '1';
-
       el.readOnly = true;
-      el.classList.add('bg-light'); // aparência de bloqueado
+      el.classList.add('bg-light');
 
-      // cria botão ✎ ao lado
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'btn btn-sm btn-outline-secondary ms-2';
       btn.textContent = '✎';
       btn.title = 'Permitir edição deste campo';
-      // insere após o input
       el.insertAdjacentElement('afterend', btn);
       btn.addEventListener('click', ()=>{
         el.readOnly = !el.readOnly;
@@ -352,7 +303,7 @@
     });
   }
 
-  // Lista alterações nos campos auto da etapa atual (1: identificação; 2: responsáveis)
+  // Lista alterações nos campos auto da etapa atual
   function listChangedAuto(currentStep){
     const idsByStep = currentStep===1
       ? ['UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG']
@@ -366,7 +317,6 @@
       const before = autoSnapshotCompare[id] || '';
       const after  = def.norm($('#'+id).value || '');
       if (String(before) !== String(after)) {
-        // monta a versão "bonita" para exibir (com máscara, quando couber)
         const prettyBefore = (id.includes('CNPJ') ? maskCNPJ(before) :
                              id.includes('CPF')  ? maskCPF(before)  :
                              id.includes('TEL')  ? maskPhone(before) : before);
@@ -379,7 +329,7 @@
     return changes;
   }
 
-  /* ========= Busca por CNPJ (consulta unificada) ========= */
+  /* ========= Busca por CNPJ ========= */
   $('#btnPesquisar')?.addEventListener('click', async ()=>{
     const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
     if(cnpj.length!==14) { markInvalid($('#CNPJ_ENTE_PESQ')); return showErro(['Informe um CNPJ válido.']); }
@@ -392,14 +342,14 @@
       const { data } = await r.json();
       snapshotBase = data.__snapshot || null;
 
-      // Preenche etapa 1
+      // Etapa 1
       $('#UF').value = data.UF || '';
       $('#ENTE').value = data.ENTE || '';
       $('#CNPJ_ENTE').value = maskCNPJ(data.CNPJ_ENTE || '');
       $('#UG').value = data.UG || '';
       $('#CNPJ_UG').value = maskCNPJ(data.CNPJ_UG || '');
 
-      // Reps
+      // Etapa 2
       $('#NOME_REP_ENTE').value = data.NOME_REP_ENTE || '';
       $('#CPF_REP_ENTE').value  = maskCPF(data.CPF_REP_ENTE || '');
       $('#EMAIL_REP_ENTE').value= data.EMAIL_REP_ENTE || '';
@@ -412,21 +362,18 @@
       $('#TEL_REP_UG').value  = data.TEL_REP_UG || '';
       $('#CARGO_REP_UG').value= data.CARGO_REP_UG || '';
 
-      // CRP (etapa 3)
+      // Etapa 3 — CRP
       if(data.CRP_DATA_VALIDADE) $('#DATA_VENCIMENTO_ULTIMO_CRP').value = data.CRP_DATA_VALIDADE;
       const dj = rmAcc(String(data.CRP_DECISAO_JUDICIAL || ''));
       if (dj === 'nao') $('#em_adm').checked = true;
       else if (dj === 'sim') $('#em_jud').checked = true;
 
-      // Esfera (1.1)
+      // Esfera sugerida
       autoselectEsferaByEnte(data.ENTE);
 
-      // Valida visualmente
+      // Feedback visual + travas
       Object.values(reqAll).flat().forEach(({id,type})=> checkField(id,type));
-
-      // “Trava” campos e adiciona ✎
       decorateAutoFields();
-      // Prepara snapshot para comparação de mudanças
       buildAutoSnapshotCompare({
         UF: data.UF, ENTE: data.ENTE, CNPJ_ENTE: data.CNPJ_ENTE, UG: data.UG, CNPJ_UG: data.CNPJ_UG,
         NOME_REP_ENTE: data.NOME_REP_ENTE, CPF_REP_ENTE: data.CPF_REP_ENTE, TEL_REP_ENTE: data.TEL_REP_ENTE,
@@ -445,7 +392,7 @@
     }
   });
 
-  // Busca reps por CPF (auxiliar, sem travar avanço das etapas)
+  // Busca reps por CPF
   async function buscarRepByCPF(cpf, fillPrefix){
     const cpfd = digits(cpf||'');
     if(cpfd.length!==11) { showErro(['Informe um CPF válido.']); return; }
@@ -539,7 +486,6 @@
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
-      // Abre termo.html com os dados (auto download)
       const qs = new URLSearchParams({
         uf: payload.UF,
         ente: payload.ENTE,
