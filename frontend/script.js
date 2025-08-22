@@ -1,4 +1,4 @@
-// script.js — Multi-etapas com: máscaras, stepper, modais de loading, buscas e validação
+// script.js — Multi-etapas com: máscaras, stepper, modais com Lottie, buscas e validação
 (() => {
   /* ========= Config API ========= */
   const API_BASE = (() => {
@@ -22,6 +22,29 @@
   const modalBusca    = new bootstrap.Modal($('#modalBusca'));
   const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
   const modalLoading  = new bootstrap.Modal($('#modalLoading'), { backdrop:'static', keyboard:false });
+
+  /* ========= Lottie ========= */
+  const lotties = {};
+  function mountLottie(id, jsonPath, {loop=true, autoplay=true, renderer='svg'}={}) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (lotties[id]) { lotties[id].destroy(); delete lotties[id]; }
+    lotties[id] = lottie.loadAnimation({ container: el, path: jsonPath, loop, autoplay, renderer });
+  }
+
+  // carrega animações quando os modais abrirem
+  $('#modalLoading')?.addEventListener('shown.bs.modal', () => {
+    mountLottie('lottieLoading', 'animacao/carregando-info.json', { loop:true, autoplay:true });
+  });
+  $('#modalErro')?.addEventListener('shown.bs.modal', () => {
+    mountLottie('lottieError', 'animacao/confirm-error.json', { loop:false, autoplay:true });
+  });
+  $('#modalBusca')?.addEventListener('shown.bs.modal', () => {
+    mountLottie('lottieErrorBusca', 'animacao/confirm-error.json', { loop:false, autoplay:true });
+  });
+  $('#modalSucesso')?.addEventListener('shown.bs.modal', () => {
+    mountLottie('lottieSuccess', 'animacao/confirm-success.json', { loop:false, autoplay:true });
+  });
 
   function showErro(msgs){
     const ul = $('#modalErroLista'); ul.innerHTML='';
@@ -97,14 +120,13 @@
   function showStep(n){
     step = Math.max(0, Math.min(7, n));
     sections.forEach(sec => sec.style.display = (Number(sec.dataset.step)===step ? '' : 'none'));
-    const activeIdx = Math.min(step, stepsUI.length-1); // mapeia steps 0..7 para 0..6 do stepper
+    const activeIdx = Math.min(step, stepsUI.length-1);
     stepsUI.forEach((s,i)=> s.classList.toggle('active', i===activeIdx));
     updateNavButtons();
   }
   showStep(0);
 
   btnPrev?.addEventListener('click', ()=> showStep(step-1));
-  $('#btnBackTo1')?.addEventListener('click', ()=> showStep(1));
   btnNext?.addEventListener('click', ()=>{
     if (step>=1 && step<=3) { if (!validateStep(step)) return; }
     if (step===0 && !cnpjOK) { showErro(['Pesquise e selecione um CNPJ válido antes de prosseguir.']); return; }
@@ -199,8 +221,10 @@
        'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
 
-      // CRP
-      if (data.CRP_DATA_VALIDADE) $('#DATA_VENCIMENTO_ULTIMO_CRP').value = data.CRP_DATA_VALIDADE;
+      // CRP — preferir ISO pois o input é type="date"
+      const iso = data.CRP_DATA_VALIDADE_ISO || '';
+      if (iso) $('#DATA_VENCIMENTO_ULTIMO_CRP').value = iso;
+
       const dj = rmAcc(String(data.CRP_DECISAO_JUDICIAL || ''));
       $('#em_adm').checked = (dj==='nao');
       $('#em_jud').checked = (dj==='sim');
@@ -208,7 +232,7 @@
       // esfera sugerida
       autoselectEsferaByEnte(data.ENTE);
 
-      // valida apenas os campos do passo 1 (para não "pintar" o passo 2 antes do usuário interagir)
+      // valida apenas os campos do passo 1
       reqAll[1].forEach(({id,type})=> checkField(id,type));
 
       cnpjOK = true;

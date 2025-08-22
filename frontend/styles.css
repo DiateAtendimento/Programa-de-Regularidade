@@ -10,12 +10,22 @@
   --fg:#111827;
   --ghost:#f9fafb;
   --bg:#f4f6f9;
-  --card:#fff;
+  --card:#ffffff;
   --divider:#e5e7eb;
   --shadow:0 10px 28px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--fg)}
+body{font-family:'Inter',sans-serif;color:var(--fg);min-height:100vh;position:relative}
+
+/* Background com imagem + gradiente */
+.app-bg{
+  position:fixed; inset:0;
+  background:
+    linear-gradient(180deg, rgba(30,58,138,.35) 0%, rgba(15,23,42,.55) 100%),
+    url('imagens/bg.svg') center/cover no-repeat fixed;
+  z-index:-1;
+  filter:saturate(1.05) contrast(1.02);
+}
 .container{max-width:1120px}
 
 /* Stepper */
@@ -29,13 +39,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--fg)}
 .app-stepper .step.done{background:#a7f3d0;color:#065f46}
 .app-stepper .divider{flex:1;height:3px;background:#e5e7eb;border-radius:2px}
 
-/* Card */
-.app-card{border:none;border-radius:14px;background:var(--card);box-shadow:var(--shadow)}
+/* Card com glassmorphism */
+.app-card{border:none;border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
+.glass{
+  background:rgba(255,255,255,.88);
+  backdrop-filter:saturate(1.2) blur(6px);
+  border:1px solid rgba(255,255,255,.4);
+}
 
 /* Sections */
 .app-section{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--divider)}
-.section-title{font-size:1.25rem;font-weight:700;color:var(--brand);margin-bottom:.25rem}
-.sub-title{font-weight:600;margin-bottom:.35rem;color:#374151}
+.section-title{font-size:1.25rem;font-weight:700;color:#fff;margin-bottom:.25rem}
+.sub-title{font-weight:600;margin-bottom:.35rem;color:#334155}
 
 /* Inputs focus */
 .form-control:focus,.form-select:focus{
@@ -122,8 +137,8 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
 label.form-label{font-weight:600}
 input::placeholder{color:#9ca3af}
 
-/* Spinner no modal “Carregando informações” */
-#modalLoading .spinner-border{width:1.8rem;height:1.8rem}
+/* Lottie containers */
+.lottie-box{width:60px;height:60px;min-width:60px}
 
 /* Estados de passos (transição do divisor) */
 #stepper .step.active + .divider{background:linear-gradient(90deg,var(--brand-600),#e5e7eb)}

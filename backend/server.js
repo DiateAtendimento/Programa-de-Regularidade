@@ -1,5 +1,6 @@
-// server.js — API RPPS (multi-etapas): CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP (colunas fixas B/F/G),
-// gravação em Termos_registrados e log em Reg_alteracao_dados_ente_ug
+// server.js — API RPPS (multi-etapas)
+// Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP (colunas fixas B/F/G = 1/5/6),
+// grava em Termos_registrados e registra alterações em Reg_alteracao_dados_ente_ug (auto-cria se faltar)
 
 require('dotenv').config();
 const fs = require('fs');
@@ -13,12 +14,15 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 
 const app = express();
 
-/* ───────────────── Segurança ──────────────── */
-app.set('trust proxy', 1);               // evita ERR_ERL_UNEXPECTED_X_FORWARDED_FOR atrás de proxy
+/* ───────────── Segurança ───────────── */
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
-// util: lista de origens sem barra final
-const splitList = (s = '') => s.split(/[\s,]+/).map(v => v.trim().replace(/\/+$/, '')).filter(Boolean);
+const splitList = (s = '') =>
+  s.split(/[\s,]+/)
+   .map(v => v.trim().replace(/\/+$/, ''))
+   .filter(Boolean);
+
 const connectExtra = splitList(process.env.CORS_ORIGIN || process.env.CORS_ORIGIN_LIST || '');
 
 app.use(helmet({
@@ -48,7 +52,7 @@ app.use(rateLimit({ windowMs: 15*60*1000, max: 400, standardHeaders: true, legac
 app.use(hpp());
 app.use(express.json({ limit: '300kb' }));
 
-/* ───────────────── CORS ───────────────── */
+/* ───────────── CORS ───────────── */
 const allowed = [
   ...(splitList(process.env.CORS_ORIGIN_LIST || '')),
   ...(splitList(process.env.CORS_ORIGIN || ''))
@@ -67,7 +71,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type','Authorization']
 }));
 
-/* ─────────────── Static ─────────────── */
+/* ───────────── Static ───────────── */
 app.use('/', express.static(path.join(__dirname, '../frontend')));
 
 /* ───────────── Google Sheets ───────────── */
@@ -117,14 +121,22 @@ function nowBR(){
   };
 }
 
-async function getSheet(title){
+function esferaFromEnte(ente){
+  return low(ente).includes('governo do estado') ? 'Estadual/Distrital' : 'RPPS Municipal';
+}
+
+async function getSheetStrict(title){
   const s = doc.sheetsByTitle[title];
-  if(!s) throw new Error(`Aba '${title}' não encontrada.`);
+  if (!s) throw new Error(`Aba '${title}' não encontrada.`);
   return s;
 }
 
-function esferaFromEnte(ente){
-  return low(ente).includes('governo do estado') ? 'Estadual/Distrital' : 'RPPS Municipal';
+async function getOrCreateSheet(title, headerValues){
+  let s = doc.sheetsByTitle[title];
+  if (s) return s;
+  console.warn(`⚠️  Aba '${title}' não encontrada. Criando…`);
+  s = await doc.addSheet({ title, headerValues });
+  return s;
 }
 
 /* ───── Helpers (headers duplicados) ───── */
@@ -205,7 +217,7 @@ const formatDateISO = d => {
   return `${yy}-${mm}-${dd}`;
 };
 
-/* ───── Leitura CRP (colunas fixas B/F/G = 1/5/6) ───── */
+/* ───── Leitura CRP (B/F/G = 1/5/6) ───── */
 async function readCRPByFixedColumns(sheet) {
   const colCNPJ = 1, colVal = 5, colDec = 6; // 0-based
   const endRow = sheet.rowCount || 2000;
@@ -221,36 +233,40 @@ async function readCRPByFixedColumns(sheet) {
 
     const cnpj = digits(cnpjCell?.value ?? '');
 
-    // normaliza validade
+    // validade (dd/mm/aaaa e ISO)
     let validadeDMY = '';
+    let validadeISO = '';
+
     const fv = valCell?.formattedValue;
     if (fv && /^\d{2}\/\d{2}\/\d{4}$/.test(String(fv))) {
       validadeDMY = String(fv);
+      const [dd,mm,yy] = validadeDMY.split('/');
+      validadeISO = `${yy}-${mm}-${dd}`;
     } else if (valCell?.value instanceof Date) {
       validadeDMY = formatDateDMY(valCell.value);
+      validadeISO = formatDateISO(valCell.value);
     } else if (typeof valCell?.value === 'number') { // serial -> Date
       const epoch = new Date(Date.UTC(1899, 11, 30));
       const d = new Date(epoch.getTime() + valCell.value * 86400000);
       validadeDMY = formatDateDMY(d);
+      validadeISO = formatDateISO(d);
     } else if (typeof valCell?.value === 'string') {
       validadeDMY = valCell.value;
+      const m = validadeDMY.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (m) validadeISO = `${m[3]}-${m[2]}-${m[1]}`;
     }
-    const validadeISO = formatDateISO(parseDMYorYMD(validadeDMY));
 
     const decisao  = norm(decCell?.formattedValue ?? decCell?.value ?? '');
 
     if (!cnpj && !validadeDMY && !decisao) continue;
-    rows.push({
-      CNPJ_ENTE: cnpj,
-      DATA_VALIDADE_DMY: validadeDMY,
-      DATA_VALIDADE_ISO: validadeISO,
-      DECISAO_JUDICIAL: decisao
-    });
+    rows.push({ CNPJ_ENTE: cnpj, DATA_VALIDADE_DMY: validadeDMY, DATA_VALIDADE_ISO: validadeISO, DECISAO_JUDICIAL: decisao });
   }
   return rows;
 }
 
 /* ─────────────── ROTAS ─────────────── */
+
+app.get('/api/health', (_req,res)=> res.json({ ok:true }));
 
 /** GET /api/consulta?cnpj=NNNNNNNNNNNNNN */
 app.get('/api/consulta', async (req, res) => {
@@ -260,9 +276,9 @@ app.get('/api/consulta', async (req, res) => {
 
     await authSheets();
 
-    const sCnpj = await getSheet('CNPJ_ENTE_UG');
-    const sReps = await getSheet('Dados_REP_ENTE_UG');
-    const sCrp  = await getSheet('CRP');
+    const sCnpj = await getSheetStrict('CNPJ_ENTE_UG');
+    const sReps = await getSheetStrict('Dados_REP_ENTE_UG');
+    const sCrp  = await getSheetStrict('CRP');
 
     const cnpjRows = await getRowsSafe(sCnpj);
     let base = cnpjRows.find(r => digits(getVal(r,'CNPJ_ENTE')) === cnpj);
@@ -275,7 +291,7 @@ app.get('/api/consulta', async (req, res) => {
     const CNPJ_ENTE = digits(getVal(base, 'CNPJ_ENTE'));
     const CNPJ_UG   = digits(getVal(base, 'CNPJ_UG'));
 
-    // Reps para snapshot
+    // Reps (snapshot informativo — não preenche automático no front)
     const repsAll = await getRowsSafe(sReps);
     const reps = repsAll.filter(r => low(getVal(r,'UF')) === low(UF) && low(getVal(r,'ENTE')) === low(ENTE));
     const repUG = reps.find(r => low(getVal(r,'UG')) === low(UG)) || reps[0] || {};
@@ -297,9 +313,9 @@ app.get('/api/consulta', async (req, res) => {
 
     const out = {
       UF, ENTE, CNPJ_ENTE, UG, CNPJ_UG,
-      CRP_DATA_VALIDADE: crp.DATA_VALIDADE_ISO,           // yyyy-mm-dd para <input type="date">
-      CRP_DATA_VALIDADE_BR: crp.DATA_VALIDADE_DMY,        // dd/mm/aaaa (se precisar exibir)
-      CRP_DECISAO_JUDICIAL: crp.DECISAO_JUDICIAL,
+      CRP_DATA_VALIDADE_DMY: crp.DATA_VALIDADE_DMY || '',
+      CRP_DATA_VALIDADE_ISO: crp.DATA_VALIDADE_ISO || '',
+      CRP_DECISAO_JUDICIAL:  crp.DECISAO_JUDICIAL || '',
       ESFERA_SUGERIDA: esferaFromEnte(ENTE),
 
       __snapshot: {
@@ -315,7 +331,7 @@ app.get('/api/consulta', async (req, res) => {
         EMAIL_REP_UG:  norm(getVal(repUG,'EMAIL')),
         CARGO_REP_UG:  norm(getVal(repUG,'CARGO')),
         CRP:           norm(crp.DECISAO_JUDICIAL || ''),
-        CRP_VALIDADE:  crp.DATA_VALIDADE_DMY
+        CRP_VALIDADE:  crp.DATA_VALIDADE_DMY || ''
       }
     };
 
@@ -333,7 +349,7 @@ app.get('/api/rep-by-cpf', async (req,res)=>{
     if (cpf.length !== 11) return res.status(400).json({ error: 'CPF inválido.' });
 
     await authSheets();
-    const sReps = await getSheet('Dados_REP_ENTE_UG');
+    const sReps = await getSheetStrict('Dados_REP_ENTE_UG');
     const rows = await getRowsSafe(sReps);
     const found = rows.find(r => digits(getVal(r,'CPF')) === cpf);
     if(!found) return res.status(404).json({ error:'CPF não encontrado.' });
@@ -372,8 +388,29 @@ app.post('/api/gerar-termo', async (req,res)=>{
     }
 
     await authSheets();
-    const sTermos = await getSheet('Termos_registrados');
-    const sLog    = await getSheet('Reg_alteracao_dados_ente_ug');
+
+    const sTermos = await getOrCreateSheet('Termos_registrados', [
+      'ENTE','UF','CNPJ_ENTE','EMAIL_ENTE',
+      'NOME_REP_ENTE','CARGO_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE',
+      'UG','CNPJ_UG','EMAIL_UG',
+      'NOME_REP_UG','CARGO_REP_UG','CPF_REP_UG','EMAIL_REP_UG',
+      'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP',
+      'CRITERIOS_IRREGULARES',
+      'CELEBRACAO_TERMO_PARCELA_DEBITOS',
+      'REGULARIZACAO_PENDEN_ADMINISTRATIVA',
+      'DEFICIT_ATUARIAL',
+      'CRITERIOS_ESTRUT_ESTABELECIDOS',
+      'MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS',
+      'COMPROMISSO_FIRMADO_ADESAO',
+      'PROVIDENCIA_NECESS_ADESAO',
+      'CONDICAO_VIGENCIA',
+      'MES','DATA_TERMO_GERADO','HORA_TERMO_GERADO','ANO_TERMO_GERADO'
+    ]);
+
+    // cria a aba de log se faltar
+    const sLog = await getOrCreateSheet('Reg_alteracao_dados_ente_ug', [
+      'UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA'
+    ]);
 
     const { DATA, HORA, ANO, MES } = nowBR();
     const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
@@ -410,7 +447,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
       MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO
     });
 
-    // Log de alterações com base no snapshot enviado
+    // Log (se houver snapshot)
     const snap = p.__snapshot_base || {};
     const compareCols = [
       'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
@@ -418,10 +455,12 @@ app.post('/api/gerar-termo', async (req,res)=>{
       'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG'
     ];
     const changed = [];
-    for (const col of compareCols) {
-      const a = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(snap[col] || '') : norm(snap[col] || '');
-      const b = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(p[col] || '')   : norm(p[col] || '');
-      if (low(a) !== low(b)) changed.push(col);
+    if (Object.keys(snap).length) {
+      for (const col of compareCols) {
+        const a = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(snap[col] || '') : norm(snap[col] || '');
+        const b = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(p[col] || '')   : norm(p[col] || '');
+        if (low(a) !== low(b)) changed.push(col);
+      }
     }
     if (changed.length) {
       const t = nowBR();
@@ -441,6 +480,6 @@ app.post('/api/gerar-termo', async (req,res)=>{
   }
 });
 
-/* ─────────────── Start ─────────────── */
+/* ───────────── Start ───────────── */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server rodando na porta ${PORT}`));

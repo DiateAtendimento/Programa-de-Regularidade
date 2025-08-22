@@ -10,7 +10,10 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="container py-4">
+  <!-- BG decorativo -->
+  <div class="app-bg"></div>
+
+  <div class="container py-4 position-relative">
     <header class="mb-4 text-center">
       <div class="brand mb-2">
         <img src="imagens/logo-mps.svg" alt="MPS" height="56">
@@ -18,9 +21,6 @@
       <h1 class="h3 fw-800 mb-2">
         Formulário para a emissão do Termo de Adesão ao Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social (RPPS)
       </h1>
-      <p class="mb-0 small text-muted">
-        Preencha conforme o modelo oficial. Máscaras de CPF/CNPJ são aplicadas automaticamente.
-      </p>
     </header>
 
     <!-- Stepper -->
@@ -34,7 +34,7 @@
       <div class="step">7</div>
     </div>
 
-    <div class="card app-card">
+    <div class="card app-card glass">
       <div class="card-body">
         <form id="regularidadeForm" novalidate>
           <!-- ETAPA 0: Pesquisa -->
@@ -47,11 +47,7 @@
               <div class="col-md-3">
                 <button type="button" id="btnPesquisar" class="btn btn-primary w-100">Pesquisar</button>
               </div>
-              <div class="col-md-4">
-                <div class="form-text">
-                  A pesquisa consulta as abas <strong>CNPJ_ENTE_UG</strong>, <strong>Dados_REP_ENTE_UG</strong> e <strong>CRP</strong>.
-                </div>
-              </div>
+              <div class="col-md-4"></div>
             </div>
           </section>
 
@@ -131,14 +127,11 @@
 
           <!-- ETAPA 2 -->
           <section class="app-section" data-step="2">
-            <div class="section-head d-flex justify-content-between align-items-start">
-              <div>
-                <h2 class="section-title">2. Identificação dos responsáveis</h2>
-                <p class="small text-muted mb-0">
-                  Digite o CPF e clique em <em>Pesquisar</em> em cada subitem. Os campos serão preenchidos automaticamente apenas após a consulta.
-                </p>
-              </div>
-              <button type="button" id="btnBackTo1" class="btn btn-link">← Voltar para o passo 1</button>
+            <div class="section-head">
+              <h2 class="section-title">2. Identificação dos responsáveis</h2>
+              <p class="small text-muted mb-0">
+                Digite o CPF e clique em <em>Pesquisar</em> em cada subitem. Os campos serão preenchidos automaticamente após a consulta.
+              </p>
             </div>
 
             <div class="card-subblock mb-3">
@@ -235,6 +228,7 @@
               <div class="small text-muted mb-2">Selecione todos os itens apontados como irregulares no extrato.</div>
 
               <div class="d-flex flex-column gap-2" id="grpCRITERIOS">
+                <!-- (lista mantida; versão com textos completos pode ser aplicada depois) -->
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)"><span class="form-check-label">Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Atendimento à fiscalização"><span class="form-check-label">Atendimento à fiscalização</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar"><span class="form-check-label">Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar</span></label>
@@ -403,7 +397,7 @@
     </div>
   </div>
 
-  <!-- Modais padrão -->
+  <!-- Modal Erro -->
   <div class="modal fade" id="modalErro" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
@@ -411,12 +405,16 @@
           <h5 class="modal-title">Revise os itens em vermelho</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body"><ul id="modalErroLista" class="mb-0"></ul></div>
+        <div class="modal-body d-flex align-items-center">
+          <div id="lottieError" class="lottie-box me-3" aria-hidden="true"></div>
+          <ul id="modalErroLista" class="mb-0"></ul>
+        </div>
         <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Ok</button></div>
       </div>
     </div>
   </div>
 
+  <!-- Modal Busca (não encontrado) -->
   <div class="modal fade" id="modalBusca" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
@@ -424,19 +422,24 @@
           <h5 class="modal-title">Registro não encontrado</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body"><p class="mb-0">Verifique o número informado ou preencha manualmente.</p></div>
+        <div class="modal-body d-flex align-items-center">
+          <div id="lottieErrorBusca" class="lottie-box me-3" aria-hidden="true"></div>
+          <p class="mb-0">Verifique o número informado ou preencha manualmente.</p>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- Modal Sucesso -->
   <div class="modal fade" id="modalSucesso" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
         <div class="modal-header bg-success text-white">
-          <h5 class="modal-title">Termo registrado</h5>
+          <h5 class="modal-title">Sucesso ao gerar o termo</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body d-flex align-items-center">
+          <div id="lottieSuccess" class="lottie-box me-3" aria-hidden="true"></div>
           <p class="mb-0">Os dados foram salvos em <strong>Termos_registrados</strong> e possíveis alterações foram registradas em <strong>Reg_alteracao_dados_ente_ug</strong>.</p>
         </div>
       </div>
@@ -450,8 +453,8 @@
         <div class="modal-header bg-warning">
           <h5 class="modal-title">Carregando informações…</h5>
         </div>
-        <div class="modal-body d-flex align-items-center gap-2">
-          <div class="spinner-border" role="status" aria-hidden="true"></div>
+        <div class="modal-body d-flex align-items-center">
+          <div id="lottieLoading" class="lottie-box me-3" aria-hidden="true"></div>
           <span>Consultando dados. Aguarde alguns segundos.</span>
         </div>
       </div>
@@ -460,6 +463,7 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
