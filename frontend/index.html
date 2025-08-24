@@ -228,7 +228,7 @@
               <div class="small text-muted mb-2">Selecione todos os itens apontados como irregulares no extrato.</div>
 
               <div class="d-flex flex-column gap-2" id="grpCRITERIOS">
-                <!-- lista mantida -->
+                <!-- (lista mantida) -->
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)"><span class="form-check-label">Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Atendimento à fiscalização"><span class="form-check-label">Atendimento à fiscalização</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar"><span class="form-check-label">Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar</span></label>
@@ -421,7 +421,7 @@
     </div>
   </div>
 
-  <!-- Modal AVISO INICIAL (TEXTO COMPLETO) -->
+  <!-- Modal AVISO INICIAL -->
   <div class="modal fade" id="modalWelcome" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
       <div class="modal-content border-0 shadow">
@@ -431,20 +431,13 @@
         </div>
         <div class="modal-body">
           <p class="fw-semibold text-primary mb-2">Observações:</p>
-
-          <p>O presente Termo de Adesão do Programa de Regularidade Previdenciária terá validade a partir da data do seu encaminhamento ao Ministério da Previdência Social por meio do Sistema de Gestão de Consultas e Normas – Gescon‑RPPS.</p>
-
+          <p>O presente Termo de Adesão do Programa de Regularidade Previdenciária terá validade a partir da data do seu encaminhamento ao Ministério da Previdência Social por meio do Sistema de Gestão de Consultas e Normas – Gescon-RPPS.</p>
           <p>O ente deverá selecionar no menu do Gescon <em>a opção tal, o assunto tal…</em> e encaminhar o termo em PDF com a assinatura eletrônica dos responsáveis, que poderá ser efetuada por meio do gov.br.</p>
-
           <p>Após encaminhado o Termo de Adesão, será instaurado um processo eletrônico no SEI para acompanhamento pelo ente federativo do Programa de Regularidade Previdenciária, a ser instruído, inicialmente, pela Coordenação de Atendimento Colaborativo do DRPPS, com o Termo de Adesão e o extrato previdenciário emitido pelo Cadprev na data.</p>
-
-          <p>A solicitação de emissão de Certificados de Regularidade Previdenciárias – CRP emergenciais, na vigência do Programa, deverá ser efetuada por meio de Termos de Solicitação de CRP Emergencial. <strong>Os pedidos de CRP na vigência do Programa deverão ser efetuados por meio da emissão de formulário próprio</strong> (<a href="#" class="link-primary">clique aqui para acessar o link</a>). Após preenchido e colhidas as assinaturas, o Termo de Solicitação de CRP Emergencial também deverá ser encaminhado pelo Gescon‑RPPS e será anexado ao referido processo SEI do Programa de Regularidade Previdenciária.</p>
-
-          <p>Em caso de dúvidas, o ente deverá comunicar‑se com a Coordenação de Atendimento Colaborativo do Departamento dos Regimes Próprios de Previdência Social – DRPPS, pelos telefones <a href="tel:+556120215555">61‑2021‑5555</a>, WhatsApp de mesmo número, ou e‑mail <a href="mailto:programa.regularidade.rpps@previdencia.gov.br">programa.regularidade.rpps@previdencia.gov.br</a>.</p>
-
+          <p>A solicitação de emissão de Certificados de Regularidade Previdenciárias – CRP emergenciais, na vigência do Programa, deverá ser efetuada por meio de Termos de Solicitação de CRP Emergencial. <strong>Os pedidos de CRP na vigência do Programa deverão ser efetuados por meio da emissão de formulário próprio</strong>. Após preenchido e colhidas as assinaturas, o Termo de Solicitação de CRP Emergencial também deverá ser encaminhado pelo Gescon-RPPS e será anexado ao referido processo SEI do Programa de Regularidade Previdenciária.</p>
+          <p>Em caso de dúvidas, o ente deverá comunicar-se com a Coordenação de Atendimento Colaborativo do DRPPS, pelos telefones <a href="tel:+556120215555">61-2021-5555</a>, WhatsApp de mesmo número, ou e-mail <a href="mailto:programa.regularidade.rpps@previdencia.gov.br">programa.regularidade.rpps@previdencia.gov.br</a>.</p>
           <hr/>
-
-          <p class="small text-muted mb-0">Termo de Adesão ao Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social (RPPS) instituído pelo Ministério da Previdência Social, conforme previsto no art. 281‑A e Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022.</p>
+          <p class="small text-muted mb-0">Termo de Adesão ao Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social (RPPS) instituído pelo Ministério da Previdência Social, conforme previsto no art. 281-A e Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022.</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
@@ -453,7 +446,25 @@
     </div>
   </div>
 
-  <!-- Modal Erro -->
+  <!-- Modal ATENÇÃO (itens não selecionados) -->
+  <div class="modal fade" id="modalAtencao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">Atenção</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex align-items-start gap-3">
+            <div id="lottieAtencao" class="lottie-box"></div>
+            <ul id="modalAtencaoLista" class="mb-0 small text-start"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ERRO (validação de campos/erros do sistema) -->
   <div class="modal fade" id="modalErro" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
@@ -461,24 +472,11 @@
           <h5 class="modal-title">Atenção</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body d-flex justify-content-center">
-          <div id="lottieError" class="lottie-box"></div>
-        </div>
-        <div class="modal-footer"><ul id="modalErroLista" class="mb-0 small"></ul></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Busca -->
-  <div class="modal fade" id="modalBusca" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-warning">
-          <h5 class="modal-title">Registro não encontrado</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body d-flex justify-content-center">
-          <div id="lottieErrorBusca" class="lottie-box"></div>
+        <div class="modal-body">
+          <div class="d-flex align-items-start gap-3">
+            <div id="lottieError" class="lottie-box"></div>
+            <ul id="modalErroLista" class="mb-0 small text-start"></ul>
+          </div>
         </div>
       </div>
     </div>
@@ -489,7 +487,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
         <div class="modal-header bg-success text-white">
-          <h5 class="modal-title">Termo gerado</h5>
+          <h5 class="modal-title">Termo gerado com sucesso</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body d-flex justify-content-center">
@@ -499,12 +497,12 @@
     </div>
   </div>
 
-  <!-- Modal "Carregando" -->
-  <div class="modal fade" id="modalLoading" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-body d-flex justify-content-center">
-          <div id="lottieLoading" class="lottie-box"></div>
+  <!-- Modal "Carregando" – sem fundo -->
+  <div class="modal fade modal-loading" id="modalLoading" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0">
+        <div class="modal-body p-0 d-flex justify-content-center align-items-center">
+          <div id="lottieLoading" class="lottie-box lottie-loading"></div>
         </div>
       </div>
     </div>

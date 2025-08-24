@@ -17,7 +17,7 @@
 *{box-sizing:border-box}
 body{font-family:'Inter',sans-serif;color:var(--fg);min-height:100vh;position:relative}
 
-/* Background com imagem + gradiente */
+/* Background */
 .app-bg{
   position:fixed; inset:0;
   background:
@@ -36,10 +36,9 @@ body{font-family:'Inter',sans-serif;color:var(--fg);min-height:100vh;position:re
   font-weight:700;background:#e5e7eb;color:#374151; user-select:none;
 }
 .app-stepper .step.active{background:var(--brand-600);color:#fff}
-.app-stepper .step.done{background:#a7f3d0;color:#065f46}
 .app-stepper .divider{flex:1;height:3px;background:#e5e7eb;border-radius:2px}
 
-/* Card com glassmorphism */
+/* Card */
 .app-card{border:none;border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
 .glass{
   background:rgba(255,255,255,.88);
@@ -49,8 +48,8 @@ body{font-family:'Inter',sans-serif;color:var(--fg);min-height:100vh;position:re
 
 /* Sections */
 .app-section{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--divider)}
-.section-title{font-size:1.25rem;font-weight:700;color:#fff;margin-bottom:.25rem}
-.sub-title{font-weight:600;margin-bottom:.35rem;color:#334155}
+.section-title{font-size:1.25rem;font-weight:800;color:var(--brand-700);margin-bottom:.25rem}
+.sub-title{font-weight:700;margin-bottom:.35rem;color:#000}
 
 /* Inputs focus */
 .form-control:focus,.form-select:focus{
@@ -58,7 +57,7 @@ body{font-family:'Inter',sans-serif;color:var(--fg);min-height:100vh;position:re
   box-shadow:0 0 0 .2rem rgba(37,99,235,.18);
 }
 
-/* Inputs “aparência bloqueada” para campos preenchidos automaticamente */
+/* Autofilled */
 .form-control.autofilled{
   background:var(--ghost);
   border-color:#d1d5db;
@@ -73,9 +72,6 @@ body{font-family:'Inter',sans-serif;color:var(--fg);min-height:100vh;position:re
   background-color:#eef2ff;
   border-color:var(--brand-600);
 }
-
-/* Placeholders e help text */
-.form-text{color:var(--muted)}
 
 /* Validation */
 input[type="text"].is-invalid,
@@ -105,10 +101,10 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
 .btn-outline-secondary:hover{background:#e5e7eb;color:#111827}
 .btn:disabled,.btn[disabled]{opacity:.6!important;cursor:not-allowed}
 
-/* Sub-blocos com borda tracejada */
+/* Sub-blocos */
 .card-subblock{padding:1rem;border:1px dashed var(--divider);border-radius:10px;background:#fff}
 
-/* Modais */
+/* Modais gerais */
 .modal-content{border-radius:14px}
 .modal-header{border-bottom:none}
 .modal-footer{border-top:none}
@@ -116,7 +112,20 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
 .bg-success{background:var(--ok)!important}
 .bg-danger{background:var(--err)!important}
 
-/* Navegação do formulário (rodapé do form) */
+/* Modal Loading “sem fundo” + Lottie maior */
+.modal-loading .modal-content{background:transparent;box-shadow:none;border:0}
+.modal-loading .modal-dialog{max-width:260px}
+.lottie-box{width:64px;height:64px;min-width:64px}
+.lottie-loading{width:180px;height:180px;min-width:180px}
+
+/* Alinhamento à esquerda das listas nos modais */
+#modalErro .modal-body,
+#modalAtencao .modal-body{padding:1.25rem}
+#modalErro .modal-body .d-flex,
+#modalAtencao .modal-body .d-flex{align-items:flex-start}
+#modalErro ul,#modalAtencao ul{padding-left:1.1rem;text-align:left;margin:0}
+
+/* Navegação rodapé do form */
 #regularidadeForm .mt-2{margin-top:1.25rem!important}
 #btnSubmit.d-none{display:none!important}
 
@@ -127,18 +136,15 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
   .section-title{font-size:1.1rem}
 }
 
-/* Acentos visuais extras para inputs obrigatórios inválidos no passo atual */
+/* Acentos extras */
 .app-section input.is-invalid,
 .app-section select.is-invalid{
   box-shadow:0 0 0 .1rem rgba(220,38,38,.08);
 }
 
-/* Pequenos ajustes de formulário */
+/* Placeholders */
 label.form-label{font-weight:600}
 input::placeholder{color:#9ca3af}
 
-/* Lottie containers */
-.lottie-box{width:60px;height:60px;min-width:60px}
-
-/* Estados de passos (transição do divisor) */
+/* Stepper gradiente */
 #stepper .step.active + .divider{background:linear-gradient(90deg,var(--brand-600),#e5e7eb)}
