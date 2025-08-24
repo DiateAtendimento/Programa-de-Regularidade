@@ -24,7 +24,7 @@
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
   const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
 
-  // Mostra SEMPRE o modal de boas-vindas ao carregar
+  // Aviso inicial: apenas na primeira carga da página
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(()=> modalWelcome.show(), 150);
   });
@@ -48,7 +48,6 @@
     mountLottie('lottieSuccess', 'animacao/confirm-success.json', { loop:false, autoplay:true });
   });
   $('#modalBusca')?.addEventListener('shown.bs.modal', () => {
-    // "Registro não encontrado" é um aviso (atenção)
     mountLottie('lottieErrorBusca', 'animacao/atencao-info.json', { loop:false, autoplay:true });
   });
 
@@ -139,26 +138,7 @@
   const btnPrev  = $('#btnPrev');
   const btnNext  = $('#btnNext');
   const btnSubmit= $('#btnSubmit');
-
-  // === onde o botão "Próximo" deve ficar (passo 0 na linha, demais no rodapé)
-  const navFooter   = $('#navFooter');
-  const pesquisaRow = $('#pesquisaRow');
-  function placeNextButton(){
-    if (!btnNext || !navFooter || !pesquisaRow) return;
-    if (step === 0){
-      // cria (uma única vez) um holder no grid de pesquisa
-      let holder = $('#nextStep0Holder');
-      if (!holder){
-        holder = document.createElement('div');
-        holder.id = 'nextStep0Holder';
-        holder.className = 'col-auto ms-auto'; // encosta à direita
-        pesquisaRow.appendChild(holder);
-      }
-      holder.appendChild(btnNext);
-    }else{
-      navFooter.appendChild(btnNext);
-    }
-  }
+  const navFooter= $('#navFooter');
 
   function updateNavButtons(){
     btnPrev.classList.toggle('d-none', step < 1);
@@ -167,16 +147,26 @@
     btnSubmit.classList.toggle('d-none', step!==7);
   }
 
+  // Alinhamento robusto: empurra SEMPRE o botão da direita com ms-auto
+  function updateFooterAlign(){
+    if (!navFooter) return;
+    // limpa qualquer resto
+    [btnPrev, btnNext, btnSubmit].forEach(b => b && b.classList.remove('ms-auto'));
+    // qual é o botão da direita?
+    if (step === 7) {
+      btnSubmit?.classList.add('ms-auto');   // Gerar Termo à direita
+    } else {
+      btnNext?.classList.add('ms-auto');     // Próximo à direita (inclusive no passo 0)
+    }
+  }
+
   function showStep(n){
     step = Math.max(0, Math.min(7, n));
     sections.forEach(sec => sec.style.display = (Number(sec.dataset.step)===step ? '' : 'none'));
     const activeIdx = Math.min(step, stepsUI.length-1);
     stepsUI.forEach((s,i)=> s.classList.toggle('active', i===activeIdx));
     updateNavButtons();
-    placeNextButton(); // << posiciona o botão "Próximo" conforme o passo
-
-    // Exibir SEMPRE o modal de boas-vindas quando voltar ao passo 0
-    if (step === 0) setTimeout(()=> modalWelcome.show(), 100);
+    updateFooterAlign();
   }
   showStep(0);
 
@@ -295,7 +285,7 @@
       if(!r.ok){
         modalLoadingSearch.hide();
         modalBusca.show();
-        cnpjOK = false; updateNavButtons();
+        cnpjOK = false; updateNavButtons(); updateFooterAlign();
         return;
       }
       const { data } = await r.json();
@@ -345,7 +335,7 @@
       showStep(1);
     }catch{
       showErro(['Falha ao consultar o CNPJ.']);
-      cnpjOK = false; updateNavButtons();
+      cnpjOK = false; updateNavButtons(); updateFooterAlign();
     }finally{
       modalLoadingSearch.hide();
     }
@@ -480,7 +470,7 @@
       setTimeout(() => {
         modalSucesso.hide();
 
-        // reset e volta ao início (reabre o aviso)
+        // reset e volta ao início (sem reabrir o aviso inicial)
         $('#regularidadeForm').reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
         $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
