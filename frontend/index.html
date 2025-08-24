@@ -39,15 +39,23 @@
         <form id="regularidadeForm" novalidate>
           <!-- ETAPA 0: Pesquisa -->
           <section class="app-section" data-step="0">
-            <div class="row g-2 align-items-end">
-              <div class="col-md-5">
+            <div class="row g-2 justify-content-center align-items-end">
+              <div class="col-12 col-md-6 col-lg-5">
                 <label for="CNPJ_ENTE_PESQ" class="form-label">CNPJ do Ente</label>
-                <input type="text" class="form-control" id="CNPJ_ENTE_PESQ" placeholder="00.000.000/0000-00" />
+                <input
+                  type="text"
+                  class="form-control"
+                  id="CNPJ_ENTE_PESQ"
+                  placeholder="00.000.000/0000-00"
+                />
               </div>
-              <div class="col-md-3">
-                <button type="button" id="btnPesquisar" class="btn btn-primary w-100">Pesquisar</button>
+
+              <div class="col-auto">
+                <label class="d-none d-md-block">&nbsp;</label>
+                <button type="button" id="btnPesquisar" class="btn btn-primary px-4">
+                  Pesquisar
+                </button>
               </div>
-              <div class="col-md-4"></div>
             </div>
           </section>
 
@@ -405,11 +413,22 @@
           </section>
 
           <!-- Navegação -->
-          <div class="d-flex justify-content-between mt-2">
-            <button type="button" id="btnPrev" class="btn btn-outline-secondary">Voltar</button>
-            <button type="button" id="btnNext" class="btn btn-primary">Próximo</button>
-            <button type="submit" id="btnSubmit" class="btn btn-success d-none">Gerar Termo</button>
+          <div class="d-flex align-items-center gap-2 mt-2">
+            <button type="button" id="btnPrev" class="btn btn-outline-secondary">
+              Voltar
+            </button>
+
+            <!-- Empurra para a direita -->
+            <button type="button" id="btnNext" class="btn btn-primary ms-auto">
+              Próximo
+            </button>
+
+            <!-- Quando o passo 7 é alcançado, este substitui o "Próximo" e continua na direita -->
+            <button type="submit" id="btnSubmit" class="btn btn-success d-none ms-auto">
+              Gerar Termo
+            </button>
           </div>
+
 
           <!-- carimbos -->
           <input type="hidden" id="MES" />
