@@ -18,12 +18,11 @@
   const rmAcc = s => String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
 
   // Modais
-  const modalAtencao  = new bootstrap.Modal($('#modalAtencao'));
   const modalErro     = new bootstrap.Modal($('#modalErro'));
   const modalBusca    = new bootstrap.Modal($('#modalBusca'));
   const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
-  const modalLoading  = new bootstrap.Modal($('#modalLoading'), { backdrop:'static', keyboard:false });
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
+  const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
 
   // Mostra SEMPRE o modal de boas-vindas ao carregar
   document.addEventListener('DOMContentLoaded', () => {
@@ -38,32 +37,48 @@
     if (lotties[id]) { lotties[id].destroy(); delete lotties[id]; }
     lotties[id] = lottie.loadAnimation({ container: el, path: jsonPath, loop, autoplay, renderer });
   }
-  $('#modalLoading')?.addEventListener('shown.bs.modal', () => {
-    mountLottie('lottieLoading', 'animacao/carregando-info.json', { loop:true, autoplay:true });
+
+  // Lottie do modal de "Carregando dados..." (apenas para PESQUISAS)
+  $('#modalLoadingSearch')?.addEventListener('shown.bs.modal', () => {
+    mountLottie('lottieLoadingSearch', 'animacao/carregando-info.json', { loop:true, autoplay:true });
   });
-  $('#modalAtencao')?.addEventListener('shown.bs.modal', () => {
-    mountLottie('lottieAtencao', 'animacao/atencao-info.json', { loop:false, autoplay:true });
-  });
-  $('#modalErro')?.addEventListener('shown.bs.modal', () => {
-    mountLottie('lottieError', 'animacao/confirm-error.json', { loop:false, autoplay:true });
-  });
-  $('#modalBusca')?.addEventListener('shown.bs.modal', () => {
-    mountLottie('lottieErrorBusca', 'animacao/atencao-info.json', { loop:false, autoplay:true });
-  });
+
+  // Lotties fixos
   $('#modalSucesso')?.addEventListener('shown.bs.modal', () => {
     mountLottie('lottieSuccess', 'animacao/confirm-success.json', { loop:false, autoplay:true });
   });
+  $('#modalBusca')?.addEventListener('shown.bs.modal', () => {
+    // "Registro não encontrado" é um aviso (atenção)
+    mountLottie('lottieErrorBusca', 'animacao/atencao-info.json', { loop:false, autoplay:true });
+  });
 
-  // Atenção (validação/regras não atendidas)
-  function showAtencao(msgs){
-    const ul = $('#modalAtencaoLista'); ul.innerHTML='';
-    msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
-    modalAtencao.show();
+  // Funções helper para modais de ATENÇÃO x ERRO (reutilizam #modalErro)
+  function setErroHeader(mode/* 'atencao' | 'erro' */){
+    const header = $('#modalErro .modal-header');
+    const title  = $('#modalErro .modal-title');
+    if (!header || !title) return;
+    if (mode === 'atencao'){
+      header.classList.remove('bg-danger','text-white');
+      header.classList.add('bg-warning');
+      title.textContent = 'Atenção';
+      mountLottie('lottieError', 'animacao/atencao-info.json', { loop:false, autoplay:true });
+    }else{
+      header.classList.remove('bg-warning');
+      header.classList.add('bg-danger','text-white');
+      title.textContent = 'Atenção';
+      mountLottie('lottieError', 'animacao/confirm-error.json', { loop:false, autoplay:true });
+    }
   }
-  // Erro sistêmico
+  function showAtencao(msgs){
+    const ul = $('#modalErroLista'); ul.innerHTML='';
+    msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
+    setErroHeader('atencao');
+    modalErro.show();
+  }
   function showErro(msgs){
     const ul = $('#modalErroLista'); ul.innerHTML='';
     msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
+    setErroHeader('erro');
     modalErro.show();
   }
 
@@ -247,15 +262,20 @@
   /* ========= Busca por CNPJ ========= */
   $('#btnPesquisar')?.addEventListener('click', async ()=>{
     const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
-    if(cnpj.length!==14) {
+    if(cnpj.length!==14) { 
       const el = $('#CNPJ_ENTE_PESQ'); el.classList.add('is-invalid');
-      return showAtencao(['Informe um CNPJ válido.']);
+      return showAtencao(['Informe um CNPJ válido.']); 
     }
 
     try{
-      modalLoading.show();
+      modalLoadingSearch.show();
       const r = await fetch(`${API_BASE}/api/consulta?cnpj=${cnpj}`);
-      if(!r.ok){ modalBusca.show(); cnpjOK = false; updateNavButtons(); return; }
+      if(!r.ok){
+        modalLoadingSearch.hide();
+        modalBusca.show();
+        cnpjOK = false; updateNavButtons();
+        return;
+      }
       const { data } = await r.json();
 
       // snapshot
@@ -305,7 +325,7 @@
       showErro(['Falha ao consultar o CNPJ.']);
       cnpjOK = false; updateNavButtons();
     }finally{
-      modalLoading.hide();
+      modalLoadingSearch.hide();
     }
   });
 
@@ -314,9 +334,13 @@
     const cpfd = digits(cpf||'');
     if(cpfd.length!==11) { showAtencao(['Informe um CPF válido.']); return; }
     try{
-      modalLoading.show();
+      modalLoadingSearch.show();
       const r = await fetch(`${API_BASE}/api/rep-by-cpf?cpf=${cpfd}`);
-      if(!r.ok){ modalBusca.show(); return; }
+      if(!r.ok){
+        modalLoadingSearch.hide();
+        modalBusca.show();
+        return;
+      }
       const { data } = await r.json();
       if(target==='ENTE'){
         $('#NOME_REP_ENTE').value = data.NOME || '';
@@ -332,7 +356,7 @@
     }catch{
       showErro(['Falha ao consultar CPF.']);
     }finally{
-      modalLoading.hide();
+      modalLoadingSearch.hide();
     }
   }
   $('#btnPesqRepEnte')?.addEventListener('click', ()=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE'));
@@ -387,8 +411,12 @@
       __user_changed_fields: Array.from(editedFields)
     };
 
+    // feedback no botão (sem modal de loading)
+    const submitOriginalHTML = btnSubmit.innerHTML;
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = 'Gerando termo…';
+
     try{
-      modalLoading.show();
       const res = await fetch(`${API_BASE}/api/gerar-termo`, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -396,6 +424,8 @@
       });
       if(!res.ok){
         const err = await res.json().catch(()=>({error:'Erro ao salvar.'}));
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = submitOriginalHTML;
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
@@ -422,25 +452,28 @@
       }).toString();
       window.open(`termo.html?${qs}`, '_blank', 'noopener');
 
-      // mostra sucesso e só então volta ao início após 5s
+      // sucesso + espera 5s antes de voltar ao início
       modalSucesso.show();
 
       setTimeout(() => {
-        try { modalSucesso.hide(); } catch(_) {}
+        modalSucesso.hide();
+
         // reset e volta ao início (reabre o aviso)
         $('#regularidadeForm').reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
-        $$( 'input[type="checkbox"], input[type="radio"]' ).forEach(el=> el.checked=false);
+        $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
         editedFields.clear();
         snapshotBase = null;
         cnpjOK = false;
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = submitOriginalHTML;
         showStep(0);
       }, 5000);
 
     }catch{
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = submitOriginalHTML;
       showErro(['Falha de comunicação com o servidor.']);
-    }finally{
-      modalLoading.hide();
     }
   });
 })();
