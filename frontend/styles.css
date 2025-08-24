@@ -141,6 +141,28 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
 #regularidadeForm .mt-2{margin-top:1.25rem!important}
 #btnSubmit.d-none{display:none!important}
 
+/* Cor de marca para cabeçalhos de modais (igual aos outros) */
+.bg-brand{ background:var(--brand-600)!important; color:#fff!important; }
+
+/* Modal de carregamento - mesmo look dos demais */
+.modal-loading-search .modal-dialog{ max-width: 520px; }
+.modal-loading-search .modal-content{ border-radius:16px; }
+.modal-loading-search .modal-header{
+  border-bottom:none;
+  border-top-left-radius:16px;
+  border-top-right-radius:16px;
+}
+.modal-loading-search .modal-body{ padding: 1.75rem; }
+.modal-loading-search .status-msg{
+  color: var(--brand-600);
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+/* Tamanho da animação de loading (um pouco maior para melhor leitura) */
+.lottie-loading{ width: 160px; height: 160px; min-width:160px; }
+
+
 /* Utilidades responsivas */
 @media (max-width: 576px){
   .app-stepper .divider{display:none}
