@@ -9,7 +9,9 @@
   <link rel="stylesheet" href="termo.css" />
 </head>
 <body>
-  <div class="download-wrap screen-only"><button id="btn-download" class="btn-download">📥 Baixar PDF</button></div>
+  <div class="download-wrap screen-only">
+    <button id="btn-download" class="btn-download">📥 Baixar PDF</button>
+  </div>
 
   <main id="pdf-root" class="term-wrap">
     <header class="page-head">
@@ -19,42 +21,49 @@
       <img id="logoScreen" class="mps-logo screen-only" src="imagens/logo-termo-mps.svg" alt="Ministério da Previdência Social" />
     </header>
 
+    <!-- Observações iniciais -->
     <section class="term-section small">
       <h2>FORMULÁRIO PARA GERAÇÃO DO TERMO DE ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
       <p>O presente Termo de Adesão do Programa de Regularidade Previdenciária terá validade a partir da data do seu encaminhamento ao Ministério da Previdência Social por meio do Sistema de Gestão de Consultas e Normas – Gescon-RPPS.</p>
       <p>A solicitação de CRP emergencial na vigência do Programa deverá ser efetuada por meio de Termo específico de Solicitação de CRP Emergencial.</p>
     </section>
 
+    <!-- 1. Identificação -->
     <section class="term-section">
       <h2>1. IDENTIFICAÇÃO</h2>
       <ul>
         <li><strong>Ente Federativo:</strong> <span data-k="ente"></span></li>
         <li><strong>UF:</strong> <span data-k="uf"></span></li>
         <li><strong>CNPJ do Ente:</strong> <span data-k="cnpj_ente"></span></li>
-        <li><strong>UG:</strong> <span data-k="ug"></span></li>
+        <li><strong>E-mail institucional do Ente (para comunicações do Programa):</strong> <span data-k="email_ente"></span></li>
+        <li><strong>Unidade Gestora (UG):</strong> <span data-k="ug"></span></li>
         <li><strong>CNPJ da UG:</strong> <span data-k="cnpj_ug"></span></li>
+        <li><strong>E-mail institucional da UG (para comunicações do Programa):</strong> <span data-k="email_ug"></span></li>
       </ul>
     </section>
 
+    <!-- 2. Representantes -->
     <section class="term-section">
-      <h2>2. REPRESENTANTES</h2>
-      <p><strong>2.1. Do Ente</strong></p>
+      <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
+
+      <p><strong>2.1. Representante legal do Ente federativo</strong></p>
       <ul>
         <li><strong>Nome:</strong> <span data-k="nome_rep_ente"></span></li>
         <li><strong>CPF:</strong> <span data-k="cpf_rep_ente"></span></li>
-        <li><strong>Cargo:</strong> <span data-k="cargo_rep_ente"></span></li>
-        <li><strong>E-mail:</strong> <span data-k="email_rep_ente"></span></li>
+        <li><strong>Cargo/Função:</strong> <span data-k="cargo_rep_ente"></span></li>
+        <li><strong>E-mail institucional:</strong> <span data-k="email_rep_ente"></span></li>
       </ul>
 
-      <p class="mt"><strong>2.2. Da Unidade Gestora (UG)</strong></p>
+      <p class="mt"><strong>2.2. Representante legal do RPPS (UG)</strong></p>
       <ul>
         <li><strong>Nome:</strong> <span data-k="nome_rep_ug"></span></li>
         <li><strong>CPF:</strong> <span data-k="cpf_rep_ug"></span></li>
-        <li><strong>Cargo:</strong> <span data-k="cargo_rep_ug"></span></li>
-        <li><strong>E-mail:</strong> <span data-k="email_rep_ug"></span></li>
+        <li><strong>Cargo/Função:</strong> <span data-k="cargo_rep_ug"></span></li>
+        <li><strong>E-mail institucional:</strong> <span data-k="email_rep_ug"></span></li>
       </ul>
     </section>
 
+    <!-- 3. CRP -->
     <section class="term-section">
       <h2>3. INFORMAÇÕES SOBRE O CRP</h2>
       <ul>
@@ -63,12 +72,14 @@
       </ul>
     </section>
 
+    <!-- 4. Critérios irregulares -->
     <section class="term-section keep-together" id="sec-criterios">
       <h2>4. CRITÉRIOS COM IRREGULARIDADES</h2>
       <ul id="criterios-list"></ul>
       <p class="small"><em>Obs.: os critérios listados acima foram informados no formulário no momento da geração do termo.</em></p>
     </section>
 
+    <!-- 5. Cláusulas/compromissos -->
     <section class="term-section">
       <h2>5. CLÁUSULAS E COMPROMISSOS</h2>
       <ul>
@@ -85,69 +96,139 @@
 
     <div class="logo-guard break-before" aria-hidden="true"></div>
 
+    <!-- 6. Disposições gerais -->
     <section class="term-section">
       <h2>6. DISPOSIÇÕES GERAIS</h2>
       <p>O presente Termo tem por finalidade registrar a adesão ao Programa de Regularidade Previdenciária.</p>
       <p>Eventuais pendências deverão ser tratadas no âmbito do ente federativo, adotando-se medidas para o seu saneamento nos prazos estabelecidos.</p>
     </section>
 
+    <!-- Assinaturas (iguais ao modelo) -->
     <footer class="term-footer">
       <p class="place-date"><span data-k="ente"></span>/<span data-k="uf"></span>, <span data-k="data_termo"></span>.</p>
+
       <div class="signature-line" aria-hidden="true"></div>
-      <p class="signature-caption">Responsável do Ente Federativo</p>
-      <p class="signature-name"><span data-k="nome_rep_ente"></span></p>
+      <p id="sig1-caption" class="signature-caption"></p>
 
       <div class="signature-line" aria-hidden="true" style="margin-top:10mm"></div>
-      <p class="signature-caption">Representante legal da Unidade Gestora do RPPS</p>
-      <p class="signature-name"><span data-k="nome_rep_ug"></span></p>
+      <p id="sig2-caption" class="signature-caption"></p>
     </footer>
   </main>
 
+  <!-- Mesma logo em PNG para “carimbar” no PDF gerado -->
   <img id="logoPng" src="imagens/logo-termo-mps.png" alt="" crossOrigin="anonymous" style="display:none" />
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
   <script>
     async function waitFonts(){try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;}catch{}}
+
     function hydrate(){
-      const p=new URLSearchParams(location.search);
-      const map={
-        uf:'uf',ente:'ente',cnpj_ente:'cnpj_ente',ug:'ug',cnpj_ug:'cnpj_ug',
-        nome_rep_ente:'nome_rep_ente',cpf_rep_ente:'cpf_rep_ente',cargo_rep_ente:'cargo_rep_ente',email_rep_ente:'email_rep_ente',
-        nome_rep_ug:'nome_rep_ug',cpf_rep_ug:'cpf_rep_ug',cargo_rep_ug:'cargo_rep_ug',email_rep_ug:'email_rep_ug',
-        venc_ult_crp:'venc_ult_crp',tipo_emissao_crp:'tipo_emissao_crp',
-        celebracao:'celebracao',regularizacao:'regularizacao',deficit:'deficit',
-        criterios_estrut:'criterios_estrut',manutencao_normas:'manutencao_normas',compromisso:'compromisso',
-        providencias:'providencias',condicao_vigencia:'condicao_vigencia',data_termo:'data_termo'
+      const p = new URLSearchParams(location.search);
+
+      // Mapeamento completo dos campos vindos do formulário
+      const map = {
+        uf:'uf', ente:'ente', cnpj_ente:'cnpj_ente', ug:'ug', cnpj_ug:'cnpj_ug',
+        email_ente:'email_ente', email_ug:'email_ug',            // novos
+        nome_rep_ente:'nome_rep_ente', cpf_rep_ente:'cpf_rep_ente', cargo_rep_ente:'cargo_rep_ente', email_rep_ente:'email_rep_ente',
+        nome_rep_ug:'nome_rep_ug', cpf_rep_ug:'cpf_rep_ug', cargo_rep_ug:'cargo_rep_ug', email_rep_ug:'email_rep_ug',
+        venc_ult_crp:'venc_ult_crp', tipo_emissao_crp:'tipo_emissao_crp',
+        celebracao:'celebracao', regularizacao:'regularizacao', deficit:'deficit',
+        criterios_estrut:'criterios_estrut', manutencao_normas:'manutencao_normas', compromisso:'compromisso',
+        providencias:'providencias', condicao_vigencia:'condicao_vigencia', data_termo:'data_termo',
+        esfera:'esfera'                                            // usado nas assinaturas
       };
+
       Object.entries(map).forEach(([q,k])=>{
         const val=(p.get(q)||'').toString();
         document.querySelectorAll(`[data-k="${k}"]`).forEach(el=>el.textContent=val);
       });
 
-      const ul=document.getElementById('criterios-list'); ul.innerHTML='';
-      const criterios=[]; for(const [k,v] of p.entries()){ if(/^criterio\d+$/i.test(k) && v) criterios.push(v); }
-      if(!criterios.length){const li=document.createElement('li'); li.innerHTML='<em>Não informado.</em>'; ul.appendChild(li);}
-      else criterios.forEach(c=>{ const li=document.createElement('li'); li.textContent=c; ul.appendChild(li); });
+      // Lista de critérios irregulares (criterio1, criterio2, ...)
+      const ul = document.getElementById('criterios-list'); ul.innerHTML='';
+      const criterios=[];
+      for (const [k,v] of p.entries()){
+        if(/^criterio\d+$/i.test(k) && v) criterios.push(v);
+      }
+      if(!criterios.length){
+        const li=document.createElement('li'); li.innerHTML='<em>Não informado.</em>'; ul.appendChild(li);
+      }else{
+        criterios.forEach(c=>{ const li=document.createElement('li'); li.textContent=c; ul.appendChild(li); });
+      }
+
+      // Assinaturas (iguais ao modelo)
+      const esfera = (p.get('esfera')||'').toLowerCase();
+      const ente   = p.get('ente')||'';
+      const uf     = p.get('uf')||'';
+      const ug     = p.get('ug')||'';
+
+      const sig1 =
+        esfera.includes('estadual') || esfera.includes('distrital')
+          ? `Governador do Estado de ${uf}`
+          : `Prefeito do Município de ${ente} / ${uf}`;
+
+      document.getElementById('sig1-caption').textContent = sig1;
+      document.getElementById('sig2-caption').textContent = `Representante legal do ${ug}`;
     }
-    function fitTitle(){const t=document.getElementById('term-title'); let f=26; t.style.whiteSpace='nowrap'; for(;f>=16;f-=.5){t.style.fontSize=f+'px'; if(t.scrollWidth<=t.clientWidth)break;}}
-    function imgToDataURL(img){return new Promise(r=>{if(img.complete){const c=document.createElement('canvas'); c.width=img.naturalWidth;c.height=img.naturalHeight; c.getContext('2d').drawImage(img,0,0); r(c.toDataURL('image/png'));}else{img.onload=()=>r(imgToDataURL(img));}});}
+
+    function fitTitle(){
+      const t=document.getElementById('term-title'); let f=26;
+      t.style.whiteSpace='nowrap';
+      for(;f>=16;f-=.5){t.style.fontSize=f+'px'; if(t.scrollWidth<=t.clientWidth)break;}
+    }
+
+    function imgToDataURL(img){
+      return new Promise(r=>{
+        if(img.complete){
+          const c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
+          c.getContext('2d').drawImage(img,0,0); r(c.toDataURL('image/png'));
+        }else{
+          img.onload=()=>r(imgToDataURL(img));
+        }
+      });
+    }
+
     async function generatePdf(){
       await waitFonts(); fitTitle();
-      const root=document.getElementById('pdf-root'); root.classList.add('pdf-export');
-      const logo=document.getElementById('logoPng'); const data=await imgToDataURL(logo); const ratio=logo.naturalHeight/logo.naturalWidth;
-      const opt={margin:0,filename:'termo_adesao_prp.pdf',html2canvas:{scale:2,letterRendering:1,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}};
+      const root=document.getElementById('pdf-root');
+      root.classList.add('pdf-export');
+
+      const logo=document.getElementById('logoPng');
+      const data=await imgToDataURL(logo);
+      const ratio=logo.naturalHeight/logo.naturalWidth;
+
+      const opt={
+        margin:0,
+        filename:'termo_adesao_prp.pdf',
+        html2canvas:{ scale:2, letterRendering:1, useCORS:true, backgroundColor:'#fff', scrollX:0, scrollY:0 },
+        jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' },
+        pagebreak:{ mode:['css','legacy'] }
+      };
+
       const worker=html2pdf().set(opt).from(root).toPdf();
       await worker.get('pdf').then(pdf=>{
         const pages=pdf.getNumberOfPages?pdf.getNumberOfPages():pdf.internal.getNumberOfPages();
-        const pageW=pdf.internal.pageSize.getWidth(); const padR=15, padT=15, w=25, h=w*ratio;
-        for(let i=1;i<=pages;i++){ pdf.setPage(i); pdf.addImage(data,'PNG', pageW-padR-w, padT, w, h, undefined, 'FAST'); }
+        const pageW=pdf.internal.pageSize.getWidth();
+        const padR=15, padT=15, w=25, h=w*ratio;
+        for(let i=1;i<=pages;i++){
+          pdf.setPage(i);
+          pdf.addImage(data,'PNG', pageW-padR-w, padT, w, h, undefined, 'FAST');
+        }
       }).save();
+
       root.classList.remove('pdf-export');
     }
+
     (function init(){
-      hydrate(); window.addEventListener('load',fitTitle); window.addEventListener('resize',fitTitle);
+      hydrate();
+      window.addEventListener('load',fitTitle);
+      window.addEventListener('resize',fitTitle);
       document.getElementById('btn-download')?.addEventListener('click', generatePdf);
-      const auto=new URLSearchParams(location.search).get('auto'); if(auto!==null){ document.documentElement.classList.add('auto-download'); generatePdf().then(()=>{ try{window.close();}catch{} }); }
+
+      const auto=new URLSearchParams(location.search).get('auto');
+      if(auto!==null){
+        document.documentElement.classList.add('auto-download');
+        generatePdf().then(()=>{ try{ window.close(); }catch{} });
+      }
     })();
   </script>
 </body>

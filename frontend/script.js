@@ -436,14 +436,25 @@
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
-      // abre o termo (termo.html)
+      // ===== Monta querystring para o PDF =====
+      const esferaSel = $$('input[name="ESFERA_GOVERNO[]"]').find(i=>i.checked)?.value || '';
+
       const qs = new URLSearchParams({
-        uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
-        ug: payload.UG, cnpj_ug: $('#CNPJ_UG').value,
-        nome_rep_ente: payload.NOME_REP_ENTE, cpf_rep_ente: $('#CPF_REP_ENTE').value,
-        cargo_rep_ente: payload.CARGO_REP_ENTE, email_rep_ente: payload.EMAIL_REP_ENTE,
-        nome_rep_ug: payload.NOME_REP_UG, cpf_rep_ug: $('#CPF_REP_UG').value,
-        cargo_rep_ug: payload.CARGO_REP_UG, email_rep_ug: payload.EMAIL_REP_UG,
+        uf: payload.UF,
+        ente: payload.ENTE,
+        cnpj_ente: $('#CNPJ_ENTE').value,
+        email_ente: payload.EMAIL_ENTE,              // novo
+        ug: payload.UG,
+        cnpj_ug: $('#CNPJ_UG').value,
+        email_ug: payload.EMAIL_UG,                  // novo
+        nome_rep_ente: payload.NOME_REP_ENTE,
+        cpf_rep_ente: $('#CPF_REP_ENTE').value,
+        cargo_rep_ente: payload.CARGO_REP_ENTE,
+        email_rep_ente: payload.EMAIL_REP_ENTE,
+        nome_rep_ug: payload.NOME_REP_UG,
+        cpf_rep_ug: $('#CPF_REP_UG').value,
+        cargo_rep_ug: payload.CARGO_REP_UG,
+        email_rep_ug: payload.Email_REP_UG || payload.EMAIL_REP_UG, // tolerante a digitação
         venc_ult_crp: $('#DATA_VENCIMENTO_ULTIMO_CRP').value,
         tipo_emissao_crp: payload.TIPO_EMISSAO_ULTIMO_CRP,
         celebracao: payload.CELEBRACAO_TERMO_PARCELA_DEBITOS,
@@ -455,9 +466,15 @@
         providencias: payload.PROVIDENCIA_NECESS_ADESAO,
         condicao_vigencia: payload.CONDICAO_VIGENCIA,
         data_termo: $('#DATA_TERMO_GERADO').value,
+        esfera: esferaSel,                            // novo (para montar legenda da assinatura)
         auto: '1'
-      }).toString();
-      window.open(`termo.html?${qs}`, '_blank', 'noopener');
+      });
+
+      // Envia cada critério como criterio1, criterio2, ...
+      payload.CRITERIOS_IRREGULARES.forEach((c,i)=> qs.append(`criterio${i+1}`, c));
+
+      // Abre e dispara o download do PDF
+      window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
 
       // sucesso + espera 5s antes de voltar ao início
       modalSucesso.show();
