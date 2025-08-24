@@ -1,4 +1,4 @@
-// script.js — Multi-etapas com: máscaras, stepper, modais com Lottie, buscas e validação
+// script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas e validação
 (() => {
   /* ========= Config API ========= */
   const API_BASE = (() => {
@@ -22,6 +22,12 @@
   const modalBusca    = new bootstrap.Modal($('#modalBusca'));
   const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
   const modalLoading  = new bootstrap.Modal($('#modalLoading'), { backdrop:'static', keyboard:false });
+  const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
+
+  // Mostra SEMPRE o modal de boas-vindas ao carregar
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(()=> modalWelcome.show(), 150);
+  });
 
   /* ========= Lottie ========= */
   const lotties = {};
@@ -31,8 +37,6 @@
     if (lotties[id]) { lotties[id].destroy(); delete lotties[id]; }
     lotties[id] = lottie.loadAnimation({ container: el, path: jsonPath, loop, autoplay, renderer });
   }
-
-  // carrega animações quando os modais abrirem
   $('#modalLoading')?.addEventListener('shown.bs.modal', () => {
     mountLottie('lottieLoading', 'animacao/carregando-info.json', { loop:true, autoplay:true });
   });
@@ -123,13 +127,75 @@
     const activeIdx = Math.min(step, stepsUI.length-1);
     stepsUI.forEach((s,i)=> s.classList.toggle('active', i===activeIdx));
     updateNavButtons();
+    // Exibir SEMPRE o modal de boas-vindas quando voltar ao passo 0
+    if (step === 0) setTimeout(()=> modalWelcome.show(), 100);
   }
   showStep(0);
 
-  btnPrev?.addEventListener('click', ()=> showStep(step-1));
+  btnPrev?.addEventListener('click', ()=> {
+    showStep(step-1);
+  });
+
+  // ===== validação de grupos (passos 4–7)
+  function hasAnyChecked(sel){ return $$(sel).some(i=>i.checked); }
+
+  function validateStep(s){
+    const msgs=[];
+    const reqAll = {
+      1: [
+        {id:'UF', type:'select', label:'UF'},
+        {id:'ENTE', type:'text', label:'Ente'},
+        {id:'CNPJ_ENTE', type:'cnpj', label:'CNPJ do Ente'},
+        {id:'UG', type:'text', label:'UG'},
+        {id:'CNPJ_UG', type:'cnpj', label:'CNPJ da UG'}
+      ],
+      2: [
+        {id:'CPF_REP_ENTE', type:'cpf', label:'CPF do Rep. do Ente'},
+        {id:'NOME_REP_ENTE', type:'text', label:'Nome do Rep. do Ente'},
+        {id:'CARGO_REP_ENTE', type:'text', label:'Cargo do Rep. do Ente'},
+        {id:'EMAIL_REP_ENTE', type:'email', label:'E-mail do Rep. do Ente'},
+        {id:'CPF_REP_UG', type:'cpf', label:'CPF do Rep. da UG'},
+        {id:'NOME_REP_UG', type:'text', label:'Nome do Rep. da UG'},
+        {id:'CARGO_REP_UG', type:'text', label:'Cargo do Rep. da UG'},
+        {id:'EMAIL_REP_UG', type:'email', label:'E-mail do Rep. da UG'}
+      ],
+      3: [{id:'DATA_VENCIMENTO_ULTIMO_CRP', type:'date', label:'Data do último CRP'}]
+    };
+    const checkField = (id,type)=>{
+      const el = document.getElementById(id); if(!el) return true;
+      const v = el.value||'';
+      let ok=false;
+      if(type==='text') ok = v.trim().length>0;
+      else if(type==='email') ok = !!v && isEmail(v);
+      else if(type==='date') ok = !!v.trim();
+      else if(type==='select') ok = !!v.trim();
+      else if(type==='cpf') ok = digits(v).length===11;
+      else if(type==='cnpj') ok = digits(v).length===14;
+      ok?markValid(el):markInvalid(el);
+      return ok;
+    };
+
+    if (s<=3) {
+      (reqAll[s]||[]).forEach(o => { if(!checkField(o.id,o.type)) msgs.push(o.label); });
+      if (s===1) {
+        const items = $$('input[name="ESFERA_GOVERNO[]"]');
+        const ok = items.some(i=>i.checked);
+        items.forEach(i => i.classList.toggle('is-invalid', !ok));
+        if(!ok) msgs.push('Esfera de Governo');
+      }
+    }
+    if (s===4 && !hasAnyChecked('.grp-finalidade')) msgs.push('Marque ao menos uma finalidade inicial (item 4).');
+    if (s===5 && !hasAnyChecked('.grp-comp'))       msgs.push('Marque ao menos um compromisso (item 5).');
+    if (s===6 && !hasAnyChecked('.grp-prov'))       msgs.push('Marque ao menos uma providência (item 6).');
+    if (s===7 && !$('#DECL_CIENCIA').checked)       msgs.push('Confirme a ciência das condições (item 7).');
+
+    if (msgs.length){ showErro(msgs); return false; }
+    return true;
+  }
+
   btnNext?.addEventListener('click', ()=>{
-    if (step>=1 && step<=3) { if (!validateStep(step)) return; }
     if (step===0 && !cnpjOK) { showErro(['Pesquise e selecione um CNPJ válido antes de prosseguir.']); return; }
+    if (!validateStep(step)) return;
     showStep(step+1);
   });
 
@@ -150,58 +216,30 @@
     }
   }
 
-  /* ========= Validações ========= */
-  const reqAll = {
-    1: [
-      {id:'UF', type:'select', label:'UF'},
-      {id:'ENTE', type:'text', label:'Ente'},
-      {id:'CNPJ_ENTE', type:'cnpj', label:'CNPJ do Ente'},
-      {id:'UG', type:'text', label:'UG'},
-      {id:'CNPJ_UG', type:'cnpj', label:'CNPJ da UG'}
-    ],
-    2: [
-      {id:'CPF_REP_ENTE', type:'cpf', label:'CPF do Rep. do Ente'},
-      {id:'NOME_REP_ENTE', type:'text', label:'Nome do Rep. do Ente'},
-      {id:'CARGO_REP_ENTE', type:'text', label:'Cargo do Rep. do Ente'},
-      {id:'EMAIL_REP_ENTE', type:'email', label:'E-mail do Rep. do Ente'},
-      {id:'CPF_REP_UG', type:'cpf', label:'CPF do Rep. da UG'},
-      {id:'NOME_REP_UG', type:'text', label:'Nome do Rep. da UG'},
-      {id:'CARGO_REP_UG', type:'text', label:'Cargo do Rep. da UG'},
-      {id:'EMAIL_REP_UG', type:'email', label:'E-mail do Rep. da UG'}
-    ],
-    3: [{id:'DATA_VENCIMENTO_ULTIMO_CRP', type:'date', label:'Data do último CRP'}]
-  };
-  function checkField(id,type){
-    const el = document.getElementById(id); if(!el) return true;
-    const v = el.value||'';
-    let ok=false;
-    if(type==='text') ok = v.trim().length>0;
-    else if(type==='email') ok = !!v && isEmail(v);
-    else if(type==='date') ok = !!v.trim();
-    else if(type==='select') ok = !!v.trim();
-    else if(type==='cpf') ok = digits(v).length===11;
-    else if(type==='cnpj') ok = digits(v).length===14;
-    ok?markValid(el):markInvalid(el);
-    return ok;
-  }
-  function validateStep(s){
-    const msgs=[];
-    (reqAll[s]||[]).forEach(o => { if(!checkField(o.id,o.type)) msgs.push(o.label); });
-    if (s===1) {
-      const items = $$('input[name="ESFERA_GOVERNO[]"]');
-      const ok = items.some(i=>i.checked);
-      items.forEach(i => i.classList.toggle('is-invalid', !ok));
-      if(!ok) msgs.push('Esfera de Governo');
-    }
-    if (msgs.length){ showErro(msgs); return false; }
-    return true;
-  }
+  /* ========= Rastreamento de campos digitados ========= */
+  const editedFields = new Set();
+  const trackIds = [
+    'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
+    'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
+    'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
+    'DATA_VENCIMENTO_ULTIMO_CRP'
+  ];
+  trackIds.forEach(id=>{
+    const el = $('#'+id); if(!el) return;
+    const ev = (el.tagName==='SELECT' || el.type==='date') ? 'change' : 'input';
+    el.addEventListener(ev, ()=> editedFields.add(id));
+  });
+
+  // snapshot base (para comparação no log)
+  let snapshotBase = null;
 
   /* ========= Busca por CNPJ ========= */
   $('#btnPesquisar')?.addEventListener('click', async ()=>{
     const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
-    if(cnpj.length!==14) { markInvalid($('#CNPJ_ENTE_PESQ')); return showErro(['Informe um CNPJ válido.']); }
-    markValid($('#CNPJ_ENTE_PESQ'));
+    if(cnpj.length!==14) { 
+      const el = $('#CNPJ_ENTE_PESQ'); el.classList.add('is-invalid');
+      return showErro(['Informe um CNPJ válido.']); 
+    }
 
     try{
       modalLoading.show();
@@ -209,19 +247,37 @@
       if(!r.ok){ modalBusca.show(); cnpjOK = false; updateNavButtons(); return; }
       const { data } = await r.json();
 
+      // snapshot
+      snapshotBase = {
+        UF: data.UF, ENTE: data.ENTE, CNPJ_ENTE: data.CNPJ_ENTE, UG: data.UG, CNPJ_UG: data.CNPJ_UG,
+        NOME_REP_ENTE: data.__snapshot?.NOME_REP_ENTE || '',
+        CPF_REP_ENTE:  data.__snapshot?.CPF_REP_ENTE  || '',
+        TEL_REP_ENTE:  data.__snapshot?.TEL_REP_ENTE  || '',
+        EMAIL_REP_ENTE:data.__snapshot?.EMAIL_REP_ENTE|| '',
+        CARGO_REP_ENTE:data.__snapshot?.CARGO_REP_ENTE|| '',
+        NOME_REP_UG:   data.__snapshot?.NOME_REP_UG   || '',
+        CPF_REP_UG:    data.__snapshot?.CPF_REP_UG    || '',
+        TEL_REP_UG:    data.__snapshot?.TEL_REP_UG    || '',
+        EMAIL_REP_UG:  data.__snapshot?.EMAIL_REP_UG  || '',
+        CARGO_REP_UG:  data.__snapshot?.CARGO_REP_UG  || '',
+        DATA_VENCIMENTO_ULTIMO_CRP: data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || ''
+      };
+
       // ETAPA 1
       $('#UF').value = data.UF || '';
       $('#ENTE').value = data.ENTE || '';
       $('#CNPJ_ENTE').value = maskCNPJ(data.CNPJ_ENTE || '');
       $('#UG').value = data.UG || '';
       $('#CNPJ_UG').value = maskCNPJ(data.CNPJ_UG || '');
+      $('#EMAIL_ENTE').value = '';
+      $('#EMAIL_UG').value = '';
 
-      // limpar representantes (serão buscados por CPF)
+      // limpar reps (pesquisa via CPF)
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
        'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
 
-      // CRP — preferir ISO pois o input é type="date"
+      // CRP
       const iso = data.CRP_DATA_VALIDADE_ISO || '';
       if (iso) $('#DATA_VENCIMENTO_ULTIMO_CRP').value = iso;
 
@@ -229,13 +285,10 @@
       $('#em_adm').checked = (dj==='nao');
       $('#em_jud').checked = (dj==='sim');
 
-      // esfera sugerida
       autoselectEsferaByEnte(data.ENTE);
 
-      // valida apenas os campos do passo 1
-      reqAll[1].forEach(({id,type})=> checkField(id,type));
-
       cnpjOK = true;
+      editedFields.clear();
       showStep(1);
     }catch{
       modalBusca.show();
@@ -259,15 +312,11 @@
         $('#CARGO_REP_ENTE').value = data.CARGO || '';
         $('#EMAIL_REP_ENTE').value = data.EMAIL || '';
         $('#TEL_REP_ENTE').value   = data.TELEFONE || '';
-        ['NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CPF_REP_ENTE']
-          .forEach(id=>checkField(id, id.includes('EMAIL')?'email': id.includes('CPF')?'cpf':'text'));
       }else{
         $('#NOME_REP_UG').value = data.NOME || '';
         $('#CARGO_REP_UG').value = data.CARGO || '';
         $('#EMAIL_REP_UG').value = data.EMAIL || '';
         $('#TEL_REP_UG').value   = data.TELEFONE || '';
-        ['NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CPF_REP_UG']
-          .forEach(id=>checkField(id, id.includes('EMAIL')?'email': id.includes('CPF')?'cpf':'text'));
       }
     }catch{
       showErro(['Falha ao consultar CPF.']);
@@ -281,7 +330,8 @@
   /* ========= Submit ========= */
   $('#regularidadeForm')?.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    if(!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
+    // valida todos os passos (1–7)
+    for (let s=1; s<=7; s++){ if(!validateStep(s)) return; }
 
     const now = new Date();
     $('#MES').value               = String(now.getMonth()+1).padStart(2,'0');
@@ -289,7 +339,6 @@
     $('#HORA_TERMO_GERADO').value = fmtHR(now);
     $('#ANO_TERMO_GERADO').value  = String(now.getFullYear());
 
-    const outroTxt = '';
     const payload = {
       ENTE: $('#ENTE').value.trim(),
       UF: $('#UF').value.trim(),
@@ -309,8 +358,7 @@
       DATA_VENCIMENTO_ULTIMO_CRP: $('#DATA_VENCIMENTO_ULTIMO_CRP').value || '',
       TIPO_EMISSAO_ULTIMO_CRP:
         ($('#em_adm').checked && 'Administrativa') ||
-        ($('#em_jud').checked && 'Judicial') ||
-        (outroTxt || ''),
+        ($('#em_jud').checked && 'Judicial') || '',
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i=>i.value),
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300').filter(i=>i.checked).map(i=>i.value).join('; '),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$('input#reg_sem_jud, input#reg_com_jud').filter(i=>i.checked).map(i=>i.value).join('; '),
@@ -324,7 +372,8 @@
       DATA_TERMO_GERADO: $('#DATA_TERMO_GERADO').value,
       HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO').value,
       ANO_TERMO_GERADO: $('#ANO_TERMO_GERADO').value,
-      __snapshot_base: null
+      __snapshot_base: snapshotBase,
+      __user_changed_fields: Array.from(editedFields)
     };
 
     try{
@@ -339,6 +388,7 @@
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
+      // abre o termo (termo.html)
       const qs = new URLSearchParams({
         uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
         ug: payload.UG, cnpj_ug: $('#CNPJ_UG').value,
@@ -362,6 +412,15 @@
       window.open(`termo.html?${qs}`, '_blank', 'noopener');
 
       modalSucesso.show();
+
+      // reset e volta ao início (reabre o aviso)
+      $('#regularidadeForm').reset();
+      $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
+      $$( 'input[type="checkbox"], input[type="radio"]' ).forEach(el=> el.checked=false);
+      editedFields.clear();
+      snapshotBase = null;
+      cnpjOK = false;
+      showStep(0);
     }catch{
       showErro(['Falha de comunicação com o servidor.']);
     }finally{

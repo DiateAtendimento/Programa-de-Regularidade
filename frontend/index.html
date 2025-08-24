@@ -41,7 +41,7 @@
           <section class="app-section" data-step="0">
             <div class="row g-2 align-items-end">
               <div class="col-md-5">
-                <label for="CNPJ_ENTE_PESQ" class="form-label">CNPJ do Ente (Pesquisar)</label>
+                <label for="CNPJ_ENTE_PESQ" class="form-label">CNPJ do Ente</label>
                 <input type="text" class="form-control" id="CNPJ_ENTE_PESQ" placeholder="00.000.000/0000-00" />
               </div>
               <div class="col-md-3">
@@ -228,7 +228,7 @@
               <div class="small text-muted mb-2">Selecione todos os itens apontados como irregulares no extrato.</div>
 
               <div class="d-flex flex-column gap-2" id="grpCRITERIOS">
-                <!-- (lista mantida; versão com textos completos pode ser aplicada depois) -->
+                <!-- lista mantida -->
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)"><span class="form-check-label">Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Atendimento à fiscalização"><span class="form-check-label">Atendimento à fiscalização</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar"><span class="form-check-label">Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar</span></label>
@@ -257,91 +257,115 @@
           <!-- ETAPA 4 -->
           <section class="app-section" data-step="4">
             <div class="section-head">
-              <h2 class="section-title">4. Finalidade(s) inicial(is)</h2>
-              <p class="small text-muted mb-0">Assinale as finalidades iniciais da adesão.</p>
+              <h2 class="section-title">4. Finalidade(s) inicial(is) da adesão ao Programa de Regularidade Previdenciária</h2>
+              <p class="small text-muted mb-0">Assinale ao menos um item. É possível marcar múltiplos.</p>
             </div>
 
-            <p class="fw-semibold mb-2">4.1 Celebração de termos de parcelamento de débitos</p>
-            <div class="form-check mb-2">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="parc60" name="FINALIDADES[]" value="Até 60 parcelas (arts. 14 e 15 do ADCT)">
-              <label class="form-check-label" for="parc60">Até 60 parcelas (arts. 14 e 15 do ADCT)</label>
+            <p class="fw-semibold mt-3 mb-2">Finalidade Inicial da Adesão:</p>
+            <div class="form-check mb-1">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="fin_parc" value="A - Parcelamento de débitos">
+              <label class="form-check-label" for="fin_parc">A - Parcelamento de débitos</label>
             </div>
-            <div class="form-check mb-4">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="parc300" name="FINALIDADES[]" value="Até 300 parcelas (arts. 115 e 117 do ADCT)">
-              <label class="form-check-label" for="parc300">Até 300 parcelas (arts. 115 e 117 do ADCT)</label>
-            </div>
-
-            <p class="fw-semibold mb-2">4.2 Regularização de pendências para emissão do CRP</p>
-            <div class="form-check mb-2">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="reg_sem_jud" value="Regularização sem decisão judicial">
-              <label class="form-check-label" for="reg_sem_jud">Para entes sem decisão judicial</label>
-            </div>
-            <div class="form-check mb-4">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="reg_com_jud" value="Regularização com decisão judicial (RE 1.007.271, Tema 968)">
-              <label class="form-check-label" for="reg_com_jud">Para entes com decisão judicial</label>
+            <div class="form-check mb-3">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="fin_reg" value="B - Regularização de pendências para emissão administrativa e regular do CRP">
+              <label class="form-check-label" for="fin_reg">B - Regularização de pendências para emissão administrativa e regular do CRP</label>
             </div>
 
-            <p class="fw-semibold mt-2 mb-2">4.3 Equacionamento de déficit atuarial</p>
-            <div class="form-check mb-2">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_implano" value="Implementação de plano de equacionamento">
-              <label class="form-check-label" for="eq_implano">Implementação de plano de equacionamento</label>
+            <p class="fw-semibold mb-2">Detalhamento da(s) finalidade(s):</p>
+
+            <p class="fw-semibold mb-1">4.1  Celebração de termos de parcelamento de débitos:</p>
+            <div class="form-check mb-1">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="parc60" name="FINALIDADES[]" value="4.1.1 em até sessenta parcelas (arts. 14 e 15 do ADCT, EC nº XXX/2025)">
+              <label class="form-check-label" for="parc60">4.1.1  em até sessenta parcelas, com base nas regras previstas nos arts. 14 e 15 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025.</label>
             </div>
-            <div class="form-check mb-2">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_prazos" value="Prazos adicionais para comprovação de medidas">
-              <label class="form-check-label" for="eq_prazos">Prazos adicionais para comprovação de medidas</label>
-            </div>
-            <div class="form-check mb-4">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_plano_alt" value="Plano alternativo de equacionamento (art. 55, §7º)">
-              <label class="form-check-label" for="eq_plano_alt">Plano alternativo de equacionamento (art. 55, §7º)</label>
+            <div class="form-check mb-3">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="parc300" name="FINALIDADES[]" value="4.1.2 em até trezentas parcelas (arts. 115 e 117 do ADCT, EC nº XXX/2025; arts. 4º a 11 do Anexo XVII da Portaria MTP 1.467/2022)">
+              <label class="form-check-label" for="parc300">4.1.2  em até trezentas parcelas, com base nas regras previstas nos arts. 115 e 117 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025, conforme disposto nos arts. 4º a 11 do Anexo XVII da Portaria MTP nº 1.467/2022.</label>
             </div>
 
-            <p class="fw-semibold mt-2 mb-2">4.4 Critérios estruturantes / organização do RPPS</p>
-            <div class="form-check mb-2">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="org_ugu" value="Adequação da Unidade Gestora Única (CF art. 40, §20)">
-              <label class="form-check-label" for="org_ugu">Adequação da Unidade Gestora Única (CF art. 40, §20)</label>
+            <p class="fw-semibold mb-1">4.2  Regularização de pendências para a emissão administrativa e regular do CRP:</p>
+            <div class="form-check mb-1">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="reg_sem_jud" value="4.2.1 para entes sem decisão judicial">
+              <label class="form-check-label" for="reg_sem_jud">4.2.1 para entes sem decisão judicial</label>
             </div>
-            <div class="form-check mb-4">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="org_outros" value="Outro critério de maior complexidade">
-              <label class="form-check-label" for="org_outros">Outro critério de maior complexidade</label>
+            <div class="form-check mb-3">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="reg_com_jud" value="4.2.2 para entes com decisão judicial (RE 1.007.271, Tema 968)">
+              <label class="form-check-label" for="reg_com_jud">4.2.2 para entes com decisão judicial, tendo em vista o disposto no Acórdão proferido pelo Supremo Tribunal Federal nos autos do Recurso Extraordinário nº 1.007.271, Tema 968 de Repercussão Geral.</label>
             </div>
 
-            <p class="fw-semibold mt-2 mb-2">4.5 Manutenção da conformidade</p>
-            <div class="form-check mb-2">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="man_cert" value="Pró-Gestão RPPS (nível II/III/IV)">
-              <label class="form-check-label" for="man_cert">Pró-Gestão RPPS (nível II/III/IV)</label>
+            <p class="fw-semibold mb-1">4.3  Equacionamento de déficit atuarial do RPPS</p>
+            <p class="small text-muted">Observados os requisitos previstos no art. 3º, caput, inciso VI, do Anexo XVIII da Portaria MTP nº 1.467/2022, com a apresentação obrigatória de plano de ação.</p>
+            <div class="form-check mb-1">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_implano" value="4.3.1 implementação de plano de equacionamento do déficit atuarial">
+              <label class="form-check-label" for="eq_implano">4.3.1  para implementação de plano de equacionamento do déficit atuarial do RPPS</label>
             </div>
-            <div class="form-check mb-2">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="man_melhoria" value="Melhora nos indicadores do ISP-RPPS">
-              <label class="form-check-label" for="man_melhoria">Melhora nos indicadores do ISP-RPPS</label>
+            <div class="form-check mb-1">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_prazos" value="4.3.2 prazos adicionais para comprovação de medidas">
+              <label class="form-check-label" for="eq_prazos">4.3.2  para situações que exijam prazos adicionais para a comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à sua adequação à situação orçamentária, financeira e fiscal do ente federativo</label>
             </div>
-            <div class="form-check mb-2">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="man_acomp" value="Medidas de acompanhamento atuarial (arts. 67 a 69)">
-              <label class="form-check-label" for="man_acomp">Medidas de acompanhamento atuarial (arts. 67 a 69)</label>
+            <div class="form-check mb-3">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_plano_alt" value="4.3.3 plano de equacionamento alternativo (art. 55, §7º)">
+              <label class="form-check-label" for="eq_plano_alt">4.3.3  para apresentação de plano de equacionamento de déficit atuarial alternativo aos previstos na Portaria MTP nº 1.467/2022, desde que observados os requisitos previstos no art. 55, § 7º, da referida Portaria.</label>
+            </div>
+
+            <p class="fw-semibold mb-1">4.4  Organização do RPPS conforme os critérios estruturantes estabelecidos nas normas gerais</p>
+            <p class="small text-muted">Observados os requisitos previstos no art. 3º, caput, inciso VI, do Anexo XVIII da Portaria MTP nº 1.467/2022, com a apresentação obrigatória de plano de ação.</p>
+            <div class="form-check mb-1">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="org_ugu" value="4.4.1 adequação da Unidade Gestora Única (CF art. 40, §20)">
+              <label class="form-check-label" for="org_ugu">4.4.1  para adequação da Unidade Gestora Única do RPPS ao disposto no art. 40, § 20, da Constituição Federal</label>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="org_outros" value="4.4.2 cumprimento de outro critério de maior complexidade">
+              <label class="form-check-label" for="org_outros">4.4.2  para o cumprimento de outro critério que apresente maior complexidade (ao clicar abre a lista de critérios do CRP previstos no extrato previdenciário para selecionar um ou mais critérios)</label>
+            </div>
+
+            <p class="fw-semibold mb-1">4.5  Manutenção da conformidade do RPPS às normas gerais</p>
+            <p class="small text-muted mb-2">Por meio da demonstração de medidas de autorregularização, cooperação e reciprocidade do RPPS com a Secretaria de Regime Próprio e Complementar, conforme previsto no art. 236, § 5º, da Portaria MTP nº 1.467/2022.</p>
+
+            <div class="form-check mb-1">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="man_cert" value="Certificação institucional no Pró-Gestão RPPS (nível II/III/IV, conforme porte ISP-RPPS)">
+              <label class="form-check-label" for="man_cert">Certificação institucional no Pró-Gestão RPPS no nível II, caso classificado como Pequeno Porte do ISP-RPPS; nível III, caso classificado como Médio e Grande Porte; ou nível IV, caso classificado como Porte Especial.</label>
+            </div>
+            <div class="form-check mb-1">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="man_melhoria" value="Houve melhora na situação financeira e atuarial do RPPS (indicadores ISP-RPPS)">
+              <label class="form-check-label" for="man_melhoria">Houve melhora na situação financeira e atuarial do RPPS, com base, entre outros critérios, nos indicadores que compõem o Índice de Situação Previdenciária - ISP-RPPS.</label>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="man_acomp" value="Comprovo adoção das medidas de acompanhamento atuarial (arts. 67 a 69 da Portaria MTP 1.467/2022)">
+              <label class="form-check-label" for="man_acomp">Comprovo a adoção das medidas de acompanhamento atuarial previstas nos arts. 67 a 69 da Portaria MTP nº 1.467, de 02 de junho de 2022. Nesta fase, caso necessário, poderão ser apresentados plano de ação, para eventuais emissões de CRP emergenciais.</label>
             </div>
           </section>
 
           <!-- ETAPA 5 -->
           <section class="app-section" data-step="5">
             <div class="section-head">
-              <h2 class="section-title">5. Compromissos firmados</h2>
-              <p class="small text-muted mb-0">Selecione os compromissos assumidos com a adesão.</p>
+              <h2 class="section-title">5. Compromissos firmados na Adesão ao Programa de Regularidade Previdenciária</h2>
+              <p class="small text-muted mb-0">Assinale ao menos um item.</p>
             </div>
             <div class="d-flex flex-column gap-3" id="grpCOMPROMISSOS">
               <label class="form-check">
-                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Regularidade nos repasses e parcelas de acordos">
-                <span class="form-check-label">Regularidade nos repasses e parcelas de acordos</span>
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Manter regularidade nos repasses e nas parcelas (arts. 14 e 15 da Portaria MTP 1.467/2022)">
+                <span class="form-check-label">5.1 Manter, após a adesão ao Programa de Regularidade Previdenciária, a regularidade no repasse das contribuições devidas ao RPPS e das parcelas dos termos de acordo de parcelamentos e reparcelamentos, admitido parcelamento excepcional de débitos posteriores, observados os parâmetros dos arts. 14 e 15 da Portaria MTP nº 1.467/2022.</span>
               </label>
               <label class="form-check">
-                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Regularidade no encaminhamento de documentos (art. 241)">
-                <span class="form-check-label">Regularidade no encaminhamento de documentos (art. 241)</span>
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Regularidade no encaminhamento de documentos (art. 241 da Portaria MTP 1.467/2022)">
+                <span class="form-check-label">5.2 Manter a regularidade no encaminhamento de documentos, demonstrativos e informações previstos no art. 241 da Portaria MTP nº 1.467/2022 e no atendimento às solicitações da SRPC.</span>
               </label>
               <label class="form-check">
-                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Adequações na legislação do RPPS">
-                <span class="form-check-label">Adequações na legislação do RPPS</span>
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Utilizar recursos previdenciários apenas para finalidades legais">
+                <span class="form-check-label">5.3 Manter a regularidade na utilização dos recursos previdenciários somente para o pagamento dos benefícios de aposentadoria e pensão por morte, para o financiamento da taxa de administração e para a compensação financeira da Lei nº 9.796/1999.</span>
               </label>
               <label class="form-check">
-                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Cumprimento de Planos de Ação">
-                <span class="form-check-label">Cumprimento de Planos de Ação</span>
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Aplicar recursos conforme CMN">
+                <span class="form-check-label">5.4 Aplicar os recursos previdenciários no mercado financeiro e de capitais em conformidade com regras estabelecidas pelo Conselho Monetário Nacional – CMN.</span>
+              </label>
+              <label class="form-check">
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Promover adequações na legislação do RPPS">
+                <span class="form-check-label">5.5 Promover adequações na legislação do RPPS que forem identificadas pela Secretaria de Regime Próprio e Complementar.</span>
+              </label>
+              <label class="form-check">
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Cumprir Planos de Ação nas fases Específica e de Manutenção">
+                <span class="form-check-label">5.6 Cumprimento dos Planos de Ação que vierem a ser apresentados nas fases Específica e de Manutenção da Conformidade previstas no Programa de Regularidade Previdenciária.</span>
               </label>
             </div>
           </section>
@@ -349,18 +373,18 @@
           <!-- ETAPA 6 -->
           <section class="app-section" data-step="6">
             <div class="section-head">
-              <h2 class="section-title">6. Providências</h2>
-              <p class="small text-muted mb-0">Marque as providências já adotadas.</p>
+              <h2 class="section-title">6. Providências necessárias para adesão ao Programa de Regularidade Previdenciária</h2>
+              <p class="small text-muted mb-0">Assinale ao menos um item.</p>
             </div>
 
             <div class="d-flex flex-column gap-3 mb-3" id="grpPROVIDENCIAS">
               <label class="form-check">
-                <input class="form-check-input me-2 grp-prov" type="checkbox" name="PROVIDENCIAS[]" value="Incluídos todos os débitos no Cadprev">
-                <span class="form-check-label">Incluídos todos os débitos no Cadprev</span>
+                <input class="form-check-input me-2 grp-prov" type="checkbox" name="PROVIDENCIAS[]" value="Incluídos todos os débitos no Cadprev até a competência da adesão">
+                <span class="form-check-label">6.1 Foram incluídos, em termos de acordo de parcelamento ou reparcelamento, cadastrados no Cadprev, todos os débitos de contribuições ou de quaisquer outros valores devidos pelo ente ao respectivo RPPS, das competências até a da data da adesão ao programa.</span>
               </label>
               <label class="form-check">
-                <input class="form-check-input me-2 grp-prov" type="checkbox" name="PROVIDENCIAS[]" value="Não possui débitos até a data da adesão (ou já regularizados)">
-                <span class="form-check-label">Não possui débitos até a data da adesão (ou já regularizados)</span>
+                <input class="form-check-input me-2 grp-prov" type="checkbox" name="PROVIDENCIAS[]" value="Não possui débitos (ou já regularizados) até a adesão">
+                <span class="form-check-label">6.2 Declaramos que esse ente federativo não possui débitos de contribuições ou de quaisquer outros valores devidos ao RPPS, relativos às competências até a da data da adesão ao programa, ou que já não tivessem sido parcelados ou regularizados até a adesão.</span>
               </label>
             </div>
           </section>
@@ -368,15 +392,15 @@
           <!-- ETAPA 7 -->
           <section class="app-section" data-step="7">
             <div class="section-head">
-              <h2 class="section-title">7. Condições de vigência</h2>
-              <p class="small text-muted mb-0">
-                Confirme ciência das condições do art. 60 do Anexo XVIII da Portaria MTP nº 1.467/2022.
-              </p>
+              <h2 class="section-title">7. Condições para vigência do Programa de Regularidade Previdenciária</h2>
+              <p class="small text-muted mb-0">Marque a declaração de ciência.</p>
             </div>
 
             <div class="form-check mb-3" id="grpCONDICOES">
-              <input class="form-check-input me-2" type="checkbox" id="DECL_CIENCIA" name="CONDICOES_VIGENCIA" value="Declaro ciência das condições do art. 60 do Anexo XVIII da Portaria MTP 1.467/2022">
-              <label class="form-check-label" for="DECL_CIENCIA">Declaro ciência das condições do art. 60 do Anexo XVIII da Portaria MTP nº 1.467/2022.</label>
+              <input class="form-check-input me-2" type="checkbox" id="DECL_CIENCIA" name="CONDICOES_VIGENCIA" value="Declaro ciência das condições do art. 6º do Anexo XVIII da Portaria MTP 1.467/2022">
+              <label class="form-check-label" for="DECL_CIENCIA">
+                Declaro ter ciência que a vigência do Programa de Regularidade Previdenciária e a emissão de CRP emergenciais dependem do: I) atendimento aos requisitos do art. 3º; II) cumprimento de planos de ação do art. 4º; III) cumprimento de prazos/condições do art. 6º do Anexo XVII para entes com termos baseados na EC nº xx/2025; e IV) não ingresso com ação judicial para obtenção de CRP ou para descumprimento do programa.
+              </label>
             </div>
           </section>
 
@@ -397,24 +421,55 @@
     </div>
   </div>
 
+  <!-- Modal AVISO INICIAL (TEXTO COMPLETO) -->
+  <div class="modal fade" id="modalWelcome" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">FORMULÁRIO PARA GERAÇÃO DO TERMO DE ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="fw-semibold text-primary mb-2">Observações:</p>
+
+          <p>O presente Termo de Adesão do Programa de Regularidade Previdenciária terá validade a partir da data do seu encaminhamento ao Ministério da Previdência Social por meio do Sistema de Gestão de Consultas e Normas – Gescon‑RPPS.</p>
+
+          <p>O ente deverá selecionar no menu do Gescon <em>a opção tal, o assunto tal…</em> e encaminhar o termo em PDF com a assinatura eletrônica dos responsáveis, que poderá ser efetuada por meio do gov.br.</p>
+
+          <p>Após encaminhado o Termo de Adesão, será instaurado um processo eletrônico no SEI para acompanhamento pelo ente federativo do Programa de Regularidade Previdenciária, a ser instruído, inicialmente, pela Coordenação de Atendimento Colaborativo do DRPPS, com o Termo de Adesão e o extrato previdenciário emitido pelo Cadprev na data.</p>
+
+          <p>A solicitação de emissão de Certificados de Regularidade Previdenciárias – CRP emergenciais, na vigência do Programa, deverá ser efetuada por meio de Termos de Solicitação de CRP Emergencial. <strong>Os pedidos de CRP na vigência do Programa deverão ser efetuados por meio da emissão de formulário próprio</strong> (<a href="#" class="link-primary">clique aqui para acessar o link</a>). Após preenchido e colhidas as assinaturas, o Termo de Solicitação de CRP Emergencial também deverá ser encaminhado pelo Gescon‑RPPS e será anexado ao referido processo SEI do Programa de Regularidade Previdenciária.</p>
+
+          <p>Em caso de dúvidas, o ente deverá comunicar‑se com a Coordenação de Atendimento Colaborativo do Departamento dos Regimes Próprios de Previdência Social – DRPPS, pelos telefones <a href="tel:+556120215555">61‑2021‑5555</a>, WhatsApp de mesmo número, ou e‑mail <a href="mailto:programa.regularidade.rpps@previdencia.gov.br">programa.regularidade.rpps@previdencia.gov.br</a>.</p>
+
+          <hr/>
+
+          <p class="small text-muted mb-0">Termo de Adesão ao Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social (RPPS) instituído pelo Ministério da Previdência Social, conforme previsto no art. 281‑A e Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Erro -->
   <div class="modal fade" id="modalErro" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
         <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title">Revise os itens em vermelho</h5>
+          <h5 class="modal-title">Atenção</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body d-flex align-items-center">
-          <div id="lottieError" class="lottie-box me-3" aria-hidden="true"></div>
-          <ul id="modalErroLista" class="mb-0"></ul>
+        <div class="modal-body d-flex justify-content-center">
+          <div id="lottieError" class="lottie-box"></div>
         </div>
-        <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Ok</button></div>
+        <div class="modal-footer"><ul id="modalErroLista" class="mb-0 small"></ul></div>
       </div>
     </div>
   </div>
 
-  <!-- Modal Busca (não encontrado) -->
+  <!-- Modal Busca -->
   <div class="modal fade" id="modalBusca" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
@@ -422,9 +477,8 @@
           <h5 class="modal-title">Registro não encontrado</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body d-flex align-items-center">
-          <div id="lottieErrorBusca" class="lottie-box me-3" aria-hidden="true"></div>
-          <p class="mb-0">Verifique o número informado ou preencha manualmente.</p>
+        <div class="modal-body d-flex justify-content-center">
+          <div id="lottieErrorBusca" class="lottie-box"></div>
         </div>
       </div>
     </div>
@@ -435,12 +489,11 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
         <div class="modal-header bg-success text-white">
-          <h5 class="modal-title">Sucesso ao gerar o termo</h5>
+          <h5 class="modal-title">Termo gerado</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body d-flex align-items-center">
-          <div id="lottieSuccess" class="lottie-box me-3" aria-hidden="true"></div>
-          <p class="mb-0">Os dados foram salvos em <strong>Termos_registrados</strong> e possíveis alterações foram registradas em <strong>Reg_alteracao_dados_ente_ug</strong>.</p>
+        <div class="modal-body d-flex justify-content-center">
+          <div id="lottieSuccess" class="lottie-box"></div>
         </div>
       </div>
     </div>
@@ -450,12 +503,8 @@
   <div class="modal fade" id="modalLoading" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-sm">
       <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-warning">
-          <h5 class="modal-title">Carregando informações…</h5>
-        </div>
-        <div class="modal-body d-flex align-items-center">
-          <div id="lottieLoading" class="lottie-box me-3" aria-hidden="true"></div>
-          <span>Consultando dados. Aguarde alguns segundos.</span>
+        <div class="modal-body d-flex justify-content-center">
+          <div id="lottieLoading" class="lottie-box"></div>
         </div>
       </div>
     </div>

@@ -447,21 +447,30 @@ app.post('/api/gerar-termo', async (req,res)=>{
       MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO
     });
 
-    // Log (se houver snapshot)
+    // ===== Log apenas se o usuário DIGITOU (e apenas campos permitidos) =====
     const snap = p.__snapshot_base || {};
-    const compareCols = [
+    const userChanged = new Set(Array.isArray(p.__user_changed_fields) ? p.__user_changed_fields : []);
+    const allowedForLog = new Set([
       'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
       'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
-      'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG'
-    ];
+      'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
+      'DATA_VENCIMENTO_ULTIMO_CRP'
+    ]);
+
+    const compareCols = [...allowedForLog];
     const changed = [];
-    if (Object.keys(snap).length) {
+
+    if (Object.keys(snap).length && userChanged.size) {
       for (const col of compareCols) {
-        const a = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(snap[col] || '') : norm(snap[col] || '');
-        const b = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(p[col] || '')   : norm(p[col] || '');
+        if (!userChanged.has(col)) continue; // só conta se o usuário digitou
+        const a = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
+          ? digits(snap[col] || '') : norm(snap[col] || '');
+        const b = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
+          ? digits(p[col] || '')   : norm(p[col] || '');
         if (low(a) !== low(b)) changed.push(col);
       }
     }
+
     if (changed.length) {
       const t = nowBR();
       await sLog.addRow({
