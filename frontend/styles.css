@@ -13,6 +13,9 @@
   --card:#ffffff;
   --divider:#e5e7eb;
   --shadow:0 10px 28px rgba(0,0,0,.08);
+
+  /* usa o azul do projeto onde o Bootstrap usa "primary" */
+  --bs-primary: var(--brand-600);
 }
 *{box-sizing:border-box}
 body{font-family:'Inter',sans-serif;color:var(--fg);min-height:100vh;position:relative}
@@ -48,7 +51,10 @@ body{font-family:'Inter',sans-serif;color:var(--fg);min-height:100vh;position:re
 
 /* Sections */
 .app-section{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--divider)}
-.section-title{font-size:1.25rem;font-weight:800;color:var(--brand-700);margin-bottom:.25rem}
+/* títulos em azul do projeto */
+header h1,
+.section-title{color:var(--brand-700)}
+.section-title{font-size:1.25rem;font-weight:800;margin-bottom:.25rem}
 .sub-title{font-weight:700;margin-bottom:.35rem;color:#000}
 
 /* Inputs focus */
@@ -118,12 +124,18 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
 .lottie-box{width:64px;height:64px;min-width:64px}
 .lottie-loading{width:180px;height:180px;min-width:180px}
 
-/* Alinhamento à esquerda das listas nos modais */
-#modalErro .modal-body,
-#modalAtencao .modal-body{padding:1.25rem}
-#modalErro .modal-body .d-flex,
-#modalAtencao .modal-body .d-flex{align-items:flex-start}
-#modalErro ul,#modalAtencao ul{padding-left:1.1rem;text-align:left;margin:0}
+/* Listas nos modais de atenção/erro — alinhadas à esquerda e bonitas */
+#modalAtencao .modal-body,
+#modalErro .modal-body{padding:1.25rem}
+#modalAtencao .modal-body ul,
+#modalErro .modal-body ul{
+  list-style: disc;
+  margin: 0;
+  padding-left: 1.1rem;
+  text-align:left;
+}
+#modalAtencao .modal-body li,
+#modalErro .modal-body li{margin-bottom:.35rem}
 
 /* Navegação rodapé do form */
 #regularidadeForm .mt-2{margin-top:1.25rem!important}
