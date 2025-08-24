@@ -140,6 +140,26 @@
   const btnNext  = $('#btnNext');
   const btnSubmit= $('#btnSubmit');
 
+  // === onde o botão "Próximo" deve ficar (passo 0 na linha, demais no rodapé)
+  const navFooter   = $('#navFooter');
+  const pesquisaRow = $('#pesquisaRow');
+  function placeNextButton(){
+    if (!btnNext || !navFooter || !pesquisaRow) return;
+    if (step === 0){
+      // cria (uma única vez) um holder no grid de pesquisa
+      let holder = $('#nextStep0Holder');
+      if (!holder){
+        holder = document.createElement('div');
+        holder.id = 'nextStep0Holder';
+        holder.className = 'col-auto ms-auto'; // encosta à direita
+        pesquisaRow.appendChild(holder);
+      }
+      holder.appendChild(btnNext);
+    }else{
+      navFooter.appendChild(btnNext);
+    }
+  }
+
   function updateNavButtons(){
     btnPrev.classList.toggle('d-none', step < 1);
     btnNext.disabled = (step === 0 && !cnpjOK);
@@ -153,6 +173,8 @@
     const activeIdx = Math.min(step, stepsUI.length-1);
     stepsUI.forEach((s,i)=> s.classList.toggle('active', i===activeIdx));
     updateNavButtons();
+    placeNextButton(); // << posiciona o botão "Próximo" conforme o passo
+
     // Exibir SEMPRE o modal de boas-vindas quando voltar ao passo 0
     if (step === 0) setTimeout(()=> modalWelcome.show(), 100);
   }
