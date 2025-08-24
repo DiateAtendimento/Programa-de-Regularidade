@@ -147,17 +147,12 @@
     btnSubmit.classList.toggle('d-none', step!==7);
   }
 
-  // Alinhamento robusto: empurra SEMPRE o botão da direita com ms-auto
+  // Alinhamento: botão da direita sempre com ms-auto
   function updateFooterAlign(){
     if (!navFooter) return;
-    // limpa qualquer resto
     [btnPrev, btnNext, btnSubmit].forEach(b => b && b.classList.remove('ms-auto'));
-    // qual é o botão da direita?
-    if (step === 7) {
-      btnSubmit?.classList.add('ms-auto');   // Gerar Termo à direita
-    } else {
-      btnNext?.classList.add('ms-auto');     // Próximo à direita (inclusive no passo 0)
-    }
+    if (step === 7) btnSubmit?.classList.add('ms-auto');
+    else            btnNext?.classList.add('ms-auto');
   }
 
   function showStep(n){
@@ -306,12 +301,12 @@
         DATA_VENCIMENTO_ULTIMO_CRP: data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || ''
       };
 
-      // ETAPA 1 (agora preenchendo também os e-mails retornados)
+      // ETAPA 1 (agora também preenche os e-mails vindos da base)
       $('#UF').value = data.UF || '';
       $('#ENTE').value = data.ENTE || '';
-      $('#CNPJ_ENTE').value = maskCNPJ(data.CNPJ_ENTE || '');
+      $('#CNPJ_ENTE').value = (data.CNPJ_ENTE ? data.CNPJ_ENTE.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5') : '');
       $('#UG').value = data.UG || '';
-      $('#CNPJ_UG').value = maskCNPJ(data.CNPJ_UG || '');
+      $('#CNPJ_UG').value = (data.CNPJ_UG ? data.CNPJ_UG.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5') : '');
       $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
       $('#EMAIL_UG').value   = data.EMAIL_UG   || '';
 
