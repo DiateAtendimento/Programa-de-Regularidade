@@ -306,14 +306,14 @@
         DATA_VENCIMENTO_ULTIMO_CRP: data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || ''
       };
 
-      // ETAPA 1
+      // ETAPA 1 (agora preenchendo também os e-mails retornados)
       $('#UF').value = data.UF || '';
       $('#ENTE').value = data.ENTE || '';
       $('#CNPJ_ENTE').value = maskCNPJ(data.CNPJ_ENTE || '');
       $('#UG').value = data.UG || '';
       $('#CNPJ_UG').value = maskCNPJ(data.CNPJ_UG || '');
-      $('#EMAIL_ENTE').value = '';
-      $('#EMAIL_UG').value = '';
+      $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
+      $('#EMAIL_UG').value   = data.EMAIL_UG   || '';
 
       // limpar reps (pesquisa via CPF)
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',

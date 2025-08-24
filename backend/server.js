@@ -1,6 +1,8 @@
 // server.js — API RPPS (multi-etapas)
 // Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP (colunas fixas B/F/G = 1/5/6),
-// grava em Termos_registrados e registra alterações em Reg_alteracao_dados_ente_ug (auto-cria se faltar)
+// grava em Termos_registrados, registra alterações em Reg_alteracao_dados_ente_ug
+// e agora também faz UPSERT de EMAIL_ENTE/EMAIL_UG na aba CNPJ_ENTE_UG
+// além de devolver EMAIL_ENTE/EMAIL_UG em /api/consulta.
 
 require('dotenv').config();
 const fs = require('fs');
@@ -217,6 +219,22 @@ const formatDateISO = d => {
   return `${yy}-${mm}-${dd}`;
 };
 
+/* ───── Util: garantir colunas ───── */
+async function ensureColumns(sheet, cols = []) {
+  await sheet.loadHeaderRow();
+  const headers = (sheet.headerValues || []).map(h => norm(h));
+  let changed = false;
+  cols.forEach(c => {
+    if (!headers.some(h => low(h) === low(c))) {
+      headers.push(c);
+      changed = true;
+    }
+  });
+  if (changed) {
+    await sheet.setHeaderRow(headers);
+  }
+}
+
 /* ───── Leitura CRP (B/F/G = 1/5/6) ───── */
 async function readCRPByFixedColumns(sheet) {
   const colCNPJ = 1, colVal = 5, colDec = 6; // 0-based
@@ -285,11 +303,13 @@ app.get('/api/consulta', async (req, res) => {
     if (!base) base = cnpjRows.find(r => digits(getVal(r,'CNPJ_UG')) === cnpj);
     if (!base) return res.status(404).json({ error: 'CNPJ não encontrado em CNPJ_ENTE_UG.' });
 
-    const UF        = norm(getVal(base, 'UF'));
-    const ENTE      = norm(getVal(base, 'ENTE'));
-    const UG        = norm(getVal(base, 'UG'));
-    const CNPJ_ENTE = digits(getVal(base, 'CNPJ_ENTE'));
-    const CNPJ_UG   = digits(getVal(base, 'CNPJ_UG'));
+    const UF          = norm(getVal(base, 'UF'));
+    const ENTE        = norm(getVal(base, 'ENTE'));
+    const UG          = norm(getVal(base, 'UG'));
+    const CNPJ_ENTE   = digits(getVal(base, 'CNPJ_ENTE'));
+    const CNPJ_UG     = digits(getVal(base, 'CNPJ_UG'));
+    const EMAIL_ENTE  = norm(getVal(base, 'EMAIL_ENTE'));
+    const EMAIL_UG    = norm(getVal(base, 'EMAIL_UG'));
 
     // Reps (snapshot informativo — não preenche automático no front)
     const repsAll = await getRowsSafe(sReps);
@@ -313,6 +333,7 @@ app.get('/api/consulta', async (req, res) => {
 
     const out = {
       UF, ENTE, CNPJ_ENTE, UG, CNPJ_UG,
+      EMAIL_ENTE, EMAIL_UG, // ← agora devolvendo também
       CRP_DATA_VALIDADE_DMY: crp.DATA_VALIDADE_DMY || '',
       CRP_DATA_VALIDADE_ISO: crp.DATA_VALIDADE_ISO || '',
       CRP_DECISAO_JUDICIAL:  crp.DECISAO_JUDICIAL || '',
@@ -372,6 +393,68 @@ app.get('/api/rep-by-cpf', async (req,res)=>{
     res.status(500).json({ error:'Falha interna.' });
   }
 });
+
+/* ───── UPSERT de e-mails na CNPJ_ENTE_UG ───── */
+async function upsertEmailsCNPJ(sCnpj, payload) {
+  await ensureColumns(sCnpj, ['EMAIL_ENTE','EMAIL_UG']);
+
+  await sCnpj.loadHeaderRow();
+  const rows = await sCnpj.getRows(); // aqui esperamos headers únicos
+
+  const cnpjEnte = digits(payload.CNPJ_ENTE || '');
+  const cnpjUg   = digits(payload.CNPJ_UG   || '');
+  const emailEnte = norm(payload.EMAIL_ENTE || '');
+  const emailUg   = norm(payload.EMAIL_UG   || '');
+
+  let rowEnte = rows.find(r => digits(r['CNPJ_ENTE']) === cnpjEnte);
+  let rowUg   = rows.find(r => digits(r['CNPJ_UG'])   === cnpjUg);
+
+  // Caso exista uma mesma linha com ambos CNPJs, atualizamos nela
+  if (rowEnte && rowUg && rowEnte._rowNumber !== rowUg._rowNumber) {
+    // mantém separado (planilha pode ter linhas distintas)
+  } else if (rowEnte && !rowUg && cnpjUg) {
+    rowUg = rowEnte;
+  } else if (!rowEnte && rowUg && cnpjEnte) {
+    rowEnte = rowUg;
+  }
+
+  if (rowEnte) {
+    if (emailEnte) rowEnte['EMAIL_ENTE'] = emailEnte;
+    if (!rowEnte['CNPJ_UG'] && cnpjUg) rowEnte['CNPJ_UG'] = cnpjUg;
+    if (!rowEnte['UG'] && norm(payload.UG)) rowEnte['UG'] = norm(payload.UG);
+    if (emailUg) rowEnte['EMAIL_UG'] = emailUg;
+    await rowEnte.save();
+  } else if (cnpjEnte) {
+    await sCnpj.addRow({
+      UF: norm(payload.UF),
+      ENTE: norm(payload.ENTE),
+      CNPJ_ENTE: cnpjEnte,
+      UG: norm(payload.UG),
+      CNPJ_UG: cnpjUg,
+      EMAIL_ENTE: emailEnte,
+      EMAIL_UG: emailUg
+    });
+  }
+
+  // Se havia linha separada para UG e não era a mesma do ente, atualiza também
+  if (rowUg && (!rowEnte || rowUg._rowNumber !== rowEnte._rowNumber)) {
+    if (emailUg) rowUg['EMAIL_UG'] = emailUg;
+    if (!rowUg['CNPJ_ENTE'] && cnpjEnte) rowUg['CNPJ_ENTE'] = cnpjEnte;
+    if (!rowUg['ENTE'] && norm(payload.ENTE)) rowUg['ENTE'] = norm(payload.ENTE);
+    await rowUg.save();
+  } else if (!rowUg && cnpjUg && !rowEnte) {
+    // caso raro: não achou nada; garante registro
+    await sCnpj.addRow({
+      UF: norm(payload.UF),
+      ENTE: norm(payload.ENTE),
+      CNPJ_ENTE: cnpjEnte,
+      UG: norm(payload.UG),
+      CNPJ_UG: cnpjUg,
+      EMAIL_ENTE: emailEnte,
+      EMAIL_UG: emailUg
+    });
+  }
+}
 
 /** POST /api/gerar-termo */
 app.post('/api/gerar-termo', async (req,res)=>{
@@ -446,6 +529,12 @@ app.post('/api/gerar-termo', async (req,res)=>{
       CONDICAO_VIGENCIA: norm(p.CONDICAO_VIGENCIA),
       MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO
     });
+
+    // === UPSERT de EMAIL_ENTE / EMAIL_UG na planilha CNPJ_ENTE_UG ===
+    const sCnpj = await getOrCreateSheet('CNPJ_ENTE_UG', [
+      'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG','EMAIL_ENTE','EMAIL_UG'
+    ]);
+    await upsertEmailsCNPJ(sCnpj, p);
 
     // ===== Log apenas se o usuário DIGITOU (e apenas campos permitidos) =====
     const snap = p.__snapshot_base || {};
