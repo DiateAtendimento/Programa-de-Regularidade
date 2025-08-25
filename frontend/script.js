@@ -1,4 +1,4 @@
-
+// script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas e validação
 (() => {
   /* ========= Config API ========= */
   const API_BASE = (() => {
@@ -24,7 +24,7 @@
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
   const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
 
-  // Aviso inicial: apenas na primeira carga da página
+  // Aviso inicial
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(()=> modalWelcome.show(), 150);
   });
@@ -38,12 +38,9 @@
     lotties[id] = lottie.loadAnimation({ container: el, path: jsonPath, loop, autoplay, renderer });
   }
 
-  // Lottie do modal de "Carregando dados..." (apenas para PESQUISAS)
   $('#modalLoadingSearch')?.addEventListener('shown.bs.modal', () => {
     mountLottie('lottieLoadingSearch', 'animacao/carregando-info.json', { loop:true, autoplay:true });
   });
-
-  // Lotties fixos
   $('#modalSucesso')?.addEventListener('shown.bs.modal', () => {
     mountLottie('lottieSuccess', 'animacao/confirm-success.json', { loop:false, autoplay:true });
   });
@@ -51,8 +48,7 @@
     mountLottie('lottieErrorBusca', 'animacao/atencao-info.json', { loop:false, autoplay:true });
   });
 
-  // Funções helper para modais de ATENÇÃO x ERRO (reutilizam #modalErro)
-  function setErroHeader(mode/* 'atencao' | 'erro' */){
+  function setErroHeader(mode){
     const header = $('#modalErro .modal-header');
     const title  = $('#modalErro .modal-title');
     if (!header || !title) return;
@@ -130,7 +126,7 @@
   const neutral     = el => el.classList.remove('is-valid','is-invalid');
 
   /* ========= Stepper / Navegação ========= */
-  let step = 0;            // 0..7 (0 = tela de pesquisa)
+  let step = 0;            // 0..7
   let cnpjOK = false;
 
   const sections = $$('[data-step]');
@@ -146,15 +142,12 @@
     btnNext.classList.toggle('d-none', step===7);
     btnSubmit.classList.toggle('d-none', step!==7);
   }
-
-  // Alinhamento: botão da direita sempre com ms-auto
   function updateFooterAlign(){
     if (!navFooter) return;
     [btnPrev, btnNext, btnSubmit].forEach(b => b && b.classList.remove('ms-auto'));
     if (step === 7) btnSubmit?.classList.add('ms-auto');
     else            btnNext?.classList.add('ms-auto');
   }
-
   function showStep(n){
     step = Math.max(0, Math.min(7, n));
     sections.forEach(sec => sec.style.display = (Number(sec.dataset.step)===step ? '' : 'none'));
@@ -164,14 +157,10 @@
     updateFooterAlign();
   }
   showStep(0);
+  btnPrev?.addEventListener('click', ()=> showStep(step-1));
 
-  btnPrev?.addEventListener('click', ()=> {
-    showStep(step-1);
-  });
-
-  // ===== validação de grupos (passos 4–7)
+  // ===== validação de grupos
   function hasAnyChecked(sel){ return $$(sel).some(i=>i.checked); }
-
   function validateStep(s){
     const msgs=[];
     const reqAll = {
@@ -207,7 +196,6 @@
       ok?markValid(el):markInvalid(el);
       return ok;
     };
-
     if (s<=3) {
       (reqAll[s]||[]).forEach(o => { if(!checkField(o.id,o.type)) msgs.push(o.label); });
       if (s===1) {
@@ -225,7 +213,6 @@
     if (msgs.length){ showAtencao(msgs); return false; }
     return true;
   }
-
   btnNext?.addEventListener('click', ()=>{
     if (step===0 && !cnpjOK) { showAtencao(['Pesquise e selecione um CNPJ válido antes de prosseguir.']); return; }
     if (!validateStep(step)) return;
@@ -249,7 +236,7 @@
     }
   }
 
-  /* ========= Rastreamento de campos digitados ========= */
+  /* ========= Rastreamento ========= */
   const editedFields = new Set();
   const trackIds = [
     'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
@@ -263,7 +250,7 @@
     el.addEventListener(ev, ()=> editedFields.add(id));
   });
 
-  // snapshot base (para comparação no log)
+  // snapshot base
   let snapshotBase = null;
 
   /* ========= Busca por CNPJ ========= */
@@ -285,7 +272,6 @@
       }
       const { data } = await r.json();
 
-      // snapshot
       snapshotBase = {
         UF: data.UF, ENTE: data.ENTE, CNPJ_ENTE: data.CNPJ_ENTE, UG: data.UG, CNPJ_UG: data.CNPJ_UG,
         NOME_REP_ENTE: data.__snapshot?.NOME_REP_ENTE || '',
@@ -301,7 +287,7 @@
         DATA_VENCIMENTO_ULTIMO_CRP: data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || ''
       };
 
-      // ETAPA 1 (agora também preenche os e-mails vindos da base)
+      // ETAPA 1
       $('#UF').value = data.UF || '';
       $('#ENTE').value = data.ENTE || '';
       $('#CNPJ_ENTE').value = (data.CNPJ_ENTE ? data.CNPJ_ENTE.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5') : '');
@@ -310,9 +296,9 @@
       $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
       $('#EMAIL_UG').value   = data.EMAIL_UG   || '';
 
-      // limpar reps (pesquisa via CPF)
+      // limpar reps
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
-      'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
+       'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
 
       // CRP
@@ -370,6 +356,20 @@
   $('#btnPesqRepUg')?.addEventListener('click',   ()=> buscarRepByCPF($('#CPF_REP_UG').value,'UG'));
 
   /* ========= Submit ========= */
+  function abrirTermoEmIframeOculto(url){
+    // abre termo.html silenciosamente (sem nova aba)
+    const iframe = document.createElement('iframe');
+    iframe.src = url;
+    iframe.style.position = 'fixed';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    document.body.appendChild(iframe);
+    // remove depois
+    setTimeout(()=>{ try{ iframe.remove(); }catch{} }, 60000);
+  }
+
   $('#regularidadeForm')?.addEventListener('submit', async (e)=>{
     e.preventDefault();
     // valida todos os passos (1–7)
@@ -418,7 +418,7 @@
       __user_changed_fields: Array.from(editedFields)
     };
 
-    // feedback no botão (sem modal de loading)
+    // feedback no botão
     const submitOriginalHTML = btnSubmit.innerHTML;
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = 'Gerando termo…';
@@ -436,7 +436,7 @@
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
-      // === MONTA OS PARÂMETROS PARA O PDF (sem abrir janela visível) ===
+      // monta querystring p/ termo
       const qs = new URLSearchParams({
         uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
         ug: payload.UG, cnpj_ug: $('#CNPJ_UG').value,
@@ -457,35 +457,17 @@
         data_termo: $('#DATA_TERMO_GERADO').value,
         auto: '1'
       });
-
-      // >>> novos campos solicitados (Esfera + e-mails do Ente/UG)
-      qs.append('esfera_governo',
-        ($('#esf_mun')?.checked ? 'Municipal' :
-        ($('#esf_est')?.checked ? 'Estadual/Distrital' : '')));
-      qs.append('email_ente', ($('#EMAIL_ENTE')?.value || '').trim());
-      qs.append('email_ug',   ($('#EMAIL_UG')?.value   || '').trim());
-
-      // >>> lista de critérios marcados
       payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
 
-      // === ABRE EM IFRAME OCULTO (o usuário NÃO vê a página) ===
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.left = '-9999px';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      iframe.setAttribute('aria-hidden','true');
-      iframe.src = `termo.html?${qs.toString()}`;
-      document.body.appendChild(iframe);
+      // **NÃO ABRE NOVA ABA** — carrega termo.html em um iframe oculto (faz o download e fecha)
+      abrirTermoEmIframeOculto(`termo.html?${qs.toString()}`);
 
-      // mostra sucesso imediatamente (download inicia no iframe)
+      // sucesso visual
       modalSucesso.show();
 
-      // limpa e volta ao início após alguns segundos
       setTimeout(() => {
-        try{ document.body.removeChild(iframe); }catch{}
         modalSucesso.hide();
+        // reset
         $('#regularidadeForm').reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
         $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
@@ -495,7 +477,7 @@
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = submitOriginalHTML;
         showStep(0);
-      }, 5000);
+      }, 4000);
 
     }catch{
       btnSubmit.disabled = false;
@@ -504,4 +486,3 @@
     }
   });
 })();
-

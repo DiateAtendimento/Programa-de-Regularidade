@@ -11,16 +11,14 @@
 <body>
   <main id="pdf-root" class="term-wrap">
     <header class="page-head">
-      <!-- Logos oficiais -->
       <div class="logos-wrap" aria-label="Identidade visual MPS">
         <img class="logo-sec" src="imagens/logo-secretaria-complementar.svg"
-             alt="Secretaria de Regimes Próprios e Complementar" />
+             alt="Secretaria de Regimes Próprios e Complementar" crossorigin="anonymous" />
         <img class="logo-mps" src="imagens/logo-termo-drpps.svg"
-             alt="Ministério da Previdência Social - MPS" />
+             alt="Ministério da Previdência Social - MPS" crossorigin="anonymous" />
         <div class="logo-rule" aria-hidden="true"></div>
       </div>
 
-      <!-- Título oculto (não precisa no documento) -->
       <h1 id="term-title" class="term-title">
         TERMO DE ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA DOS REGIMES PRÓPRIOS DE PREVIDÊNCIA SOCIAL (RPPS)
       </h1>
@@ -35,36 +33,30 @@
     <section class="term-section">
       <h2>1. IDENTIFICAÇÃO</h2>
       <ul>
-        <li><strong>Esfera de Governo:</strong> <span data-k="esfera_governo"></span></li>
-
         <li><strong>Ente Federativo:</strong> <span data-k="ente"></span></li>
         <li><strong>UF:</strong> <span data-k="uf"></span></li>
         <li><strong>CNPJ do Ente:</strong> <span data-k="cnpj_ente"></span></li>
-        <li><strong>E-mail oficial (Ente):</strong> <span data-k="email_ente"></span></li>
-
-        <li><strong>UG (RPPS):</strong> <span data-k="ug"></span></li>
+        <li><strong>UG:</strong> <span data-k="ug"></span></li>
         <li><strong>CNPJ da UG:</strong> <span data-k="cnpj_ug"></span></li>
-        <li><strong>E-mail oficial (UG):</strong> <span data-k="email_ug"></span></li>
       </ul>
     </section>
 
     <section class="term-section">
-      <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
-
-      <p><strong>2.1. Representante legal do ente federativo</strong></p>
+      <h2>2. REPRESENTANTES</h2>
+      <p><strong>2.1. Do Ente</strong></p>
       <ul>
         <li><strong>Nome:</strong> <span data-k="nome_rep_ente"></span></li>
-        <li><strong>Cargo/Função:</strong> <span data-k="cargo_rep_ente"></span></li>
         <li><strong>CPF:</strong> <span data-k="cpf_rep_ente"></span></li>
-        <li><strong>E-mail institucional:</strong> <span data-k="email_rep_ente"></span></li>
+        <li><strong>Cargo:</strong> <span data-k="cargo_rep_ente"></span></li>
+        <li><strong>E-mail:</strong> <span data-k="email_rep_ente"></span></li>
       </ul>
 
-      <p class="mt"><strong>2.2. Representante legal do RPPS</strong></p>
+      <p class="mt"><strong>2.2. Da Unidade Gestora (UG)</strong></p>
       <ul>
         <li><strong>Nome:</strong> <span data-k="nome_rep_ug"></span></li>
-        <li><strong>Cargo/Função:</strong> <span data-k="cargo_rep_ug"></span></li>
         <li><strong>CPF:</strong> <span data-k="cpf_rep_ug"></span></li>
-        <li><strong>E-mail institucional:</strong> <span data-k="email_rep_ug"></span></li>
+        <li><strong>Cargo:</strong> <span data-k="cargo_rep_ug"></span></li>
+        <li><strong>E-mail:</strong> <span data-k="email_rep_ug"></span></li>
       </ul>
     </section>
 
@@ -110,7 +102,7 @@
       <div class="signature-line" aria-hidden="true"></div>
       <p class="signature-caption">
         <strong>Prefeito do Município de</strong>
-        &nbsp;<span data-k="ente"></span>/<span data-k="uf"></span><strong> / Governador</strong>
+        &nbsp;<span data-k="ente"></span>/<span data-k="uf"></span><strong>/Governador</strong>
       </p>
 
       <div class="signature-line" aria-hidden="true" style="margin-top:10mm"></div>
@@ -119,8 +111,10 @@
       </p>
     </footer>
   </main>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Único bundle necessário (inclui jsPDF + html2canvas) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+
   <script>
     async function waitFonts(){try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;}catch{}}
 
@@ -133,9 +127,7 @@
         venc_ult_crp:'venc_ult_crp',tipo_emissao_crp:'tipo_emissao_crp',
         celebracao:'celebracao',regularizacao:'regularizacao',deficit:'deficit',
         criterios_estrut:'criterios_estrut',manutencao_normas:'manutencao_normas',compromisso:'compromisso',
-        providencias:'providencias',condicao_vigencia:'condicao_vigencia',data_termo:'data_termo',
-        // novos campos
-        esfera_governo:'esfera_governo', email_ente:'email_ente', email_ug:'email_ug'
+        providencias:'providencias',condicao_vigencia:'condicao_vigencia',data_termo:'data_termo'
       };
       Object.entries(map).forEach(([q,k])=>{
         const val=(p.get(q)||'').toString();
@@ -154,31 +146,59 @@
       t.style.whiteSpace='normal';
     }
 
-    // captura o cabeçalho (logos + traço) como imagem para repetir em TODAS as páginas
-    async function captureHeaderDataURL(){
-      const el = document.querySelector('.logos-wrap');
-      const canvas = await html2canvas(el, {scale:2, backgroundColor:'#fff', useCORS:true, scrollX:0, scrollY:0});
-      return { dataURL: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
+    // Converte SVG/PNG local em PNG base64 com proporção
+    function loadAsPNG(url, targetWpx=1000){
+      return new Promise(async (resolve,reject)=>{
+        try{
+          const resp = await fetch(url, {cache:'force-cache'});
+          const blob = await resp.blob();
+          const objUrl = URL.createObjectURL(blob);
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const ratio = img.naturalHeight / (img.naturalWidth || 1);
+            const w = targetWpx;
+            const h = Math.max(1, Math.round(w * ratio));
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            URL.revokeObjectURL(objUrl);
+            const dataURL = canvas.toDataURL('image/png'); // sempre PNG
+            resolve({ dataURL, ratio });
+          };
+          img.onerror = reject;
+          img.src = objUrl;
+        }catch(e){ reject(e); }
+      });
     }
 
     async function generatePdf(){
       await waitFonts(); fitTitle();
 
-      // prepara cabeçalho
-      const header = await captureHeaderDataURL();
-      const ratio = header.h / header.w;
+      // prepara logos como PNG (evita "UNKNOWN")
+      const [secPNG, mpsPNG] = await Promise.all([
+        loadAsPNG('imagens/logo-secretaria-complementar.svg', 1400),
+        loadAsPNG('imagens/logo-termo-drpps.svg', 900)
+      ]);
 
-      // medidas em mm
+      // medidas
       const pageW = 210;
       const padMM = 15;
-      const headerWmm = pageW - 2*padMM;
-      const headerHmm = headerWmm * ratio;
+      const contentW = pageW - 2*padMM;
+
+      const wSec = 82;   // mm
+      const wMps = 48;   // mm
+      const gap  = 6;    // mm
+      const hSec = wSec * secPNG.ratio;
+      const hMps = wMps * mpsPNG.ratio;
+      const headerHmm = Math.max(hSec, hMps);
       const gapBelowHeader = 4;
 
-      // oculta o cabeçalho original durante a exportação (fora do fluxo)
+      // esconder visualmente o cabeçalho original durante a exportação
       document.getElementById('pdf-root').classList.add('pdf-export');
 
-      // configura html2pdf com margem superior para o cabeçalho
       const opt={
         margin: [padMM + headerHmm + gapBelowHeader, 0, padMM, 0],
         filename:'termo_adesao_prp.pdf',
@@ -190,12 +210,21 @@
       const root=document.getElementById('pdf-root');
       const worker = html2pdf().set(opt).from(root).toPdf();
 
-      // desenha o cabeçalho em TODAS as páginas
       await worker.get('pdf').then(pdf=>{
-        const pages=pdf.getNumberOfPages?pdf.getNumberOfPages():pdf.internal.getNumberOfPages();
+        const pages = pdf.getNumberOfPages ? pdf.getNumberOfPages() : pdf.internal.getNumberOfPages();
+        const totalW = wSec + gap + wMps;
+        const startX = padMM + (contentW - totalW)/2;
+        const y = padMM;
+
         for(let i=1;i<=pages;i++){
           pdf.setPage(i);
-          pdf.addImage(header.dataURL,'PNG', padMM, padMM, headerWmm, headerHmm, undefined, 'FAST');
+          pdf.addImage(secPNG.dataURL, 'PNG', startX, y, wSec, hSec, undefined, 'FAST');
+          pdf.addImage(mpsPNG.dataURL, 'PNG', startX + wSec + gap, y, wMps, hMps, undefined, 'FAST');
+
+          // traço
+          pdf.setDrawColor(215,222,232);
+          pdf.setLineWidth(0.4);
+          pdf.line(padMM, y + headerHmm + 1, pageW - padMM, y + headerHmm + 1);
         }
       }).save();
 
