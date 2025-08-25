@@ -35,30 +35,36 @@
     <section class="term-section">
       <h2>1. IDENTIFICAÇÃO</h2>
       <ul>
+        <li><strong>Esfera de Governo:</strong> <span data-k="esfera_governo"></span></li>
+
         <li><strong>Ente Federativo:</strong> <span data-k="ente"></span></li>
         <li><strong>UF:</strong> <span data-k="uf"></span></li>
         <li><strong>CNPJ do Ente:</strong> <span data-k="cnpj_ente"></span></li>
-        <li><strong>UG:</strong> <span data-k="ug"></span></li>
+        <li><strong>E-mail oficial (Ente):</strong> <span data-k="email_ente"></span></li>
+
+        <li><strong>UG (RPPS):</strong> <span data-k="ug"></span></li>
         <li><strong>CNPJ da UG:</strong> <span data-k="cnpj_ug"></span></li>
+        <li><strong>E-mail oficial (UG):</strong> <span data-k="email_ug"></span></li>
       </ul>
     </section>
 
     <section class="term-section">
-      <h2>2. REPRESENTANTES</h2>
-      <p><strong>2.1. Do Ente</strong></p>
+      <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
+
+      <p><strong>2.1. Representante legal do ente federativo</strong></p>
       <ul>
         <li><strong>Nome:</strong> <span data-k="nome_rep_ente"></span></li>
+        <li><strong>Cargo/Função:</strong> <span data-k="cargo_rep_ente"></span></li>
         <li><strong>CPF:</strong> <span data-k="cpf_rep_ente"></span></li>
-        <li><strong>Cargo:</strong> <span data-k="cargo_rep_ente"></span></li>
-        <li><strong>E-mail:</strong> <span data-k="email_rep_ente"></span></li>
+        <li><strong>E-mail institucional:</strong> <span data-k="email_rep_ente"></span></li>
       </ul>
 
-      <p class="mt"><strong>2.2. Da Unidade Gestora (UG)</strong></p>
+      <p class="mt"><strong>2.2. Representante legal do RPPS</strong></p>
       <ul>
         <li><strong>Nome:</strong> <span data-k="nome_rep_ug"></span></li>
+        <li><strong>Cargo/Função:</strong> <span data-k="cargo_rep_ug"></span></li>
         <li><strong>CPF:</strong> <span data-k="cpf_rep_ug"></span></li>
-        <li><strong>Cargo:</strong> <span data-k="cargo_rep_ug"></span></li>
-        <li><strong>E-mail:</strong> <span data-k="email_rep_ug"></span></li>
+        <li><strong>E-mail institucional:</strong> <span data-k="email_rep_ug"></span></li>
       </ul>
     </section>
 
@@ -104,7 +110,7 @@
       <div class="signature-line" aria-hidden="true"></div>
       <p class="signature-caption">
         <strong>Prefeito do Município de</strong>
-        &nbsp;<span data-k="ente"></span>/<span data-k="uf"></span><strong>/Governador</strong>
+        &nbsp;<span data-k="ente"></span>/<span data-k="uf"></span><strong> / Governador</strong>
       </p>
 
       <div class="signature-line" aria-hidden="true" style="margin-top:10mm"></div>
@@ -127,7 +133,9 @@
         venc_ult_crp:'venc_ult_crp',tipo_emissao_crp:'tipo_emissao_crp',
         celebracao:'celebracao',regularizacao:'regularizacao',deficit:'deficit',
         criterios_estrut:'criterios_estrut',manutencao_normas:'manutencao_normas',compromisso:'compromisso',
-        providencias:'providencias',condicao_vigencia:'condicao_vigencia',data_termo:'data_termo'
+        providencias:'providencias',condicao_vigencia:'condicao_vigencia',data_termo:'data_termo',
+        // novos campos
+        esfera_governo:'esfera_governo', email_ente:'email_ente', email_ug:'email_ug'
       };
       Object.entries(map).forEach(([q,k])=>{
         const val=(p.get(q)||'').toString();
@@ -140,7 +148,6 @@
       else criterios.forEach(c=>{ const li=document.createElement('li'); li.textContent=c; ul.appendChild(li); });
     }
 
-    // título não é usado; apenas previne estouro de margem se for exibido
     function fitTitle(){
       const t=document.getElementById('term-title');
       if(!t) return;
@@ -150,7 +157,6 @@
     // captura o cabeçalho (logos + traço) como imagem para repetir em TODAS as páginas
     async function captureHeaderDataURL(){
       const el = document.querySelector('.logos-wrap');
-      // usa html2canvas (presente no bundle do html2pdf)
       const canvas = await html2canvas(el, {scale:2, backgroundColor:'#fff', useCORS:true, scrollX:0, scrollY:0});
       return { dataURL: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
     }
@@ -163,18 +169,17 @@
       const ratio = header.h / header.w;
 
       // medidas em mm
-      const pageW = 210;            // A4 retrato em mm
-      const padMM = 15;             // mesmo padding horizontal usado no CSS
+      const pageW = 210;
+      const padMM = 15;
       const headerWmm = pageW - 2*padMM;
       const headerHmm = headerWmm * ratio;
-      const gapBelowHeader = 4;     // respiro abaixo do cabeçalho
+      const gapBelowHeader = 4;
 
-      // oculta visualmente o cabeçalho original durante a exportação (sem remover o espaço de layout)
+      // oculta o cabeçalho original durante a exportação (fora do fluxo)
       document.getElementById('pdf-root').classList.add('pdf-export');
 
-      // configura html2pdf
+      // configura html2pdf com margem superior para o cabeçalho
       const opt={
-        // cria uma área superior livre em TODAS as páginas para o cabeçalho
         margin: [padMM + headerHmm + gapBelowHeader, 0, padMM, 0],
         filename:'termo_adesao_prp.pdf',
         html2canvas:{scale:2,letterRendering:1,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0},

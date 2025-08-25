@@ -1,4 +1,4 @@
-// script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas e validação
+
 (() => {
   /* ========= Config API ========= */
   const API_BASE = (() => {
@@ -312,7 +312,7 @@
 
       // limpar reps (pesquisa via CPF)
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
-       'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
+      'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
 
       // CRP
@@ -436,7 +436,7 @@
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
-      // abre o termo (termo.html)
+      // === MONTA OS PARÂMETROS PARA O PDF (sem abrir janela visível) ===
       const qs = new URLSearchParams({
         uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
         ug: payload.UG, cnpj_ug: $('#CNPJ_UG').value,
@@ -458,21 +458,34 @@
         auto: '1'
       });
 
-      /* >>> ADIÇÃO MÍNIMA: enviar os critérios marcados para o PDF <<< */
-      payload.CRITERIOS_IRREGULARES.forEach((c, i) => {
-        qs.append(`criterio${i+1}`, c);
-      });
-      /* <<< FIM DA ADIÇÃO >>> */
+      // >>> novos campos solicitados (Esfera + e-mails do Ente/UG)
+      qs.append('esfera_governo',
+        ($('#esf_mun')?.checked ? 'Municipal' :
+        ($('#esf_est')?.checked ? 'Estadual/Distrital' : '')));
+      qs.append('email_ente', ($('#EMAIL_ENTE')?.value || '').trim());
+      qs.append('email_ug',   ($('#EMAIL_UG')?.value   || '').trim());
 
-      window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
+      // >>> lista de critérios marcados
+      payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
 
-      // sucesso + espera 5s antes de voltar ao início
+      // === ABRE EM IFRAME OCULTO (o usuário NÃO vê a página) ===
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.setAttribute('aria-hidden','true');
+      iframe.src = `termo.html?${qs.toString()}`;
+      document.body.appendChild(iframe);
+
+      // mostra sucesso imediatamente (download inicia no iframe)
       modalSucesso.show();
 
+      // limpa e volta ao início após alguns segundos
       setTimeout(() => {
+        try{ document.body.removeChild(iframe); }catch{}
         modalSucesso.hide();
-
-        // reset e volta ao início (sem reabrir o aviso inicial)
         $('#regularidadeForm').reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
         $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
@@ -491,3 +504,4 @@
     }
   });
 })();
+

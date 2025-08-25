@@ -28,9 +28,8 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-seri
   margin-bottom:8mm
 }
 
-/* Oculta visualmente o cabeçalho durante a exportação,
-   mas mantém o fluxo de layout para evitar “saltos” na 1ª página */
-.pdf-export .page-head{ visibility:hidden }
+/* Durante exportação, remove do fluxo para não reservar espaço extra */
+.pdf-export .page-head{ display:none !important }
 
 /* Título não é usado */
 .term-title{ display:none }
