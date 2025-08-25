@@ -93,6 +93,27 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-seri
 }
 .signature-caption{font-size:14px;color:var(--muted);margin-bottom:2mm}
 
+
+/* Evitar que uma seção parta entre páginas (html2pdf respeita) */
+.term-section {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Reforço: também evita quebra dentro dos filhos diretos (listas, parágrafos, etc.) */
+.term-section > * {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Títulos nunca ficam sozinhos ao pé da página */
+.term-section h2 {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+
+
 /* Responsivo para visualização (não afeta o PDF) */
 @media (max-width:980px){
   .term-wrap{width:100%;border-radius:10px}

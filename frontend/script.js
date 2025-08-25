@@ -135,17 +135,31 @@
   const navFooter= $('#navFooter');
   const pesquisaRow = $('#pesquisaRow');
 
-  // âncora para recolocar o botão "Próximo" no rodapé quando sair da etapa 0
-  // (sem duplicar botão)
+  // âncora para recolocar o Próximo no rodapé
   const nextAnchor = document.createComment('next-button-anchor');
   navFooter?.insertBefore(nextAnchor, btnSubmit);
 
+  // wrapper col-auto para alinhar com o "Pesquisar" na etapa 0
+  let inlineNextCol = null;
+
   function placeNextInline(inline){
     if (!btnNext) return;
+
     if (inline) {
-      pesquisaRow?.appendChild(btnNext);
+      // cria uma col-auto só uma vez
+      if (!inlineNextCol) {
+        inlineNextCol = document.createElement('div');
+        inlineNextCol.className = 'col-auto';
+      }
+      inlineNextCol.appendChild(btnNext);
+      pesquisaRow?.appendChild(inlineNextCol);
     } else {
+      // devolve ao rodapé (na âncora) e limpa o wrapper
       navFooter?.insertBefore(btnNext, nextAnchor.nextSibling || btnSubmit);
+      if (inlineNextCol && inlineNextCol.parentNode) {
+        inlineNextCol.parentNode.removeChild(inlineNextCol);
+      }
+      inlineNextCol = null;
     }
   }
 
@@ -158,9 +172,8 @@
   function updateFooterAlign(){
     if (!navFooter) return;
     [btnPrev, btnNext, btnSubmit].forEach(b => b && b.classList.remove('ms-auto'));
-    // quando o "Próximo" está na etapa 0, ele não está no rodapé
     if (step === 7) btnSubmit?.classList.add('ms-auto');
-    else if (step > 0) btnNext?.classList.add('ms-auto');
+    else if (step > 0) btnNext?.classList.add('ms-auto'); // na etapa 0 ele não está no rodapé
   }
   function showStep(n){
     step = Math.max(0, Math.min(7, n));
@@ -168,12 +181,13 @@
     const activeIdx = Math.min(step, stepsUI.length-1);
     stepsUI.forEach((s,i)=> s.classList.toggle('active', i===activeIdx));
 
-    // mover o "Próximo" para a mesma linha do "Pesquisar" somente na etapa 0
+    // colocar o "Próximo" na MESMA LINHA do "Pesquisar" só na etapa 0
     placeNextInline(step === 0);
 
     updateNavButtons();
     updateFooterAlign();
   }
+
   showStep(0);
 
   btnPrev?.addEventListener('click', ()=> showStep(step-1));

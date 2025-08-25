@@ -151,15 +151,19 @@
             <div class="card-subblock mb-3">
               <div class="sub-title">2.1 Representante legal do ente federativo</div>
               <div class="row g-3 align-items-end">
-                <div class="col-md-6">
+                <!-- CPF + Pesquisar -->
+                <div class="col-12 col-md-6">
                   <label class="form-label" for="CPF_REP_ENTE">CPF</label>
                   <input type="text" id="CPF_REP_ENTE" class="form-control" placeholder="000.000.000-00" />
                 </div>
-                <div class="col-md-3">
+                <div class="col-auto">
                   <label class="d-none d-md-block">&nbsp;</label>
-                  <button type="button" id="btnPesqRepEnte" class="btn btn-outline-primary w-100">Pesquisar</button>
+                  <button type="button" id="btnPesqRepEnte" class="btn btn-outline-primary">
+                    Pesquisar
+                  </button>
                 </div>
 
+                <!-- Campos empilhados -->
                 <div class="col-12">
                   <label class="form-label" for="NOME_REP_ENTE">Nome</label>
                   <input id="NOME_REP_ENTE" class="form-control" />
@@ -182,15 +186,19 @@
             <div class="card-subblock">
               <div class="sub-title">2.2 Representante legal do RPPS</div>
               <div class="row g-3 align-items-end">
-                <div class="col-md-6">
+                <!-- CPF + Pesquisar -->
+                <div class="col-12 col-md-6">
                   <label class="form-label" for="CPF_REP_UG">CPF</label>
                   <input type="text" id="CPF_REP_UG" class="form-control" placeholder="000.000.000-00" />
                 </div>
-                <div class="col-md-3">
+                <div class="col-auto">
                   <label class="d-none d-md-block">&nbsp;</label>
-                  <button type="button" id="btnPesqRepUg" class="btn btn-outline-primary w-100">Pesquisar</button>
+                  <button type="button" id="btnPesqRepUg" class="btn btn-outline-primary">
+                    Pesquisar
+                  </button>
                 </div>
 
+                <!-- Campos empilhados -->
                 <div class="col-12">
                   <label class="form-label" for="NOME_REP_UG">Nome</label>
                   <input id="NOME_REP_UG" class="form-control" />
@@ -210,7 +218,7 @@
               </div>
             </div>
           </section>
-
+          
           <!-- ETAPA 3 -->
           <section class="app-section" data-step="3">
             <div class="section-head">
