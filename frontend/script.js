@@ -133,6 +133,21 @@
   const btnNext  = $('#btnNext');
   const btnSubmit= $('#btnSubmit');
   const navFooter= $('#navFooter');
+  const pesquisaRow = $('#pesquisaRow');
+
+  // âncora para recolocar o botão "Próximo" no rodapé quando sair da etapa 0
+  // (sem duplicar botão)
+  const nextAnchor = document.createComment('next-button-anchor');
+  navFooter?.insertBefore(nextAnchor, btnSubmit);
+
+  function placeNextInline(inline){
+    if (!btnNext) return;
+    if (inline) {
+      pesquisaRow?.appendChild(btnNext);
+    } else {
+      navFooter?.insertBefore(btnNext, nextAnchor.nextSibling || btnSubmit);
+    }
+  }
 
   function updateNavButtons(){
     btnPrev.classList.toggle('d-none', step < 1);
@@ -143,14 +158,19 @@
   function updateFooterAlign(){
     if (!navFooter) return;
     [btnPrev, btnNext, btnSubmit].forEach(b => b && b.classList.remove('ms-auto'));
+    // quando o "Próximo" está na etapa 0, ele não está no rodapé
     if (step === 7) btnSubmit?.classList.add('ms-auto');
-    else            btnNext?.classList.add('ms-auto');
+    else if (step > 0) btnNext?.classList.add('ms-auto');
   }
   function showStep(n){
     step = Math.max(0, Math.min(7, n));
     sections.forEach(sec => sec.style.display = (Number(sec.dataset.step)===step ? '' : 'none'));
     const activeIdx = Math.min(step, stepsUI.length-1);
     stepsUI.forEach((s,i)=> s.classList.toggle('active', i===activeIdx));
+
+    // mover o "Próximo" para a mesma linha do "Pesquisar" somente na etapa 0
+    placeNextInline(step === 0);
+
     updateNavButtons();
     updateFooterAlign();
   }
@@ -416,11 +436,9 @@
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
-      // Esfera (para o PDF)
       const esfera = ($('#esf_mun')?.checked ? 'RPPS Municipal' :
                       ($('#esf_est')?.checked ? 'Estadual/Distrital' : ''));
 
-      // abre o termo (termo.html) com todos os dados
       const qs = new URLSearchParams({
         uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
         email_ente: payload.EMAIL_ENTE,
@@ -446,7 +464,6 @@
       });
       payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
 
-      // janela “oculta” (download automático no termo.html)
       window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
 
       modalSucesso.show();
@@ -454,7 +471,7 @@
         modalSucesso.hide();
         $('#regularidadeForm').reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
-        $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
+        $$( 'input[type="checkbox"], input[type="radio"]' ).forEach(el=> el.checked=false);
         editedFields.clear();
         snapshotBase = null;
         cnpjOK = false;
