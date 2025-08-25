@@ -24,7 +24,6 @@
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
   const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
 
-  // Aviso inicial
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(()=> modalWelcome.show(), 150);
   });
@@ -110,7 +109,6 @@
   ['CNPJ_ENTE_PESQ','CNPJ_ENTE','CNPJ_UG'].forEach(id=>applyMask(id,'cnpj'));
   ['CPF_REP_ENTE','CPF_REP_UG'].forEach(id=>applyMask(id,'cpf'));
 
-  // Telefones
   function maskPhone(v){
     const d = digits(v).slice(0,11);
     if(d.length<=10) return d.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3').trim();
@@ -126,7 +124,7 @@
   const neutral     = el => el.classList.remove('is-valid','is-invalid');
 
   /* ========= Stepper / Navegação ========= */
-  let step = 0;            // 0..7
+  let step = 0;   // 0..7
   let cnpjOK = false;
 
   const sections = $$('[data-step]');
@@ -157,10 +155,11 @@
     updateFooterAlign();
   }
   showStep(0);
+
   btnPrev?.addEventListener('click', ()=> showStep(step-1));
 
-  // ===== validação de grupos
   function hasAnyChecked(sel){ return $$(sel).some(i=>i.checked); }
+
   function validateStep(s){
     const msgs=[];
     const reqAll = {
@@ -196,6 +195,7 @@
       ok?markValid(el):markInvalid(el);
       return ok;
     };
+
     if (s<=3) {
       (reqAll[s]||[]).forEach(o => { if(!checkField(o.id,o.type)) msgs.push(o.label); });
       if (s===1) {
@@ -213,6 +213,7 @@
     if (msgs.length){ showAtencao(msgs); return false; }
     return true;
   }
+
   btnNext?.addEventListener('click', ()=>{
     if (step===0 && !cnpjOK) { showAtencao(['Pesquise e selecione um CNPJ válido antes de prosseguir.']); return; }
     if (!validateStep(step)) return;
@@ -236,13 +237,12 @@
     }
   }
 
-  /* ========= Rastreamento ========= */
   const editedFields = new Set();
   const trackIds = [
     'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
     'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
     'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
-    'DATA_VENCIMENTO_ULTIMO_CRP'
+    'DATA_VENCIMENTO_ULTIMO_CRP','EMAIL_ENTE','EMAIL_UG'
   ];
   trackIds.forEach(id=>{
     const el = $('#'+id); if(!el) return;
@@ -250,7 +250,6 @@
     el.addEventListener(ev, ()=> editedFields.add(id));
   });
 
-  // snapshot base
   let snapshotBase = null;
 
   /* ========= Busca por CNPJ ========= */
@@ -287,7 +286,6 @@
         DATA_VENCIMENTO_ULTIMO_CRP: data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || ''
       };
 
-      // ETAPA 1
       $('#UF').value = data.UF || '';
       $('#ENTE').value = data.ENTE || '';
       $('#CNPJ_ENTE').value = (data.CNPJ_ENTE ? data.CNPJ_ENTE.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5') : '');
@@ -296,12 +294,10 @@
       $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
       $('#EMAIL_UG').value   = data.EMAIL_UG   || '';
 
-      // limpar reps
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
        'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
 
-      // CRP
       const iso = data.CRP_DATA_VALIDADE_ISO || '';
       if (iso) $('#DATA_VENCIMENTO_ULTIMO_CRP').value = iso;
 
@@ -322,7 +318,7 @@
     }
   });
 
-  // ========= Busca reps por CPF =========
+  /* ========= Busca reps por CPF ========= */
   async function buscarRepByCPF(cpf, target){
     const cpfd = digits(cpf||'');
     if(cpfd.length!==11) { showAtencao(['Informe um CPF válido.']); return; }
@@ -356,23 +352,8 @@
   $('#btnPesqRepUg')?.addEventListener('click',   ()=> buscarRepByCPF($('#CPF_REP_UG').value,'UG'));
 
   /* ========= Submit ========= */
-  function abrirTermoEmIframeOculto(url){
-    // abre termo.html silenciosamente (sem nova aba)
-    const iframe = document.createElement('iframe');
-    iframe.src = url;
-    iframe.style.position = 'fixed';
-    iframe.style.width = '1px';
-    iframe.style.height = '1px';
-    iframe.style.opacity = '0';
-    iframe.style.pointerEvents = 'none';
-    document.body.appendChild(iframe);
-    // remove depois
-    setTimeout(()=>{ try{ iframe.remove(); }catch{} }, 60000);
-  }
-
   $('#regularidadeForm')?.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    // valida todos os passos (1–7)
     for (let s=1; s<=7; s++){ if(!validateStep(s)) return; }
 
     const now = new Date();
@@ -418,7 +399,6 @@
       __user_changed_fields: Array.from(editedFields)
     };
 
-    // feedback no botão
     const submitOriginalHTML = btnSubmit.innerHTML;
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = 'Gerando termo…';
@@ -436,10 +416,17 @@
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
-      // monta querystring p/ termo
+      // Esfera (para o PDF)
+      const esfera = ($('#esf_mun')?.checked ? 'RPPS Municipal' :
+                      ($('#esf_est')?.checked ? 'Estadual/Distrital' : ''));
+
+      // abre o termo (termo.html) com todos os dados
       const qs = new URLSearchParams({
         uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
+        email_ente: payload.EMAIL_ENTE,
         ug: payload.UG, cnpj_ug: $('#CNPJ_UG').value,
+        email_ug: payload.EMAIL_UG,
+        esfera,
         nome_rep_ente: payload.NOME_REP_ENTE, cpf_rep_ente: $('#CPF_REP_ENTE').value,
         cargo_rep_ente: payload.CARGO_REP_ENTE, email_rep_ente: payload.EMAIL_REP_ENTE,
         nome_rep_ug: payload.NOME_REP_UG, cpf_rep_ug: $('#CPF_REP_UG').value,
@@ -459,15 +446,12 @@
       });
       payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
 
-      // **NÃO ABRE NOVA ABA** — carrega termo.html em um iframe oculto (faz o download e fecha)
-      abrirTermoEmIframeOculto(`termo.html?${qs.toString()}`);
+      // janela “oculta” (download automático no termo.html)
+      window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
 
-      // sucesso visual
       modalSucesso.show();
-
       setTimeout(() => {
         modalSucesso.hide();
-        // reset
         $('#regularidadeForm').reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
         $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
@@ -477,7 +461,7 @@
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = submitOriginalHTML;
         showStep(0);
-      }, 4000);
+      }, 5000);
 
     }catch{
       btnSubmit.disabled = false;
