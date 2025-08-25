@@ -8,62 +8,93 @@
 html,body{height:100%;background:#eef3f9}
 body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink)}
 
-/* REMOVIDO o botão de download */
-.term-wrap{position:relative;width:var(--content-w);padding:var(--pad);margin:0 auto 2rem;background:#fff;border-radius:12px;box-shadow:0 24px 50px rgba(2,22,58,.12),0 8px 18px rgba(2,22,58,.07)}
+.term-wrap{
+  position:relative;
+  width:var(--content-w);
+  padding:var(--pad);
+  margin:0 auto 2rem;
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 24px 50px rgba(2,22,58,.12),0 8px 18px rgba(2,22,58,.07)
+}
 .pdf-export{box-shadow:none!important}
-.page-head{display:flex;flex-direction:column;align-items:center;gap:6mm;margin-bottom:8mm}
 
-/* Título: centralizado e com quebra de linha natural */
-.term-title{
-  display: none;
+/* Cabeçalho */
+.page-head{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6mm;
+  margin-bottom:8mm
 }
 
-/* Logos na MESMA LINHA, centralizadas e com o traço abaixo */
+/* Oculta visualmente o cabeçalho durante a exportação,
+   mas mantém o fluxo de layout para evitar “saltos” na 1ª página */
+.pdf-export .page-head{ visibility:hidden }
+
+/* Título não é usado */
+.term-title{ display:none }
+
+/* Logos na MESMA LINHA, centralizadas + traço abaixo */
 .logos-wrap{
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 2mm 6mm;   /* row-gap 2mm  |  column-gap 6mm */
-  width: 100%;
-  padding-top: 0.5mm;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:2mm 6mm;
+  width:100%;
+  padding-top:.5mm
 }
 
-/* ↓ menores e travadas para não quebrarem de linha */
-.logo-sec,
-.logo-mps{ flex:0 0 auto; }
+/* tamanhos ajustados */
+.logo-sec, .logo-mps{ flex:0 0 auto }
+.logo-sec{ width:82mm; max-width:100%; height:auto }
+.logo-mps{ width:48mm; max-width:100%; height:auto }
 
-.logo-sec{ width:82mm; max-width:100%; height:auto; }  /* antes 95mm */
-.logo-mps{ width:48mm; max-width:100%; height:auto; }  /* antes 55mm */
-
-/* linha ocupando toda a largura do conteúdo */
+/* linha de ponta a ponta do conteúdo */
 .logo-rule{
-  flex: 0 0 100%;
-  width: 100%;
-  height: 2px;
-  background: #d7dee8;
-  margin-top: 0.5mm;   /* antes 6mm/15mm */
-  border-radius: 2px;
+  flex:0 0 100%;
+  width:100%;
+  height:2px;
+  background:#d7dee8;
+  margin-top:.5mm;
+  border-radius:2px
 }
 
-
+/* Conteúdo */
 .term-section + .term-section{margin-top:8mm}
-.term-section h2{font-size:15px;font-weight:800;color:var(--brand);margin-bottom:3mm;letter-spacing:.2px}
-.term-section p{margin:1.8mm 0;text-align:justify;text-justify:inter-word;hyphens:auto;overflow-wrap:break-word}
+.term-section h2{
+  font-size:15px;font-weight:800;color:var(--brand);margin-bottom:3mm;letter-spacing:.2px;
+  page-break-after: avoid; break-after: avoid
+}
+.term-section p{
+  margin:1.8mm 0;text-align:justify;text-justify:inter-word;hyphens:auto;overflow-wrap:break-word;
+  page-break-inside: avoid
+}
 .term-section ul{margin:2mm 0 0 6mm;padding-left:2mm}
-.term-section li{margin:1.6mm 0;text-align:justify;text-justify:inter-word;hyphens:auto;overflow-wrap:break-word}
-.mt{margin-top:3mm}.small{font-size:12px;color:var(--muted)}
+.term-section li{
+  margin:1.6mm 0;text-align:justify;text-justify:inter-word;hyphens:auto;overflow-wrap:break-word;
+  page-break-inside: avoid
+}
+
+.mt{margin-top:3mm}
+.small{font-size:12px;color:var(--muted)}
 .pdf-export .term-section p,.pdf-export .term-section li{hyphens:none}
+
 .keep-together{break-inside:avoid;page-break-inside:avoid}
 .break-before{break-before:page;page-break-before:always}
 .logo-guard{height:20mm}
+
+/* Rodapé (assinaturas) */
 .term-footer{margin-top:12mm;text-align:center}
 .place-date{margin:6mm 0}
-.signature-line{width:70%;height:0;border-bottom:1.8px solid var(--brand);margin:8mm auto 3mm}
+.signature-line{
+  width:70%;height:0;border-bottom:1.8px solid var(--brand);margin:8mm auto 3mm
+}
 .signature-caption{font-size:14px;color:var(--muted);margin-bottom:2mm}
-.signature-name{font-weight:700;font-size:14px}
 
+/* Responsivo para visualização (não afeta o PDF) */
 @media (max-width:980px){
   .term-wrap{width:100%;border-radius:10px}
   .logo-sec{width:90%}
@@ -73,12 +104,12 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-seri
   .term-title{font-size:20px}
 }
 
-/* Quando em modo auto-download, a página toda pode ficar oculta se quiser.
-   Mantemos visível para debug; se preferir, pode esconder com display:none. */
+/* Auto-download */
 .auto-download .download-wrap{display:none!important}
 
+/* Impressão */
 @media print{
-  @page{size:A4 portrait; margin:0;}
+  @page{size:A4 portrait; margin:0}
   html,body{background:#fff}
-  .term-wrap{width:var(--content-w); margin:0; box-shadow:none!important;}
+  .term-wrap{width:var(--content-w); margin:0; box-shadow:none!important}
 }
