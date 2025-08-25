@@ -25,7 +25,7 @@ body{font-family:'Inter',sans-serif;color:var(--fg);min-height:100vh;position:re
   position:fixed; inset:0;
   background:
     linear-gradient(180deg, rgba(30,58,138,.35) 0%, rgba(15,23,42,.55) 100%),
-    url('imagens/bg.svg') center/cover no-repeat fixed;
+    url('imagens/bg-home.svg') center/cover no-repeat fixed;
   z-index:-1;
   filter:saturate(1.05) contrast(1.02);
 }
@@ -161,6 +161,63 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
 
 /* Tamanho da animação de loading (um pouco maior para melhor leitura) */
 .lottie-loading{ width: 160px; height: 160px; min-width:160px; }
+
+
+/* ====== HOME ====== */
+.home-body{
+  font-family:'Inter',sans-serif;
+  color:#0b2240;
+  min-height:100vh;
+  position:relative;
+  overflow-x:hidden;
+}
+
+.home-bg{
+  position:fixed; inset:0;
+  background:
+    linear-gradient(90deg, rgba(2,22,58,.35) 0%, rgba(2,22,58,.15) 40%, rgba(2,22,58,0) 60%),
+    url('imagens/bg-home.svg') center/cover no-repeat fixed;
+  z-index:-1;
+  filter:saturate(1.05) contrast(1.02);
+}
+
+.home-wrap{ padding-top:4rem; padding-bottom:4rem; }
+
+.home-logo{
+  max-width:620px;
+  width:100%;
+}
+
+/* botões da coluna direita */
+.home-menu{ width:100%; }
+
+.home-btn{
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  width:100%; min-height:84px;
+  padding:1.1rem 1.25rem;
+  background:#1e3a8a; /* brand 700 */
+  color:#fff; text-decoration:none;
+  border-radius:999px;
+  box-shadow:0 10px 28px rgba(0,0,0,.12);
+  transition:transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+}
+.home-btn:hover{ background:#2563eb; transform:translateY(-1px); box-shadow:0 14px 30px rgba(0,0,0,.16); }
+
+.home-btn-title{
+  font-weight:800; letter-spacing:.2px; line-height:1;
+}
+.home-btn-sub{
+  font-weight:600; opacity:.95; line-height:1.25; margin-top:.25rem; text-align:center;
+}
+.home-btn-sub.only{ font-weight:700; margin-top:0; }
+
+@media (max-width: 992px){
+  .home-wrap{ padding-top:2.5rem; padding-bottom:2.5rem; }
+  .home-logo{ max-width:420px; margin:0 auto; }
+}
+@media (max-width: 576px){
+  .home-btn{ min-height:72px; padding:.9rem 1rem; }
+}
 
 
 /* Utilidades responsivas */

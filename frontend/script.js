@@ -146,22 +146,28 @@
     if (!btnNext) return;
 
     if (inline) {
-      // cria uma col-auto só uma vez
+      // cria uma col-auto e empurra para a direita
       if (!inlineNextCol) {
         inlineNextCol = document.createElement('div');
-        inlineNextCol.className = 'col-auto';
       }
+      inlineNextCol.className = 'col-auto ms-auto'; // << aqui empurra p/ o canto direito
       inlineNextCol.appendChild(btnNext);
+
+      // opcional: não deixar quebrar linha na etapa 0
+      pesquisaRow?.classList.add('flex-nowrap');
+
       pesquisaRow?.appendChild(inlineNextCol);
     } else {
-      // devolve ao rodapé (na âncora) e limpa o wrapper
+      // devolve ao rodapé
       navFooter?.insertBefore(btnNext, nextAnchor.nextSibling || btnSubmit);
       if (inlineNextCol && inlineNextCol.parentNode) {
         inlineNextCol.parentNode.removeChild(inlineNextCol);
       }
       inlineNextCol = null;
+      pesquisaRow?.classList.remove('flex-nowrap'); // limpa quando sai da etapa 0
     }
   }
+
 
   function updateNavButtons(){
     btnPrev.classList.toggle('d-none', step < 1);
