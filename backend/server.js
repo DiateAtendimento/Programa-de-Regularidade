@@ -1,6 +1,7 @@
 // server.js — API RPPS (multi-etapas)
 // Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP (colunas fixas B/F/G = 1/5/6),
 // grava em Termos_registrados e registra alterações em Reg_alteracao_dados_ente_ug (auto-cria se faltar)
+// Também dá suporte a “upsert” de representantes (CPF não encontrado) e de base CNPJ (CNPJ não encontrado)
 
 require('dotenv').config();
 const fs = require('fs');
@@ -35,8 +36,8 @@ app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
     scriptSrc:  ["'self'","https://cdn.jsdelivr.net","https://cdnjs.cloudflare.com","'unsafe-inline'"],
-    styleSrc:   ["'self'","https://cdn.jsdelivr.net","https://fonts.googleapis.com","'unsafe-inline'"],
-    fontSrc:    ["'self'","https://fonts.gstatic.com"],
+    styleSrc:   ["'self'","https://cdn.jsdelivr.net","https://fonts.googleapis.com","https://fonts.cdnfonts.com","'unsafe-inline'"],
+    fontSrc:    ["'self'","https://fonts.gstatic.com","https://fonts.cdnfonts.com","data:"],
     imgSrc:     ["'self'","data:","blob:"],
     connectSrc: ["'self'", ...connectExtra],
     workerSrc:  ["'self'","blob:"],
@@ -106,6 +107,7 @@ async function authSheets() {
   await doc.loadInfo();
 }
 
+/* ───────────── Utils ───────────── */
 const norm   = v => (v ?? '').toString().trim();
 const low    = v => norm(v).toLowerCase();
 const digits = v => norm(v).replace(/\D+/g,'');
@@ -400,6 +402,92 @@ async function upsertEmailsInBase(p){
     await r.save();
   }
 }
+
+/* util: upsert representante em Dados_REP_ENTE_UG (para CPF inexistente ou atualização) */
+async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
+  const sReps = await getOrCreateSheet('Dados_REP_ENTE_UG', ['UF','ENTE','NOME','CPF','EMAIL','TELEFONE','TELEFONE_MOVEL','CARGO','UG']);
+  const rows = await getRowsSafe(sReps);
+  const cpf = digits(CPF);
+  let row = rows.find(r => digits(getVal(r,'CPF')) === cpf);
+
+  // telefone móvel espelha o TELEFONE quando vier preenchido
+  const telBase = norm(TELEFONE);
+
+  if (!row) {
+    await sReps.addRow({
+      UF: norm(UF), ENTE: norm(ENTE), NOME: norm(NOME),
+      CPF: cpf, EMAIL: norm(EMAIL),
+      TELEFONE: telBase, TELEFONE_MOVEL: telBase,
+      CARGO: norm(CARGO), UG: norm(UG)
+    });
+    return { created: true };
+  } else {
+    row['UF']   = norm(UF)   || row['UF'];
+    row['ENTE'] = norm(ENTE) || row['ENTE'];
+    row['UG']   = norm(UG)   || row['UG'];
+    row['NOME'] = norm(NOME) || row['NOME'];
+    row['EMAIL']= norm(EMAIL)|| row['EMAIL'];
+    if (telBase) {
+      row['TELEFONE'] = telBase;
+      row['TELEFONE_MOVEL'] = telBase;
+    }
+    row['CARGO']= norm(CARGO)|| row['CARGO'];
+    await row.save();
+    return { updated: true };
+  }
+}
+
+/* util: upsert base do ente/UG quando o CNPJ pesquisado não existir */
+async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EMAIL_UG }){
+  const s = await getOrCreateSheet('CNPJ_ENTE_UG', ['UF','ENTE','UG','CNPJ_ENTE','CNPJ_UG','EMAIL_ENTE','EMAIL_UG']);
+  const rows = await s.getRows();
+  const ce = digits(CNPJ_ENTE), cu = digits(CNPJ_UG);
+
+  let row = rows.find(r => digits(r['CNPJ_ENTE']||'')===ce || digits(r['CNPJ_UG']||'')===cu);
+  if (!row){
+    await s.addRow({
+      UF: norm(UF), ENTE: norm(ENTE), UG: norm(UG),
+      CNPJ_ENTE: ce, CNPJ_UG: cu, EMAIL_ENTE: norm(EMAIL_ENTE), EMAIL_UG: norm(EMAIL_UG)
+    });
+    return { created: true };
+  } else {
+    if (UF) row['UF']=norm(UF);
+    if (ENTE) row['ENTE']=norm(ENTE);
+    if (UG) row['UG']=norm(UG);
+    if (ce) row['CNPJ_ENTE']=ce;
+    if (cu) row['CNPJ_UG']=cu;
+    if (EMAIL_ENTE) row['EMAIL_ENTE']=norm(EMAIL_ENTE);
+    if (EMAIL_UG)   row['EMAIL_UG']=norm(EMAIL_UG);
+    await row.save();
+    return { updated: true };
+  }
+}
+
+/* ───────────── Endpoints de escrita ───────────── */
+
+app.post('/api/upsert-cnpj', async (req,res)=>{
+  try{
+    await authSheets();
+    const r = await upsertCNPJBase(req.body||{});
+    res.json({ ok:true, ...r });
+  }catch(e){
+    console.error('❌ /api/upsert-cnpj:', e);
+    res.status(500).json({ error:'Falha ao gravar base CNPJ_ENTE_UG.' });
+  }
+});
+
+app.post('/api/upsert-rep', async (req,res)=>{
+  try{
+    const { UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO } = req.body || {};
+    if (digits(CPF).length !== 11) return res.status(400).json({ error:'CPF inválido.' });
+    await authSheets();
+    const r = await upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO });
+    res.json({ ok:true, ...r });
+  }catch(e){
+    console.error('❌ /api/upsert-rep:', e);
+    res.status(500).json({ error:'Falha ao gravar representante.' });
+  }
+});
 
 /** POST /api/gerar-termo */
 app.post('/api/gerar-termo', async (req,res)=>{

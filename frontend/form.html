@@ -7,6 +7,7 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.cdnfonts.com/css/rawline" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -19,7 +20,7 @@
         <img src="imagens/logo-mps.svg" alt="MPS" height="56">
       </div>
       <h1 class="h3 fw-800 mb-2">
-        Formulário para a emissão do Termo de Adesão ao Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social (RPPS)
+        FORMULÁRIO PARA GERAÇÃO DO TERMO DE ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA
       </h1>
     </header>
 
@@ -31,7 +32,8 @@
       <div class="step">4</div><div class="divider"></div>
       <div class="step">5</div><div class="divider"></div>
       <div class="step">6</div><div class="divider"></div>
-      <div class="step">7</div>
+      <div class="step">7</div><div class="divider"></div>
+      <div class="step">8</div>
     </div>
 
     <div class="card app-card glass">
@@ -276,6 +278,7 @@
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Plano de benefícios integrado apenas por aposentadorias e pensões por morte"><span class="form-check-label">Plano de benefícios integrado apenas por aposentadorias e pensões por morte</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Requisitos para dirigentes, conselhos deliberativo e fiscal e comitê de investimentos do RPPS"><span class="form-check-label">Requisitos para dirigentes, conselhos deliberativo e fiscal e comitê de investimentos do RPPS</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Utilização dos recursos previdenciários (objeto de PAP)"><span class="form-check-label">Utilização dos recursos previdenciários (objeto de PAP)</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="Instituição do regime de previdência complementar – Aprovação e operacionalização do convênio de adesão"> <span class="form-check-label">Instituição do regime de previdência complementar – Aprovação e operacionalização do convênio de adesão</span></label>
               </div>
             </div>
           </section>
@@ -299,7 +302,7 @@
 
             <p class="fw-semibold mb-2">Detalhamento da(s) finalidade(s):</p>
 
-            <p class="fw-semibold mb-1">4.1  Celebração de termos de parcelamento de débitos:</p>
+            <p class="fw-semibold mb-1">4.1  Para celebração de termos de parcelamento de débitos:</p>
             <div class="form-check mb-1">
               <input class="form-check-input grp-finalidade" type="checkbox" id="parc60" name="FINALIDADES[]" value="4.1.1 em até sessenta parcelas (arts. 14 e 15 do ADCT, EC nº XXX/2025)">
               <label class="form-check-label" for="parc60">4.1.1  em até sessenta parcelas, com base nas regras previstas nos arts. 14 e 15 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025.</label>
@@ -309,7 +312,7 @@
               <label class="form-check-label" for="parc300">4.1.2  em até trezentas parcelas, com base nas regras previstas nos arts. 115 e 117 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025, conforme disposto nos arts. 4º a 11 do Anexo XVII da Portaria MTP nº 1.467/2022.</label>
             </div>
 
-            <p class="fw-semibold mb-1">4.2  Regularização de pendências para a emissão administrativa e regular do CRP:</p>
+            <p class="fw-semibold mb-1">4.2  Para regularização de pendências para a emissão administrativa e regular do Certificado de Regularidade Previdenciária:</p>
             <div class="form-check mb-1">
               <input class="form-check-input grp-finalidade" type="checkbox" id="reg_sem_jud" value="4.2.1 para entes sem decisão judicial">
               <label class="form-check-label" for="reg_sem_jud">4.2.1 para entes sem decisão judicial</label>
@@ -319,7 +322,7 @@
               <label class="form-check-label" for="reg_com_jud">4.2.2 para entes com decisão judicial, tendo em vista o disposto no Acórdão proferido pelo Supremo Tribunal Federal nos autos do Recurso Extraordinário nº 1.007.271, Tema 968 de Repercussão Geral.</label>
             </div>
 
-            <p class="fw-semibold mb-1">4.3  Equacionamento de déficit atuarial do RPPS</p>
+            <p class="fw-semibold mb-1">4.3  Para equacionamento de déficit atuarial do RPPS</p>
             <p class="small text-muted">Observados os requisitos previstos no art. 3º, caput, inciso VI, do Anexo XVIII da Portaria MTP nº 1.467/2022, com a apresentação obrigatória de plano de ação.</p>
             <div class="form-check mb-1">
               <input class="form-check-input grp-finalidade" type="checkbox" id="eq_implano" value="4.3.1 implementação de plano de equacionamento do déficit atuarial">
@@ -334,7 +337,7 @@
               <label class="form-check-label" for="eq_plano_alt">4.3.3  para apresentação de plano de equacionamento de déficit atuarial alternativo aos previstos na Portaria MTP nº 1.467/2022, desde que observados os requisitos previstos no art. 55, § 7º, da referida Portaria.</label>
             </div>
 
-            <p class="fw-semibold mb-1">4.4  Organização do RPPS conforme os critérios estruturantes estabelecidos nas normas gerais</p>
+            <p class="fw-semibold mb-1">4.4  Para organização do RPPS conforme os critérios estruturantes estabelecidos nas normas gerais</p>
             <p class="small text-muted">Observados os requisitos previstos no art. 3º, caput, inciso VI, do Anexo XVIII da Portaria MTP nº 1.467/2022, com a apresentação obrigatória de plano de ação.</p>
             <div class="form-check mb-1">
               <input class="form-check-input grp-finalidade" type="checkbox" id="org_ugu" value="4.4.1 adequação da Unidade Gestora Única (CF art. 40, §20)">
@@ -345,8 +348,8 @@
               <label class="form-check-label" for="org_outros">4.4.2  para o cumprimento de outro critério que apresente maior complexidade (ao clicar abre a lista de critérios do CRP previstos no extrato previdenciário para selecionar um ou mais critérios)</label>
             </div>
 
-            <p class="fw-semibold mb-1">4.5  Manutenção da conformidade do RPPS às normas gerais</p>
-            <p class="small text-muted mb-2">Por meio da demonstração de medidas de autorregularização, cooperação e reciprocidade do RPPS com a Secretaria de Regime Próprio e Complementar, conforme previsto no art. 236, § 5º, da Portaria MTP nº 1.467/2022.</p>
+            <p class="fw-semibold mb-1">4.5  Para acesso à Fase de Manutenção da Conformidade do RPPS às normas gerais</p>
+            <p class="small text-muted mb-2">Nesta Fase há uma demonstração de medidas de autorregularização, cooperação e reciprocidade do RPPS com a Secretaria de Regime Próprio e Complementar, conforme previsto no art. 236, § 5º, da Portaria MTP nº 1.467/2022.</p>
 
             <div class="form-check mb-1">
               <input class="form-check-input grp-finalidade" type="checkbox" id="man_cert" value="Certificação institucional no Pró-Gestão RPPS (nível II/III/IV, conforme porte ISP-RPPS)">
@@ -430,11 +433,26 @@
             </div>
           </section>
 
+          <!-- ETAPA 8 -->
+          <section class="app-section" data-step="8">
+            <div class="section-head">
+              <h2 class="section-title">8. Importante</h2>
+              <p class="small text-muted mb-2">Revise antes de gerar o formulário:</p>
+            </div>
+            <ul class="mb-3">
+              <li>Todas as informações foram preenchidas corretamente.</li>
+              <li>As declarações refletem a realidade do ente federativo.</li>
+            </ul>
+            <div class="alert alert-info" role="alert">
+              Ao clicar em <strong>Gerar Formulário</strong>, o sistema registrará o termo e abrirá a página do documento para impressão/assinatura.
+            </div>
+          </section>
+
           <!-- Navegação -->
           <div id="navFooter" class="d-flex align-items-center gap-2 mt-2">
             <button type="button" id="btnPrev" class="btn btn-outline-secondary">Voltar</button>
             <button type="button" id="btnNext" class="btn btn-primary">Próximo</button>
-            <button type="submit" id="btnSubmit" class="btn btn-success d-none">Gerar Termo</button>
+            <button type="submit" id="btnSubmit" class="btn btn-success d-none">Gerar Formulário</button>
           </div>
 
           <!-- carimbos -->
@@ -452,18 +470,65 @@
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
       <div class="modal-content border-0 shadow">
         <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">FORMULÁRIO PARA GERAÇÃO DO TERMO DE ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDenciária</h5>
+          <h5 class="modal-title">FORMULÁRIO PARA GERAÇÃO DO TERMO DE ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-        <div class="modal-body">
-          <p class="fw-semibold text-primary mb-2">Observações:</p>
-          <p>O presente Termo de Adesão do Programa de Regularidade Previdenciária terá validade a partir da data do seu encaminhamento ao Ministério da Previdência Social por meio do Sistema de Gestão de Consultas e Normas – Gescon-RPPS.</p>
-          <p>O ente deverá selecionar no menu do Gescon <em>a opção tal, o assunto tal…</em> e encaminhar o termo em PDF com a assinatura eletrônica dos responsáveis, que poderá ser efetuada por meio do gov.br.</p>
-          <p>Após encaminhado o Termo de Adesão, será instaurado um processo eletrônico no SEI para acompanhamento pelo ente federativo do Programa de Regularidade Previdenciária, a ser instruído, inicialmente, pela Coordenação de Atendimento Colaborativo do DRPPS, com o Termo de Adesão e o extrato previdenciário emitido pelo Cadprev na data.</p>
-          <p>Em caso de dúvidas, o ente deverá comunicar-se com a Coordenação de Atendimento Colaborativo do DRPPS, pelos telefones <a href="tel:+556120215555">61-2021-5555</a>, WhatsApp de mesmo número, ou e-mail <a href="mailto:programa.regularidade.rpps@previdencia.gov.br">programa.regularidade.rpps@previdencia.gov.br</a>.</p>
-          <hr/>
-          <p class="small text-muted mb-0">Termo de Adesão ao Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social (RPPS) instituído pelo Ministério da Previdência Social, conforme previsto no art. 281-A e Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022.</p>
-        </div>
+          <div class="modal-body">
+            <p class="fw-semibold text-primary mb-2">Observações</p>
+
+            <p>
+              O presente Termo de Adesão do Programa de Regularidade Previdenciária terá validade a partir da data do seu encaminhamento ao Ministério da Previdência Social por meio do Sistema de Gestão de Consultas e Normas – Gescon-RPPS.
+            </p>
+
+            <p class="fw-semibold mb-1">No Gescon, o ente deverá:</p>
+            <ol class="mb-3">
+              <li>Selecionar no menu <strong>Consultas → Sobre RPPS</strong>;</li>
+              <li>Clicar no botão <strong>+ Incluir</strong>;</li>
+              <li>Escolher o Assunto <strong>Regularidade Previdenciária</strong>;</li>
+              <li>Selecionar o Assunto Específico <strong>Encaminhar Termo de Adesão</strong>;</li>
+              <li>Preencher os campos solicitados;</li>
+              <li>Anexar o Termo de Adesão em PDF com a assinatura eletrônica dos responsáveis (Gov.br);</li>
+              <li>Clicar no botão <strong>Confirmar</strong>.</li>
+            </ol>
+
+            <p>
+              Após encaminhado o Termo de Adesão, será aberto um processo eletrônico no SEI pelo Departamento dos Regimes Próprios de Previdência Social – DRPPS, para acompanhamento pelo ente federativo do Programa de Regularidade Previdenciária, que será instruído, inicialmente, pela Coordenação de Atendimento Colaborativo do DRPPS, com o Termo de Adesão e o extrato previdenciário emitido pelo Cadprev na data.
+            </p>
+
+            <p>
+              Após a adesão, as solicitações de emissão de Certificados de Regularidade Previdenciária – CRP emergenciais, na vigência do Programa, deverão ser efetuadas por meio de <em>Termos de Solicitação de CRP Emergencial</em>.
+            </p>
+
+            <p>
+              Assim, os pedidos de CRP na vigência do Programa deverão ser efetuados por meio de Termo de Solicitação de CRP Emergencial, gerado por meio de outro formulário próprio
+              (<a href="form2.html" target="_blank" rel="noopener">clique aqui para acesso ao formulário de solicitação de CRP</a>).
+            </p>
+
+            <p>
+              Após preenchido e colhidas as assinaturas, o Termo de Solicitação de CRP Emergencial também deverá ser encaminhado pelo Gescon-RPPS e será anexado ao referido processo SEI do Programa de Regularidade Previdenciária.
+            </p>
+
+            <p>
+              Em caso de dúvidas, o ente deverá comunicar-se com a Coordenação de Atendimento Colaborativo do Departamento dos Regimes Próprios de Previdência Social – DRPPS, pelos telefones
+              <a href="tel:+556120215555">61-2021-5555</a>, WhatsApp de mesmo número, ou e-mail
+              <a href="mailto:programa.regularidade.rpps@previdencia.gov.br">programa.regularidade.rpps@previdencia.gov.br</a>.
+            </p>
+
+            <p class="mb-2">
+              Os dados exibidos nos campos deste formulário são provenientes do Sistema de Informações dos Regimes Públicos de Previdência Social – Cadprev; em caso de necessidade, poderão ser atualizados diretamente nos respectivos campos.
+            </p>
+
+            <hr/>
+
+            <p class="small text-muted mb-1">
+              Termo de Adesão ao Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social (RPPS) instituído pelo Ministério da Previdência Social, conforme previsto no art. 281-A e Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022.
+            </p>
+            <p class="small mb-0">
+              <span class="bg-warning-subtle px-1 rounded-1">
+                <strong>Dica:</strong> habilite a permissão de <em>pop-ups</em> no navegador para gerar o formulário e imprimir.
+              </span>
+            </p>
+          </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
         </div>

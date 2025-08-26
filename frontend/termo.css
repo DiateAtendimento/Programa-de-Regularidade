@@ -6,7 +6,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#eef3f9}
-body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink)}
+body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink)}
 
 .term-wrap{
   position:relative;
@@ -93,7 +93,6 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-seri
 }
 .signature-caption{font-size:14px;color:var(--muted);margin-bottom:2mm}
 
-
 /* Evitar que uma seção parta entre páginas (html2pdf respeita) */
 .term-section {
   break-inside: avoid;
@@ -111,8 +110,6 @@ body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-seri
   break-after: avoid;
   page-break-after: avoid;
 }
-
-
 
 /* Responsivo para visualização (não afeta o PDF) */
 @media (max-width:980px){

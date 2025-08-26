@@ -124,7 +124,7 @@
   const neutral     = el => el.classList.remove('is-valid','is-invalid');
 
   /* ========= Stepper / Navegação ========= */
-  let step = 0;   // 0..7
+  let step = 0;   // 0..8
   let cnpjOK = false;
 
   const sections = $$('[data-step]');
@@ -146,50 +146,41 @@
     if (!btnNext) return;
 
     if (inline) {
-      // cria uma col-auto e empurra para a direita
       if (!inlineNextCol) {
         inlineNextCol = document.createElement('div');
       }
-      inlineNextCol.className = 'col-auto ms-auto'; // << aqui empurra p/ o canto direito
+      inlineNextCol.className = 'col-auto ms-auto';
       inlineNextCol.appendChild(btnNext);
-
-      // opcional: não deixar quebrar linha na etapa 0
       pesquisaRow?.classList.add('flex-nowrap');
-
       pesquisaRow?.appendChild(inlineNextCol);
     } else {
-      // devolve ao rodapé
       navFooter?.insertBefore(btnNext, nextAnchor.nextSibling || btnSubmit);
       if (inlineNextCol && inlineNextCol.parentNode) {
         inlineNextCol.parentNode.removeChild(inlineNextCol);
       }
       inlineNextCol = null;
-      pesquisaRow?.classList.remove('flex-nowrap'); // limpa quando sai da etapa 0
+      pesquisaRow?.classList.remove('flex-nowrap');
     }
   }
-
 
   function updateNavButtons(){
     btnPrev.classList.toggle('d-none', step < 1);
     btnNext.disabled = (step === 0 && !cnpjOK);
-    btnNext.classList.toggle('d-none', step===7);
-    btnSubmit.classList.toggle('d-none', step!==7);
+    btnNext.classList.toggle('d-none', step===8);
+    btnSubmit.classList.toggle('d-none', step!==8);
   }
   function updateFooterAlign(){
     if (!navFooter) return;
     [btnPrev, btnNext, btnSubmit].forEach(b => b && b.classList.remove('ms-auto'));
-    if (step === 7) btnSubmit?.classList.add('ms-auto');
-    else if (step > 0) btnNext?.classList.add('ms-auto'); // na etapa 0 ele não está no rodapé
+    if (step === 8) btnSubmit?.classList.add('ms-auto');
+    else if (step > 0) btnNext?.classList.add('ms-auto');
   }
   function showStep(n){
-    step = Math.max(0, Math.min(7, n));
+    step = Math.max(0, Math.min(8, n));
     sections.forEach(sec => sec.style.display = (Number(sec.dataset.step)===step ? '' : 'none'));
     const activeIdx = Math.min(step, stepsUI.length-1);
     stepsUI.forEach((s,i)=> s.classList.toggle('active', i===activeIdx));
-
-    // colocar o "Próximo" na MESMA LINHA do "Pesquisar" só na etapa 0
     placeNextInline(step === 0);
-
     updateNavButtons();
     updateFooterAlign();
   }
@@ -244,11 +235,28 @@
         items.forEach(i => i.classList.toggle('is-invalid', !ok));
         if(!ok) msgs.push('Esfera de Governo');
       }
+      if (s===3) {
+        // 3.2: precisa escolher uma opção (radio)
+        const rOK = $('#em_adm')?.checked || $('#em_jud')?.checked;
+        if (!rOK) msgs.push('Tipo de emissão do último CRP (item 3.2)');
+        // 3.3: precisa marcar ao menos um critério
+        const cOK = hasAnyChecked('input[name="CRITERIOS_IRREGULARES[]"]');
+        if (!cOK) msgs.push('Critérios irregulares (item 3.3)');
+      }
     }
+
+    // regra geral dos demais subitens
     if (s===4 && !hasAnyChecked('.grp-finalidade')) msgs.push('Marque ao menos uma finalidade inicial (item 4).');
-    if (s===5 && !hasAnyChecked('.grp-comp'))       msgs.push('Marque ao menos um compromisso (item 5).');
-    if (s===6 && !hasAnyChecked('.grp-prov'))       msgs.push('Marque ao menos uma providência (item 6).');
-    if (s===7 && !$('#DECL_CIENCIA').checked)       msgs.push('Confirme a ciência das condições (item 7).');
+
+    // Passo 5: TODOS os itens obrigatórios
+    if (s===5){
+      const all = $$('.grp-comp');
+      const checked = all.filter(i=>i.checked);
+      if (checked.length !== all.length) msgs.push('No item 5, marque todas as declarações de compromisso.');
+    }
+
+    if (s===6 && !hasAnyChecked('.grp-prov')) msgs.push('Marque ao menos uma providência (item 6).');
+    if (s===7 && !$('#DECL_CIENCIA').checked) msgs.push('Confirme a ciência das condições (item 7).');
 
     if (msgs.length){ showAtencao(msgs); return false; }
     return true;
@@ -291,6 +299,25 @@
   });
 
   let snapshotBase = null;
+  let cnpjMissing = false;
+
+  async function upsertBaseIfMissing(){
+    if (!cnpjMissing) return;
+    const body = {
+      UF: $('#UF').value.trim(),
+      ENTE: $('#ENTE').value.trim(),
+      UG: $('#UG').value.trim(),
+      CNPJ_ENTE: digits($('#CNPJ_ENTE').value),
+      CNPJ_UG: digits($('#CNPJ_UG').value),
+      EMAIL_ENTE: $('#EMAIL_ENTE').value.trim(),
+      EMAIL_UG: $('#EMAIL_UG').value.trim()
+    };
+    if (digits(body.CNPJ_ENTE).length===14 || digits(body.CNPJ_UG).length===14){
+      await fetch(`${API_BASE}/api/upsert-cnpj`, {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+      }).catch(()=>{ /* não bloqueia */ });
+    }
+  }
 
   /* ========= Busca por CNPJ ========= */
   $('#btnPesquisar')?.addEventListener('click', async ()=>{
@@ -305,8 +332,16 @@
       const r = await fetch(`${API_BASE}/api/consulta?cnpj=${cnpj}`);
       if(!r.ok){
         modalLoadingSearch.hide();
-        modalBusca.show();
-        cnpjOK = false; updateNavButtons(); updateFooterAlign();
+        // permitir prosseguir preenchendo manualmente
+        showAtencao([
+          'CNPJ não encontrado no CADPREV.',
+          'Preencha os dados do Ente/UG na Etapa 1 e eles serão cadastrados.'
+        ]);
+        cnpjOK = true; cnpjMissing = true;
+        // pré-preenche CNPJ do ente para ajudar
+        $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
+        showStep(1);
+        updateNavButtons(); updateFooterAlign();
         return;
       }
       const { data } = await r.json();
@@ -367,8 +402,11 @@
       const r = await fetch(`${API_BASE}/api/rep-by-cpf?cpf=${cpfd}`);
       if(!r.ok){
         modalLoadingSearch.hide();
-        modalBusca.show();
-        return;
+        // mantém CPF e permite digitar demais dados manualmente
+        showAtencao(['Registro não encontrado no CADPREV, favor inserir seus dados.']);
+        if (target==='ENTE'){ $('#NOME_REP_ENTE')?.focus(); }
+        else { $('#NOME_REP_UG')?.focus(); }
+        return; // mantém o CPF e campos vazios para digitação
       }
       const { data } = await r.json();
       if(target==='ENTE'){
@@ -388,13 +426,41 @@
       modalLoadingSearch.hide();
     }
   }
+
   $('#btnPesqRepEnte')?.addEventListener('click', ()=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE'));
   $('#btnPesqRepUg')?.addEventListener('click',   ()=> buscarRepByCPF($('#CPF_REP_UG').value,'UG'));
+
+  async function upsertRepresentantes(){
+    const base = {
+      UF: $('#UF').value.trim(),
+      ENTE: $('#ENTE').value.trim(),
+      UG: $('#UG').value.trim(),
+    };
+    const reps = [
+      { ...base, NOME: $('#NOME_REP_ENTE').value.trim(), CPF: digits($('#CPF_REP_ENTE').value),
+        EMAIL: $('#EMAIL_REP_ENTE').value.trim(), TELEFONE: $('#TEL_REP_ENTE').value.trim(), CARGO: $('#CARGO_REP_ENTE').value.trim(),
+        // para o representante do ENTE, gravar UG vazio para padronizar busca futura
+        UG: '' },
+      { ...base, NOME: $('#NOME_REP_UG').value.trim(), CPF: digits($('#CPF_REP_UG').value),
+        EMAIL: $('#EMAIL_REP_UG').value.trim(), TELEFONE: $('#TEL_REP_UG').value.trim(), CARGO: $('#CARGO_REP_UG').value.trim() }
+    ];
+    for (const rep of reps){
+      // grava se tem CPF válido e pelo menos nome preenchido
+      if (digits(rep.CPF).length===11 && rep.NOME){
+        await fetch(`${API_BASE}/api/upsert-rep`, {
+          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(rep)
+        }).catch(()=>{ /* silencioso: não bloqueia o envio do termo */ });
+      }
+    }
+  }
 
   /* ========= Submit ========= */
   $('#regularidadeForm')?.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    for (let s=1; s<=7; s++){ if(!validateStep(s)) return; }
+    for (let s=1; s<=8; s++){ if(!validateStep(s)) return; }
+
+    await upsertBaseIfMissing();
+    await upsertRepresentantes();
 
     const now = new Date();
     $('#MES').value               = String(now.getMonth()+1).padStart(2,'0');
@@ -441,7 +507,7 @@
 
     const submitOriginalHTML = btnSubmit.innerHTML;
     btnSubmit.disabled = true;
-    btnSubmit.innerHTML = 'Gerando termo…';
+    btnSubmit.innerHTML = 'Gerando Formulário…';
 
     try{
       const res = await fetch(`${API_BASE}/api/gerar-termo`, {

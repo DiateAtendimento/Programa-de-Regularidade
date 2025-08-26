@@ -6,6 +6,7 @@
   <title>Termo de Adesão ao Programa de Regularidade Previdenciária</title>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=block" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/rawline" rel="stylesheet">
   <link rel="stylesheet" href="termo.css" />
 </head>
 <body>
@@ -159,19 +160,20 @@
       <p><strong>Declaração informada:</strong> <span data-k="condicao_vigencia"></span></p>
     </section>
 
-    <!-- Assinaturas sem nomes (apenas rótulos) -->
+    <!-- Assinaturas (primeiro Ente; abaixo RPPS) -->
     <footer class="term-footer">
       <p class="place-date"><span data-k="ente"></span>/<span data-k="uf"></span>, <span data-k="data_termo"></span>.</p>
 
       <div class="signature-line" aria-hidden="true"></div>
       <p class="signature-caption">
-        <strong>Prefeito do Município de</strong>
-        &nbsp;<span data-k="ente"></span>/<span data-k="uf"></span><strong>/Governador</strong>
+        <strong><span data-k="nome_rep_ente"></span></strong><br>
+        <span id="sig-cap-ente">Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span></span>
       </p>
 
       <div class="signature-line" aria-hidden="true" style="margin-top:10mm"></div>
       <p class="signature-caption">
-        <strong>Representante legal do</strong> &nbsp;<span data-k="ug"></span>
+        <strong><span data-k="nome_rep_ug"></span></strong><br>
+        Representante legal do <span data-k="ug"></span>
       </p>
     </footer>
   </main>
@@ -225,6 +227,17 @@
         return { dataURL: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
         // dataURL é PNG; jsPDF entende com o tipo 'PNG'
       }
+
+      (function adaptSignatureCaption(){
+        const p = new URLSearchParams(location.search);
+        const esfera = (p.get('esfera')||'').toLowerCase();
+        const el = document.getElementById('sig-cap-ente');
+        if (!el) return;
+        if (esfera.includes('estadual') || esfera.includes('distrital')){
+          el.innerHTML = 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>';
+        } // municipal já está no HTML
+      })();
+
 
       async function generatePdf(){
         await waitFonts(); fitTitle();

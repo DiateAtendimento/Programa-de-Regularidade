@@ -18,7 +18,9 @@
   --bs-primary: var(--brand-600);
 }
 *{box-sizing:border-box}
-body{font-family:'Inter',sans-serif;color:var(--fg);min-height:100vh;position:relative}
+body{font-family:'Rawline','Inter',sans-serif;color:var(--fg);min-height:100vh;position:relative}
+.home-body{font-family:'Rawline','Inter',sans-serif;}
+
 
 /* Background */
 .app-bg{
@@ -181,7 +183,7 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
   filter:saturate(1.05) contrast(1.02);
 }
 
-.home-wrap{ padding-top:4rem; padding-bottom:4rem; }
+.home-wrap{ padding-top:0rem; padding-bottom:4rem; }
 
 .home-logo{
   max-width:620px;
@@ -210,6 +212,18 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
   font-weight:600; opacity:.95; line-height:1.25; margin-top:.25rem; text-align:center;
 }
 .home-btn-sub.only{ font-weight:700; margin-top:0; }
+
+/* Logo MPS centralizado no topo */
+.mps-header {
+  background: transparent;
+  margin-top: 2rem;
+}
+
+.logo-mps-top {
+  max-width: 240px;
+  height: auto;
+}
+
 
 @media (max-width: 992px){
   .home-wrap{ padding-top:2.5rem; padding-bottom:2.5rem; }
