@@ -59,6 +59,43 @@ header h1,
 .section-title{font-size:1.25rem;font-weight:800;margin-bottom:.25rem}
 .sub-title{font-weight:700;margin-bottom:.35rem;color:#000}
 
+
+/* ===== Passo 8 – caixa IMPORTANTE com legend cortando a borda ===== */
+/* Fieldset */
+.important-box{
+  position: relative;
+  background:#fff;
+  border:1px solid #cbd5e1;
+  border-radius:8px;
+  padding:18px 18px 16px;   /* espaço para o título flutuar */
+}
+
+/* Título cortando a borda – fundo só do tamanho do texto */
+.important-box > legend{
+  position:absolute;
+  top:-11px;
+  left:14px;
+
+  /* >>> overrides do Bootstrap <<< */
+  display:inline-block !important;
+  width:auto !important;
+  max-width:none !important;
+  float:none !important;
+
+  margin:0;
+  padding:0 6px;            /* ajuste o “respiro” lateral */
+  background:#fff;          /* cobre só o texto */
+  font-weight:800;
+  font-size:.95rem;
+  letter-spacing:.2px;
+  color:var(--brand-700);
+  text-transform:uppercase;
+  line-height:1.15;
+}
+
+
+
+
 /* Inputs focus */
 .form-control:focus,.form-select:focus{
   border-color:var(--brand-600);
