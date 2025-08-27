@@ -8,6 +8,61 @@
     return '';
   })();
 
+  // ===== NOVO: parâmetros de robustez no front =====
+  const FETCH_TIMEOUT_MS = 20000; // 20s
+  const FETCH_RETRIES = 2;        // tentativas além da primeira
+
+  // Helper com timeout + retries + mensagens
+  async function fetchJSON(url, { method='GET', headers={}, body=null } = {}, { label='request', timeout=FETCH_TIMEOUT_MS, retries=FETCH_RETRIES } = {}) {
+    let attempt = 0;
+    while (true) {
+      attempt++;
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(`timeout:${label}`), timeout);
+      try {
+        const res = await fetch(url, { method, headers, body, signal: ctrl.signal });
+        clearTimeout(to);
+        // Tenta decodificar o corpo (se possível) para mensagens de erro mais úteis
+        if (!res.ok) {
+          const isJson = (res.headers.get('content-type') || '').includes('application/json');
+          const data = isJson ? (await res.json().catch(()=>null)) : null;
+          const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
+          const err = new Error(msg);
+          err.status = res.status;
+          throw err;
+        }
+        const ct = res.headers.get('content-type') || '';
+        return ct.includes('application/json') ? res.json() : res.text();
+      } catch (e) {
+        clearTimeout(to);
+        const m = String(e?.message || '').toLowerCase();
+        const retriable =
+          (e && typeof e.status === 'number' && (e.status === 429 || e.status >= 500)) ||
+          m.includes('etimedout') || m.includes('timeout:') || m.includes('abort') ||
+          m.includes('econnreset') || m.includes('socket hang up') || m.includes('eai_again') ||
+          (!navigator.onLine); // se offline, tenta mais uma vez depois
+
+        if (!retriable || attempt > (retries + 1)) throw e;
+
+        // backoff exponencial simples
+        const backoff = 300 * Math.pow(2, attempt - 1);
+        await new Promise(r => setTimeout(r, backoff));
+      }
+    }
+  }
+
+  function friendlyErrorMessages(err, fallback='Falha ao comunicar com o servidor.') {
+    const status = err?.status;
+    const msg = String(err?.message || '').toLowerCase();
+
+    if (!navigator.onLine) return ['Sem conexão com a internet. Verifique sua rede e tente novamente.'];
+    if (status === 504 || msg.includes('timeout:')) return ['Tempo de resposta esgotado. Tente novamente em instantes.'];
+    if (status === 429 || msg.includes('rate limit')) return ['Muitas solicitações no momento. Aguarde alguns segundos e tente novamente.'];
+    if (status === 404) return ['Registro não encontrado. Verifique os dados informados.'];
+    if (status && status >= 500) return ['Instabilidade no servidor. Tente novamente em instantes.'];
+    return [fallback];
+  }
+
   /* ========= Helpers ========= */
   const $  = (s, r=document)=> r.querySelector(s);
   const $$ = (s, r=document)=> Array.from(r.querySelectorAll(s));
@@ -132,7 +187,7 @@
   const btnPrev  = $('#btnPrev');
   const btnNext  = $('#btnNext');
   const btnSubmit= $('#btnSubmit');
-  const btnGerar = $('#btnGerarForm'); // << NOVO: botão de "Gerar Formulário" (opcional)
+  const btnGerar = $('#btnGerarForm'); // botão de "Gerar Formulário"
   const navFooter= $('#navFooter');
   const pesquisaRow = $('#pesquisaRow');
 
@@ -175,7 +230,7 @@
       btnNext.classList.toggle('d-none', step === 8);   // Esconde Próximo no passo 8
     }
     btnSubmit?.classList.toggle('d-none', step !== 8);  // Mostra Finalizar só no passo 8
-    btnGerar?.classList.toggle('d-none', step !== 8);   // << NOVO: Gerar Formulário só no passo 8
+    btnGerar?.classList.toggle('d-none', step !== 8);   // Gerar Formulário só no passo 8
   }
 
   function updateFooterAlign(){
@@ -359,39 +414,31 @@
       EMAIL_UG: $('#EMAIL_UG').value.trim()
     };
     if (digits(body.CNPJ_ENTE).length===14 || digits(body.CNPJ_UG).length===14){
-      await fetch(`${API_BASE}/api/upsert-cnpj`, {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
-      }).catch(()=>{ /* não bloqueia */ });
+      // fire-and-forget com timeout curto e sem retries
+      fetchJSON(`${API_BASE}/api/upsert-cnpj`,
+        { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) },
+        { timeout: 8000, retries: 0, label: 'upsert-cnpj' }
+      ).catch(()=>{ /* não bloqueia */ });
     }
   }
 
   /* ========= Busca por CNPJ ========= */
+  let searching = false;
   $('#btnPesquisar')?.addEventListener('click', async ()=>{
+    if (searching) return;
     const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
-    if(cnpj.length!==14) { 
+    if(cnpj.length!==14) {
       const el = $('#CNPJ_ENTE_PESQ'); el.classList.add('is-invalid');
-      return showAtencao(['Informe um CNPJ válido.']); 
+      return showAtencao(['Informe um CNPJ válido.']);
     }
 
     try{
+      searching = true;
       modalLoadingSearch.show();
-      const r = await fetch(`${API_BASE}/api/consulta?cnpj=${cnpj}`);
-      if(!r.ok){
-        modalLoadingSearch.hide();
-        // permitir prosseguir preenchendo manualmente
-        showAtencao([
-          'CNPJ não encontrado no CADPREV.',
-          'Preencha os dados do Ente/UG na Etapa 1 e eles serão cadastrados.'
-        ]);
-        cnpjOK = true; cnpjMissing = true;
-        // pré-preenche CNPJ do ente para ajudar
-        $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
-        showStep(1);
-        updateNavButtons(); updateFooterAlign();
-        return;
-      }
-      const { data } = await r.json();
 
+      const r = await fetchJSON(`${API_BASE}/api/consulta?cnpj=${cnpj}`, {}, { label:'consulta-cnpj' });
+
+      const data = r.data;
       snapshotBase = {
         UF: data.UF, ENTE: data.ENTE, CNPJ_ENTE: data.CNPJ_ENTE, UG: data.UG, CNPJ_UG: data.CNPJ_UG,
         NOME_REP_ENTE: data.__snapshot?.NOME_REP_ENTE || '',
@@ -429,13 +476,30 @@
       autoselectEsferaByEnte(data.ENTE);
 
       cnpjOK = true;
+      cnpjMissing = false;
       editedFields.clear();
       showStep(1);
-    }catch{
-      showErro(['Falha ao consultar o CNPJ.']);
-      cnpjOK = false; updateNavButtons(); updateFooterAlign();
+    }catch(err){
+      // permitir prosseguir preenchendo manualmente
+      const msgs = friendlyErrorMessages(err, 'Não foi possível consultar o CNPJ.');
+      // se 404, tratamos como "não encontrado" (preencher manualmente)
+      if (err && err.status === 404) {
+        showAtencao([
+          'CNPJ não encontrado no CADPREV.',
+          'Preencha os dados do Ente/UG na Etapa 1 e eles serão cadastrados.'
+        ]);
+        cnpjOK = true; cnpjMissing = true;
+        $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
+        showStep(1);
+        updateNavButtons(); updateFooterAlign();
+      } else {
+        showErro(msgs);
+        cnpjOK = false;
+      }
     }finally{
+      searching = false;
       modalLoadingSearch.hide();
+      updateNavButtons(); updateFooterAlign();
     }
   });
 
@@ -445,16 +509,8 @@
     if(cpfd.length!==11) { showAtencao(['Informe um CPF válido.']); return; }
     try{
       modalLoadingSearch.show();
-      const r = await fetch(`${API_BASE}/api/rep-by-cpf?cpf=${cpfd}`);
-      if(!r.ok){
-        modalLoadingSearch.hide();
-        // mantém CPF e permite digitar demais dados manualmente
-        showAtencao(['Registro não encontrado no CADPREV, favor inserir seus dados.']);
-        if (target==='ENTE'){ $('#NOME_REP_ENTE')?.focus(); }
-        else { $('#NOME_REP_UG')?.focus(); }
-        return; // mantém o CPF e campos vazios para digitação
-      }
-      const { data } = await r.json();
+      const r = await fetchJSON(`${API_BASE}/api/rep-by-cpf?cpf=${cpfd}`, {}, { label: 'rep-by-cpf' });
+      const data = r.data;
       if(target==='ENTE'){
         $('#NOME_REP_ENTE').value = data.NOME || '';
         $('#CARGO_REP_ENTE').value = data.CARGO || '';
@@ -466,8 +522,15 @@
         $('#EMAIL_REP_UG').value = data.EMAIL || '';
         $('#TEL_REP_UG').value   = data.TELEFONE || '';
       }
-    }catch{
-      showErro(['Falha ao consultar CPF.']);
+    }catch(err){
+      if (err && err.status === 404) {
+        // mantém CPF e permite digitar demais dados manualmente
+        showAtencao(['Registro não encontrado no CADPREV, favor inserir seus dados.']);
+        if (target==='ENTE'){ $('#NOME_REP_ENTE')?.focus(); }
+        else { $('#NOME_REP_UG')?.focus(); }
+      } else {
+        showErro(friendlyErrorMessages(err, 'Falha ao consultar CPF.'));
+      }
     }finally{
       modalLoadingSearch.hide();
     }
@@ -485,16 +548,18 @@
     const reps = [
       { ...base, NOME: $('#NOME_REP_ENTE').value.trim(), CPF: digits($('#CPF_REP_ENTE').value),
         EMAIL: $('#EMAIL_REP_ENTE').value.trim(), TELEFONE: $('#TEL_REP_ENTE').value.trim(), CARGO: $('#CARGO_REP_ENTE').value.trim(),
-        // para o representante do ENTE, gravar UG vazio para padronizar busca futura
+        // para o representante do ENTE, gravar UG vazio; servidor resolve UG automaticamente
         UG: '' },
       { ...base, NOME: $('#NOME_REP_UG').value.trim(), CPF: digits($('#CPF_REP_UG').value),
         EMAIL: $('#EMAIL_REP_UG').value.trim(), TELEFONE: $('#TEL_REP_UG').value.trim(), CARGO: $('#CARGO_REP_UG').value.trim() }
     ];
     for (const rep of reps){
       if (digits(rep.CPF).length===11 && rep.NOME){
-        await fetch(`${API_BASE}/api/upsert-rep`, {
-          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(rep)
-        }).catch(()=>{ /* silencioso: não bloqueia o envio do termo */ });
+        // fire-and-forget com timeout curto
+        fetchJSON(`${API_BASE}/api/upsert-rep`,
+          { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(rep) },
+          { timeout: 8000, retries: 0, label: 'upsert-rep' }
+        ).catch(()=>{ /* silencioso: não bloqueia o envio do termo */ });
       }
     }
   }
@@ -533,7 +598,7 @@
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i=>i.value),
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300').filter(i=>i.checked).map(i=>i.value).join('; '),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$('input#reg_sem_jud, input#reg_com_jud').filter(i=>i.checked).map(i=>i.value).join('; '),
-      DEFICIT_ATUARIAL: $$('input#eq_implano, input#eq_prazos, input#eq_plano_alt').filter(i=>i.checked).map(i=>i.value).join('; '),
+      DEFICIT_ATUARIAL: $$('input#eq_implano, input#prazos, input#eq_plano_alt,#eq_prazos').filter(i=>i.checked).map(i=>i.value).join('; '),
       CRITERIOS_ESTRUT_ESTABELECIDOS: $$('input#org_ugu, input#org_outros').filter(i=>i.checked).map(i=>i.value).join('; '),
       MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$('input#man_cert, input#man_melhoria, input#man_acomp').filter(i=>i.checked).map(i=>i.value).join('; '),
       COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked').map(i=>i.value).join('; '),
@@ -576,17 +641,25 @@
       auto: String(autoFlag || '1')
     });
     payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
+    // abertura síncrona (menos chance de bloqueio de pop-up)
     window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
   }
 
   /* ========= AÇÃO: Gerar Formulário (passo 8) sem finalizar ========= */
+  let gerarBusy = false;
   btnGerar?.addEventListener('click', ()=>{
+    if (gerarBusy) return;
     // valida tudo antes de gerar
     for (let s=1; s<=8; s++){ if(!validateStep(s)) return; }
-    // carimba data/hora (para aparecer no PDF/preview)
+
+    gerarBusy = true;
+    setTimeout(()=> gerarBusy = false, 800); // debounce leve para duplo clique
+
+    // carimba data/hora (para aparecer na prévia)
     fillNowHiddenFields();
     const payload = buildPayload();
-    // abre o termo em nova aba sem acionar o fluxo de finalização
+
+    // abre o termo em nova aba, sem salvar
     openTermoWithPayload(payload, '0'); // auto=0
   });
 
@@ -603,30 +676,22 @@
 
     const submitOriginalHTML = btnSubmit.innerHTML;
     btnSubmit.disabled = true;
-    btnSubmit.innerHTML = 'Gerando Formulário…';
+    btnSubmit.innerHTML = 'Finalizando…';
 
     try{
-      const res = await fetch(`${API_BASE}/api/gerar-termo`, {
+      await fetchJSON(`${API_BASE}/api/gerar-termo`, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify(payload)
-      });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({error:'Erro ao salvar.'}));
-        btnSubmit.disabled = false;
-        btnSubmit.innerHTML = submitOriginalHTML;
-        return showErro([err.error || 'Falha ao registrar termo.']);
-      }
+      }, { label:'gerar-termo', timeout: FETCH_TIMEOUT_MS, retries: FETCH_RETRIES });
 
-      // Opcionalmente, também abre o formulário ao finalizar (como antes)
-      openTermoWithPayload(payload, '1'); // auto=1
-
+      // NÃO abrir termo aqui. Apenas feedback de sucesso:
       modalSucesso.show();
       setTimeout(() => {
         modalSucesso.hide();
         $('#regularidadeForm').reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
-        $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
+        $$( 'input[type="checkbox"], input[type="radio"]' ).forEach(el=> el.checked=false);
         editedFields.clear();
         snapshotBase = null;
         cnpjOK = false;
@@ -635,10 +700,11 @@
         showStep(0);
       }, 5000);
 
-    }catch{
+    }catch(err){
       btnSubmit.disabled = false;
       btnSubmit.innerHTML = submitOriginalHTML;
-      showErro(['Falha de comunicação com o servidor.']);
+      showErro(friendlyErrorMessages(err, 'Falha ao registrar o termo.'));
     }
   });
+
 })();

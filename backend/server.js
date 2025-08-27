@@ -12,8 +12,20 @@ const cors = require('cors');
 const hpp = require('hpp');
 const rateLimit = require('express-rate-limit');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
+const http = require('http');
+const https = require('https');
 
 const app = express();
+
+/* ───────────── Conexões/robustez ───────────── */
+http.globalAgent.keepAlive = true;
+https.globalAgent.keepAlive = true;
+
+const CACHE_TTL_MS        = Number(process.env.CACHE_TTL_MS || 5 * 60 * 1000);
+const CACHE_TTL_CRP_MS    = Number(process.env.CACHE_TTL_CRP_MS || 2 * 60 * 1000);
+const SHEETS_CONCURRENCY  = Number(process.env.SHEETS_CONCURRENCY || 3);
+const SHEETS_TIMEOUT_MS   = Number(process.env.SHEETS_TIMEOUT_MS || 20_000);
+const SHEETS_RETRIES      = Number(process.env.SHEETS_RETRIES || 2);
 
 /* ───────────── Segurança ───────────── */
 app.set('trust proxy', 1);
@@ -102,10 +114,8 @@ if (process.env.GOOGLE_CREDENTIALS_B64) {
 
 const doc = new GoogleSpreadsheet(SHEET_ID);
 
-async function authSheets() {
-  await doc.useServiceAccountAuth(creds);
-  await doc.loadInfo();
-}
+let _sheetsReady = false;
+let _lastLoadInfo = 0;
 
 /* ───────────── Utils ───────────── */
 const norm   = v => (v ?? '').toString().trim();
@@ -185,15 +195,86 @@ async function getRowsSafe(sheet) {
   }
 }
 
-function getVal(row, ...candidates) {
-  const keys = Object.keys(row);
-  for (const cand of candidates) {
-    const k = keys.find(k =>
-      low(k) === low(cand) || low(k).startsWith(low(cand) + '__')
-    );
-    if (k) return row[k];
+/* ===== Concorrência + Timeout/Retry + Cache ===== */
+const _q = [];
+let _active = 0;
+function _runNext() {
+  if (_active >= SHEETS_CONCURRENCY) return;
+  const it = _q.shift();
+  if (!it) return;
+  _active++;
+  (async () => {
+    try { it.resolve(await it.fn()); }
+    catch (e) { it.reject(e); }
+    finally { _active--; _runNext(); }
+  })();
+}
+function withLimiter(tag, fn) {
+  return new Promise((resolve, reject) => {
+    _q.push({ fn, resolve, reject, tag });
+    _runNext();
+  });
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function withTimeoutAndRetry(label, fn) {
+  let attempt = 0;
+  const max = SHEETS_RETRIES + 1;
+  while (true) {
+    attempt++;
+    try {
+      const run = fn();
+      const guard = new Promise((_, rej) =>
+        setTimeout(() => rej(new Error(`timeout:${label}`)), SHEETS_TIMEOUT_MS)
+      );
+      return await Promise.race([run, guard]);
+    } catch (err) {
+      const msg = String(err?.message || '').toLowerCase();
+      const code = String(err?.code || '').toLowerCase();
+      const retriable =
+        code === '429' ||
+        msg.includes('429') ||
+        msg.includes('rate limit') ||
+        msg.includes('etimedout') ||
+        msg.includes('timeout') ||
+        msg.includes('socket hang up') ||
+        msg.includes('econnreset') ||
+        msg.includes('eai_again');
+
+      if (!retriable || attempt >= max) throw err;
+      const backoff = 300 * Math.pow(2, attempt - 1);
+      await sleep(backoff);
+    }
   }
-  return undefined;
+}
+async function safeGetRows(sheet, label) {
+  return withLimiter(`${label || sheet.title}:getRows`, () =>
+    withTimeoutAndRetry(`${label || sheet.title}:getRows`, () => getRowsSafe(sheet))
+  );
+}
+async function safeLoadCells(sheet, opts, label) {
+  return withLimiter(`${label || sheet.title}:loadCells`, () =>
+    withTimeoutAndRetry(`${label || sheet.title}:loadCells`, () => sheet.loadCells(opts))
+  );
+}
+async function safeAddRow(sheet, data, label) {
+  return withLimiter(`${label || sheet.title}:addRow`, () =>
+    withTimeoutAndRetry(`${label || sheet.title}:addRow`, () => sheet.addRow(data))
+  );
+}
+async function safeSaveRow(row, label) {
+  return withLimiter(`${label || 'row'}:save`, () =>
+    withTimeoutAndRetry(`${label || 'row'}:save`, () => row.save())
+  );
+}
+const _cache = new Map();
+function cacheGet(key) {
+  const it = _cache.get(key);
+  if (it && it.exp > Date.now()) return it.data;
+  _cache.delete(key); return null;
+}
+function cacheSet(key, data, ttl = CACHE_TTL_MS) {
+  _cache.set(key, { data, exp: Date.now() + ttl });
 }
 
 /* ───── Datas ───── */
@@ -225,7 +306,7 @@ async function readCRPByFixedColumns(sheet) {
   const endRow = sheet.rowCount || 2000;
   const endCol = Math.max(colCNPJ, colVal, colDec) + 1;
 
-  await sheet.loadCells({ startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol });
+  await safeLoadCells(sheet, { startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol }, 'CRP:loadCells');
 
   const rows = [];
   for (let r = 1; r < endRow; r++) {
@@ -266,7 +347,35 @@ async function readCRPByFixedColumns(sheet) {
   return rows;
 }
 
+/* Cache específico para CRP */
+let _crpMemo = { data: null, exp: 0 };
+async function getCRPAllCached(sheet) {
+  if (_crpMemo.exp > Date.now() && _crpMemo.data) return _crpMemo.data;
+  const rows = await withLimiter('CRP:read', () =>
+    withTimeoutAndRetry('CRP:read', () => readCRPByFixedColumns(sheet))
+  );
+  _crpMemo = { data: rows, exp: Date.now() + CACHE_TTL_CRP_MS };
+  return rows;
+}
+
 /* ─────────────── ROTAS ─────────────── */
+
+async function authSheets() {
+  return withLimiter('authSheets', async () =>
+    withTimeoutAndRetry('authSheets', async () => {
+      if (!_sheetsReady) {
+        await doc.useServiceAccountAuth(creds);
+        await doc.loadInfo();
+        _sheetsReady = true;
+        _lastLoadInfo = Date.now();
+        return;
+      }
+      if (Date.now() - _lastLoadInfo > 10 * 60 * 1000) {
+        try { await doc.loadInfo(); _lastLoadInfo = Date.now(); } catch (_) {}
+      }
+    })
+  );
+}
 
 app.get('/api/health', (_req,res)=> res.json({ ok:true }));
 
@@ -276,13 +385,18 @@ app.get('/api/consulta', async (req, res) => {
     const cnpj = digits(req.query.cnpj || '');
     if (cnpj.length !== 14) return res.status(400).json({ error: 'CNPJ inválido.' });
 
+    // cache
+    const cacheKey = `consulta:${cnpj}`;
+    const cached = cacheGet(cacheKey);
+    if (cached) return res.json({ ok: true, data: cached });
+
     await authSheets();
 
     const sCnpj = await getSheetStrict('CNPJ_ENTE_UG');
     const sReps = await getSheetStrict('Dados_REP_ENTE_UG');
     const sCrp  = await getSheetStrict('CRP');
 
-    const cnpjRows = await getRowsSafe(sCnpj);
+    const cnpjRows = await safeGetRows(sCnpj, 'CNPJ:getRows');
     let base = cnpjRows.find(r => digits(getVal(r,'CNPJ_ENTE')) === cnpj);
     if (!base) base = cnpjRows.find(r => digits(getVal(r,'CNPJ_UG')) === cnpj);
     if (!base) return res.status(404).json({ error: 'CNPJ não encontrado em CNPJ_ENTE_UG.' });
@@ -295,8 +409,8 @@ app.get('/api/consulta', async (req, res) => {
     const EMAIL_ENTE  = norm(getVal(base, 'EMAIL_ENTE'));
     const EMAIL_UG    = norm(getVal(base, 'EMAIL_UG'));
 
-    // Reps (snapshot informativo — não preenche automático no front)
-    const repsAll = await getRowsSafe(sReps);
+    // Reps (snapshot informativo)
+    const repsAll = await safeGetRows(sReps, 'Reps:getRows');
     const reps = repsAll.filter(r => low(getVal(r,'UF')) === low(UF) && low(getVal(r,'ENTE')) === low(ENTE));
     const repUG = reps.find(r => low(getVal(r,'UG')) === low(UG)) || reps[0] || {};
     const repEnte =
@@ -304,7 +418,7 @@ app.get('/api/consulta', async (req, res) => {
       reps.find(r => low(getVal(r,'UG')||'') !== low(UG)) || reps[0] || {};
 
     // CRP (B/F/G)
-    const crpAll = await readCRPByFixedColumns(sCrp);
+    const crpAll = await getCRPAllCached(sCrp);
     const crpCandidates = crpAll.filter(r => digits(r.CNPJ_ENTE) === CNPJ_ENTE);
     let crp = {};
     if (crpCandidates.length) {
@@ -340,9 +454,14 @@ app.get('/api/consulta', async (req, res) => {
       }
     };
 
+    cacheSet(cacheKey, out);
     return res.json({ ok:true, data: out });
   } catch (err) {
     console.error('❌ /api/consulta:', err);
+    const msg = String(err?.message || '').toLowerCase();
+    if (msg.includes('timeout:') || msg.includes('etimedout')) {
+      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente em instantes.' });
+    }
     res.status(500).json({ error:'Falha interna.' });
   }
 });
@@ -353,27 +472,35 @@ app.get('/api/rep-by-cpf', async (req,res)=>{
     const cpf = digits(req.query.cpf || '');
     if (cpf.length !== 11) return res.status(400).json({ error: 'CPF inválido.' });
 
+    const cacheKey = `rep:${cpf}`;
+    const cached = cacheGet(cacheKey);
+    if (cached) return res.json({ ok: true, data: cached });
+
     await authSheets();
     const sReps = await getSheetStrict('Dados_REP_ENTE_UG');
-    const rows = await getRowsSafe(sReps);
+    const rows = await safeGetRows(sReps, 'Reps:getRows');
     const found = rows.find(r => digits(getVal(r,'CPF')) === cpf);
     if(!found) return res.status(404).json({ error:'CPF não encontrado.' });
 
-    return res.json({
-      ok:true,
-      data:{
-        UF: norm(getVal(found,'UF')),
-        ENTE: norm(getVal(found,'ENTE')),
-        UG: norm(getVal(found,'UG')),
-        NOME: norm(getVal(found,'NOME')),
-        CPF: digits(getVal(found,'CPF')),
-        EMAIL: norm(getVal(found,'EMAIL')),
-        TELEFONE: norm(getVal(found,'TELEFONE_MOVEL') || getVal(found,'TELEFONE')),
-        CARGO: norm(getVal(found,'CARGO')),
-      }
-    });
+    const payload = {
+      UF: norm(getVal(found,'UF')),
+      ENTE: norm(getVal(found,'ENTE')),
+      UG: norm(getVal(found,'UG')),
+      NOME: norm(getVal(found,'NOME')),
+      CPF: digits(getVal(found,'CPF')),
+      EMAIL: norm(getVal(found,'EMAIL')),
+      TELEFONE: norm(getVal(found,'TELEFONE_MOVEL') || getVal(found,'TELEFONE')),
+      CARGO: norm(getVal(found,'CARGO')),
+    };
+    cacheSet(cacheKey, payload);
+
+    return res.json({ ok:true, data: payload });
   }catch(err){
     console.error('❌ /api/rep-by-cpf:', err);
+    const msg = String(err?.message || '').toLowerCase();
+    if (msg.includes('timeout:') || msg.includes('etimedout')) {
+      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
+    }
     res.status(500).json({ error:'Falha interna.' });
   }
 });
@@ -386,7 +513,7 @@ async function upsertEmailsInBase(p){
 
   const sCnpj = await getSheetStrict('CNPJ_ENTE_UG');
   await sCnpj.loadHeaderRow();
-  const rows = await sCnpj.getRows(); // cabeçalhos nessa aba são únicos
+  const rows = await safeGetRows(sCnpj, 'CNPJ:getRows'); // cabeçalhos únicos
 
   const cnpjEnte = digits(p.CNPJ_ENTE);
   const cnpjUg   = digits(p.CNPJ_UG);
@@ -399,40 +526,61 @@ async function upsertEmailsInBase(p){
   for (const r of toUpdate) {
     if (emailEnte) r['EMAIL_ENTE'] = emailEnte;
     if (emailUg)   r['EMAIL_UG']   = emailUg;
-    await r.save();
+    await safeSaveRow(r, 'CNPJ:save');
+  }
+}
+
+/* helper: resolve UG quando vier vazia (caso 2.1) */
+async function resolveUGIfBlank(UF, ENTE, UG) {
+  const ugIn = norm(UG);
+  if (ugIn) return ugIn;
+  try {
+    const sCnpj = await getSheetStrict('CNPJ_ENTE_UG');
+    const rows = await safeGetRows(sCnpj, 'CNPJ:resolveUG');
+    const match = rows.find(r =>
+      low(getVal(r, 'UF')) === low(UF) &&
+      low(getVal(r, 'ENTE')) === low(ENTE) &&
+      norm(getVal(r, 'UG'))
+    );
+    return norm(getVal(match || {}, 'UG'));
+  } catch {
+    return '';
   }
 }
 
 /* util: upsert representante em Dados_REP_ENTE_UG (para CPF inexistente ou atualização) */
 async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
   const sReps = await getOrCreateSheet('Dados_REP_ENTE_UG', ['UF','ENTE','NOME','CPF','EMAIL','TELEFONE','TELEFONE_MOVEL','CARGO','UG']);
-  const rows = await getRowsSafe(sReps);
+  const rows = await safeGetRows(sReps, 'Reps:getRows');
   const cpf = digits(CPF);
   let row = rows.find(r => digits(getVal(r,'CPF')) === cpf);
 
   // telefone móvel espelha o TELEFONE quando vier preenchido
   const telBase = norm(TELEFONE);
 
+  // Se UG vier vazia (caso 2.1), tenta resolver pela base
+  const ugFinal = await resolveUGIfBlank(UF, ENTE, UG);
+
   if (!row) {
-    await sReps.addRow({
+    await safeAddRow(sReps, {
       UF: norm(UF), ENTE: norm(ENTE), NOME: norm(NOME),
       CPF: cpf, EMAIL: norm(EMAIL),
       TELEFONE: telBase, TELEFONE_MOVEL: telBase,
-      CARGO: norm(CARGO), UG: norm(UG)
-    });
+      CARGO: norm(CARGO), UG: ugFinal
+    }, 'Reps:add');
     return { created: true };
   } else {
     row['UF']   = norm(UF)   || row['UF'];
     row['ENTE'] = norm(ENTE) || row['ENTE'];
-    row['UG']   = norm(UG)   || row['UG'];
+    row['UG']   = ugFinal    || row['UG'];
     row['NOME'] = norm(NOME) || row['NOME'];
     row['EMAIL']= norm(EMAIL)|| row['EMAIL'];
     if (telBase) {
-      row['TELEFONE'] = telBase;
+      row['TELEFONE']       = telBase;
       row['TELEFONE_MOVEL'] = telBase;
     }
     row['CARGO']= norm(CARGO)|| row['CARGO'];
-    await row.save();
+    await safeSaveRow(row, 'Reps:save');
     return { updated: true };
   }
 }
@@ -440,15 +588,15 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
 /* util: upsert base do ente/UG quando o CNPJ pesquisado não existir */
 async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EMAIL_UG }){
   const s = await getOrCreateSheet('CNPJ_ENTE_UG', ['UF','ENTE','UG','CNPJ_ENTE','CNPJ_UG','EMAIL_ENTE','EMAIL_UG']);
-  const rows = await s.getRows();
+  const rows = await safeGetRows(s, 'CNPJ:addOrUpdate:getRows');
   const ce = digits(CNPJ_ENTE), cu = digits(CNPJ_UG);
 
   let row = rows.find(r => digits(r['CNPJ_ENTE']||'')===ce || digits(r['CNPJ_UG']||'')===cu);
   if (!row){
-    await s.addRow({
+    await safeAddRow(s, {
       UF: norm(UF), ENTE: norm(ENTE), UG: norm(UG),
       CNPJ_ENTE: ce, CNPJ_UG: cu, EMAIL_ENTE: norm(EMAIL_ENTE), EMAIL_UG: norm(EMAIL_UG)
-    });
+    }, 'CNPJ:addRow');
     return { created: true };
   } else {
     if (UF) row['UF']=norm(UF);
@@ -458,7 +606,7 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
     if (cu) row['CNPJ_UG']=cu;
     if (EMAIL_ENTE) row['EMAIL_ENTE']=norm(EMAIL_ENTE);
     if (EMAIL_UG)   row['EMAIL_UG']=norm(EMAIL_UG);
-    await row.save();
+    await safeSaveRow(row, 'CNPJ:update:save');
     return { updated: true };
   }
 }
@@ -472,6 +620,10 @@ app.post('/api/upsert-cnpj', async (req,res)=>{
     res.json({ ok:true, ...r });
   }catch(e){
     console.error('❌ /api/upsert-cnpj:', e);
+    const msg = String(e?.message || '').toLowerCase();
+    if (msg.includes('timeout:') || msg.includes('etimedout')) {
+      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
+    }
     res.status(500).json({ error:'Falha ao gravar base CNPJ_ENTE_UG.' });
   }
 });
@@ -485,6 +637,10 @@ app.post('/api/upsert-rep', async (req,res)=>{
     res.json({ ok:true, ...r });
   }catch(e){
     console.error('❌ /api/upsert-rep:', e);
+    const msg = String(e?.message || '').toLowerCase();
+    if (msg.includes('timeout:') || msg.includes('etimedout')) {
+      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
+    }
     res.status(500).json({ error:'Falha ao gravar representante.' });
   }
 });
@@ -533,7 +689,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
       ? p.CRITERIOS_IRREGULARES
       : String(p.CRITERIOS_IRREGULARES || '').split(',').map(s=>s.trim()).filter(Boolean);
 
-    await sTermos.addRow({
+    await safeAddRow(sTermos, {
       ENTE: norm(p.ENTE),
       UF: norm(p.UF),
       CNPJ_ENTE: digits(p.CNPJ_ENTE),
@@ -561,7 +717,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
       PROVIDENCIA_NECESS_ADESAO: norm(p.PROVIDENCIA_NECESS_ADESAO),
       CONDICAO_VIGENCIA: norm(p.CONDICAO_VIGENCIA),
       MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO
-    });
+    }, 'Termos:add');
 
     // ===== Log apenas se o usuário DIGITOU (e apenas campos permitidos) =====
     const snap = p.__snapshot_base || {};
@@ -589,13 +745,13 @@ app.post('/api/gerar-termo', async (req,res)=>{
 
     if (changed.length) {
       const t = nowBR();
-      await sLog.addRow({
+      await safeAddRow(sLog, {
         UF: norm(p.UF),
         ENTE: norm(p.ENTE),
         'CAMPOS ALTERADOS': changed.join(', '),
         'QTD_CAMPOS_ALTERADOS': changed.length,
         MES: t.MES, DATA: t.DATA, HORA: t.HORA
-      });
+      }, 'Log:add');
     }
 
     // >>> atualiza base CNPJ_ENTE_UG com os e-mails para reaproveitar nas próximas consultas
@@ -604,6 +760,10 @@ app.post('/api/gerar-termo', async (req,res)=>{
     return res.json({ ok:true });
   } catch (err) {
     console.error('❌ /api/gerar-termo:', err);
+    const msg = String(err?.message || '').toLowerCase();
+    if (msg.includes('timeout:') || msg.includes('etimedout')) {
+      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
+    }
     res.status(500).json({ error:'Falha ao registrar o termo.' });
   }
 });
@@ -611,3 +771,15 @@ app.post('/api/gerar-termo', async (req,res)=>{
 /* ───────────── Start ───────────── */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server rodando na porta ${PORT}`));
+
+/* ───────────── Helpers locais ───────────── */
+function getVal(row, ...candidates) {
+  const keys = Object.keys(row);
+  for (const cand of candidates) {
+    const k = keys.find(k =>
+      low(k) === low(cand) || low(k).startsWith(low(cand) + '__')
+    );
+    if (k) return row[k];
+  }
+  return undefined;
+}
