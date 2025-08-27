@@ -647,13 +647,16 @@
 
   /* ========= AÇÃO: Gerar Formulário (passo 8) sem finalizar ========= */
   let gerarBusy = false;
-  btnGerar?.addEventListener('click', ()=>{
+  const gerarLabel = btnGerar?.innerHTML || 'Gerar formulário';
+
+  btnGerar?.addEventListener('click', () => {
     if (gerarBusy) return;
+
     // valida tudo antes de gerar
-    for (let s=1; s<=8; s++){ if(!validateStep(s)) return; }
+    for (let s = 1; s <= 8; s++) { if (!validateStep(s)) return; }
 
     gerarBusy = true;
-    setTimeout(()=> gerarBusy = false, 800); // debounce leve para duplo clique
+    if (btnGerar) { btnGerar.disabled = true; btnGerar.innerHTML = 'Gerando…'; }
 
     // carimba data/hora (para aparecer na prévia)
     fillNowHiddenFields();
@@ -661,7 +664,19 @@
 
     // abre o termo em nova aba, sem salvar
     openTermoWithPayload(payload, '0'); // auto=0
+
+    // feedback visual: Lottie "Termo gerado" só aqui (na prévia)
+    modalSucesso.show();
+    setTimeout(() => {
+      modalSucesso.hide();
+      if (btnGerar) {
+        btnGerar.disabled = false;
+        btnGerar.innerHTML = gerarLabel;
+      }
+      gerarBusy = false;
+    }, 2000);
   });
+
 
   /* ========= Submit / Finalizar ========= */
   $('#regularidadeForm')?.addEventListener('submit', async (e)=>{
@@ -679,32 +694,39 @@
     btnSubmit.innerHTML = 'Finalizando…';
 
     try{
-      await fetchJSON(`${API_BASE}/api/gerar-termo`, {
+      const res = await fetch(`${API_BASE}/api/gerar-termo`, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify(payload)
-      }, { label:'gerar-termo', timeout: FETCH_TIMEOUT_MS, retries: FETCH_RETRIES });
+      });
+      if(!res.ok){
+        const err = await res.json().catch(()=>({error:'Erro ao salvar.'}));
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = submitOriginalHTML;
+        return showErro([err.error || 'Falha ao registrar termo.']);
+      }
 
-      // NÃO abrir termo aqui. Apenas feedback de sucesso:
-      modalSucesso.show();
+      // >>> SUCESSO sem Lottie: apenas feedback rápido + reset
+      btnSubmit.innerHTML = 'Finalizado ✓';
+
       setTimeout(() => {
-        modalSucesso.hide();
         $('#regularidadeForm').reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
-        $$( 'input[type="checkbox"], input[type="radio"]' ).forEach(el=> el.checked=false);
+        $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
         editedFields.clear();
         snapshotBase = null;
         cnpjOK = false;
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = submitOriginalHTML;
         showStep(0);
-      }, 5000);
+      }, 800);
 
-    }catch(err){
+    }catch{
       btnSubmit.disabled = false;
       btnSubmit.innerHTML = submitOriginalHTML;
-      showErro(friendlyErrorMessages(err, 'Falha ao registrar o termo.'));
+      showErro(['Falha de comunicação com o servidor.']);
     }
   });
+
 
 })();
