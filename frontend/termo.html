@@ -222,18 +222,15 @@
 
       function fitTitle(){ const t=document.getElementById('term-title'); if (t) t.style.whiteSpace='normal'; }
 
-      // Captura o cabeçalho como imagem para repetir em TODAS as páginas
+        // Só os LOGOS (sem o título) para repetir em todas as páginas
       async function captureHeaderDataURL(){
-        const el = document.querySelector('.page-head');
+        const el = document.querySelector('.logos-wrap');
         const canvas = await html2canvas(el, {
-          scale: 2,
-          backgroundColor: '#fff',
-          useCORS: true,
-          scrollX: 0,
-          scrollY: 0
+          scale: 2, backgroundColor: '#fff', useCORS: true, scrollX: 0, scrollY: 0
         });
         return { dataURL: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
       }
+
 
       (function adaptSignatureCaption(){
         const p = new URLSearchParams(location.search);
@@ -250,28 +247,30 @@
       }
 
       async function generatePdf(){
-        await waitFonts(); 
+        await waitFonts();
         fitTitle();
 
-        // — nome do arquivo: Form_Prog_Reg_Prev - <Município>.pdf
-        const p = new URLSearchParams(location.search);
+        // — nome do arquivo: Form_Prog_Reg_Prev - <Município-UF>.pdf
+        const p       = new URLSearchParams(location.search);
         const enteRaw = (p.get('ente') || '').trim();
-        const enteSafe = enteRaw
-          .replace(/[\\/:*?"<>|]/g, '')        // remove chars inválidos p/ filename
-          .replace(/\s+/g, ' ')                // normaliza espaços
-          .trim();
-        const filename = (enteSafe ? `Form_Prog_Reg_Prev - ${enteSafe}` : 'Form_Prog_Reg_Prev') + '.pdf';
+        const ufRaw   = (p.get('uf')   || '').trim();
 
-        // — prepara o cabeçalho (logos) como imagem para repetir em todas as páginas
+        const municipio = sanitizeFilename(enteRaw); // usa a função já definida acima
+        const ufSafe    = sanitizeFilename(ufRaw);
+
+        const muniUF   = municipio ? `${municipio}${ufSafe ? `-${ufSafe}` : ''}` : 'Sem municipio';
+        const filename = `Form_Prog_Reg_Prev - ${muniUF}.pdf`;
+
+        // — prepara o cabeçalho (logos + título) como imagem para repetir em todas as páginas
         const header = await captureHeaderDataURL();
-        const ratio = header.h / header.w;
+        const ratio  = header.h / header.w;
 
         // medidas em mm
-        const pageW = 210;       // A4 retrato
-        const padMM = 15;        // padding lateral (combina com CSS)
-        const headerWmm = pageW - 2 * padMM;
+        const pageW  = 210;              // A4 retrato
+        const padMM  = 15;               // padding lateral (combina com CSS)
+        const headerWmm = pageW - 2*padMM;
         const headerHmm = headerWmm * ratio;
-        const gapBelowHeader = 3; // respiro menor abaixo do cabeçalho
+        const gapBelowHeader = 3;        // respiro abaixo do cabeçalho
 
         // oculta o header original enquanto exporta
         document.getElementById('pdf-root').classList.add('pdf-export');
@@ -280,14 +279,12 @@
           // reserva área superior em TODAS as páginas para desenhar o cabeçalho
           margin: [padMM + headerHmm + gapBelowHeader, 0, padMM, 0],
           filename,
-          html2canvas: {
-            scale: 2, letterRendering: 1, useCORS: true, backgroundColor: '#fff', scrollX: 0, scrollY: 0
-          },
+          html2canvas: { scale: 2, letterRendering: 1, useCORS: true, backgroundColor: '#fff', scrollX: 0, scrollY: 0 },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['css','legacy'] }
+          pagebreak: { mode: ['css', 'legacy'] }
         };
 
-        const root = document.getElementById('pdf-root');
+        const root   = document.getElementById('pdf-root');
         const worker = html2pdf().set(opt).from(root).toPdf();
 
         // desenha o cabeçalho em todas as páginas
@@ -301,6 +298,7 @@
 
         document.getElementById('pdf-root').classList.remove('pdf-export');
       }
+
 
       (function init(){
         hydrate(); fitTitle();
