@@ -245,8 +245,39 @@
       }
     }
 
-    // regra geral dos demais subitens
-    if (s===4 && !hasAnyChecked('.grp-finalidade')) msgs.push('Marque ao menos uma finalidade inicial (item 4).');
+    // --- Passo 4: cada subitem precisa de pelo menos 1 marcado ---
+    if (s === 4) {
+      // 4.1
+      const g41 = ['#parc60', '#parc300'];
+      const ok41 = g41.some(sel => $(sel)?.checked);
+      g41.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok41));
+      if (!ok41) msgs.push('Marque ao menos uma opção no item 4.1 (parcelamento).');
+
+      // 4.2
+      const g42 = ['#reg_sem_jud', '#reg_com_jud'];
+      const ok42 = g42.some(sel => $(sel)?.checked);
+      g42.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok42));
+      if (!ok42) msgs.push('Marque ao menos uma opção no item 4.2 (regularização para CRP).');
+
+      // 4.3
+      const g43 = ['#eq_implano', '#eq_prazos', '#eq_plano_alt'];
+      const ok43 = g43.some(sel => $(sel)?.checked);
+      g43.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok43));
+      if (!ok43) msgs.push('Marque ao menos uma opção no item 4.3 (equacionamento do déficit atuarial).');
+
+      // 4.4
+      const g44 = ['#org_ugu', '#org_outros'];
+      const ok44 = g44.some(sel => $(sel)?.checked);
+      g44.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok44));
+      if (!ok44) msgs.push('Marque ao menos uma opção no item 4.4 (critérios estruturantes).');
+
+      // 4.5
+      const g45 = ['#man_cert', '#man_melhoria', '#man_acomp'];
+      const ok45 = g45.some(sel => $(sel)?.checked);
+      g45.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok45));
+      if (!ok45) msgs.push('Marque ao menos uma opção no item 4.5 (fase de manutenção da conformidade).');
+    }
+
 
     // Passo 5: TODOS os itens obrigatórios
     if (s===5){
