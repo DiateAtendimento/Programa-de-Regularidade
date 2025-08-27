@@ -250,54 +250,53 @@
         await waitFonts();
         fitTitle();
 
-        // — nome do arquivo: Form_Prog_Reg_Prev - <Município-UF>.pdf
-        const p       = new URLSearchParams(location.search);
-        const enteRaw = (p.get('ente') || '').trim();
-        const ufRaw   = (p.get('uf')   || '').trim();
-
-        const municipio = sanitizeFilename(enteRaw); // usa a função já definida acima
+        // Nome do arquivo: Form_Prog_Reg_Prev - <Município-UF>.pdf
+        const p         = new URLSearchParams(location.search);
+        const enteRaw   = (p.get('ente') || '').trim();
+        const ufRaw     = (p.get('uf')   || '').trim();
+        const municipio = sanitizeFilename(enteRaw);
         const ufSafe    = sanitizeFilename(ufRaw);
+        const muniUF    = municipio ? `${municipio}${ufSafe ? `-${ufSafe}` : ''}` : 'Sem municipio';
+        const filename  = `Form_Prog_Reg_Prev - ${muniUF}.pdf`;
 
-        const muniUF   = municipio ? `${municipio}${ufSafe ? `-${ufSafe}` : ''}` : 'Sem municipio';
-        const filename = `Form_Prog_Reg_Prev - ${muniUF}.pdf`;
-
-        // — prepara o cabeçalho (logos + título) como imagem para repetir em todas as páginas
+        // Captura somente as LOGOS para repetir no topo de todas as páginas
         const header = await captureHeaderDataURL();
         const ratio  = header.h / header.w;
 
-        // medidas em mm
-        const pageW  = 210;              // A4 retrato
-        const padMM  = 15;               // padding lateral (combina com CSS)
-        const headerWmm = pageW - 2*padMM;
-        const headerHmm = headerWmm * ratio;
-        const gapBelowHeader = 3;        // respiro abaixo do cabeçalho
+        // --- Layout em milímetros (A4 retrato) ---
+        const PAGE_W_MM     = 210;
+        const SIDE_PAD_MM   = 15;           // margens esquerda/direita/conteúdo
+        const HEAD_TOP_MM   = 6;            // distância do topo da página p/ as logos (↓ sobe o cabeçalho)
+        const headerWmm     = PAGE_W_MM - 2*SIDE_PAD_MM;
+        const headerHmm     = headerWmm * ratio;
+        const GAP_BELOW_HDR = 3;            // respiro abaixo do cabeçalho
 
-        // oculta o header original enquanto exporta
+        // Esconde apenas as LOGOS durante a exportação (título continua visível)
         document.getElementById('pdf-root').classList.add('pdf-export');
 
         const opt = {
-          // reserva área superior em TODAS as páginas para desenhar o cabeçalho
-          margin: [padMM + headerHmm + gapBelowHeader, 0, padMM, 0],
+          // top, left, bottom, right
+          margin: [HEAD_TOP_MM + headerHmm + GAP_BELOW_HDR, SIDE_PAD_MM, SIDE_PAD_MM, SIDE_PAD_MM],
           filename,
-          html2canvas: { scale: 2, letterRendering: 1, useCORS: true, backgroundColor: '#fff', scrollX: 0, scrollY: 0 },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] }
+          html2canvas: { scale:2, letterRendering:1, useCORS:true, backgroundColor:'#fff', scrollX:0, scrollY:0 },
+          jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
+          pagebreak: { mode:['css','legacy'] }
         };
 
         const root   = document.getElementById('pdf-root');
         const worker = html2pdf().set(opt).from(root).toPdf();
 
-        // desenha o cabeçalho em todas as páginas
+        // Desenha o cabeçalho em TODAS as páginas
         await worker.get('pdf').then(pdf => {
           const pages = pdf.getNumberOfPages ? pdf.getNumberOfPages() : pdf.internal.getNumberOfPages();
           for (let i = 1; i <= pages; i++) {
             pdf.setPage(i);
-            pdf.addImage(header.dataURL, 'PNG', padMM, padMM, headerWmm, headerHmm, undefined, 'FAST');
+            pdf.addImage(header.dataURL, 'PNG', SIDE_PAD_MM, HEAD_TOP_MM, headerWmm, headerHmm, undefined, 'FAST');
           }
         }).save();
 
         document.getElementById('pdf-root').classList.remove('pdf-export');
-      }
+      }   
 
 
       (function init(){
