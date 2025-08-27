@@ -24,15 +24,24 @@ body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-se
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:6mm;
-  margin-bottom:8mm
+  gap:3mm;
+  margin-bottom:6mm
 }
 
 /* Durante exportação, remove do fluxo para não reservar espaço extra */
 .pdf-export .page-head{ display:none !important }
 
-/* Título não é usado */
-.term-title{ display:none }
+
+.term-title{
+  display:block;               
+  margin-top:2.5mm;
+  text-align:center;
+  font-weight:800;
+  font-size:16px;
+  letter-spacing:.2px;
+  line-height:1.3;
+  color:#111;
+}
 
 /* Logos na MESMA LINHA, centralizadas + traço abaixo */
 .logos-wrap{
@@ -43,7 +52,7 @@ body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-se
   flex-wrap:wrap;
   gap:2mm 6mm;
   width:100%;
-  padding-top:.5mm
+  padding-top: 1mm
 }
 
 /* tamanhos ajustados */
@@ -67,10 +76,18 @@ body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-se
   font-size:15px;font-weight:800;color:var(--brand);margin-bottom:3mm;letter-spacing:.2px;
   page-break-after: avoid; break-after: avoid
 }
-.term-section p{
-  margin:1.8mm 0;text-align:justify;text-justify:inter-word;hyphens:auto;overflow-wrap:break-word;
-  page-break-inside: avoid
+.term-section p,
+.term-section li{
+  line-height:1.38;                /* leitura melhor */
+  text-align:justify;
+  text-justify:inter-word;
+  hyphens:auto;                    /* hifenização natural */
+  word-break:normal;
+  overflow-wrap:break-word;
+  orphans:3; widows:3;             /* evita linhas soltas (onde suportado) */
+  page-break-inside:avoid;
 }
+
 .term-section ul{margin:2mm 0 0 6mm;padding-left:2mm}
 .term-section li{
   margin:1.6mm 0;text-align:justify;text-justify:inter-word;hyphens:auto;overflow-wrap:break-word;

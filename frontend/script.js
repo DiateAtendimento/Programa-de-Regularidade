@@ -662,21 +662,22 @@
     fillNowHiddenFields();
     const payload = buildPayload();
 
-    // abre o termo em nova aba, sem salvar
+    // abre o termo em nova aba, SEM salvar
     openTermoWithPayload(payload, '0'); // auto=0
 
-    // feedback visual: Lottie "Termo gerado" só aqui (na prévia)
+    // mostra o Lottie de sucesso e deixa o usuário fechar manualmente
     modalSucesso.show();
-    setTimeout(() => {
-      modalSucesso.hide();
-      if (btnGerar) {
-        btnGerar.disabled = false;
-        btnGerar.innerHTML = gerarLabel;
-      }
-      gerarBusy = false;
-    }, 2000);
-  });
 
+    // quando o modal for FECHADO, voltamos o botão ao normal
+    document.getElementById('modalSucesso')
+      ?.addEventListener('hidden.bs.modal', () => {
+        if (btnGerar) {
+          btnGerar.disabled = false;
+          btnGerar.innerHTML = gerarLabel;
+        }
+        gerarBusy = false;
+      }, { once: true });
+  });
 
   /* ========= Submit / Finalizar ========= */
   $('#regularidadeForm')?.addEventListener('submit', async (e)=>{

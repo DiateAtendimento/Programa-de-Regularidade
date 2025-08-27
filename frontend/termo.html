@@ -14,13 +14,16 @@
     <header class="page-head">
       <div class="logos-wrap" aria-label="Identidade visual MPS">
         <img class="logo-sec" src="imagens/logo-secretaria-complementar.svg"
-             alt="Secretaria de Regimes Próprios e Complementar" />
+            alt="Secretaria de Regimes Próprios e Complementar" />
         <img class="logo-mps" src="imagens/logo-termo-drpps.svg"
-             alt="Ministério da Previdência Social - MPS" />
+            alt="Ministério da Previdência Social - MPS" />
         <div class="logo-rule" aria-hidden="true"></div>
       </div>
-      <!-- título não exibido; mantido apenas por acessibilidade -->
-      <h1 id="term-title" class="term-title">—</h1>
+
+      <!-- Título visível logo abaixo da linha das logos -->
+      <h1 id="term-title" class="term-title">
+        FORMULÁRIO PARA GERAÇÃO DO TERMO DE ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA
+      </h1>
     </header>
 
     <!-- 1. IDENTIFICAÇÃO DO ENTE FEDERATIVO -->
@@ -75,7 +78,6 @@
       <ul>
         <li><strong>3.1 Data de vencimento do último CRP obtido:</strong> <span data-k="venc_ult_crp"></span></li>
         <li><strong>3.2 Tipo de emissão do último CRP:</strong> <span data-k="tipo_emissao_crp"></span></li>
-        <li>3.2.1 Administrativa &nbsp;/&nbsp; 3.2.2 Judicial</li>
       </ul>
 
       <div class="keep-together" id="sec-criterios">
@@ -222,10 +224,15 @@
 
       // Captura o cabeçalho como imagem para repetir em TODAS as páginas
       async function captureHeaderDataURL(){
-        const el = document.querySelector('.logos-wrap');
-        const canvas = await html2canvas(el, { scale:2, backgroundColor:'#fff', useCORS:true, scrollX:0, scrollY:0 });
+        const el = document.querySelector('.page-head');
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          backgroundColor: '#fff',
+          useCORS: true,
+          scrollX: 0,
+          scrollY: 0
+        });
         return { dataURL: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
-        // dataURL é PNG; jsPDF entende com o tipo 'PNG'
       }
 
       (function adaptSignatureCaption(){
@@ -238,40 +245,55 @@
         } // municipal já está no HTML
       })();
 
+      function sanitizeFilename(s){
+      return String(s || 'Sem município').replace(/[\\/:*?"<>|]+/g,'').trim();
+      }
 
       async function generatePdf(){
-        await waitFonts(); fitTitle();
+        await waitFonts(); 
+        fitTitle();
 
-        // prepara o cabeçalho
+        // — nome do arquivo: Form_Prog_Reg_Prev - <Município>.pdf
+        const p = new URLSearchParams(location.search);
+        const enteRaw = (p.get('ente') || '').trim();
+        const enteSafe = enteRaw
+          .replace(/[\\/:*?"<>|]/g, '')        // remove chars inválidos p/ filename
+          .replace(/\s+/g, ' ')                // normaliza espaços
+          .trim();
+        const filename = (enteSafe ? `Form_Prog_Reg_Prev - ${enteSafe}` : 'Form_Prog_Reg_Prev') + '.pdf';
+
+        // — prepara o cabeçalho (logos) como imagem para repetir em todas as páginas
         const header = await captureHeaderDataURL();
         const ratio = header.h / header.w;
 
         // medidas em mm
-        const pageW = 210;        // A4 retrato
-        const padMM = 15;         // mesmo padding horizontal do CSS
-        const headerWmm = pageW - 2*padMM;
+        const pageW = 210;       // A4 retrato
+        const padMM = 15;        // padding lateral (combina com CSS)
+        const headerWmm = pageW - 2 * padMM;
         const headerHmm = headerWmm * ratio;
-        const gapBelowHeader = 4; // respiro abaixo do cabeçalho
+        const gapBelowHeader = 3; // respiro menor abaixo do cabeçalho
 
-        // oculta visualmente o header original durante a exportação
+        // oculta o header original enquanto exporta
         document.getElementById('pdf-root').classList.add('pdf-export');
 
         const opt = {
           // reserva área superior em TODAS as páginas para desenhar o cabeçalho
           margin: [padMM + headerHmm + gapBelowHeader, 0, padMM, 0],
-          filename: 'termo_adesao_prp.pdf',
-          html2canvas: { scale:2, letterRendering:1, useCORS:true, backgroundColor:'#fff', scrollX:0, scrollY:0 },
-          jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
-          pagebreak: { mode:['css','legacy'] }
+          filename,
+          html2canvas: {
+            scale: 2, letterRendering: 1, useCORS: true, backgroundColor: '#fff', scrollX: 0, scrollY: 0
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css','legacy'] }
         };
 
         const root = document.getElementById('pdf-root');
         const worker = html2pdf().set(opt).from(root).toPdf();
 
         // desenha o cabeçalho em todas as páginas
-        await worker.get('pdf').then(pdf=>{
+        await worker.get('pdf').then(pdf => {
           const pages = pdf.getNumberOfPages ? pdf.getNumberOfPages() : pdf.internal.getNumberOfPages();
-          for(let i=1;i<=pages;i++){
+          for (let i = 1; i <= pages; i++) {
             pdf.setPage(i);
             pdf.addImage(header.dataURL, 'PNG', padMM, padMM, headerWmm, headerHmm, undefined, 'FAST');
           }
