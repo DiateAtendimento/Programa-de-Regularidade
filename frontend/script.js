@@ -132,12 +132,17 @@
   const btnPrev  = $('#btnPrev');
   const btnNext  = $('#btnNext');
   const btnSubmit= $('#btnSubmit');
+  const btnGerar = $('#btnGerarForm'); // << NOVO: botão de "Gerar Formulário" (opcional)
   const navFooter= $('#navFooter');
   const pesquisaRow = $('#pesquisaRow');
 
-  // âncora para recolocar o Próximo no rodapé
+  // âncora para recolocar o Próximo no rodapé (defensivo)
   const nextAnchor = document.createComment('next-button-anchor');
-  navFooter?.insertBefore(nextAnchor, btnSubmit);
+  if (navFooter && btnSubmit && navFooter.contains(btnSubmit)) {
+    navFooter.insertBefore(nextAnchor, btnSubmit);
+  } else if (navFooter) {
+    navFooter.appendChild(nextAnchor);
+  }
 
   // wrapper col-auto para alinhar com o "Pesquisar" na etapa 0
   let inlineNextCol = null;
@@ -164,23 +169,42 @@
   }
 
   function updateNavButtons(){
-    btnPrev.classList.toggle('d-none', step < 1);
-    btnNext.disabled = (step === 0 && !cnpjOK);
-    btnNext.classList.toggle('d-none', step===8);
-    btnSubmit.classList.toggle('d-none', step!==8);
+    btnPrev?.classList.toggle('d-none', step < 1);     // Voltar só a partir do passo 1
+    if (btnNext){
+      btnNext.disabled = (step === 0 && !cnpjOK);       // No passo 0, só habilita após pesquisa ok
+      btnNext.classList.toggle('d-none', step === 8);   // Esconde Próximo no passo 8
+    }
+    btnSubmit?.classList.toggle('d-none', step !== 8);  // Mostra Finalizar só no passo 8
+    btnGerar?.classList.toggle('d-none', step !== 8);   // << NOVO: Gerar Formulário só no passo 8
   }
+
   function updateFooterAlign(){
     if (!navFooter) return;
-    [btnPrev, btnNext, btnSubmit].forEach(b => b && b.classList.remove('ms-auto'));
-    if (step === 8) btnSubmit?.classList.add('ms-auto');
-    else if (step > 0) btnNext?.classList.add('ms-auto');
+    [btnPrev, btnNext, btnSubmit, btnGerar].forEach(b => b && b.classList.remove('ms-auto'));
+    if (step === 8){
+      // Deixa "Finalizar" à direita; "Gerar Formulário" fica à esquerda dele
+      btnSubmit?.classList.add('ms-auto');
+    } else if (step > 0) {
+      btnNext?.classList.add('ms-auto');
+    }
   }
+
   function showStep(n){
     step = Math.max(0, Math.min(8, n));
-    sections.forEach(sec => sec.style.display = (Number(sec.dataset.step)===step ? '' : 'none'));
-    const activeIdx = Math.min(step, stepsUI.length-1);
-    stepsUI.forEach((s,i)=> s.classList.toggle('active', i===activeIdx));
+
+    sections.forEach(sec => {
+      sec.style.display = (Number(sec.dataset.step) === step ? '' : 'none');
+    });
+
+    const activeIdx = Math.min(step, stepsUI.length - 1);
+    stepsUI.forEach((s,i)=> s.classList.toggle('active', i === activeIdx));
+
+    // Próximo ao lado do Pesquisar só no passo 0
     placeNextInline(step === 0);
+
+    // Rodapé invisível no passo 0; visível nos demais
+    navFooter?.classList.toggle('d-none', step === 0);
+
     updateNavButtons();
     updateFooterAlign();
   }
@@ -236,10 +260,8 @@
         if(!ok) msgs.push('Esfera de Governo');
       }
       if (s===3) {
-        // 3.2: precisa escolher uma opção (radio)
         const rOK = $('#em_adm')?.checked || $('#em_jud')?.checked;
         if (!rOK) msgs.push('Tipo de emissão do último CRP (item 3.2)');
-        // 3.3: precisa marcar ao menos um critério
         const cOK = hasAnyChecked('input[name="CRITERIOS_IRREGULARES[]"]');
         if (!cOK) msgs.push('Critérios irregulares (item 3.3)');
       }
@@ -247,39 +269,32 @@
 
     // --- Passo 4: cada subitem precisa de pelo menos 1 marcado ---
     if (s === 4) {
-      // 4.1
       const g41 = ['#parc60', '#parc300'];
       const ok41 = g41.some(sel => $(sel)?.checked);
       g41.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok41));
       if (!ok41) msgs.push('Marque ao menos uma opção no item 4.1 (parcelamento).');
 
-      // 4.2
       const g42 = ['#reg_sem_jud', '#reg_com_jud'];
       const ok42 = g42.some(sel => $(sel)?.checked);
       g42.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok42));
       if (!ok42) msgs.push('Marque ao menos uma opção no item 4.2 (regularização para CRP).');
 
-      // 4.3
       const g43 = ['#eq_implano', '#eq_prazos', '#eq_plano_alt'];
       const ok43 = g43.some(sel => $(sel)?.checked);
       g43.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok43));
       if (!ok43) msgs.push('Marque ao menos uma opção no item 4.3 (equacionamento do déficit atuarial).');
 
-      // 4.4
       const g44 = ['#org_ugu', '#org_outros'];
       const ok44 = g44.some(sel => $(sel)?.checked);
       g44.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok44));
       if (!ok44) msgs.push('Marque ao menos uma opção no item 4.4 (critérios estruturantes).');
 
-      // 4.5
       const g45 = ['#man_cert', '#man_melhoria', '#man_acomp'];
       const ok45 = g45.some(sel => $(sel)?.checked);
       g45.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok45));
       if (!ok45) msgs.push('Marque ao menos uma opção no item 4.5 (fase de manutenção da conformidade).');
     }
 
-
-    // Passo 5: TODOS os itens obrigatórios
     if (s===5){
       const all = $$('.grp-comp');
       const checked = all.filter(i=>i.checked);
@@ -476,7 +491,6 @@
         EMAIL: $('#EMAIL_REP_UG').value.trim(), TELEFONE: $('#TEL_REP_UG').value.trim(), CARGO: $('#CARGO_REP_UG').value.trim() }
     ];
     for (const rep of reps){
-      // grava se tem CPF válido e pelo menos nome preenchido
       if (digits(rep.CPF).length===11 && rep.NOME){
         await fetch(`${API_BASE}/api/upsert-rep`, {
           method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(rep)
@@ -485,21 +499,18 @@
     }
   }
 
-  /* ========= Submit ========= */
-  $('#regularidadeForm')?.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    for (let s=1; s<=8; s++){ if(!validateStep(s)) return; }
-
-    await upsertBaseIfMissing();
-    await upsertRepresentantes();
-
+  // ======== Util: preencher campos de data/hora escondidos quando gerar/finzalizar ========
+  function fillNowHiddenFields(){
     const now = new Date();
     $('#MES').value               = String(now.getMonth()+1).padStart(2,'0');
     $('#DATA_TERMO_GERADO').value = fmtBR(now);
     $('#HORA_TERMO_GERADO').value = fmtHR(now);
     $('#ANO_TERMO_GERADO').value  = String(now.getFullYear());
+  }
 
-    const payload = {
+  // ======== Util: construir o payload (mesmo formato do submit) ========
+  function buildPayload(){
+    return {
       ENTE: $('#ENTE').value.trim(),
       UF: $('#UF').value.trim(),
       CNPJ_ENTE: digits($('#CNPJ_ENTE').value),
@@ -535,6 +546,60 @@
       __snapshot_base: snapshotBase,
       __user_changed_fields: Array.from(editedFields)
     };
+  }
+
+  // ======== Util: abrir termo.html com os dados (auto = '0' ou '1') ========
+  function openTermoWithPayload(payload, autoFlag){
+    const esfera = ($('#esf_mun')?.checked ? 'RPPS Municipal' :
+                    ($('#esf_est')?.checked ? 'Estadual/Distrital' : ''));
+    const qs = new URLSearchParams({
+      uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
+      email_ente: payload.EMAIL_ENTE,
+      ug: payload.UG, cnpj_ug: $('#CNPJ_UG').value,
+      email_ug: payload.EMAIL_UG,
+      esfera,
+      nome_rep_ente: payload.NOME_REP_ENTE, cpf_rep_ente: $('#CPF_REP_ENTE').value,
+      cargo_rep_ente: payload.CARGO_REP_ENTE, email_rep_ente: payload.EMAIL_REP_ENTE,
+      nome_rep_ug: payload.NOME_REP_UG, cpf_rep_ug: $('#CPF_REP_UG').value,
+      cargo_rep_ug: payload.CARGO_REP_UG, email_rep_ug: payload.EMAIL_REP_UG,
+      venc_ult_crp: $('#DATA_VENCIMENTO_ULTIMO_CRP').value,
+      tipo_emissao_crp: payload.TIPO_EMISSAO_ULTIMO_CRP,
+      celebracao: payload.CELEBRACAO_TERMO_PARCELA_DEBITOS,
+      regularizacao: payload.REGULARIZACAO_PENDEN_ADMINISTRATIVA,
+      deficit: payload.DEFICIT_ATUARIAL,
+      criterios_estrut: payload.CRITERIOS_ESTRUT_ESTABELECIDOS,
+      manutencao_normas: payload.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS,
+      compromisso: payload.COMPROMISSO_FIRMADO_ADESAO,
+      providencias: payload.PROVIDENCIA_NECESS_ADESAO,
+      condicao_vigencia: payload.CONDICAO_VIGENCIA,
+      data_termo: $('#DATA_TERMO_GERADO').value,
+      auto: String(autoFlag || '1')
+    });
+    payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
+    window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
+  }
+
+  /* ========= AÇÃO: Gerar Formulário (passo 8) sem finalizar ========= */
+  btnGerar?.addEventListener('click', ()=>{
+    // valida tudo antes de gerar
+    for (let s=1; s<=8; s++){ if(!validateStep(s)) return; }
+    // carimba data/hora (para aparecer no PDF/preview)
+    fillNowHiddenFields();
+    const payload = buildPayload();
+    // abre o termo em nova aba sem acionar o fluxo de finalização
+    openTermoWithPayload(payload, '0'); // auto=0
+  });
+
+  /* ========= Submit / Finalizar ========= */
+  $('#regularidadeForm')?.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    for (let s=1; s<=8; s++){ if(!validateStep(s)) return; }
+
+    await upsertBaseIfMissing();
+    await upsertRepresentantes();
+
+    fillNowHiddenFields();
+    const payload = buildPayload();
 
     const submitOriginalHTML = btnSubmit.innerHTML;
     btnSubmit.disabled = true;
@@ -553,42 +618,15 @@
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
-      const esfera = ($('#esf_mun')?.checked ? 'RPPS Municipal' :
-                      ($('#esf_est')?.checked ? 'Estadual/Distrital' : ''));
-
-      const qs = new URLSearchParams({
-        uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
-        email_ente: payload.EMAIL_ENTE,
-        ug: payload.UG, cnpj_ug: $('#CNPJ_UG').value,
-        email_ug: payload.EMAIL_UG,
-        esfera,
-        nome_rep_ente: payload.NOME_REP_ENTE, cpf_rep_ente: $('#CPF_REP_ENTE').value,
-        cargo_rep_ente: payload.CARGO_REP_ENTE, email_rep_ente: payload.EMAIL_REP_ENTE,
-        nome_rep_ug: payload.NOME_REP_UG, cpf_rep_ug: $('#CPF_REP_UG').value,
-        cargo_rep_ug: payload.CARGO_REP_UG, email_rep_ug: payload.EMAIL_REP_UG,
-        venc_ult_crp: $('#DATA_VENCIMENTO_ULTIMO_CRP').value,
-        tipo_emissao_crp: payload.TIPO_EMISSAO_ULTIMO_CRP,
-        celebracao: payload.CELEBRACAO_TERMO_PARCELA_DEBITOS,
-        regularizacao: payload.REGULARIZACAO_PENDEN_ADMINISTRATIVA,
-        deficit: payload.DEFICIT_ATUARIAL,
-        criterios_estrut: payload.CRITERIOS_ESTRUT_ESTABELECIDOS,
-        manutencao_normas: payload.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS,
-        compromisso: payload.COMPROMISSO_FIRMADO_ADESAO,
-        providencias: payload.PROVIDENCIA_NECESS_ADESAO,
-        condicao_vigencia: payload.CONDICAO_VIGENCIA,
-        data_termo: $('#DATA_TERMO_GERADO').value,
-        auto: '1'
-      });
-      payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
-
-      window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
+      // Opcionalmente, também abre o formulário ao finalizar (como antes)
+      openTermoWithPayload(payload, '1'); // auto=1
 
       modalSucesso.show();
       setTimeout(() => {
         modalSucesso.hide();
         $('#regularidadeForm').reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
-        $$( 'input[type="checkbox"], input[type="radio"]' ).forEach(el=> el.checked=false);
+        $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
         editedFields.clear();
         snapshotBase = null;
         cnpjOK = false;

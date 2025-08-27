@@ -439,31 +439,29 @@
               <h2 class="section-title">8. <span class="highlight">Importante</span></h2>
             </div>
 
-            <div class="mb-3">
-              <button type="submit" id="btnSubmit" class="btn btn-success">Gerar Formulário</button>
+            <!-- Botões da etapa 8 -->
+            <div class="mb-3 d-flex gap-2">
+              <button id="btnGerarForm" type="button" class="btn btn-outline-secondary">
+                Gerar formulário
+              </button>
+              <!-- O botão "Finalizar" fica no rodapé (#navFooter). Não duplique aqui. -->
             </div>
 
             <fieldset class="important-box mb-3">
               <legend>IMPORTANTE</legend>
               <ul class="mb-0">
-                <li>Fazer o download do Formulário clicando no botão acima.</li>
-                <li>O formulário deve ser assinados pelos representantes via <strong>GOV.BR</strong></li>
+                <li>Use <strong>Gerar formulário</strong> para abrir/baixar o termo (pré-visualização).</li>
+                <li>Depois, clique em <strong>Finalizar</strong> no rodapé para <u>registrar</u> e concluir a tarefa.</li>
               </ul>
             </fieldset>
-
-            <div class="alert alert-info" role="alert">
-              Ao clicar em <strong>Gerar Formulário</strong>, o sistema realizará o registro das informações e iniciará automaticamente o processo de download do formulário.
-            </div>
           </section>
-
-
 
 
           <!-- Navegação -->
           <div id="navFooter" class="d-flex align-items-center gap-2 mt-2">
             <button type="button" id="btnPrev" class="btn btn-outline-secondary">Voltar</button>
             <button type="button" id="btnNext" class="btn btn-primary">Próximo</button>
-            <button type="submit" id="btnSubmit" class="btn btn-success d-none">Gerar Formulário</button>
+            <button type="submit" id="btnSubmit" class="btn btn-success d-none">Finalizar</button>
           </div>
 
           <!-- carimbos -->
