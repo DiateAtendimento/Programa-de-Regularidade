@@ -12,20 +12,21 @@
   const FETCH_TIMEOUT_MS = 20000; // 20s
   const FETCH_RETRIES = 2;        // tentativas além da primeira
 
-  // Helper com timeout + retries + cache-busting/headers anti-cache
-  async function fetchJSON(url, { method='GET', headers={}, body=null } = {}, { label='request', timeout=FETCH_TIMEOUT_MS, retries=FETCH_RETRIES } = {}) {
+  // Helper com timeout + retries + cache-busting
+  async function fetchJSON(
+    url,
+    { method = 'GET', headers = {}, body = null } = {},
+    { label = 'request', timeout = FETCH_TIMEOUT_MS, retries = FETCH_RETRIES } = {}
+  ) {
     let attempt = 0;
+
     // cache-busting por querystring (evita precisar dar Ctrl+F5)
     const bust = `_ts=${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const sep = url.includes('?') ? '&' : '?';
     const finalURL = `${url}${sep}${bust}`;
 
-    const finalHeaders = {
-      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      ...headers
-    };
+    // ⚠️ Removido: Cache-Control / Pragma / Expires (causavam preflight + CORS)
+    const finalHeaders = { ...headers };
 
     while (true) {
       attempt++;
@@ -37,15 +38,15 @@
           headers: finalHeaders,
           body,
           signal: ctrl.signal,
-          cache: 'no-store',           // reforço no fetch
-          credentials: 'same-origin',  // mantém cookies se houver
+          cache: 'no-store',          // reforço no fetch
+          credentials: 'same-origin', // mantém cookies se houver
           redirect: 'follow'
         });
         clearTimeout(to);
 
         if (!res.ok) {
           const isJson = (res.headers.get('content-type') || '').includes('application/json');
-          const data = isJson ? (await res.json().catch(()=>null)) : null;
+          const data = isJson ? (await res.json().catch(() => null)) : null;
           const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
           const err = new Error(msg);
           err.status = res.status;
@@ -70,6 +71,7 @@
       }
     }
   }
+
 
   function friendlyErrorMessages(err, fallback='Falha ao comunicar com o servidor.') {
     const status = err?.status;
