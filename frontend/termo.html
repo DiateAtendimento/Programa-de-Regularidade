@@ -119,12 +119,15 @@
         <li data-code="4.4.2">4.4.2 cumprimento de outro critério que apresente maior complexidade.</li>
       </ul>
 
-      <p class="mt"><strong>4.5 Manutenção da conformidade do RPPS às normas gerais</strong></p>
-      <ul><li><span data-k="manutencao_normas"></span></li></ul>
+      <!-- 4.5 embrulhado para não quebrar -->
+      <div class="keep-together" id="sec-45">
+        <p class="mt"><strong>4.5 Manutenção da conformidade do RPPS às normas gerais</strong></p>
+        <ul><li><span data-k="manutencao_normas"></span></li></ul>
 
-      <p class="small mt">
-        Obs.: Acesso às fases específicas/Manutenção conforme requisitos do Anexo XVIII da Portaria MTP nº 1.467/2022, certificação Pró-Gestão RPPS/ISP-RPPS e medidas dos arts. 67 a 69. Nesta fase, caso necessário, poderão ser apresentados planos de ação para CRP emergenciais.
-      </p>
+        <p class="small mt">
+          Obs.: Acesso às fases específicas/Manutenção conforme requisitos do Anexo XVIII da Portaria MTP nº 1.467/2022, certificação Pró-Gestão RPPS/ISP-RPPS e medidas dos arts. 67 a 69. Nesta fase, caso necessário, poderão ser apresentados planos de ação para CRP emergenciais.
+        </p>
+      </div>
     </section>
 
     <!-- 5. COMPROMISSOS -->
@@ -234,14 +237,14 @@
           criterios.forEach(c => { const li=document.createElement('li'); li.textContent=c; ul.appendChild(li); });
         }
 
-        // 4 – Finalidade Inicial da Adesão (mostrar apenas o(s) selecionado(s))
-        const chosenA = !!(p.get('celebracao')||'').trim();
-        const chosenB = !!(p.get('regularizacao')||'').trim();
-        const finais = [];
-        if (chosenA) finais.push('A');
-        if (chosenB) finais.push('B');
+        // 4 – Finalidade Inicial da Adesão (mostrar rótulos completos A/B)
+        const hasA = !!(p.get('celebracao')||'').trim();
+        const hasB = !!(p.get('regularizacao')||'').trim();
+        const labels = [];
+        if (hasA) labels.push('A - Parcelamento de débitos.');
+        if (hasB) labels.push('B - Regularização de pendências para emissão administrativa e regular do CRP. Detalhamento da(s) finalidade(s)');
         document.getElementById('finalidades-iniciais').textContent =
-          finais.length ? finais.join(' e/ou ') : 'Não informado.';
+          labels.length ? labels.join(' e/ou ') : 'Não informado.';
 
         // 4.x – manter apenas as opções selecionadas
         filterOptions('celebracao', 'opt-4-1', [
@@ -294,15 +297,27 @@
         }
       }
 
-      // Versão mais flexível: olha o valor do parâmetro E também o conjunto de pares k=v da URL,
-      // para permitir chaves como compromissos=5.1, comp51=on, comp5_1=true etc.
+      // Versão mais flexível para compromissos/providências: lê o valor do param,
+      // também examina toda a query e PRIORIZA códigos explícitos comp=5.x
       function filterOptionsFlexible(paramKey, listId, rules){
         const rawParam = (p.get(paramKey)||'').toString();
-        const rawAll = [...p.entries()].map(([k,v]) => `${k}=${v}`).join(' ');
-        const raw = `${rawParam} ${rawAll}`;
+        const rawAllPairs = [...p.entries()].map(([k,v]) => `${k}=${v}`).join(' ');
+        const raw = `${rawParam} ${rawAllPairs}`;
+
+        // códigos explícitos enviados na URL (ex.: comp=5.5)
+        const pickedFromQuery = new Set();
+        for (const [k,v] of p.entries()) {
+          if (k === 'comp' && /^5\.[1-6]$/.test(v)) pickedFromQuery.add(v);
+        }
+
         const list = document.getElementById(listId);
         if (!list) return;
-        const picked = rules.filter(r => r.test.test(raw)).map(r=>r.code);
+
+        let picked = rules.filter(r => r.test.test(raw)).map(r=>r.code);
+        if (pickedFromQuery.size) {
+          picked = rules.map(r=>r.code).filter(code => pickedFromQuery.has(code));
+        }
+
         [...list.querySelectorAll('li')].forEach(li=>{
           const code = li.getAttribute('data-code');
           if (!picked.length){ li.remove(); return; }
@@ -349,10 +364,34 @@
         // Layout A4 em mm
         const PAGE_W_MM   = 210;
         const SIDE_PAD_MM = 15;
-        const HEAD_TOP_MM = 2;                  // mais perto do topo (ajuste solicitado)
+        const HEAD_TOP_MM = 2;                  // perto do topo
         const headerWmm   = PAGE_W_MM - 2*SIDE_PAD_MM;
         const headerHmm   = headerWmm * ratio;
-        const GAP_BELOW   = 0.5;
+        const GAP_BELOW   = 6;                  // respiro coerente com CSS (título centralizado)
+
+        // ===== Footer inteligente: quebra só se não couber =====
+        (function decideFooterBreak(){
+          const root   = document.getElementById('pdf-root');
+          const footer = root?.querySelector('.term-footer');
+          if (!root || !footer) return;
+
+          footer.classList.remove('footer-force-break');
+
+          const mmToPx = v => v * (window.devicePixelRatio || 1) * 3.78;
+          const pageHpx     = mmToPx(297);
+          const topMarginPx = mmToPx(HEAD_TOP_MM + headerHmm + GAP_BELOW);
+          const bottomPx    = mmToPx(SIDE_PAD_MM);
+
+          const contentHpx  = pageHpx - topMarginPx - bottomPx;
+
+          const rectRoot   = root.getBoundingClientRect();
+          const rectFooter = footer.getBoundingClientRect();
+          const footerTopInRoot = rectFooter.top - rectRoot.top;
+          const footerHeight    = rectFooter.height;
+
+          const fitsFirstPage = (footerTopInRoot + footerHeight) <= contentHpx;
+          if (!fitsFirstPage) footer.classList.add('footer-force-break');
+        })();
 
         // Oculta as logos originais (título permanece)
         document.getElementById('pdf-root').classList.add('pdf-export');

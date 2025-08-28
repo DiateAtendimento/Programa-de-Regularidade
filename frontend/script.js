@@ -322,18 +322,19 @@
       }
     }
 
-    // --- Passo 4: cada subitem precisa de pelo menos 1 marcado ---
+    // --- Passo 4: exigir ao menos A (4.1) e/ou B (4.2) ---
     if (s === 4) {
       const g41 = ['#parc60', '#parc300'];
-      const ok41 = g41.some(sel => $(sel)?.checked);
-      g41.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok41));
-      if (!ok41) msgs.push('Marque ao menos uma opção no item 4.1 (parcelamento).');
-
       const g42 = ['#reg_sem_jud', '#reg_com_jud'];
-      const ok42 = g42.some(sel => $(sel)?.checked);
-      g42.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok42));
-      if (!ok42) msgs.push('Marque ao menos uma opção no item 4.2 (regularização para CRP).');
 
+      const ok41_any = g41.some(sel => $(sel)?.checked);
+      const ok42_any = g42.some(sel => $(sel)?.checked);
+
+      if (!ok41_any && !ok42_any) {
+        msgs.push('Marque ao menos uma finalidade inicial (A - Parcelamento ou B - Regularização para CRP).');
+      }
+
+      // (opcional) manter as demais obrigatoriedades:
       const g43 = ['#eq_implano', '#eq_prazos', '#eq_plano_alt'];
       const ok43 = g43.some(sel => $(sel)?.checked);
       g43.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok43));
@@ -640,6 +641,14 @@
       data_termo: $('#DATA_TERMO_GERADO').value,
       auto: String(autoFlag || '1')
     });
+
+    // >>> NOVO: sinalização explícita de compromissos 5.x (garante 5.5 etc.)
+    const compAgg = String(payload.COMPROMISSO_FIRMADO_ADESAO || '');
+    [['5.1','5\\.1'], ['5.2','5\\.2'], ['5.3','5\\.3'], ['5.4','5\\.4'], ['5.5','5\\.5'], ['5.6','5\\.6']]
+      .forEach(([code, rx]) => {
+        if (new RegExp(`(^|\\D)${rx}(\\D|$)`).test(compAgg)) qs.append('comp', code);
+      });
+
     payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
     // abertura síncrona (menos chance de bloqueio de pop-up)
     window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
