@@ -12,7 +12,7 @@ body{
   color:var(--ink);
 }
 
-/* Container da página (visual/preview) */
+/* Container (preview) */
 .term-wrap{
   position:relative;
   width:var(--content-w);
@@ -23,7 +23,7 @@ body{
   box-shadow:0 24px 50px rgba(2,22,58,.12), 0 8px 18px rgba(2,22,58,.07);
 }
 
-/* Durante exportação, esconda APENAS as logos (o título fica visível) */
+/* Durante exportação, esconda APENAS as logos (título visível) */
 .pdf-export .logos-wrap{ display:none !important }
 
 /* ===================== Cabeçalho ===================== */
@@ -31,11 +31,11 @@ body{
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:3.5mm;                 /* um pouco mais compacto */
+  gap:3.5mm;
   margin-bottom:6mm;
 }
 
-/* Título visível logo abaixo da linha das logos */
+/* Título logo abaixo das logos */
 .term-title{
   display:block;
   margin-top:3mm;
@@ -47,7 +47,7 @@ body{
   color:#111;
 }
 
-/* Logos lado a lado + régua */
+/* Logos + régua */
 .logos-wrap{
   display:flex;
   flex-direction:row;
@@ -79,7 +79,7 @@ body{
   color:var(--brand);
   margin-bottom:3mm;
   letter-spacing:.2px;
-  break-after:avoid-page;         /* títulos não ficam no rodapé */
+  break-after:avoid-page;
   page-break-after:avoid;
 }
 
@@ -88,18 +88,18 @@ body{
   line-height:1.38;
   text-align:justify;
   text-justify:inter-word;
-  hyphens:auto;                   /* hifenização natural */
+  hyphens:auto;
   word-break:normal;
   overflow-wrap:break-word;
-  orphans:2; widows:2;            /* reduz viúvas/órfãs sem exagero */
-  page-break-inside:auto;         /* permite quebra quando necessário */
+  orphans:2; widows:2;
+  page-break-inside:auto;   /* permite quebra quando necessário, evitando grandes vazios */
 }
 
 .term-section ul{ list-style:none; margin:2mm 0 0 0; padding-left:0 }
 .term-section li{
   margin:1.6mm 0;
-  padding-left:6mm;               /* recuo visual */
-  text-indent:-6mm;               /* hanging indent p/ 1.1, 2.1, etc. */
+  padding-left:6mm;         /* recuo visual */
+  text-indent:-6mm;         /* hanging indent: mantém 1.1, 2.1 alinhados */
 }
 
 /* E-mails não quebram no meio */
@@ -112,7 +112,6 @@ body{
 .mt{ margin-top:3mm }
 .small{ font-size:12px; color:var(--muted) }
 
-/* Blocos que realmente precisam ficar juntos */
 .keep-together{ break-inside:avoid-page; page-break-inside:avoid }
 .break-before{ break-before:page; page-break-before:always }
 .logo-guard{ height:20mm }
@@ -138,7 +137,7 @@ body{
   .term-title{ font-size:20px }
 }
 
-/* Auto-download (não mostra botões) */
+/* Auto-download (não mostra botões de UI) */
 .auto-download .download-wrap{ display:none!important }
 
 /* ===================== Impressão ===================== */
