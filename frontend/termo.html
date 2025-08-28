@@ -26,11 +26,14 @@
     </header>
 
     <!-- 1. IDENTIFICAÇÃO DO ENTE FEDERATIVO -->
-    <section class="term-section" id="sec-1">
+    <section class="term-section">
       <h2>1. IDENTIFICAÇÃO DO ENTE FEDERATIVO</h2>
 
       <p><strong>1.1 Esfera de Governo</strong></p>
-      <ul id="esfera-list"><!-- preenchido via JS (1.1.1 ou 1.1.2) --></ul>
+      <ul>
+        <!-- será preenchido dinamicamente com 1.1.1 OU 1.1.2 -->
+        <li id="li-esfera"></li>
+      </ul>
 
       <p class="mt"><strong>1.2 Ente Federativo</strong></p>
       <ul>
@@ -48,7 +51,7 @@
     </section>
 
     <!-- 2. RESPONSÁVEIS -->
-    <section class="term-section" id="sec-2">
+    <section class="term-section">
       <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
 
       <p><strong>2.1 Representante legal do ente federativo</strong></p>
@@ -69,7 +72,7 @@
     </section>
 
     <!-- 3. CRP -->
-    <section class="term-section" id="sec-3">
+    <section class="term-section">
       <h2>3. IDENTIFICAÇÃO DA SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
       <ul>
         <li><strong>3.1 Data de vencimento do último CRP obtido:</strong> <span data-k="venc_ult_crp"></span></li>
@@ -83,72 +86,84 @@
     </section>
 
     <!-- 4. FINALIDADES -->
-    <section class="term-section" id="sec-4">
+    <section class="term-section">
       <h2>4. FINALIDADE(S) INICIAL(IS) DA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
 
-      <p><strong>Finalidade Inicial da Adesão:</strong></p>
-      <ul id="finalidade-principal"><!-- A e/ou B selecionadas --></ul>
+      <p>
+        <strong>Finalidade Inicial da Adesão:</strong>
+        <span id="finalidades-iniciais"></span>
+      </p>
 
-      <p class="mt"><strong>Detalhamento da(s) finalidade(s):</strong></p>
+      <p class="mt"><strong>4.1 Celebração de termos de parcelamento de débitos</strong></p>
+      <ul id="opt-4-1">
+        <li data-code="4.1.1">4.1.1 em até sessenta parcelas, com base nas regras previstas nos arts. 14 e 15 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025.</li>
+        <li data-code="4.1.2">4.1.2 em até trezentas parcelas, com base nas regras previstas nos arts. 115 e 117 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025, conforme disposto nos arts. 4º a 11 do Anexo XVII da Portaria MTP nº 1.467/2022.</li>
+      </ul>
 
-      <div id="block-41">
-        <p class="mt"><strong>4.1 Para celebração de termos de parcelamento de débitos</strong></p>
-        <ul id="sec-41"><!-- 4.1.1 / 4.1.2 selecionadas --></ul>
-      </div>
+      <p class="mt"><strong>4.2 Regularização de pendências para a emissão administrativa e regular do CRP</strong></p>
+      <ul id="opt-4-2">
+        <li data-code="4.2.1">4.2.1 para entes sem decisão judicial.</li>
+        <li data-code="4.2.2">4.2.2 para entes com decisão judicial, tendo em vista o disposto no acórdão do STF no RE nº 1.007.271 (Tema 968).</li>
+      </ul>
 
-      <div id="block-42">
-        <p class="mt"><strong>4.2 Para regularização de pendências para a emissão administrativa e regular do Certificado de Regularidade Previdenciária</strong></p>
-        <ul id="sec-42"><!-- 4.2.1 / 4.2.2 selecionadas --></ul>
-      </div>
+      <p class="mt"><strong>4.3 Equacionamento de déficit atuarial do RPPS</strong></p>
+      <ul id="opt-4-3">
+        <li data-code="4.3.1">4.3.1 implementação de plano de equacionamento do déficit atuarial do RPPS.</li>
+        <li data-code="4.3.2">4.3.2 prazos adicionais para comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à sua adequação orçamentária, financeira e fiscal.</li>
+        <li data-code="4.3.3">4.3.3 plano de equacionamento de déficit atuarial alternativo aos previstos na Portaria MTP nº 1.467/2022 (art. 55, § 7º).</li>
+      </ul>
 
-      <div id="block-43">
-        <p class="mt"><strong>4.3 Para equacionamento de déficit atuarial do RPPS</strong></p>
-        <p class="small">
-          (Observados os requisitos previstos no art. 3º, caput, inciso VI, do Anexo XVIII da Portaria MTP nº 1.467/2022, com a apresentação obrigatória de plano de ação)
-        </p>
-        <ul id="sec-43"><!-- 4.3.1 / 4.3.2 / 4.3.3 selecionadas --></ul>
-      </div>
+      <p class="mt"><strong>4.4 Organização do RPPS conforme os critérios estruturantes estabelecidos nas normas gerais</strong></p>
+      <ul id="opt-4-4">
+        <li data-code="4.4.1">4.4.1 adequação da Unidade Gestora Única do RPPS ao disposto no art. 40, § 20, da Constituição Federal.</li>
+        <li data-code="4.4.2">4.4.2 cumprimento de outro critério que apresente maior complexidade.</li>
+      </ul>
 
-      <div id="block-44">
-        <p class="mt"><strong>4.4 Para organização do RPPS conforme os critérios estruturantes estabelecidos nas normas gerais</strong></p>
-        <p class="small">
-          (Observados os requisitos previstos no art. 3º, caput, inciso VI, do Anexo XVIII da Portaria MTP nº 1.467/2022, com a apresentação obrigatória de plano de ação)
-        </p>
-        <ul id="sec-44"><!-- 4.4.1 / 4.4.2 selecionadas --></ul>
-      </div>
+      <p class="mt"><strong>4.5 Manutenção da conformidade do RPPS às normas gerais</strong></p>
+      <ul><li><span data-k="manutencao_normas"></span></li></ul>
 
-      <div id="block-45">
-        <p class="mt"><strong>4.5 Para acesso à Fase de Manutenção da conformidade do RPPS às normas gerais</strong></p>
-        <p class="small">
-          Por meio da demonstração de medidas de autorregularização, cooperação e reciprocidade do RPPS com a Secretaria de Regime Próprio e Complementar, conforme previsto no art. 236, § 5º, da Portaria MTP nº 1.467/2022.
-        </p>
-        <p class="small"><strong>Condições para acesso a esta fase:</strong></p>
-        <ul id="sec-45"><!-- medidas selecionadas (certificação, melhora, acompanhamento) --></ul>
-        <p class="small">
-          Nesta fase, caso necessário, poderão ser apresentados planos de ação para eventuais emissões de CRP emergenciais.
-        </p>
-      </div>
+      <p class="small mt">
+        Obs.: Acesso às fases específicas/Manutenção conforme requisitos do Anexo XVIII da Portaria MTP nº 1.467/2022, certificação Pró-Gestão RPPS/ISP-RPPS e medidas dos arts. 67 a 69. Nesta fase, caso necessário, poderão ser apresentados planos de ação para CRP emergenciais.
+      </p>
     </section>
 
     <!-- 5. COMPROMISSOS -->
-    <section class="term-section" id="sec-5">
+    <section class="term-section">
       <h2>5. COMPROMISSOS FIRMADOS NA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
-      <ul id="lista-5"><!-- apenas os compromissos marcados --></ul>
+      <ul>
+        <li>5.1 Regularidade nos repasses e nas parcelas de acordos (art. 14 e 15, Portaria MTP nº 1.467/2022).</li>
+        <li>5.2 Regularidade no encaminhamento de documentos e atendimento às solicitações (art. 241).</li>
+        <li>5.3 Utilização dos recursos previdenciários conforme Lei nº 9.796/1999.</li>
+        <li>5.4 Aplicação dos recursos segundo normas do CMN.</li>
+        <li>5.5 Adequações na legislação do RPPS quando identificadas pela Secretaria.</li>
+        <li>5.6 Cumprimento dos Planos de Ação das fases Específica e de Manutenção.</li>
+      </ul>
+      <p><strong>Compromissos informados:</strong> <span data-k="compromisso"></span></p>
     </section>
 
     <!-- 6. PROVIDÊNCIAS -->
-    <section class="term-section" id="sec-6">
+    <section class="term-section">
       <h2>6. PROVIDÊNCIAS NECESSÁRIAS PARA ADESÃO AO PROGRAMA</h2>
-      <ul id="lista-6"><!-- 6.1 ou 6.2 selecionada --></ul>
+      <ul>
+        <li>6.1 Inclusão, no Cadprev, de todos os débitos de contribuições/valores até a data da adesão; ou</li>
+        <li>6.2 Declaração de inexistência de débitos (ou já regularizados) até a adesão.</li>
+      </ul>
+      <p><strong>Providências informadas:</strong> <span data-k="providencias"></span></p>
     </section>
 
     <!-- 7. CONDIÇÕES -->
-    <section class="term-section" id="sec-7">
+    <section class="term-section">
       <h2>7. CONDIÇÕES PARA VIGÊNCIA DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
-      <div id="bloco-7"><!-- exibido só se houver declaração de ciência --></div>
+      <ul>
+        <li>I – atendimento aos requisitos do art. 3º do Anexo XVIII;</li>
+        <li>II – cumprimento dos planos de ação do art. 4º do Anexo XVIII;</li>
+        <li>III – observância de prazos/condições do art. 6º do Anexo XVII (para parcelamentos – EC xx/2025); e/ou</li>
+        <li>IV – não ingresso com ação judicial para obter CRP ou para descumprimento do Programa.</li>
+      </ul>
+      <p><strong>Declaração informada:</strong> <span data-k="condicao_vigencia"></span></p>
     </section>
 
-    <!-- Assinaturas (primeiro Ente; abaixo RPPS) -->
+    <!-- Assinaturas -->
     <footer class="term-footer">
       <p class="place-date"><span data-k="ente"></span>/<span data-k="uf"></span>, <span data-k="data_termo"></span>.</p>
 
@@ -172,17 +187,14 @@
 
   <script>
     window.addEventListener('load', () => {
-      const p = new URLSearchParams(location.search);
-      const get = k => (p.get(k) || '').toString();
-      const has = k => !!get(k).trim();
-      const includes = (str, needle) => str.toLowerCase().includes(needle.toLowerCase());
-      const addLI = (ul, html) => { const li = document.createElement('li'); li.innerHTML = html; ul.appendChild(li); };
-
       async function waitFonts(){ try{ if(document.fonts && document.fonts.ready) await document.fonts.ready; }catch{} }
-      function fitTitle(){ const t=document.getElementById('term-title'); if (t) t.style.whiteSpace='normal'; }
+      const p = new URLSearchParams(location.search);
 
-      // Preenche spans simples
-      function hydrateInline(){
+      function setTextAll(k, v){
+        document.querySelectorAll(`[data-k="${k}"]`).forEach(el=> el.textContent = v);
+      }
+
+      function hydrate(){
         const map = {
           uf:'uf', ente:'ente', esfera:'esfera',
           cnpj_ente:'cnpj_ente', email_ente:'email_ente',
@@ -194,177 +206,118 @@
           criterios_estrut:'criterios_estrut', manutencao_normas:'manutencao_normas', compromisso:'compromisso',
           providencias:'providencias', condicao_vigencia:'condicao_vigencia', data_termo:'data_termo'
         };
-        Object.entries(map).forEach(([q,k])=>{
-          const val = get(q);
-          document.querySelectorAll(`[data-k="${k}"]`).forEach(el=> el.textContent = val);
-        });
-      }
+        Object.entries(map).forEach(([q,k])=> setTextAll(k, (p.get(q)||'').toString()));
 
-      // Monta listas com apenas os itens selecionados
-      function buildSelective(){
-        // 1.1 – Esfera
-        const esferaUL = document.getElementById('esfera-list');
-        const esferaVal = get('esfera');
-        if (includes(esferaVal,'municip')) {
-          addLI(esferaUL, '<strong>1.1.1 RPPS Municipal</strong>');
-        } else if (includes(esferaVal,'estadual') || includes(esferaVal,'distrital')) {
-          addLI(esferaUL, '<strong>1.1.2 Estadual/Distrital</strong>');
+        // 1.1 – mostra só a opção escolhida
+        const esfera = (p.get('esfera')||'').toLowerCase();
+        const liEsfera = document.getElementById('li-esfera');
+        if (liEsfera){
+          if (esfera.includes('municip')) liEsfera.textContent = '1.1.1 RPPS Municipal';
+          else if (esfera.includes('estadual') || esfera.includes('distrital')) liEsfera.textContent = '1.1.2 Estadual/Distrital';
+          else liEsfera.innerHTML = '<em>Não informado.</em>';
         }
 
-        // 3.3 – Critérios irregulares
-        const ulC = document.getElementById('criterios-list'); ulC.innerHTML = '';
+        // 3.3 – lista de critérios marcados
+        const ul = document.getElementById('criterios-list'); ul.innerHTML = '';
         const criterios = [];
         for (const [k,v] of p.entries()){
           if (/^criterio\d+$/i.test(k) && v) criterios.push(v);
         }
         if (!criterios.length){
-          addLI(ulC, '<em>Não informado.</em>');
+          const li = document.createElement('li'); li.innerHTML = '<em>Não informado.</em>'; ul.appendChild(li);
         } else {
-          criterios.forEach(c => addLI(ulC, c));
+          criterios.forEach(c => { const li=document.createElement('li'); li.textContent=c; ul.appendChild(li); });
         }
 
-        // 4 – Finalidade principal (A e/ou B)
-        const finUL = document.getElementById('finalidade-principal');
-        const temA = has('celebracao');
-        const temB = has('regularizacao');
-        if (temA) addLI(finUL, 'A - Parcelamento de débitos.');
-        if (temB) addLI(finUL, 'B - Regularização de pendências para emissão administrativa e regular do CRP.');
+        // 4 – Finalidade Inicial da Adesão (A e/ou B)
+        const chosenA = !!(p.get('celebracao')||'').trim();
+        const chosenB = !!(p.get('regularizacao')||'').trim();
+        const finais = [];
+        if (chosenA) finais.push('A - Parcelamento de débitos');
+        if (chosenB) finais.push('B - Regularização de pendências para emissão administrativa e regular do CRP');
+        document.getElementById('finalidades-iniciais').textContent = finais.length ? finais.join(' e/ou ') : 'Não informado.';
 
-        // 4.1 – Parcelamento (textos jurídicos completos)
-        const ul41 = document.getElementById('sec-41');
-        const bloco41 = document.getElementById('block-41');
-        const cel = get('celebracao');
-        if (includes(cel,'sessenta') || includes(cel,'60')){
-          addLI(ul41, '4.1.1 em até sessenta parcelas, com base nas regras previstas nos arts. 14 e 15 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025;');
-        }
-        if (includes(cel,'trezentas') || includes(cel,'300')){
-          addLI(ul41, '4.1.2 em até trezentas parcelas, com base nas regras previstas nos arts. 115 e 117 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025, conforme disposto nos arts. 4º a 11 do Anexo XVII da Portaria MTP nº 1.467/2022.');
-        }
-        if (!ul41.children.length) bloco41.style.display='none';
+        // 4.x – manter apenas as opções selecionadas
+        filterOptions('celebracao', 'opt-4-1', [
+          {code:'4.1.1', test:/4\.1\.1|sessent|60/i},
+          {code:'4.1.2', test:/4\.1\.2|trezent|300/i},
+        ]);
+        filterOptions('regularizacao', 'opt-4-2', [
+          {code:'4.2.1', test:/4\.2\.1|sem dec|sem\s+decis/i},
+          {code:'4.2.2', test:/4\.2\.2|com dec|com\s+decis/i},
+        ]);
+        filterOptions('deficit', 'opt-4-3', [
+          {code:'4.3.1', test:/4\.3\.1|implementa/i},
+          {code:'4.3.2', test:/4\.3\.2|prazo/i},
+          {code:'4.3.3', test:/4\.3\.3|altern/i},
+        ]);
+        filterOptions('criterios_estrut', 'opt-4-4', [
+          {code:'4.4.1', test:/4\.4\.1|unidade gestora|§\s*20/i},
+          {code:'4.4.2', test:/4\.4\.2|outro crit/i},
+        ]);
+      }
 
-        // 4.2 – Regularização (com/sem decisão)
-        const ul42 = document.getElementById('sec-42');
-        const bloco42 = document.getElementById('block-42');
-        const reg = get('regularizacao');
-        if (includes(reg,'sem')) addLI(ul42, '4.2.1 para entes sem decisão judicial;');
-        if (includes(reg,'com')) addLI(ul42, '4.2.2 para entes com decisão judicial, tendo em vista o disposto no Acórdão proferido pelo Supremo Tribunal Federal nos autos do Recurso Extraordinário nº 1.007.271, Tema 968 de Repercussão Geral.');
-        if (!ul42.children.length) bloco42.style.display='none';
-
-        // 4.3 – Déficit atuarial
-        const ul43 = document.getElementById('sec-43');
-        const bloco43 = document.getElementById('block-43');
-        const def = get('deficit');
-        if (includes(def,'implementa')) addLI(ul43, '4.3.1 para implementação de plano de equacionamento do déficit atuarial do RPPS;');
-        if (includes(def,'prazo')) addLI(ul43, '4.3.2 para situações que exijam prazos adicionais para a comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à sua adequação à situação orçamentária, financeira e fiscal do ente federativo;');
-        if (includes(def,'alternativo')) addLI(ul43, '4.3.3 para apresentação de plano de equacionamento de déficit atuarial alternativo aos previstos na Portaria MTP nº 1.467/2022, desde que observados os requisitos previstos no art. 55, § 7º, da referida Portaria.');
-        if (!ul43.children.length) bloco43.style.display='none';
-
-        // 4.4 – Critérios estruturantes
-        const ul44 = document.getElementById('sec-44');
-        const bloco44 = document.getElementById('block-44');
-        const est = get('criterios_estrut');
-        if (includes(est,'unidade gestora') || includes(est,'ugu') || includes(est,'gestora')){
-          addLI(ul44, '4.4.1 para adequação da Unidade Gestora Única do RPPS ao disposto no art. 40, § 20, da Constituição Federal;');
-        }
-        if (includes(est,'outro')) {
-          addLI(ul44, '4.4.2 para o cumprimento de outro critério que apresente maior complexidade.');
-        }
-        if (!ul44.children.length) bloco44.style.display='none';
-
-        // 4.5 – Manutenção (medidas selecionadas)
-        const ul45 = document.getElementById('sec-45');
-        const bloco45 = document.getElementById('block-45');
-        const man = get('manutencao_normas');
-        if (includes(man,'cert') || includes(man,'pró-gestão') || includes(man,'pro-gestao') || includes(man,'pro gestão')){
-          addLI(ul45, '• Certificação institucional no Pró-Gestão RPPS no nível II (grupo de Pequeno Porte do ISP-RPPS), nível III (Médio e Grande Porte) ou nível IV (Porte Especial).');
-        }
-        if (includes(man,'melhor') || includes(man,'situação financeira') || includes(man,'isp')){
-          addLI(ul45, '• Houve melhora na situação financeira e atuarial do RPPS, com base, entre outros critérios, nos indicadores que compõem o Índice de Situação Previdenciária – ISP-RPPS.');
-        }
-        if (includes(man,'acomp') || includes(man,'atuarial')){
-          addLI(ul45, '• Comprovo a adoção das medidas de acompanhamento atuarial previstas nos arts. 67 a 69 da Portaria MTP nº 1.467, de 02 de junho de 2022.');
-        }
-        if (!ul45.children.length) bloco45.style.display='none';
-
-        // 5 – Compromissos (apenas marcados)
-        const ul5 = document.getElementById('lista-5');
-        const comp = get('compromisso');
-        const show5_1 = includes(comp,'5.1') || includes(comp,'repasse') || includes(comp,'parcelas');
-        const show5_2 = includes(comp,'5.2') || includes(comp,'document') || includes(comp,'241');
-        const show5_3 = includes(comp,'5.3') || includes(comp,'recursos previdenci') || includes(comp,'9.796');
-        const show5_4 = includes(comp,'5.4') || includes(comp,'conselho monet') || includes(comp,'cmn');
-        const show5_5 = includes(comp,'5.5') || includes(comp,'legisla') || includes(comp,'adequ');
-        const show5_6 = includes(comp,'5.6') || includes(comp,'planos de ação') || includes(comp,'fases específica') || includes(comp,'manutenção');
-        if (show5_1) addLI(ul5, '5.1 Manter, após a adesão ao Programa de Regularidade Previdenciária, a regularidade no repasse das contribuições devidas ao RPPS e das parcelas dos termos de acordo de parcelamentos e reparcelamentos celebrados entre o ente federativo e o respectivo regime, admitido parcelamento excepcional de débitos posteriores, observados os parâmetros estabelecidos nos art. 14 e art. 15 da Portaria MTP nº 1.467/22.');
-        if (show5_2) addLI(ul5, '5.2 Manter a regularidade no encaminhamento de documentos, demonstrativos e informações previstos no art. 241 da Portaria MTP nº 1.467/2022 e no atendimento às solicitações de documentos ou informações efetuadas pela Secretaria de Regime Próprio e Complementar.');
-        if (show5_3) addLI(ul5, '5.3 Manter a regularidade na utilização dos recursos previdenciários somente para o pagamento dos benefícios de aposentadoria e pensão por morte, para o financiamento da taxa de administração do RPPS e para o pagamento da compensação financeira disciplinada na Lei nº 9.796, de 05 de maio de 1999.');
-        if (show5_4) addLI(ul5, '5.4 Aplicar os recursos previdenciários no mercado financeiro e de capitais em conformidade com regras estabelecidas pelo Conselho Monetário Nacional – CMN.');
-        if (show5_5) addLI(ul5, '5.5 Promover adequações na legislação do RPPS que forem identificadas pela Secretaria de Regime Próprio e Complementar.');
-        if (show5_6) addLI(ul5, '5.6 Cumprimento dos Planos de Ação que vierem a ser apresentados nas fases Específica e de Manutenção da Conformidade previstas no Programa de Regularidade Previdenciária.');
-        if (!ul5.children.length) document.getElementById('sec-5').style.display='none';
-
-        // 6 – Providências (apenas a selecionada)
-        const ul6 = document.getElementById('lista-6');
-        const prov = get('providencias');
-        const show6_1 = includes(prov,'inclu') || includes(prov,'cadprev') || includes(prov,'parcel');
-        const show6_2 = includes(prov,'não possui') || includes(prov,'declar') || includes(prov,'inexist');
-        if (show6_1) addLI(ul6, '6.1 Foram incluídos, em termos de acordo de parcelamento ou reparcelamento, cadastrados no Sistema de Informações dos Regimes Públicos de Previdência Social (Cadprev), todos os débitos de contribuições ou de quaisquer outros valores devidos pelo ente ao respectivo RPPS, das competências até a da data da adesão ao programa;');
-        if (show6_2) addLI(ul6, '6.2 Declaramos que esse ente federativo não possui débitos de contribuições ou de quaisquer outros valores devidos ao RPPS, relativos às competências até a da data da adesão ao programa, ou que já não tivessem sido parcelados ou regularizados até a adesão.');
-        if (!ul6.children.length) document.getElementById('sec-6').style.display='none';
-
-        // 7 – Condições (só se declarou ciência)
-        const bloco7 = document.getElementById('bloco-7');
-        if (has('condicao_vigencia')) {
-          bloco7.innerHTML = `
-            <p><strong>Declaro ter ciência</strong> de que a vigência do Programa de Regularidade Previdenciária e a emissão de Certificados de Regularidade Previdenciária emergenciais têm como condições, conforme disposto no art. 6º do Anexo XVIII da Portaria MTP nº 1.467/2022, o cumprimento:</p>
-            <ul>
-              <li>I – do atendimento aos requisitos previstos no art. 3º do Anexo XVIII da Portaria MTP nº 1.467/2022;</li>
-              <li>II – do cumprimento dos planos de ação previstos no art. 4º do Anexo XVIII da Portaria MTP nº 1.467/2022;</li>
-              <li>III – do cumprimento dos prazos e das condições previstos no art. 6º do Anexo XVII, em relação aos entes federativos que celebrarem termos de acordos de parcelamento junto ao RPPS com base nas regras estabelecidas pela Emenda Constitucional nº XX, de XXXX de 2025; e/ou</li>
-              <li>IV – do não ingresso com ação judicial para obtenção de CRP ou para descumprimento do programa.</li>
-            </ul>
-          `;
-        } else {
-          document.getElementById('sec-7').style.display='none';
+      function filterOptions(paramKey, listId, rules){
+        const raw = (p.get(paramKey)||'').toString();
+        const list = document.getElementById(listId);
+        if (!list) return;
+        const picked = rules.filter(r => r.test.test(raw)).map(r=>r.code);
+        [...list.querySelectorAll('li')].forEach(li=>{
+          const code = li.getAttribute('data-code');
+          if (!picked.length){ li.remove(); return; }
+          if (!picked.includes(code)) li.remove();
+        });
+        if (!list.children.length){
+          const li = document.createElement('li'); li.innerHTML = '<em>Não informado.</em>'; list.appendChild(li);
         }
       }
 
-      // ====== Header (logos) em TODAS as páginas do PDF ======
+      function fitTitle(){ const t=document.getElementById('term-title'); if (t) t.style.whiteSpace='normal'; }
+
+      // Só LOGOS como cabeçalho repetido no PDF
       async function captureHeaderDataURL(){
         const el = document.querySelector('.logos-wrap');
-        const canvas = await html2canvas(el, { scale:2, backgroundColor:'#fff', useCORS:true, scrollX:0, scrollY:0 });
+        const canvas = await html2canvas(el, { scale: 2, backgroundColor:'#fff', useCORS:true, scrollX:0, scrollY:0 });
         return { dataURL: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
       }
 
-      function sanitizeFilename(s){ return String(s || 'Sem município').replace(/[\\/:*?"<>|]+/g,'').trim(); }
+      (function adaptSignatureCaption(){
+        const esfera = (p.get('esfera')||'').toLowerCase();
+        const el = document.getElementById('sig-cap-ente');
+        if (!el) return;
+        if (esfera.includes('estadual') || esfera.includes('distrital')){
+          el.innerHTML = 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>';
+        }
+      })();
+
+      function sanitizeFilename(s){ return String(s||'Sem município').replace(/[\\/:*?"<>|]+/g,'').trim(); }
 
       async function generatePdf(){
         await waitFonts(); fitTitle();
 
-        // Nome do arquivo: Form_Prog_Reg_Prev - <Município-UF>.pdf
-        const enteRaw = (p.get('ente') || '').trim();
-        const ufRaw   = (p.get('uf')   || '').trim();
-        const municipio = sanitizeFilename(enteRaw);
-        const ufSafe    = sanitizeFilename(ufRaw);
-        const filename  = `Form_Prog_Reg_Prev - ${municipio || 'Sem municipio'}${ufSafe ? '-' + ufSafe : ''}.pdf`;
+        // Nome do arquivo
+        const municipio = sanitizeFilename(p.get('ente')||'');
+        const ufSafe    = sanitizeFilename(p.get('uf')||'');
+        const muniUF    = municipio ? `${municipio}${ufSafe ? `-${ufSafe}` : ''}` : 'Sem municipio';
+        const filename  = `Form_Prog_Reg_Prev - ${muniUF}.pdf`;
 
-        // Cabeçalho (só LOGOS) para repetir no topo
+        // Cabeçalho (logos)
         const header = await captureHeaderDataURL();
         const ratio  = header.h / header.w;
 
-        // Layout (A4 mm)
-        const PAGE_W_MM     = 210;
-        const SIDE_PAD_MM   = 15;
-        const HEAD_TOP_MM   = 4;          // sobe as logos
-        const headerWmm     = PAGE_W_MM - 2*SIDE_PAD_MM;
-        const headerHmm     = headerWmm * ratio;
-        const GAP_BELOW_HDR = 3;
+        // Layout A4 em mm
+        const PAGE_W_MM   = 210;
+        const SIDE_PAD_MM = 15;
+        const HEAD_TOP_MM = 4;                  // mais perto do topo
+        const headerWmm   = PAGE_W_MM - 2*SIDE_PAD_MM;
+        const headerHmm   = headerWmm * ratio;
+        const GAP_BELOW   = 3;
 
-        // Esconde SÓ as logos no fluxo (título permanece visível)
+        // Oculta as logos originais (título permanece)
         document.getElementById('pdf-root').classList.add('pdf-export');
 
         const opt = {
-          margin: [HEAD_TOP_MM + headerHmm + GAP_BELOW_HDR, SIDE_PAD_MM, SIDE_PAD_MM, SIDE_PAD_MM],
+          margin: [HEAD_TOP_MM + headerHmm + GAP_BELOW, SIDE_PAD_MM, SIDE_PAD_MM, SIDE_PAD_MM],
           filename,
           html2canvas: { scale:2, letterRendering:1, useCORS:true, backgroundColor:'#fff', scrollX:0, scrollY:0 },
           jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
@@ -374,9 +327,9 @@
         const root   = document.getElementById('pdf-root');
         const worker = html2pdf().set(opt).from(root).toPdf();
 
-        await worker.get('pdf').then(pdf => {
+        await worker.get('pdf').then(pdf=>{
           const pages = pdf.getNumberOfPages ? pdf.getNumberOfPages() : pdf.internal.getNumberOfPages();
-          for (let i = 1; i <= pages; i++) {
+          for(let i=1;i<=pages;i++){
             pdf.setPage(i);
             pdf.addImage(header.dataURL, 'PNG', SIDE_PAD_MM, HEAD_TOP_MM, headerWmm, headerHmm, undefined, 'FAST');
           }
@@ -385,13 +338,10 @@
         document.getElementById('pdf-root').classList.remove('pdf-export');
       }
 
-      // Init
+      // init
       (function init(){
-        hydrateInline();
-        buildSelective();
-        fitTitle();
-
-        const auto = p.get('auto');
+        hydrate(); fitTitle();
+        const auto = new URLSearchParams(location.search).get('auto');
         if (auto !== null){
           document.documentElement.classList.add('auto-download');
           generatePdf().then(()=>{ try{ window.close(); }catch{} });

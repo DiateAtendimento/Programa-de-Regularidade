@@ -2,15 +2,12 @@
 :root{
   --page-w: 210mm; --page-h: 297mm;
   --pad: 15mm; --content-w: calc(var(--page-w) - 2 * var(--pad));
-  --brand:#0b2240; --ink:#222; --muted:#475569; --line:rgba(2,22,58,0.12);
+  --brand:#0b2240; --ink:#23272f; --muted:#475569; --rule:#d7dee8;
 }
 
-*{ box-sizing:border-box; margin:0; padding:0 }
-html,body{ height:100%; background:#eef3f9 }
-body{
-  font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-  color:var(--ink);
-}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#eef3f9}
+body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink)}
 
 /* Container (preview) */
 .term-wrap{
@@ -20,87 +17,54 @@ body{
   margin:0 auto 2rem;
   background:#fff;
   border-radius:12px;
-  box-shadow:0 24px 50px rgba(2,22,58,.12), 0 8px 18px rgba(2,22,58,.07);
+  box-shadow:0 24px 50px rgba(2,22,58,.12),0 8px 18px rgba(2,22,58,.07);
 }
 
-/* Durante exportação, esconda APENAS as logos (título visível) */
+/* Esconde só as logos durante exportação (título permanece) */
 .pdf-export .logos-wrap{ display:none !important }
 
-/* ===================== Cabeçalho ===================== */
-.page-head{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:3.5mm;
-  margin-bottom:6mm;
-}
-
-/* Título logo abaixo das logos */
+/* ===== Cabeçalho ===== */
+.page-head{ display:flex; flex-direction:column; align-items:center; gap:3mm; margin-bottom:6mm }
 .term-title{
-  display:block;
-  margin-top:3mm;
-  text-align:center;
-  font-weight:800;
-  font-size:16px;
-  letter-spacing:.2px;
-  line-height:1.3;
-  color:#111;
+  display:block; margin-top:2.2mm; text-align:center;
+  font-weight:800; font-size:16px; letter-spacing:.2px; line-height:1.28; color:#0b2240;
 }
 
-/* Logos + régua */
+/* Logos em linha (menores) */
 .logos-wrap{
-  display:flex;
-  flex-direction:row;
-  align-items:center;
-  justify-content:center;
-  flex-wrap:wrap;
-  gap:2mm 6mm;
-  width:100%;
-  padding-top:1mm;
+  display:flex; flex-direction:row; align-items:center; justify-content:center;
+  flex-wrap:wrap; gap:1mm 6mm; width:100%; padding-top:0;
 }
 .logo-sec, .logo-mps{ flex:0 0 auto }
-.logo-sec{ width:82mm; max-width:100%; height:auto }
-.logo-mps{ width:48mm; max-width:100%; height:auto }
-.logo-rule{
-  flex:0 0 100%;
-  width:100%;
-  height:2px;
-  background:#d7dee8;
-  margin-top:.5mm;
-  border-radius:2px;
-}
+.logo-sec{ width:62mm; max-width:100%; height:auto }  /* ↓ menores */
+.logo-mps{ width:36mm; max-width:100%; height:auto }
+.logo-rule{ flex:0 0 100%; width:100%; height:2px; background:var(--rule); margin-top:.5mm; border-radius:2px }
 
-/* ===================== Conteúdo ===================== */
-.term-section + .term-section{ margin-top:8mm }
-
+/* ===== Conteúdo ===== */
+.term-section + .term-section{margin-top:8mm}
 .term-section h2{
-  font-size:15px;
-  font-weight:800;
-  color:var(--brand);
-  margin-bottom:3mm;
-  letter-spacing:.2px;
-  break-after:avoid-page;
-  page-break-after:avoid;
+  font-size:15px; font-weight:800; color:var(--brand);
+  margin-bottom:3mm; letter-spacing:.2px;
+  break-after:avoid-page; page-break-after:avoid;
 }
 
 .term-section p,
 .term-section li{
-  line-height:1.38;
+  font-size:13.2px;
+  line-height:1.42;
   text-align:justify;
   text-justify:inter-word;
   hyphens:auto;
-  word-break:normal;
   overflow-wrap:break-word;
   orphans:2; widows:2;
-  page-break-inside:auto;   /* permite quebra quando necessário, evitando grandes vazios */
 }
 
-.term-section ul{ list-style:none; margin:2mm 0 0 0; padding-left:0 }
-.term-section li{
-  margin:1.6mm 0;
-  padding-left:6mm;         /* recuo visual */
-  text-indent:-6mm;         /* hanging indent: mantém 1.1, 2.1 alinhados */
-}
+/* Listas com alinhamento de números e sem bullets */
+.term-section ul{ list-style:none; margin:2mm 0 0 0; padding-left:0; break-inside:avoid }
+.term-section li{ margin:1.6mm 0; padding-left:6mm; text-indent:-6mm; page-break-inside:avoid }
+
+/* Valores SEM negrito */
+[data-k], #finalidades-iniciais { font-weight:400 }
 
 /* E-mails não quebram no meio */
 [data-k="email_ente"],
@@ -108,41 +72,31 @@ body{
 [data-k="email_rep_ente"],
 [data-k="email_rep_ug"]{ white-space:nowrap }
 
-/* Utilidades */
-.mt{ margin-top:3mm }
-.small{ font-size:12px; color:var(--muted) }
+.mt{margin-top:3mm}
+.small{font-size:12px;color:var(--muted)}
 
-.keep-together{ break-inside:avoid-page; page-break-inside:avoid }
-.break-before{ break-before:page; page-break-before:always }
-.logo-guard{ height:20mm }
+.keep-together{break-inside:avoid-page;page-break-inside:avoid}
+.break-before{break-before:page;page-break-before:always}
 
-/* ===================== Rodapé (assinaturas) ===================== */
-.term-footer{ margin-top:12mm; text-align:center }
-.place-date{ margin:6mm 0 }
-.signature-line{
-  width:70%;
-  height:0;
-  border-bottom:1.8px solid var(--brand);
-  margin:8mm auto 3mm;
-}
-.signature-caption{ font-size:14px; color:var(--muted); margin-bottom:2mm }
+/* ===== Rodapé ===== */
+.term-footer{margin-top:12mm;text-align:center}
+.place-date{margin:6mm 0}
+.signature-line{ width:70%; height:0; border-bottom:1.8px solid var(--brand); margin:8mm auto 3mm }
+.signature-caption{font-size:13.2px;color:var(--muted);margin-bottom:2mm}
 
-/* ===================== Responsivo (preview) ===================== */
+/* ===== Responsivo (preview) ===== */
 @media (max-width:980px){
-  .term-wrap{ width:100%; border-radius:10px }
-  .logo-sec{ width:90% }
-  .logo-mps{ width:50% }
+  .term-wrap{width:100%;border-radius:10px}
+  .logo-sec{width:72mm}
+  .logo-mps{width:42mm}
 }
 @media (max-width:720px){
-  .term-title{ font-size:20px }
+  .term-title{font-size:18px}
 }
 
-/* Auto-download (não mostra botões de UI) */
-.auto-download .download-wrap{ display:none!important }
-
-/* ===================== Impressão ===================== */
+/* ===== Impressão ===== */
 @media print{
-  @page{ size:A4 portrait; margin:0 }
-  html,body{ background:#fff }
-  .term-wrap{ width:var(--content-w); margin:0; box-shadow:none!important }
+  @page{size:A4 portrait;margin:0}
+  html,body{background:#fff}
+  .term-wrap{width:var(--content-w);margin:0;box-shadow:none!important}
 }
