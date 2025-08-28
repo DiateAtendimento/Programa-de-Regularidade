@@ -23,6 +23,16 @@ body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-se
 /* Esconde só as logos durante exportação (título permanece) */
 .pdf-export .logos-wrap{ display:none !important }
 
+/* só durante a exportação do PDF */
+.pdf-export .term-title{
+  margin-top: 0.5mm;   /* 0–1mm costuma ficar ótimo */
+}
+
+.pdf-export .page-head{
+  margin-bottom: 4mm;  /* opcional: reduz o respiro abaixo do título */
+}
+
+
 /* ===== Cabeçalho ===== */
 .page-head{ display:flex; flex-direction:column; align-items:center; gap:3mm; margin-bottom:6mm }
 .term-title{
