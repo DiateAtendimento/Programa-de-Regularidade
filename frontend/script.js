@@ -364,15 +364,23 @@
 
     // === Passo 4: Finalidades ===
     if (s === 4) {
-      // 4.1 e 4.2: regra "A ou B" obrigatório
+      // 4.0 A ou B OBRIGATÓRIA (Finalidade Inicial da Adesão)
+      const finA = $('#fin_parc')?.checked || false;
+      const finB = $('#fin_reg')?.checked || false;
+      paintGroupLabels(['#fin_parc', '#fin_reg'], !(finA || finB));
+      if (!(finA || finB)) {
+        msgs.push('Marque a Finalidade Inicial da Adesão: A (Parcelamento) ou B (Regularização para CRP).');
+      }
+
+      // 4.1 e 4.2: detalhamentos – pelo menos um dos grupos precisa ter seleção
       const g41 = ['#parc60', '#parc300'];
       const g42 = ['#reg_sem_jud', '#reg_com_jud'];
       const ok41_any = g41.some(sel => $(sel)?.checked);
       const ok42_any = g42.some(sel => $(sel)?.checked);
-      paintGroupLabels(g41, !ok41_any && !ok42_any); // pinta se nenhum dos dois grupos foi marcado
+      paintGroupLabels(g41, !ok41_any && !ok42_any);
       paintGroupLabels(g42, !ok41_any && !ok42_any);
       if (!ok41_any && !ok42_any) {
-        msgs.push('Marque ao menos uma finalidade inicial (A - Parcelamento ou B - Regularização para CRP).');
+        msgs.push('Marque ao menos uma finalidade detalhada (4.1 ou 4.2).');
       }
 
       // 4.3
@@ -393,6 +401,7 @@
       paintGroupLabels(g45, !ok45);
       if (!ok45) msgs.push('Marque ao menos uma opção no item 4.5 (fase de manutenção da conformidade).');
     }
+
 
     // === Passo 5: todos os compromissos precisam estar marcados ===
     if (s===5){
