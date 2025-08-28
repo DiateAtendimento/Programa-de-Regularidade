@@ -79,7 +79,29 @@ body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-se
 .break-before{break-before:page;page-break-before:always}
 
 /* ===== Rodapé ===== */
-.term-footer{margin-top:12mm;text-align:center}
+/* === Assinaturas nunca cortam; sempre iniciam em nova página === */
+.term-footer{
+  margin-top: 12mm;
+  text-align: center;
+
+  /* força começar numa nova página */
+  break-before: page;            /* moderno */
+  page-break-before: always;     /* legacy */
+
+  /* evita que o bloco seja dividido */
+  break-inside: avoid;
+  page-break-inside: avoid;
+
+  /* dá um respiro do cabeçalho desenhado nas páginas */
+  padding-top: 8mm;
+}
+
+/* reforço: nenhum elemento dentro do footer pode quebrar no meio */
+.term-footer *{
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .place-date{margin:6mm 0}
 .signature-line{ width:70%; height:0; border-bottom:1.8px solid var(--brand); margin:8mm auto 3mm }
 .signature-caption{font-size:13.2px;color:var(--muted);margin-bottom:2mm}
