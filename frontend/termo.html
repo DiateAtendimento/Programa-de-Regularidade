@@ -31,7 +31,7 @@
 
       <p><strong>1.1 Esfera de Governo</strong></p>
       <ul>
-        <!-- será preenchido dinamicamente com 1.1.1 OU 1.1.2 -->
+        <!-- preenchido dinamicamente com 1.1.1 OU 1.1.2 -->
         <li id="li-esfera"></li>
       </ul>
 
@@ -130,25 +130,25 @@
     <!-- 5. COMPROMISSOS -->
     <section class="term-section">
       <h2>5. COMPROMISSOS FIRMADOS NA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
-      <ul>
-        <li>5.1 Regularidade nos repasses e nas parcelas de acordos (art. 14 e 15, Portaria MTP nº 1.467/2022).</li>
-        <li>5.2 Regularidade no encaminhamento de documentos e atendimento às solicitações (art. 241).</li>
-        <li>5.3 Utilização dos recursos previdenciários conforme Lei nº 9.796/1999.</li>
-        <li>5.4 Aplicação dos recursos segundo normas do CMN.</li>
-        <li>5.5 Adequações na legislação do RPPS quando identificadas pela Secretaria.</li>
-        <li>5.6 Cumprimento dos Planos de Ação das fases Específica e de Manutenção.</li>
+      <ul id="opt-5">
+        <li data-code="5.1">5.1 Regularidade nos repasses e nas parcelas de acordos (art. 14 e 15, Portaria MTP nº 1.467/2022).</li>
+        <li data-code="5.2">5.2 Regularidade no encaminhamento de documentos e atendimento às solicitações (art. 241).</li>
+        <li data-code="5.3">5.3 Utilização dos recursos previdenciários conforme Lei nº 9.796/1999.</li>
+        <li data-code="5.4">5.4 Aplicação dos recursos segundo normas do CMN.</li>
+        <li data-code="5.5">5.5 Adequações na legislação do RPPS quando identificadas pela Secretaria.</li>
+        <li data-code="5.6">5.6 Cumprimento dos Planos de Ação das fases Específica e de Manutenção.</li>
       </ul>
-      <p><strong>Compromissos informados:</strong> <span data-k="compromisso"></span></p>
+      <!-- (removido "Compromissos informados") -->
     </section>
 
     <!-- 6. PROVIDÊNCIAS -->
     <section class="term-section">
       <h2>6. PROVIDÊNCIAS NECESSÁRIAS PARA ADESÃO AO PROGRAMA</h2>
-      <ul>
-        <li>6.1 Inclusão, no Cadprev, de todos os débitos de contribuições/valores até a data da adesão; ou</li>
-        <li>6.2 Declaração de inexistência de débitos (ou já regularizados) até a adesão.</li>
+      <ul id="opt-6">
+        <li data-code="6.1">6.1 Inclusão, no Cadprev, de todos os débitos de contribuições/valores até a data da adesão.</li>
+        <li data-code="6.2">6.2 Declaração de inexistência de débitos (ou já regularizados) até a adesão.</li>
       </ul>
-      <p><strong>Providências informadas:</strong> <span data-k="providencias"></span></p>
+      <!-- (removido "Providências informadas") -->
     </section>
 
     <!-- 7. CONDIÇÕES -->
@@ -173,7 +173,7 @@
         <span id="sig-cap-ente">Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span></span>
       </p>
 
-      <div class="signature-line" aria-hidden="true" style="margin-top:10mm"></div>
+      <div class="signature-line" aria-hidden="true"></div>
       <p class="signature-caption">
         <strong><span data-k="nome_rep_ug"></span></strong><br>
         Representante legal do <span data-k="ug"></span>
@@ -190,9 +190,8 @@
       async function waitFonts(){ try{ if(document.fonts && document.fonts.ready) await document.fonts.ready; }catch{} }
       const p = new URLSearchParams(location.search);
 
-      function setTextAll(k, v){
+      const setTextAll = (k, v) =>
         document.querySelectorAll(`[data-k="${k}"]`).forEach(el=> el.textContent = v);
-      }
 
       function hydrate(){
         const map = {
@@ -229,47 +228,79 @@
           criterios.forEach(c => { const li=document.createElement('li'); li.textContent=c; ul.appendChild(li); });
         }
 
-        // 4 – Finalidade Inicial da Adesão (A e/ou B)
+        // 4 – Finalidade Inicial da Adesão (exibe A e/ou B)
         const chosenA = !!(p.get('celebracao')||'').trim();
         const chosenB = !!(p.get('regularizacao')||'').trim();
-        const finais = [];
-        if (chosenA) finais.push('A - Parcelamento de débitos');
-        if (chosenB) finais.push('B - Regularização de pendências para emissão administrativa e regular do CRP');
-        document.getElementById('finalidades-iniciais').textContent = finais.length ? finais.join(' e/ou ') : 'Não informado.';
+        const letras = [];
+        if (chosenA) letras.push('A');
+        if (chosenB) letras.push('B');
+        document.getElementById('finalidades-iniciais').textContent =
+          letras.length ? letras.join(' e/ou ') : 'Não informado.';
 
         // 4.x – manter apenas as opções selecionadas
-        filterOptions('celebracao', 'opt-4-1', [
+        filterOptionsFlexible({paramKey:'celebracao', listId:'opt-4-1', keyPrefix:'celebracao', rules:[
           {code:'4.1.1', test:/4\.1\.1|sessent|60/i},
           {code:'4.1.2', test:/4\.1\.2|trezent|300/i},
-        ]);
-        filterOptions('regularizacao', 'opt-4-2', [
-          {code:'4.2.1', test:/4\.2\.1|sem dec|sem\s+decis/i},
-          {code:'4.2.2', test:/4\.2\.2|com dec|com\s+decis/i},
-        ]);
-        filterOptions('deficit', 'opt-4-3', [
+        ]});
+        filterOptionsFlexible({paramKey:'regularizacao', listId:'opt-4-2', keyPrefix:'regularizacao', rules:[
+          {code:'4.2.1', test:/4\.2\.1|sem\s*decis/i},
+          {code:'4.2.2', test:/4\.2\.2|com\s*decis/i},
+        ]});
+        filterOptionsFlexible({paramKey:'deficit', listId:'opt-4-3', keyPrefix:'deficit', rules:[
           {code:'4.3.1', test:/4\.3\.1|implementa/i},
           {code:'4.3.2', test:/4\.3\.2|prazo/i},
           {code:'4.3.3', test:/4\.3\.3|altern/i},
-        ]);
-        filterOptions('criterios_estrut', 'opt-4-4', [
-          {code:'4.4.1', test:/4\.4\.1|unidade gestora|§\s*20/i},
-          {code:'4.4.2', test:/4\.4\.2|outro crit/i},
-        ]);
+        ]});
+        filterOptionsFlexible({paramKey:'criterios_estrut', listId:'opt-4-4', keyPrefix:'criterios_estrut', rules:[
+          {code:'4.4.1', test:/4\.4\.1|unidade\s*gestora|§\s*20/i},
+          {code:'4.4.2', test:/4\.4\.2|outro\s*crit/i},
+        ]});
+
+        // 5 – compromissos: mostrar somente os marcados
+        filterOptionsFlexible({paramKey:'compromisso', listId:'opt-5', keyPrefix:'compromisso', rules:[
+          {code:'5.1', test:/5\.1|repasse|parcelas/i},
+          {code:'5.2', test:/5\.2|document|solicit/i},
+          {code:'5.3', test:/5\.3|utiliza(ç|c)ao|lei\s*9\.796|9796/i},
+          {code:'5.4', test:/5\.4|cmn|aplica(ç|c)oes/i},
+          {code:'5.5', test:/5\.5|legisla(ç|c)ao/i},
+          {code:'5.6', test:/5\.6|planos?\s*de\s*a(ç|c)ao/i},
+        ]});
+
+        // 6 – providências: mostrar somente 6.1 OU 6.2
+        filterOptionsFlexible({paramKey:'providencias', listId:'opt-6', keyPrefix:'providencias', rules:[
+          {code:'6.1', test:/6\.1|inclu|cadprev|todos\s*os\s*d[eé]bitos/i},
+          {code:'6.2', test:/6\.2|declara|inexist/i},
+        ]});
       }
 
-      function filterOptions(paramKey, listId, rules){
-        const raw = (p.get(paramKey)||'').toString();
+      // Mantém na lista apenas os itens cujos códigos foram "detectados" no(s) parâmetro(s)
+      function filterOptionsFlexible({paramKey, listId, rules, keyPrefix}){
         const list = document.getElementById(listId);
         if (!list) return;
-        const picked = rules.filter(r => r.test.test(raw)).map(r=>r.code);
-        [...list.querySelectorAll('li')].forEach(li=>{
+
+        // agrega possíveis formas de envio (valor principal, múltiplos, chaves prefixadas)
+        let raw = '';
+        p.getAll(paramKey).forEach(v=> raw += ' ' + v);
+        const single = p.get(paramKey); if (single) raw += ' ' + single;
+        if (keyPrefix){
+          for (const [k,v] of p.entries()){
+            if (k.toLowerCase().startsWith(keyPrefix.toLowerCase()) && v) raw += ' ' + k + ' ' + v;
+          }
+        }
+
+        const picked = rules.filter(r => r.test.test(raw||'')).map(r=>r.code);
+        const items = Array.from(list.querySelectorAll('li'));
+
+        if (!picked.length){
+          items.forEach(li => li.remove());
+          const li = document.createElement('li'); li.innerHTML = '<em>Não informado.</em>'; list.appendChild(li);
+          return;
+        }
+
+        items.forEach(li=>{
           const code = li.getAttribute('data-code');
-          if (!picked.length){ li.remove(); return; }
           if (!picked.includes(code)) li.remove();
         });
-        if (!list.children.length){
-          const li = document.createElement('li'); li.innerHTML = '<em>Não informado.</em>'; list.appendChild(li);
-        }
       }
 
       function fitTitle(){ const t=document.getElementById('term-title'); if (t) t.style.whiteSpace='normal'; }
@@ -277,7 +308,7 @@
       // Só LOGOS como cabeçalho repetido no PDF
       async function captureHeaderDataURL(){
         const el = document.querySelector('.logos-wrap');
-        const canvas = await html2canvas(el, { scale: 2, backgroundColor:'#fff', useCORS:true, scrollX:0, scrollY:0 });
+        const canvas = await html2canvas(el, { scale:2, backgroundColor:'#fff', useCORS:true, scrollX:0, scrollY:0 });
         return { dataURL: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
       }
 
@@ -308,10 +339,10 @@
         // Layout A4 em mm
         const PAGE_W_MM   = 210;
         const SIDE_PAD_MM = 15;
-        const HEAD_TOP_MM = 4;                  // mais perto do topo
+        const HEAD_TOP_MM = 3;     // mais perto do topo
         const headerWmm   = PAGE_W_MM - 2*SIDE_PAD_MM;
         const headerHmm   = headerWmm * ratio;
-        const GAP_BELOW   = 1;
+        const GAP_BELOW   = 0.6;   // título bem próximo da régua
 
         // Oculta as logos originais (título permanece)
         document.getElementById('pdf-root').classList.add('pdf-export');
