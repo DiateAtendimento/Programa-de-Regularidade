@@ -23,14 +23,23 @@ body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-se
 /* Esconde só as logos durante exportação (título permanece) */
 .pdf-export .logos-wrap{ display:none !important }
 
-/* Título ainda mais próximo da régua durante o PDF */
-.pdf-export .term-title{ margin-top:.3mm }
-.pdf-export .page-head{ margin-bottom:3.5mm }
+/* Durante a exportação do PDF: título bem colado na régua */
+.pdf-export .term-title{
+  margin-top: 0mm;   /* colado */
+}
+
+.pdf-export .page-head{
+  margin-bottom: 3mm;  /* respiro mínimo abaixo do título */
+}
 
 /* ===== Cabeçalho ===== */
-.page-head{ display:flex; flex-direction:column; align-items:center; gap:3mm; margin-bottom:6mm }
+.page-head{
+  display:flex; flex-direction:column; align-items:center;
+  gap:2mm;                 /* menos espaço entre logos e título */
+  margin-bottom:4mm;       /* menos respiro abaixo do título */
+}
 .term-title{
-  display:block; margin-top:2.2mm; text-align:center;
+  display:block; margin-top:0.5mm; text-align:center;
   font-weight:800; font-size:16px; letter-spacing:.2px; line-height:1.28; color:#0b2240;
 }
 
@@ -83,33 +92,50 @@ body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-se
 .break-before{break-before:page;page-break-before:always}
 
 /* ===== Rodapé (Assinaturas) ===== */
-/* Assinaturas em página própria */
+/* Assinaturas sempre em página própria e com mais respiro */
 .term-footer{
-  margin-top: 12mm;
+  margin-top: 14mm;
   text-align: center;
+
+  /* força começar numa nova página */
   break-before: page;
   page-break-before: always;
+
+  /* evita que o bloco seja dividido */
   break-inside: avoid;
   page-break-inside: avoid;
-  padding-top: 10mm;              /* respiro do cabeçalho desenhado */
+
+  /* dá um respiro do cabeçalho desenhado nas páginas */
+  padding-top: 10mm;
 }
 
-/* Nada dentro do footer quebra no meio */
+/* nenhum elemento dentro do footer pode quebrar no meio */
 .term-footer *{
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-/* Mais espaço para assinatura gov.br */
-.place-date{ margin: 10mm 0 28mm }          /* data → 1ª linha */
-.signature-line{
-  width:70%; height:0; border-bottom:1.8px solid var(--brand);
-  margin:0 auto 7mm;
+.place-date{
+  margin: 10mm 0 6mm;  /* MAIS respiro entre a data e a 1ª linha */
+  font-size:13.2px;
 }
-.signature-caption{ font-size:13.2px; color:var(--muted); margin:0 }
 
-/* Espaço maior ENTRE as duas assinaturas */
-.signature-caption + .signature-line{ margin-top: 26mm }
+.signature-block{
+  margin-top: 12mm;     /* MAIS espaço entre as assinaturas */
+}
+
+.signature-line{
+  width:70%;
+  height:0;
+  border-bottom:1.8px solid var(--brand);
+  margin:0 auto 3mm;    /* linha colada na legenda, mas com respiro adequado */
+}
+
+.signature-caption{
+  font-size:13.2px;
+  color:var(--muted);
+  margin-bottom:0;
+}
 
 /* ===== Responsivo (preview) ===== */
 @media (max-width:980px){
