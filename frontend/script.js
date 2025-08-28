@@ -8,21 +8,41 @@
     return '';
   })();
 
-  // ===== NOVO: parâmetros de robustez no front =====
+  // ===== Robustez de rede =====
   const FETCH_TIMEOUT_MS = 20000; // 20s
   const FETCH_RETRIES = 2;        // tentativas além da primeira
 
-  // Helper com timeout + retries + mensagens
+  // Helper com timeout + retries + cache-busting/headers anti-cache
   async function fetchJSON(url, { method='GET', headers={}, body=null } = {}, { label='request', timeout=FETCH_TIMEOUT_MS, retries=FETCH_RETRIES } = {}) {
     let attempt = 0;
+    // cache-busting por querystring (evita precisar dar Ctrl+F5)
+    const bust = `_ts=${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const sep = url.includes('?') ? '&' : '?';
+    const finalURL = `${url}${sep}${bust}`;
+
+    const finalHeaders = {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      ...headers
+    };
+
     while (true) {
       attempt++;
       const ctrl = new AbortController();
       const to = setTimeout(() => ctrl.abort(`timeout:${label}`), timeout);
       try {
-        const res = await fetch(url, { method, headers, body, signal: ctrl.signal });
+        const res = await fetch(finalURL, {
+          method,
+          headers: finalHeaders,
+          body,
+          signal: ctrl.signal,
+          cache: 'no-store',           // reforço no fetch
+          credentials: 'same-origin',  // mantém cookies se houver
+          redirect: 'follow'
+        });
         clearTimeout(to);
-        // Tenta decodificar o corpo (se possível) para mensagens de erro mais úteis
+
         if (!res.ok) {
           const isJson = (res.headers.get('content-type') || '').includes('application/json');
           const data = isJson ? (await res.json().catch(()=>null)) : null;
@@ -40,7 +60,7 @@
           (e && typeof e.status === 'number' && (e.status === 429 || e.status >= 500)) ||
           m.includes('etimedout') || m.includes('timeout:') || m.includes('abort') ||
           m.includes('econnreset') || m.includes('socket hang up') || m.includes('eai_again') ||
-          (!navigator.onLine); // se offline, tenta mais uma vez depois
+          (!navigator.onLine);
 
         if (!retriable || attempt > (retries + 1)) throw e;
 
@@ -178,6 +198,19 @@
   const markInvalid = el => { el.classList.add('is-invalid'); el.classList.remove('is-valid'); };
   const neutral     = el => el.classList.remove('is-valid','is-invalid');
 
+  // Pinta/despinta label de checkbox/radio relacionado
+  function paintLabelForInput(input, invalid){
+    if (!input) return;
+    const label = input.closest('.form-check')?.querySelector('label')
+               || input.parentElement?.querySelector('label')
+               || document.querySelector(`label[for="${input.id}"]`);
+    input.classList.toggle('is-invalid', invalid);
+    if (label) label.classList.toggle('invalid', invalid);
+  }
+  function paintGroupLabels(selectors, invalid){
+    selectors.forEach(sel => paintLabelForInput(document.querySelector(sel), invalid));
+  }
+
   /* ========= Stepper / Navegação ========= */
   let step = 0;   // 0..8
   let cnpjOK = false;
@@ -224,20 +257,19 @@
   }
 
   function updateNavButtons(){
-    btnPrev?.classList.toggle('d-none', step < 1);     // Voltar só a partir do passo 1
+    btnPrev?.classList.toggle('d-none', step < 1);
     if (btnNext){
-      btnNext.disabled = (step === 0 && !cnpjOK);       // No passo 0, só habilita após pesquisa ok
-      btnNext.classList.toggle('d-none', step === 8);   // Esconde Próximo no passo 8
+      btnNext.disabled = (step === 0 && !cnpjOK);
+      btnNext.classList.toggle('d-none', step === 8);
     }
-    btnSubmit?.classList.toggle('d-none', step !== 8);  // Mostra Finalizar só no passo 8
-    btnGerar?.classList.toggle('d-none', step !== 8);   // Gerar Formulário só no passo 8
+    btnSubmit?.classList.toggle('d-none', step !== 8);
+    btnGerar?.classList.toggle('d-none', step !== 8);
   }
 
   function updateFooterAlign(){
     if (!navFooter) return;
     [btnPrev, btnNext, btnSubmit, btnGerar].forEach(b => b && b.classList.remove('ms-auto'));
     if (step === 8){
-      // Deixa "Finalizar" à direita; "Gerar Formulário" fica à esquerda dele
       btnSubmit?.classList.add('ms-auto');
     } else if (step > 0) {
       btnNext?.classList.add('ms-auto');
@@ -254,10 +286,7 @@
     const activeIdx = Math.min(step, stepsUI.length - 1);
     stepsUI.forEach((s,i)=> s.classList.toggle('active', i === activeIdx));
 
-    // Próximo ao lado do Pesquisar só no passo 0
     placeNextInline(step === 0);
-
-    // Rodapé invisível no passo 0; visível nos demais
     navFooter?.classList.toggle('d-none', step === 0);
 
     updateNavButtons();
@@ -306,59 +335,87 @@
       return ok;
     };
 
+    // === Passos 1..3 campos de texto ===
     if (s<=3) {
       (reqAll[s]||[]).forEach(o => { if(!checkField(o.id,o.type)) msgs.push(o.label); });
       if (s===1) {
+        // 1.1 Esfera
         const items = $$('input[name="ESFERA_GOVERNO[]"]');
         const ok = items.some(i=>i.checked);
-        items.forEach(i => i.classList.toggle('is-invalid', !ok));
+        items.forEach(i => paintLabelForInput(i, !ok));
         if(!ok) msgs.push('Esfera de Governo');
       }
       if (s===3) {
-        const rOK = $('#em_adm')?.checked || $('#em_jud')?.checked;
+        // 3.2 tipo de emissão
+        const adm = $('#em_adm'), jud = $('#em_jud');
+        const rOK = adm?.checked || jud?.checked;
+        [adm,jud].forEach(i => paintLabelForInput(i, !rOK));
         if (!rOK) msgs.push('Tipo de emissão do último CRP (item 3.2)');
-        const cOK = hasAnyChecked('input[name="CRITERIOS_IRREGULARES[]"]');
+
+        // 3.3 critérios
+        const crits = $$('input[name="CRITERIOS_IRREGULARES[]"]');
+        const cOK = crits.some(i=>i.checked);
+        crits.forEach(i => paintLabelForInput(i, !cOK));
         if (!cOK) msgs.push('Critérios irregulares (item 3.3)');
       }
     }
 
-    // --- Passo 4: exigir ao menos A (4.1) e/ou B (4.2) ---
+    // === Passo 4: Finalidades ===
     if (s === 4) {
+      // 4.1 e 4.2: regra "A ou B" obrigatório
       const g41 = ['#parc60', '#parc300'];
       const g42 = ['#reg_sem_jud', '#reg_com_jud'];
-
       const ok41_any = g41.some(sel => $(sel)?.checked);
       const ok42_any = g42.some(sel => $(sel)?.checked);
-
+      paintGroupLabels(g41, !ok41_any && !ok42_any); // pinta se nenhum dos dois grupos foi marcado
+      paintGroupLabels(g42, !ok41_any && !ok42_any);
       if (!ok41_any && !ok42_any) {
         msgs.push('Marque ao menos uma finalidade inicial (A - Parcelamento ou B - Regularização para CRP).');
       }
 
-      // (opcional) manter as demais obrigatoriedades:
+      // 4.3
       const g43 = ['#eq_implano', '#eq_prazos', '#eq_plano_alt'];
       const ok43 = g43.some(sel => $(sel)?.checked);
-      g43.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok43));
+      paintGroupLabels(g43, !ok43);
       if (!ok43) msgs.push('Marque ao menos uma opção no item 4.3 (equacionamento do déficit atuarial).');
 
+      // 4.4
       const g44 = ['#org_ugu', '#org_outros'];
       const ok44 = g44.some(sel => $(sel)?.checked);
-      g44.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok44));
+      paintGroupLabels(g44, !ok44);
       if (!ok44) msgs.push('Marque ao menos uma opção no item 4.4 (critérios estruturantes).');
 
+      // 4.5
       const g45 = ['#man_cert', '#man_melhoria', '#man_acomp'];
       const ok45 = g45.some(sel => $(sel)?.checked);
-      g45.forEach(sel => $(sel)?.classList.toggle('is-invalid', !ok45));
+      paintGroupLabels(g45, !ok45);
       if (!ok45) msgs.push('Marque ao menos uma opção no item 4.5 (fase de manutenção da conformidade).');
     }
 
+    // === Passo 5: todos os compromissos precisam estar marcados ===
     if (s===5){
       const all = $$('.grp-comp');
       const checked = all.filter(i=>i.checked);
-      if (checked.length !== all.length) msgs.push('No item 5, marque todas as declarações de compromisso.');
+      const ok = checked.length === all.length;
+      all.forEach(i => paintLabelForInput(i, !ok && !i.checked)); // pinta os que faltam
+      if (!ok) msgs.push('No item 5, marque todas as declarações de compromisso.');
     }
 
-    if (s===6 && !hasAnyChecked('.grp-prov')) msgs.push('Marque ao menos uma providência (item 6).');
-    if (s===7 && !$('#DECL_CIENCIA').checked) msgs.push('Confirme a ciência das condições (item 7).');
+    // === Passo 6: uma providência ===
+    if (s===6){
+      const provs = $$('.grp-prov');
+      const ok = provs.some(i=>i.checked);
+      provs.forEach(i => paintLabelForInput(i, !ok));
+      if (!ok) msgs.push('Marque ao menos uma providência (item 6).');
+    }
+
+    // === Passo 7: declaração ===
+    if (s===7){
+      const decl = $('#DECL_CIENCIA');
+      const ok = !!decl?.checked;
+      paintLabelForInput(decl, !ok);
+      if (!ok) msgs.push('Confirme a ciência das condições (item 7).');
+    }
 
     if (msgs.length){ showAtencao(msgs); return false; }
     return true;
@@ -415,11 +472,11 @@
       EMAIL_UG: $('#EMAIL_UG').value.trim()
     };
     if (digits(body.CNPJ_ENTE).length===14 || digits(body.CNPJ_UG).length===14){
-      // fire-and-forget com timeout curto e sem retries
+      // fire-and-forget com timeout curto
       fetchJSON(`${API_BASE}/api/upsert-cnpj`,
         { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) },
         { timeout: 8000, retries: 0, label: 'upsert-cnpj' }
-      ).catch(()=>{ /* não bloqueia */ });
+      ).catch(()=>{});
     }
   }
 
@@ -437,6 +494,7 @@
       searching = true;
       modalLoadingSearch.show();
 
+      // consulta com headers/anti-cache aplicados no helper
       const r = await fetchJSON(`${API_BASE}/api/consulta?cnpj=${cnpj}`, {}, { label:'consulta-cnpj' });
 
       const data = r.data;
@@ -481,9 +539,7 @@
       editedFields.clear();
       showStep(1);
     }catch(err){
-      // permitir prosseguir preenchendo manualmente
       const msgs = friendlyErrorMessages(err, 'Não foi possível consultar o CNPJ.');
-      // se 404, tratamos como "não encontrado" (preencher manualmente)
       if (err && err.status === 404) {
         showAtencao([
           'CNPJ não encontrado no CADPREV.',
@@ -525,7 +581,6 @@
       }
     }catch(err){
       if (err && err.status === 404) {
-        // mantém CPF e permite digitar demais dados manualmente
         showAtencao(['Registro não encontrado no CADPREV, favor inserir seus dados.']);
         if (target==='ENTE'){ $('#NOME_REP_ENTE')?.focus(); }
         else { $('#NOME_REP_UG')?.focus(); }
@@ -549,23 +604,21 @@
     const reps = [
       { ...base, NOME: $('#NOME_REP_ENTE').value.trim(), CPF: digits($('#CPF_REP_ENTE').value),
         EMAIL: $('#EMAIL_REP_ENTE').value.trim(), TELEFONE: $('#TEL_REP_ENTE').value.trim(), CARGO: $('#CARGO_REP_ENTE').value.trim(),
-        // para o representante do ENTE, gravar UG vazio; servidor resolve UG automaticamente
         UG: '' },
       { ...base, NOME: $('#NOME_REP_UG').value.trim(), CPF: digits($('#CPF_REP_UG').value),
         EMAIL: $('#EMAIL_REP_UG').value.trim(), TELEFONE: $('#TEL_REP_UG').value.trim(), CARGO: $('#CARGO_REP_UG').value.trim() }
     ];
     for (const rep of reps){
       if (digits(rep.CPF).length===11 && rep.NOME){
-        // fire-and-forget com timeout curto
         fetchJSON(`${API_BASE}/api/upsert-rep`,
           { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(rep) },
           { timeout: 8000, retries: 0, label: 'upsert-rep' }
-        ).catch(()=>{ /* silencioso: não bloqueia o envio do termo */ });
+        ).catch(()=>{});
       }
     }
   }
 
-  // ======== Util: preencher campos de data/hora escondidos quando gerar/finzalizar ========
+  // ======== Util: preencher carimbos de data/hora ========
   function fillNowHiddenFields(){
     const now = new Date();
     $('#MES').value               = String(now.getMonth()+1).padStart(2,'0');
@@ -574,7 +627,7 @@
     $('#ANO_TERMO_GERADO').value  = String(now.getFullYear());
   }
 
-  // ======== Util: construir o payload (mesmo formato do submit) ========
+  // ======== Util: construir o payload ========
   function buildPayload(){
     return {
       ENTE: $('#ENTE').value.trim(),
@@ -614,7 +667,7 @@
     };
   }
 
-  // ======== Util: abrir termo.html com os dados (auto = '0' ou '1') ========
+  // ======== Abrir termo.html ========
   function openTermoWithPayload(payload, autoFlag){
     const esfera = ($('#esf_mun')?.checked ? 'RPPS Municipal' :
                     ($('#esf_est')?.checked ? 'Estadual/Distrital' : ''));
@@ -642,7 +695,7 @@
       auto: String(autoFlag || '1')
     });
 
-    // >>> NOVO: sinalização explícita de compromissos 5.x (garante 5.5 etc.)
+    // marca explícita de 5.x garante exibição correta na filtragem
     const compAgg = String(payload.COMPROMISSO_FIRMADO_ADESAO || '');
     [['5.1','5\\.1'], ['5.2','5\\.2'], ['5.3','5\\.3'], ['5.4','5\\.4'], ['5.5','5\\.5'], ['5.6','5\\.6']]
       .forEach(([code, rx]) => {
@@ -650,34 +703,26 @@
       });
 
     payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
-    // abertura síncrona (menos chance de bloqueio de pop-up)
     window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
   }
 
-  /* ========= AÇÃO: Gerar Formulário (passo 8) sem finalizar ========= */
+  /* ========= AÇÃO: Gerar Formulário ========= */
   let gerarBusy = false;
   const gerarLabel = btnGerar?.innerHTML || 'Gerar formulário';
 
   btnGerar?.addEventListener('click', () => {
     if (gerarBusy) return;
-
-    // valida tudo antes de gerar
     for (let s = 1; s <= 8; s++) { if (!validateStep(s)) return; }
 
     gerarBusy = true;
     if (btnGerar) { btnGerar.disabled = true; btnGerar.innerHTML = 'Gerando…'; }
 
-    // carimba data/hora (para aparecer na prévia)
     fillNowHiddenFields();
     const payload = buildPayload();
 
-    // abre o termo em nova aba, SEM salvar
     openTermoWithPayload(payload, '0'); // auto=0
-
-    // mostra o Lottie de sucesso e deixa o usuário fechar manualmente
     modalSucesso.show();
 
-    // quando o modal for FECHADO, voltamos o botão ao normal
     document.getElementById('modalSucesso')
       ?.addEventListener('hidden.bs.modal', () => {
         if (btnGerar) {
@@ -704,10 +749,14 @@
     btnSubmit.innerHTML = 'Finalizando…';
 
     try{
-      const res = await fetch(`${API_BASE}/api/gerar-termo`, {
+      const res = await fetch(`${API_BASE}/api/gerar-termo?_ts=${Date.now()}`, {
         method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
+        headers:{
+          'Content-Type':'application/json',
+          'Cache-Control': 'no-store'
+        },
+        body: JSON.stringify(payload),
+        cache: 'no-store'
       });
       if(!res.ok){
         const err = await res.json().catch(()=>({error:'Erro ao salvar.'}));
@@ -716,7 +765,6 @@
         return showErro([err.error || 'Falha ao registrar termo.']);
       }
 
-      // >>> SUCESSO sem Lottie: apenas feedback rápido + reset
       btnSubmit.innerHTML = 'Finalizado ✓';
 
       setTimeout(() => {
@@ -737,6 +785,5 @@
       showErro(['Falha de comunicação com o servidor.']);
     }
   });
-
 
 })();
