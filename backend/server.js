@@ -1059,7 +1059,7 @@ app.post('/api/termo-pdf', async (req, res) => {
       displayHeaderFooter: true,
       headerTemplate,
       footerTemplate,
-      margin: { top: '20mm', right: '0mm', bottom: '12mm', left: '0mm' } 
+      margin: { top: '30mm', right: '0mm', bottom: '12mm', left: '0mm' } 
     });
 
 
