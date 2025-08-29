@@ -1,15 +1,19 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "description": "API RPPS – server",
   "main": "server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "postinstall": "puppeteer browsers install chrome"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "cors": "^2.8.5",
     "docxtemplater": "^3.65.2",

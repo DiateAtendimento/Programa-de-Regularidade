@@ -823,8 +823,11 @@ app.post('/api/termo-pdf', async (req, res) => {
     const url = `${PUBLIC_URL.replace(/\/+$/, '')}/termo.html?${qs.toString()}`;
 
     const browser = await puppeteer.launch({
-      args: ['--no-sandbox','--font-render-hinting=none']
+      executablePath: (puppeteer.executablePath && puppeteer.executablePath()) || undefined,
+      headless: 'new',
+      args: ['--no-sandbox','--disable-setuid-sandbox','--font-render-hinting=none']
     });
+
     const page = await browser.newPage();
     await page.emulateMediaType('screen'); // usa CSS de tela + print-color-adjust
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 45000 });
