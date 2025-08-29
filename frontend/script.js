@@ -398,8 +398,6 @@
     saveState();
   }
 
-  showStep(0);
-
   btnPrev?.addEventListener('click', ()=> showStep(step-1));
 
   function hasAnyChecked(sel){ return $$(sel).some(i=>i.checked); }
