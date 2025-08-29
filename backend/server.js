@@ -15,6 +15,7 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const http = require('http');
 const https = require('https');
 const puppeteer = require('puppeteer'); // ← PDF (Puppeteer)
+const { executablePath } = require('puppeteer');
 
 const app = express();
 
@@ -357,6 +358,32 @@ async function getCRPAllCached(sheet) {
   );
   _crpMemo = { data: rows, exp: Date.now() + CACHE_TTL_CRP_MS };
   return rows;
+}
+
+/* ─────────────── PUPPETEER (robust) ─────────────── */
+process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || '/opt/render/.cache/puppeteer';
+process.env.TMPDIR = process.env.TMPDIR || '/tmp';
+
+let _browserPromise;
+async function getBrowser() {
+  if (!_browserPromise) {
+    const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH || executablePath();
+    console.log('🔎 Chrome path:', chromePath);
+    _browserPromise = puppeteer.launch({
+      executablePath: chromePath,
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--no-zygote',
+        '--single-process',
+        '--font-render-hinting=none'
+      ],
+      timeout: 60_000
+    });
+  }
+  return _browserPromise;
 }
 
 /* ─────────────── ROTAS ─────────────── */
@@ -790,6 +817,7 @@ function inlineSvg(relPath) {
 }
 
 app.post('/api/termo-pdf', async (req, res) => {
+  let page;
   try {
     const p = req.body || {};
 
@@ -837,37 +865,31 @@ app.post('/api/termo-pdf', async (req, res) => {
     const PUBLIC_URL = (process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/,'');
     const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
 
-    let execPath;
-    try {
-      const bin = puppeteer.executablePath && puppeteer.executablePath();
-      if (bin && fs.existsSync(bin)) execPath = bin;
-    } catch (_) {}
+    const browser = await getBrowser();
+    page = await browser.newPage();
 
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      executablePath: execPath,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--font-render-hinting=none'
-      ]
-    });
+    // timeouts mais folgados e logs de diagnóstico
+    page.setDefaultNavigationTimeout(90_000);
+    page.setDefaultTimeout(90_000);
+    page.on('console', m => console.log('🖥', m.type().toUpperCase(), m.text()));
+    page.on('requestfailed', r => console.log('⚠️ FAIL', r.url(), r.failure()?.errorText));
 
-    const page = await browser.newPage();
+    await page.emulateMediaType('screen');
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 });
 
-    // Garante fundo branco e remove efeitos do container no print
+    // aguarda o container principal (evita prints "vazios")
+    await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
+
+    // CSS específico para impressão — injeta **após** o carregamento
     await page.addStyleTag({
       content: `
         html, body, #pdf-root { background:#ffffff !important; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .page-head { display: none !important; } /* oculta cabeçalho do HTML; vamos usar o header do PDF */
+        .page-head { display: none !important; } /* oculta cabeçalho do HTML; usamos header do PDF */
         .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
       `
     });
 
-    await page.emulateMediaType('screen');
-    await page.goto(url, { waitUntil: 'networkidle0', timeout: 45000 });
     // ativa flag de exportação também no body e no root (para qualquer CSS condicional)
     await page.evaluate(() => {
       document.body.classList.add('pdf-export');
@@ -904,11 +926,11 @@ app.post('/api/termo-pdf', async (req, res) => {
       displayHeaderFooter: true,
       headerTemplate,
       footerTemplate,
-      // margem superior equivalente ao header (≈32 mm dá folga para as logos + linha)
       margin: { top: '32mm', right: '0mm', bottom: '12mm', left: '0mm' }
     });
 
-    await browser.close();
+    await page.close();
+    page = null;
 
     const filenameSafe = (p.ENTE || 'termo-adesao')
       .normalize('NFD').replace(/\p{Diacritic}/gu,'')
@@ -921,6 +943,7 @@ app.post('/api/termo-pdf', async (req, res) => {
     res.send(pdf);
   } catch (e) {
     console.error('❌ /api/termo-pdf:', e);
+    try { if (page) await page.close(); } catch(_) {}
     res.status(500).json({ error: 'Falha ao gerar PDF' });
   }
 });
