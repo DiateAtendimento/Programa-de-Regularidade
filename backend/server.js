@@ -108,7 +108,8 @@ app.use(cors({
 }));
 
 // garante resposta ao preflight de qualquer rota
-app.options('*', cors());
+app.options(/.*/, cors());
+
 
 /* ───────────── Static ───────────── */
 app.use('/', express.static(path.join(__dirname, '../frontend')));
