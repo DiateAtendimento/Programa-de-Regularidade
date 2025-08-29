@@ -801,7 +801,6 @@ function inlineSvg(relPath) {
     const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
     if (_svgCache[abs]) return _svgCache[abs];
     const raw = fs.readFileSync(abs, 'utf8');
-    // Compacta para caber no template do header
     const cleaned = raw
       .replace(/<\?xml[^>]*>/g, '')
       .replace(/<!DOCTYPE[^>]*>/g, '')
@@ -813,6 +812,21 @@ function inlineSvg(relPath) {
   } catch (e) {
     console.warn('⚠️  Falha ao ler SVG:', relPath, e.message);
     return '';
+  }
+}
+
+/* Fonte local opcional (para evitar bloqueios CORP/CORS em headless) */
+function inlineFont(relPath) {
+  try {
+    const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/, ''));
+    const buf = fs.readFileSync(abs);
+    const b64 = buf.toString('base64');
+    const ext = path.extname(abs).toLowerCase();
+    const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : 'application/octet-stream';
+    const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
+    return `url(data:${mime};base64,${b64}) format('${fmt}')`;
+  } catch (e) {
+    return null;
   }
 }
 
@@ -859,7 +873,6 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     (Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [])
       .forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
-
     compCodes.forEach(code => qs.append('comp', code));
 
     const PUBLIC_URL = (process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/,'');
@@ -868,7 +881,29 @@ app.post('/api/termo-pdf', async (req, res) => {
     const browser = await getBrowser();
     page = await browser.newPage();
 
-    // timeouts mais folgados e logs de diagnóstico
+    // Intercepta recursos para evitar CORP/CORS e travas de idle
+    await page.setRequestInterception(true);
+    page.on('request', (reqObj) => {
+      const u = reqObj.url();
+      const t = reqObj.resourceType();
+
+      // Bloqueia fontes/stylesheet externos que causam NotSameOrigin
+      if (/fonts\.cdnfonts\.com|fonts\.gstatic\.com/i.test(u)) {
+        if (t === 'stylesheet') {
+          return reqObj.respond({ status: 200, contentType: 'text/css', body: '/* font css blocked in pdf */' });
+        }
+        return reqObj.abort();
+      }
+
+      // Bloqueia analíticos e afins
+      if (/googletagmanager|google-analytics|doubleclick|hotjar|clarity|sentry|facebook|meta\./i.test(u)) {
+        return reqObj.abort();
+      }
+
+      return reqObj.continue();
+    });
+
+    // timeouts + logs
     page.setDefaultNavigationTimeout(90_000);
     page.setDefaultTimeout(90_000);
     page.on('console', m => console.log('🖥', m.type().toUpperCase(), m.text()));
@@ -876,37 +911,70 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     await page.emulateMediaType('screen');
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-
-    // aguarda o container principal (evita prints "vazios")
     await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
 
-    // CSS específico para impressão — injeta **após** o carregamento
+    // Injeção de fontes locais (opcional)
+    function findFont(candidates){
+      for (const rel of candidates){
+        const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
+        if (fs.existsSync(abs)) return inlineFont(rel); // inlineFont já detecta woff2/woff/ttf
+      }
+      return null;
+    }
+
+    const rawline400 = findFont([
+      'fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf',
+      'fonts/rawline-400.woff2','fonts/rawline-400.woff','fonts/rawline-400.ttf'
+    ]);
+
+    const rawline700 = findFont([
+      'fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf',
+      'fonts/rawline-700.woff2','fonts/rawline-700.woff','fonts/rawline-700.ttf'
+    ]);
+
+    let fontCSS = '';
+    if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
+    if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
+    fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
+
+
+    // CSS de impressão
     await page.addStyleTag({
       content: `
+        ${fontCSS}
         html, body, #pdf-root { background:#ffffff !important; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .page-head { display: none !important; } /* oculta cabeçalho do HTML; usamos header do PDF */
+
+        /* 🔽 Antes estava: .page-head { display:none } — isso removia o TÍTULO.
+          Agora escondemos só as logos do HTML; as logos do PDF vêm no headerTemplate. */
+        .page-head .logos-wrap { display: none !important; }
+
+        /* mantém o container limpo no PDF */
         .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
+
+        /* dá um respiro entre o header do PDF e o título da 1ª página */
+        .term-title { margin-top: 8mm !important; }
       `
     });
 
-    // ativa flag de exportação também no body e no root (para qualquer CSS condicional)
+
     await page.evaluate(() => {
       document.body.classList.add('pdf-export');
       const root = document.getElementById('pdf-root');
       if (root) root.classList.add('pdf-export');
     });
 
-    // ===== Header com SVG inline (sempre visível e nítido) =====
+    // ===== Header com SVG inline =====
     const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
     const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
 
     const headerTemplate = `
       <style>
-        .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 8px 24px 6px; }
+        .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6px 24px 6px; }
         .pdf-header .logos { display:flex; align-items:center; justify-content:space-between; }
         .pdf-header .logos .logo { display:flex; align-items:center; }
-        .pdf-header .logos .logo svg { height: 28px; width: auto; }
+        .pdf-header .logos .logo svg { height: 9mm; width: auto; }
+
         .pdf-header .rule { margin-top: 6px; height: 2px; background: #0b2240; width: 100%; }
         .date, .title, .url, .pageNumber, .totalPages { display: none; }
       </style>
@@ -926,8 +994,10 @@ app.post('/api/termo-pdf', async (req, res) => {
       displayHeaderFooter: true,
       headerTemplate,
       footerTemplate,
-      margin: { top: '32mm', right: '0mm', bottom: '12mm', left: '0mm' }
+      // deixe o top moderado; o espaçamento extra da 1ª página virá do CSS do conteúdo
+      margin: { top: '24mm', right: '0mm', bottom: '12mm', left: '0mm' }
     });
+
 
     await page.close();
     page = null;
