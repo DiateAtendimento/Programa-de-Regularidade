@@ -82,7 +82,7 @@ app.use(cors({
     return ok ? cb(null, true) : cb(new Error(`Origin não autorizada: ${origin}`));
   },
   methods: ['GET','POST','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','Cache-Control'] // inclui Cache-Control por segurança
+  allowedHeaders: ['Content-Type','Authorization','Cache-Control']
 }));
 
 /* ───────────── Static ───────────── */
@@ -514,7 +514,7 @@ async function upsertEmailsInBase(p){
 
   const sCnpj = await getSheetStrict('CNPJ_ENTE_UG');
   await sCnpj.loadHeaderRow();
-  const rows = await safeGetRows(sCnpj, 'CNPJ:getRows'); // cabeçalhos únicos
+  const rows = await safeGetRows(sCnpj, 'CNPJ:getRows');
 
   const cnpjEnte = digits(p.CNPJ_ENTE);
   const cnpjUg   = digits(p.CNPJ_UG);
@@ -556,10 +556,7 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
   const cpf = digits(CPF);
   let row = rows.find(r => digits(getVal(r,'CPF')) === cpf);
 
-  // telefone móvel espelha o TELEFONE quando vier preenchido
   const telBase = norm(TELEFONE);
-
-  // Se UG vier vazia (caso 2.1), tenta resolver pela base
   const ugFinal = await resolveUGIfBlank(UF, ENTE, UG);
 
   if (!row) {
@@ -720,7 +717,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
       MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO
     }, 'Termos:add');
 
-    // ===== Log apenas se o usuário DIGITOU (e apenas campos permitidos) =====
+    // Log inteligente (somente campos digitados e permitidos)
     const snap = p.__snapshot_base || {};
     const userChanged = new Set(Array.isArray(p.__user_changed_fields) ? p.__user_changed_fields : []);
     const allowedForLog = new Set([
@@ -735,7 +732,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
 
     if (Object.keys(snap).length && userChanged.size) {
       for (const col of compareCols) {
-        if (!userChanged.has(col)) continue; // só conta se o usuário digitou
+        if (!userChanged.has(col)) continue;
         const a = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
           ? digits(snap[col] || '') : norm(snap[col] || '');
         const b = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
@@ -750,12 +747,11 @@ app.post('/api/gerar-termo', async (req,res)=>{
         UF: norm(p.UF),
         ENTE: norm(p.ENTE),
         'CAMPOS ALTERADOS': changed.join(', '),
-        'QTD_CAMPOS_ALTERADOS': changed.length,   // <=== corrigido para bater com o header
+        'QTD_CAMPOS_ALTERADOS': changed.length,
         MES: t.MES, DATA: t.DATA, HORA: t.HORA
       }, 'Log:add');
     }
 
-    // >>> atualiza base CNPJ_ENTE_UG com os e-mails para reaproveitar nas próximas consultas
     await upsertEmailsInBase(p);
 
     return res.json({ ok:true });
@@ -770,8 +766,29 @@ app.post('/api/gerar-termo', async (req,res)=>{
 });
 
 /* ========= PDF (Puppeteer) =========
-   Requer PUBLIC_URL apontando para o frontend (ex.: https://SEU-FRONT.netlify.app)
-   Usa termo.html com os mesmos parâmetros de query que o preview. */
+   Usa termo.html com os mesmos parâmetros de query que o preview.
+   Header do PDF com SVGs INLINE (nítido e sem depender de carregar recursos externos). */
+const _svgCache = {};
+function inlineSvg(relPath) {
+  try {
+    const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
+    if (_svgCache[abs]) return _svgCache[abs];
+    const raw = fs.readFileSync(abs, 'utf8');
+    // Compacta para caber no template do header
+    const cleaned = raw
+      .replace(/<\?xml[^>]*>/g, '')
+      .replace(/<!DOCTYPE[^>]*>/g, '')
+      .replace(/\r?\n|\t/g, ' ')
+      .replace(/>\s+</g, '><')
+      .trim();
+    _svgCache[abs] = cleaned;
+    return cleaned;
+  } catch (e) {
+    console.warn('⚠️  Falha ao ler SVG:', relPath, e.message);
+    return '';
+  }
+}
+
 app.post('/api/termo-pdf', async (req, res) => {
   try {
     const p = req.body || {};
@@ -808,29 +825,27 @@ app.post('/api/termo-pdf', async (req, res) => {
       compromisso: p.COMPROMISSO_FIRMADO_ADESAO || '',
       providencias: p.PROVIDENCIA_NECESS_ADESAO || '',
       condicao_vigencia: p.CONDICAO_VIGENCIA || '',
-      data_termo: p.DATA_TERMO_GERADO || ''
-      // ← removido: auto=1 (termo.html não vai tentar baixar PDF via html2pdf no contexto Puppeteer)
+      data_termo: p.DATA_TERMO_GERADO || '',
+      auto: '1'
     });
 
-    // critérios irregulares (repetidos: criterio1, criterio2, ...)
     (Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [])
       .forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
 
-    // compromissos individuais (comp=5.1 ... comp=5.6)
     compCodes.forEach(code => qs.append('comp', code));
 
-    const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`;
-    const url = `${PUBLIC_URL.replace(/\/+$/, '')}/termo.html?${qs.toString()}`;
+    const PUBLIC_URL = (process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/,'');
+    const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
 
     let execPath;
     try {
       const bin = puppeteer.executablePath && puppeteer.executablePath();
       if (bin && fs.existsSync(bin)) execPath = bin;
-    } catch (_) { /* ignora */ }
+    } catch (_) {}
 
     const browser = await puppeteer.launch({
       headless: 'new',
-      executablePath: execPath, // se undefined, o Puppeteer resolve
+      executablePath: execPath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -841,39 +856,42 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     const page = await browser.newPage();
 
-    // Garante cores exatas no print e fundo branco.
-    // Oculta SOMENTE as logos originais do HTML; o título permanece.
+    // Garante fundo branco e remove efeitos do container no print
     await page.addStyleTag({
       content: `
-        html, body, #pdf-root { background: #ffffff !important; }
+        html, body, #pdf-root { background:#ffffff !important; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .pdf-export .logos-wrap { display: none !important; }
-        .pdf-export .logo-rule { display: none !important; }
+        .page-head { display: none !important; } /* oculta cabeçalho do HTML; vamos usar o header do PDF */
+        .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
       `
     });
 
-    await page.emulateMediaType('screen'); // usa CSS de tela + print-color-adjust
+    await page.emulateMediaType('screen');
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 45000 });
+    // ativa flag de exportação também no body e no root (para qualquer CSS condicional)
+    await page.evaluate(() => {
+      document.body.classList.add('pdf-export');
+      const root = document.getElementById('pdf-root');
+      if (root) root.classList.add('pdf-export');
+    });
 
-    // ativa modo de exportação (seu CSS pode usar .pdf-export)
-    await page.evaluate(() => document.body.classList.add('pdf-export'));
+    // ===== Header com SVG inline (sempre visível e nítido) =====
+    const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
+    const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
 
-    // Cabeçalho repetido em TODAS as páginas (logos + linha)
-    const logoSec = `${PUBLIC_URL.replace(/\/+$/,'')}/imagens/logo-secretaria-complementar.svg`;
-    const logoMps = `${PUBLIC_URL.replace(/\/+$/,'')}/imagens/logo-termo-drpps.svg`;
     const headerTemplate = `
       <style>
         .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 8px 24px 6px; }
         .pdf-header .logos { display:flex; align-items:center; justify-content:space-between; }
-        .pdf-header img { height: 28px; }
+        .pdf-header .logos .logo { display:flex; align-items:center; }
+        .pdf-header .logos .logo svg { height: 28px; width: auto; }
         .pdf-header .rule { margin-top: 6px; height: 2px; background: #0b2240; width: 100%; }
-        /* oculta contadores padrão do Chrome */
         .date, .title, .url, .pageNumber, .totalPages { display: none; }
       </style>
       <div class="pdf-header">
         <div class="logos">
-          <img src="${logoSec}" alt="Secretaria de Regimes Próprios e Complementar" />
-          <img src="${logoMps}" alt="Ministério da Previdência Social" />
+          <div class="logo">${svgSec}</div>
+          <div class="logo">${svgMps}</div>
         </div>
         <div class="rule"></div>
       </div>
@@ -882,11 +900,12 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     const pdf = await page.pdf({
       printBackground: true,
-      preferCSSPageSize: true,     // respeita @page do seu CSS
+      preferCSSPageSize: true,
       displayHeaderFooter: true,
       headerTemplate,
       footerTemplate,
-      margin: { top: '95px', right: '0mm', bottom: '20px', left: '0mm' }
+      // margem superior equivalente ao header (≈32 mm dá folga para as logos + linha)
+      margin: { top: '32mm', right: '0mm', bottom: '12mm', left: '0mm' }
     });
 
     await browser.close();
