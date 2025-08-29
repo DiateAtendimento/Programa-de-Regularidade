@@ -67,24 +67,48 @@ app.use(rateLimit({ windowMs: 15*60*1000, max: 400, standardHeaders: true, legac
 app.use(hpp());
 app.use(express.json({ limit: '300kb' }));
 
-/* ───────────── CORS ───────────── */
-const allowed = [
-  ...(splitList(process.env.CORS_ORIGIN_LIST || '')),
-  ...(splitList(process.env.CORS_ORIGIN || ''))
-].filter(Boolean);
+/* ───────────── CORS (robusto) ───────────── */
+const ALLOW_LIST = new Set(
+  splitList(process.env.CORS_ORIGIN_LIST || process.env.CORS_ORIGIN || '')
+    .map(u => u.replace(/\/+$/, '').toLowerCase())
+);
 
-console.log('🔐 CORS liberado para:', JSON.stringify(allowed, null, 2));
+function isAllowedOrigin(origin) {
+  if (!origin) return true; // requests internas / curl / same-origin do Render
+  const o = origin.replace(/\/+$/, '').toLowerCase();
+
+  // sem lista => libera geral (útil em dev)
+  if (ALLOW_LIST.size === 0) return true;
+
+  // match exato
+  if (ALLOW_LIST.has(o)) return true;
+
+  // (opcional) qualquer subdomínio *.netlify.app se o site oficial estiver na lista
+  if (/^https:\/\/.+\.netlify\.app$/i.test(o) && ALLOW_LIST.has('https://programa-de-regularidade.netlify.app')) {
+    return true;
+  }
+  return false;
+}
+
+// log para depurar origem real vista pelo servidor
+app.use((req, _res, next) => {
+  if (req.path.startsWith('/api/')) {
+    console.log('CORS ▶ origin recebido:', req.headers.origin || '(sem origin)');
+  }
+  next();
+});
 
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    const o = origin.replace(/\/+$/, '');
-    const ok = allowed.length ? allowed.includes(o) : true;
-    return ok ? cb(null, true) : cb(new Error(`Origin não autorizada: ${origin}`));
-  },
-  methods: ['GET','POST','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','Cache-Control']
+  origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: (req, cb) =>
+    cb(null, req.headers['access-control-request-headers'] || 'Content-Type,Authorization,Cache-Control'),
+  exposedHeaders: ['Content-Disposition'],
+  credentials: false
 }));
+
+// garante resposta ao preflight de qualquer rota
+app.options('*', cors());
 
 /* ───────────── Static ───────────── */
 app.use('/', express.static(path.join(__dirname, '../frontend')));
@@ -838,7 +862,6 @@ function inlineFont(relPath) {
   }
 }
 
-
 app.post('/api/termo-pdf', async (req, res) => {
   let page;
   try {
@@ -888,7 +911,8 @@ app.post('/api/termo-pdf', async (req, res) => {
     const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
 
     const browser = await getBrowser();
-    page = await browser.newPage();
+    const pageOpts = {};
+    page = await browser.newPage(pageOpts);
 
     // Intercepta recursos para evitar CORP/CORS e travas de idle
     await page.setRequestInterception(true);
@@ -943,12 +967,10 @@ app.post('/api/termo-pdf', async (req, res) => {
     console.log('[PDF] Rawline 400:', !!rawline400 ? 'OK' : 'NÃO ENCONTRADO');
     console.log('[PDF] Rawline 700:', !!rawline700 ? 'OK' : 'NÃO ENCONTRADO');
 
-
     let fontCSS = '';
     if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
     if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
     fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
-
 
     // CSS de impressão
     await page.addStyleTag({
@@ -967,8 +989,6 @@ app.post('/api/termo-pdf', async (req, res) => {
         .term-title { margin-top: 2mm !important; }
       `
     });
-
-
 
     await page.evaluate(() => {
       document.body.classList.add('pdf-export');
@@ -1002,17 +1022,14 @@ app.post('/api/termo-pdf', async (req, res) => {
     `;
     const footerTemplate = `<div></div>`;
 
-
     const pdf = await page.pdf({
       printBackground: true,
       preferCSSPageSize: true,
       displayHeaderFooter: true,
       headerTemplate,
       footerTemplate,
-      // deixe o top moderado; o espaçamento extra da 1ª página virá do CSS do conteúdo
       margin: { top: '30mm', right: '0mm', bottom: '12mm', left: '0mm' }
     });
-
 
     await page.close();
     page = null;
