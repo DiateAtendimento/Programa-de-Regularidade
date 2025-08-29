@@ -14,6 +14,7 @@ const rateLimit = require('express-rate-limit');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const http = require('http');
 const https = require('https');
+const puppeteer = require('puppeteer'); // ← PDF (Puppeteer)
 
 const app = express();
 
@@ -765,6 +766,92 @@ app.post('/api/gerar-termo', async (req,res)=>{
       return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
     }
     res.status(500).json({ error:'Falha ao registrar o termo.' });
+  }
+});
+
+/* ========= PDF (Puppeteer) =========
+   Requer PUBLIC_URL apontando para o frontend (ex.: https://SEU-FRONT.netlify.app)
+   Usa termo.html com os mesmos parâmetros de query que o preview. */
+app.post('/api/termo-pdf', async (req, res) => {
+  try {
+    const p = req.body || {};
+
+    // compila 'comp' (5.1..5.6) como no openTermoWithPayload()
+    const compAgg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
+    const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6']
+      .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
+
+    const qs = new URLSearchParams({
+      uf: p.UF || '',
+      ente: p.ENTE || '',
+      cnpj_ente: p.CNPJ_ENTE || '',
+      email_ente: p.EMAIL_ENTE || '',
+      ug: p.UG || '',
+      cnpj_ug: p.CNPJ_UG || '',
+      email_ug: p.EMAIL_UG || '',
+      esfera: p.ESFERA || '',
+      nome_rep_ente: p.NOME_REP_ENTE || '',
+      cpf_rep_ente: p.CPF_REP_ENTE || '',
+      cargo_rep_ente: p.CARGO_REP_ENTE || '',
+      email_rep_ente: p.EMAIL_REP_ENTE || '',
+      nome_rep_ug: p.NOME_REP_UG || '',
+      cpf_rep_ug: p.CPF_REP_UG || '',
+      cargo_rep_ug: p.CARGO_REP_UG || '',
+      email_rep_ug: p.EMAIL_REP_UG || '',
+      venc_ult_crp: p.DATA_VENCIMENTO_ULTIMO_CRP || '',
+      tipo_emissao_crp: p.TIPO_EMISSAO_ULTIMO_CRP || '',
+      celebracao: p.CELEBRACAO_TERMO_PARCELA_DEBITOS || '',
+      regularizacao: p.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '',
+      deficit: p.DEFICIT_ATUARIAL || '',
+      criterios_estrut: p.CRITERIOS_ESTRUT_ESTABELECIDOS || '',
+      manutencao_normas: p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '',
+      compromisso: p.COMPROMISSO_FIRMADO_ADESAO || '',
+      providencias: p.PROVIDENCIA_NECESS_ADESAO || '',
+      condicao_vigencia: p.CONDICAO_VIGENCIA || '',
+      data_termo: p.DATA_TERMO_GERADO || '',
+      auto: '1'
+    });
+
+    // critérios irregulares (repetidos: criterio1, criterio2, ...)
+    (Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [])
+      .forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
+
+    // compromissos individuais (comp=5.1 ... comp=5.6)
+    compCodes.forEach(code => qs.append('comp', code));
+
+    const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const url = `${PUBLIC_URL.replace(/\/+$/, '')}/termo.html?${qs.toString()}`;
+
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox','--font-render-hinting=none']
+    });
+    const page = await browser.newPage();
+    await page.emulateMediaType('screen'); // usa CSS de tela + print-color-adjust
+    await page.goto(url, { waitUntil: 'networkidle0', timeout: 45000 });
+
+    // ativa modo de exportação (seu CSS pode usar .pdf-export)
+    await page.evaluate(() => document.body.classList.add('pdf-export'));
+
+    const pdf = await page.pdf({
+      printBackground: true,
+      preferCSSPageSize: true,     // respeita @page do seu CSS
+      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
+    });
+
+    await browser.close();
+
+    const filenameSafe = (p.ENTE || 'termo-adesao')
+      .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+      .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'')
+      .toLowerCase();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="termo-${filenameSafe}.pdf"`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.send(pdf);
+  } catch (e) {
+    console.error('❌ /api/termo-pdf:', e);
+    res.status(500).json({ error: 'Falha ao gerar PDF' });
   }
 });
 

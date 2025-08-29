@@ -1,4 +1,4 @@
-// script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas e validação
+// script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas, validação e download automático do PDF
 (() => {
   /* ========= Config API ========= */
   const API_BASE = (() => {
@@ -25,7 +25,6 @@
     const sep = url.includes('?') ? '&' : '?';
     const finalURL = `${url}${sep}${bust}`;
 
-    // ⚠️ Removido: Cache-Control / Pragma / Expires (causavam preflight + CORS)
     const finalHeaders = { ...headers };
 
     while (true) {
@@ -38,8 +37,8 @@
           headers: finalHeaders,
           body,
           signal: ctrl.signal,
-          cache: 'no-store',          // reforço no fetch
-          credentials: 'same-origin', // mantém cookies se houver
+          cache: 'no-store',
+          credentials: 'same-origin',
           redirect: 'follow'
         });
         clearTimeout(to);
@@ -71,7 +70,6 @@
       }
     }
   }
-
 
   function friendlyErrorMessages(err, fallback='Falha ao comunicar com o servidor.') {
     const status = err?.status;
@@ -402,7 +400,6 @@
       if (!ok45) msgs.push('Marque ao menos uma opção no item 4.5 (fase de manutenção da conformidade).');
     }
 
-
     // === Passo 5: todos os compromissos precisam estar marcados ===
     if (s===5){
       const all = $$('.grp-comp');
@@ -505,7 +502,6 @@
       searching = true;
       modalLoadingSearch.show();
 
-      // consulta com headers/anti-cache aplicados no helper
       const r = await fetchJSON(`${API_BASE}/api/consulta?cnpj=${cnpj}`, {}, { label:'consulta-cnpj' });
 
       const data = r.data;
@@ -663,7 +659,7 @@
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i=>i.value),
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300').filter(i=>i.checked).map(i=>i.value).join('; '),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$('input#reg_sem_jud, input#reg_com_jud').filter(i=>i.checked).map(i=>i.value).join('; '),
-      DEFICIT_ATUARIAL: $$('input#eq_implano, input#prazos, input#eq_plano_alt,#eq_prazos').filter(i=>i.checked).map(i=>i.value).join('; '),
+      DEFICIT_ATUARIAL: $$('input#eq_implano, input#eq_prazos, input#eq_plano_alt').filter(i=>i.checked).map(i=>i.value).join('; '),
       CRITERIOS_ESTRUT_ESTABELECIDOS: $$('input#org_ugu, input#org_outros').filter(i=>i.checked).map(i=>i.value).join('; '),
       MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$('input#man_cert, input#man_melhoria, input#man_acomp').filter(i=>i.checked).map(i=>i.value).join('; '),
       COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked').map(i=>i.value).join('; '),
@@ -678,7 +674,7 @@
     };
   }
 
-  // ======== Abrir termo.html ========
+  // ======== Preview (opcional) ========
   function openTermoWithPayload(payload, autoFlag){
     const esfera = ($('#esf_mun')?.checked ? 'RPPS Municipal' :
                     ($('#esf_est')?.checked ? 'Estadual/Distrital' : ''));
@@ -706,7 +702,7 @@
       auto: String(autoFlag || '1')
     });
 
-    // marca explícita de 5.x garante exibição correta na filtragem
+    // marca explícita de 5.x
     const compAgg = String(payload.COMPROMISSO_FIRMADO_ADESAO || '');
     [['5.1','5\\.1'], ['5.2','5\\.2'], ['5.3','5\\.3'], ['5.4','5\\.4'], ['5.5','5\\.5'], ['5.6','5\\.6']]
       .forEach(([code, rx]) => {
@@ -717,12 +713,50 @@
     window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
   }
 
-  /* ========= AÇÃO: Gerar Formulário ========= */
+  /* ========= Helper: gerar & baixar PDF ========= */
+  async function gerarBaixarPDF(payload){
+    const esfera =
+      ($('#esf_mun')?.checked ? 'RPPS Municipal' :
+      ($('#esf_est')?.checked ? 'Estadual/Distrital' : ''));
+    const body = { ...payload, ESFERA: esfera };
+
+    const res = await fetch(`${API_BASE}/api/termo-pdf?_ts=${Date.now()}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+      credentials: 'same-origin'
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(()=> '');
+      throw new Error(`Falha ao gerar PDF (${res.status}) ${txt}`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+
+    // filename amigável
+    const ente = String(payload.ENTE || 'termo-adesao')
+      .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+      .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'')
+      .toLowerCase();
+    a.download = `termo-${ente}.pdf`;
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  /* ========= AÇÃO: Gerar Formulário (download automático do PDF) ========= */
   let gerarBusy = false;
   const gerarLabel = btnGerar?.innerHTML || 'Gerar formulário';
 
-  btnGerar?.addEventListener('click', () => {
+  btnGerar?.addEventListener('click', async () => {
     if (gerarBusy) return;
+
+    // valida 1..8 antes de gerar
     for (let s = 1; s <= 8; s++) { if (!validateStep(s)) return; }
 
     gerarBusy = true;
@@ -731,17 +765,18 @@
     fillNowHiddenFields();
     const payload = buildPayload();
 
-    openTermoWithPayload(payload, '0'); // auto=0
-    modalSucesso.show();
-
-    document.getElementById('modalSucesso')
-      ?.addEventListener('hidden.bs.modal', () => {
-        if (btnGerar) {
-          btnGerar.disabled = false;
-          btnGerar.innerHTML = gerarLabel;
-        }
-        gerarBusy = false;
-      }, { once: true });
+    try {
+      await gerarBaixarPDF(payload);   // ← baixa automaticamente
+      modalSucesso.show();             // feedback visual
+    } catch (e) {
+      showErro(['Não foi possível gerar o PDF.', e?.message || '']);
+    } finally {
+      if (btnGerar) {
+        btnGerar.disabled = false;
+        btnGerar.innerHTML = gerarLabel;
+      }
+      gerarBusy = false;
+    }
   });
 
   /* ========= Submit / Finalizar ========= */
