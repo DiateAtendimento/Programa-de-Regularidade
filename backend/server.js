@@ -913,11 +913,10 @@ app.post('/api/termo-pdf', async (req, res) => {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
 
-    // Injeção de fontes locais (opcional)
     function findFont(candidates){
       for (const rel of candidates){
         const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
-        if (fs.existsSync(abs)) return inlineFont(rel); // inlineFont já detecta woff2/woff/ttf
+        if (fs.existsSync(abs)) return inlineFont(rel);
       }
       return null;
     }
@@ -970,22 +969,23 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     const headerTemplate = `
       <style>
-        .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6px 24px 6px; }
-        .pdf-header .logos { display:flex; align-items:center; justify-content:space-between; }
-        .pdf-header .logos .logo { display:flex; align-items:center; }
-        .pdf-header .logos .logo svg { height: 9mm; width: auto; }
-
-        .pdf-header .rule { margin-top: 6px; height: 2px; background: #0b2240; width: 100%; }
-        .date, .title, .url, .pageNumber, .totalPages { display: none; }
+        .pdf-header{ font-family: Inter, Arial, sans-serif; width:100%; padding:6px 24px; }
+        .logos{ display:flex; align-items:center; justify-content:center; gap:24px; }
+        .logo svg{ display:block; height:auto; }
+        .logo-sec svg{ width:236px; } /* 62 mm do HTML */
+        .logo-mps svg{ width:137px; } /* 36 mm do HTML */
+        .rule{ margin-top:12px; height:2px; width:100%; background:#d7dee8; }
+        .date,.title,.url,.pageNumber,.totalPages{ display:none; }
       </style>
       <div class="pdf-header">
         <div class="logos">
-          <div class="logo">${svgSec}</div>
-          <div class="logo">${svgMps}</div>
+          <div class="logo logo-sec">${svgSec}</div>
+          <div class="logo logo-mps">${svgMps}</div>
         </div>
         <div class="rule"></div>
       </div>
     `;
+
     const footerTemplate = `<div></div>`;
 
     const pdf = await page.pdf({
