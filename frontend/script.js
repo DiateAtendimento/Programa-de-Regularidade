@@ -143,23 +143,40 @@
   }
 
   function restoreState() {
-    const st = loadState(); if (!st) return;
-    // valores
-    Object.entries(st.values || {}).forEach(([k, v]) => {
+    const st = loadState();
+    if (!st) { showStep(0); return; }
+
+    const vals = st.values || {};
+
+    // Restaura campos
+    Object.entries(vals).forEach(([k, v]) => {
       if (k.endsWith('[]')) {
         // checkboxes por value
-        $$(`input[name="${k}"]`).forEach(i => { i.checked = (v || []).includes(i.value); });
+        $$(`input[name="${k}"]`).forEach(i => {
+          i.checked = Array.isArray(v) && v.includes(i.value);
+        });
       } else if (k === 'em_adm' || k === 'em_jud') {
         const el = document.getElementById(k);
         if (el) el.checked = !!v;
       } else {
         const el = document.getElementById(k);
-        if (el) el.value = v;
+        if (el) el.value = v ?? '';
       }
     });
-    // etapa
-    showStep(Number.isInteger(st.step) ? st.step : 0);
+
+    // Recalcula flag para liberar "Próximo" na etapa 0
+    cnpjOK = digits(vals.CNPJ_ENTE || vals.CNPJ_UG || '').length === 14;
+
+    // Vai para o passo salvo (limitado ao range 0..8)
+    const n = Number.isFinite(st.step) ? Number(st.step) : 0;
+    showStep(Math.max(0, Math.min(8, n)));
+
+    // Evita reabrir o modal de boas-vindas se já visto
+    if (st.seenWelcome) {
+      try { modalWelcome.hide(); } catch {}
+    }
   }
+
 
   window.addEventListener('beforeunload', saveState);
 
