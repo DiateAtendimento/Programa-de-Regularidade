@@ -728,7 +728,7 @@
 
     const res = await fetch(`${API_BASE}/api/termo-pdf?_ts=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }, // <<< sem Cache-Control
       body: JSON.stringify(body),
       cache: 'no-store',
       credentials: 'same-origin'
@@ -802,10 +802,7 @@
     try{
       const res = await fetch(`${API_BASE}/api/gerar-termo?_ts=${Date.now()}`, {
         method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'Cache-Control': 'no-store'
-        },
+        headers:{ 'Content-Type':'application/json' }, // <<< removido Cache-Control
         body: JSON.stringify(payload),
         cache: 'no-store'
       });

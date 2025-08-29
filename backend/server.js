@@ -82,7 +82,7 @@ app.use(cors({
     return ok ? cb(null, true) : cb(new Error(`Origin não autorizada: ${origin}`));
   },
   methods: ['GET','POST','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization']
+  allowedHeaders: ['Content-Type','Authorization','Cache-Control'] // inclui Cache-Control por segurança
 }));
 
 /* ───────────── Static ───────────── */
@@ -750,7 +750,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
         UF: norm(p.UF),
         ENTE: norm(p.ENTE),
         'CAMPOS ALTERADOS': changed.join(', '),
-        'QTD_CAMPOS ALTERADOS': changed.length,
+        'QTD_CAMPOS_ALTERADOS': changed.length,   // <=== corrigido para bater com o header
         MES: t.MES, DATA: t.DATA, HORA: t.HORA
       }, 'Log:add');
     }
@@ -808,8 +808,8 @@ app.post('/api/termo-pdf', async (req, res) => {
       compromisso: p.COMPROMISSO_FIRMADO_ADESAO || '',
       providencias: p.PROVIDENCIA_NECESS_ADESAO || '',
       condicao_vigencia: p.CONDICAO_VIGENCIA || '',
-      data_termo: p.DATA_TERMO_GERADO || '',
-      auto: '1'
+      data_termo: p.DATA_TERMO_GERADO || ''
+      // ← removido: auto=1 (termo.html não vai tentar baixar PDF via html2pdf no contexto Puppeteer)
     });
 
     // critérios irregulares (repetidos: criterio1, criterio2, ...)
@@ -818,7 +818,6 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     // compromissos individuais (comp=5.1 ... comp=5.6)
     compCodes.forEach(code => qs.append('comp', code));
-
 
     const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`;
     const url = `${PUBLIC_URL.replace(/\/+$/, '')}/termo.html?${qs.toString()}`;
@@ -842,12 +841,14 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     const page = await browser.newPage();
 
-    // Garante cores exatas no print e fundo branco (evita "cor estranha" na última folha)
+    // Garante cores exatas no print e fundo branco.
+    // Oculta SOMENTE as logos originais do HTML; o título permanece.
     await page.addStyleTag({
       content: `
         html, body, #pdf-root { background: #ffffff !important; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .pdf-export .page-head { display: none !important; } /* oculta cabeçalho embutido do HTML, pois usaremos o header do PDF */
+        .pdf-export .logos-wrap { display: none !important; }
+        .pdf-export .logo-rule { display: none !important; }
       `
     });
 
