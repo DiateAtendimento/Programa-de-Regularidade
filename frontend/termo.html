@@ -141,7 +141,6 @@
         <li data-code="5.5">5.5 Adequações na legislação do RPPS quando identificadas pela Secretaria.</li>
         <li data-code="5.6">5.6 Cumprimento dos Planos de Ação das fases Específica e de Manutenção.</li>
       </ul>
-      <!-- REMOVIDO: linha "Compromissos informados" -->
     </section>
 
     <!-- 6. PROVIDÊNCIAS -->
@@ -151,7 +150,6 @@
         <li data-code="6.1">6.1 Inclusão, no Cadprev, de todos os débitos de contribuições/valores até a data da adesão; ou</li>
         <li data-code="6.2">6.2 Declaração de inexistência de débitos (ou já regularizados) até a adesão.</li>
       </ul>
-      <!-- REMOVIDO: linha "Providências informadas" -->
     </section>
 
     <!-- 7. CONDIÇÕES -->
@@ -220,7 +218,6 @@
           venc_ult_crp:'venc_ult_crp', tipo_emissao_crp:'tipo_emissao_crp',
           celebracao:'celebracao', regularizacao:'regularizacao', deficit:'deficit',
           criterios_estrut:'criterios_estrut', manutencao_normas:'manutencao_normas',
-          /* compromisso/providencias removidos da renderização textual */
           condicao_vigencia:'condicao_vigencia', data_termo:'data_termo'
         };
         Object.entries(map).forEach(([q,k])=> setTextAll(k, (p.get(q)||'').toString()));
@@ -306,14 +303,12 @@
         }
       }
 
-      // Versão mais flexível para compromissos/providências: lê o valor do param,
-      // também examina toda a query e PRIORIZA códigos explícitos comp=5.x
+      // versão flexível (compromissos/providências)
       function filterOptionsFlexible(paramKey, listId, rules){
         const rawParam = (p.get(paramKey)||'').toString();
         const rawAllPairs = [...p.entries()].map(([k,v]) => `${k}=${v}`).join(' ');
         const raw = `${rawParam} ${rawAllPairs}`;
 
-        // códigos explícitos enviados na URL (ex.: comp=5.5)
         const pickedFromQuery = new Set();
         for (const [k,v] of p.entries()) {
           if (k === 'comp' && /^5\.[1-6]$/.test(v)) pickedFromQuery.add(v);
@@ -339,10 +334,13 @@
 
       function fitTitle(){ const t=document.getElementById('term-title'); if (t) t.style.whiteSpace='normal'; }
 
-      // Só LOGOS como cabeçalho repetido no PDF
+      // Cabeçalho (snapshot) — usado só no fallback (html2pdf)
       async function captureHeaderDataURL(){
         const el = document.querySelector('.logos-wrap');
-        const canvas = await html2canvas(el, { scale: 2, backgroundColor:'#fff', useCORS:true, scrollX:0, scrollY:0 });
+        const canvas = await html2canvas(el, {
+          scale: 3, backgroundColor:'#fff', useCORS:true, imageTimeout:0,
+          scrollX:0, scrollY:0, removeContainer:true
+        });
         return { dataURL: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
       }
 
@@ -357,7 +355,8 @@
 
       function sanitizeFilename(s){ return String(s||'Sem município').replace(/[\\/:*?"<>|]+/g,'').trim(); }
 
-      async function generatePdf(){
+      /* ========= Gerador PDF (fallback no navegador) ========= */
+      async function generatePdfClient(){
         await waitFonts(); fitTitle();
 
         // Nome do arquivo
@@ -373,10 +372,10 @@
         // Layout A4 em mm
         const PAGE_W_MM   = 210;
         const SIDE_PAD_MM = 15;
-        const HEAD_TOP_MM = 2;                  // perto do topo
+        const HEAD_TOP_MM = 2;
         const headerWmm   = PAGE_W_MM - 2*SIDE_PAD_MM;
         const headerHmm   = headerWmm * ratio;
-        const GAP_BELOW   = 6;                  // respiro coerente com CSS (título centralizado)
+        const GAP_BELOW   = 6;
 
         // ===== Footer inteligente: quebra só se não couber =====
         (function decideFooterBreak(){
@@ -402,7 +401,9 @@
           if (!fitsFirstPage) footer.classList.add('footer-force-break');
         })();
 
-        // Oculta as logos originais (título permanece)
+        // Força modo exportação também no <html> e <body> (fundo branco 100%)
+        document.documentElement.classList.add('pdf-export');
+        document.body.classList.add('pdf-export');
         document.getElementById('pdf-root').classList.add('pdf-export');
 
         const opt = {
@@ -416,7 +417,6 @@
         const root   = document.getElementById('pdf-root');
         const worker = html2pdf().set(opt).from(root).toPdf();
 
-        // avisa o form.html que começou (abre modal "Gerando PDF")
         sendStatus('start', { filename });
 
         await worker.get('pdf').then(pdf=>{
@@ -427,26 +427,129 @@
           }
         }).save();
 
-        // terminou com sucesso
         sendStatus('done', { filename });
 
         document.getElementById('pdf-root').classList.remove('pdf-export');
+        document.body.classList.remove('pdf-export');
+        document.documentElement.classList.remove('pdf-export');
+      }
+
+      /* ========= Gerador PDF (servidor / Puppeteer) ========= */
+      function buildServerPayloadFromQuery(){
+        const payload = {
+          UF: p.get('uf') || '',
+          ENTE: p.get('ente') || '',
+          CNPJ_ENTE: p.get('cnpj_ente') || '',
+          EMAIL_ENTE: p.get('email_ente') || '',
+          UG: p.get('ug') || '',
+          CNPJ_UG: p.get('cnpj_ug') || '',
+          EMAIL_UG: p.get('email_ug') || '',
+          ESFERA: p.get('esfera') || '',
+          NOME_REP_ENTE: p.get('nome_rep_ente') || '',
+          CPF_REP_ENTE: p.get('cpf_rep_ente') || '',
+          CARGO_REP_ENTE: p.get('cargo_rep_ente') || '',
+          EMAIL_REP_ENTE: p.get('email_rep_ente') || '',
+          NOME_REP_UG: p.get('nome_rep_ug') || '',
+          CPF_REP_UG: p.get('cpf_rep_ug') || '',
+          CARGO_REP_UG: p.get('cargo_rep_ug') || '',
+          EMAIL_REP_UG: p.get('email_rep_ug') || '',
+          DATA_VENCIMENTO_ULTIMO_CRP: p.get('venc_ult_crp') || '',
+          TIPO_EMISSAO_ULTIMO_CRP: p.get('tipo_emissao_crp') || '',
+          CELEBRACAO_TERMO_PARCELA_DEBITOS: p.get('celebracao') || '',
+          REGULARIZACAO_PENDEN_ADMINISTRATIVA: p.get('regularizacao') || '',
+          DEFICIT_ATUARIAL: p.get('deficit') || '',
+          CRITERIOS_ESTRUT_ESTABELECIDOS: p.get('criterios_estrut') || '',
+          MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: p.get('manutencao_normas') || '',
+          // aceitamos tanto 'compromisso' quanto 'compromissos'
+          COMPROMISSO_FIRMADO_ADESAO: p.get('compromisso') || p.get('compromissos') || '',
+          PROVIDENCIA_NECESS_ADESAO: p.get('providencias') || '',
+          CONDICAO_VIGENCIA: p.get('condicao_vigencia') || '',
+          DATA_TERMO_GERADO: p.get('data_termo') || ''
+        };
+
+        // critérios irregulares em array
+        const crit = [];
+        for (const [k,v] of p.entries()){
+          if (/^criterio\d+$/i.test(k) && v) crit.push(v);
+        }
+        payload.CRITERIOS_IRREGULARES = crit;
+        return payload;
+      }
+
+      async function generatePdfServer(){
+        await waitFonts(); fitTitle();
+
+        // nome de fallback
+        const municipio = sanitizeFilename(p.get('ente')||'');
+        const ufSafe    = sanitizeFilename(p.get('uf')||'');
+        const muniUF    = municipio ? `${municipio}${ufSafe ? `-${ufSafe}` : ''}` : 'Sem municipio';
+        let filename    = `Form_Prog_Reg_Prev - ${muniUF}.pdf`;
+
+        sendStatus('start', { filename });
+
+        try{
+          const resp = await fetch('/api/termo-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            mode: 'cors',
+            body: JSON.stringify(buildServerPayloadFromQuery())
+          });
+
+          if (!resp.ok) {
+            // tenta ler JSON de erro
+            let errText = 'Falha ao gerar PDF no servidor.';
+            try { const j = await resp.json(); if (j && j.error) errText = j.error; } catch {}
+            throw new Error(errText);
+          }
+
+          // tenta extrair filename do Content-Disposition
+          const cd = resp.headers.get('Content-Disposition') || '';
+          const m = cd.match(/filename\*?=(?:UTF-8''|")?([^\";]+)/i);
+          if (m && m[1]) {
+            try { filename = decodeURIComponent(m[1].replace(/"/g,'')); } catch { filename = m[1].replace(/"/g,''); }
+          }
+
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click();
+          setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 500);
+
+          sendStatus('done', { filename });
+        } catch (err){
+          sendStatus('error', { message: (err && err.message) ? err.message : String(err) });
+          // fallback automático para o gerador no navegador
+          try { await generatePdfClient(); } catch(e){ /* último recurso: log */ console.error(e); }
+        }
       }
 
       // init
       (function init(){
         hydrate(); fitTitle();
-        sendStatus('ready'); // página pronta (opcional)
+        sendStatus('ready'); // página pronta
 
         const auto = new URLSearchParams(location.search).get('auto');
+        const engine = (new URLSearchParams(location.search).get('engine') || 'server').toLowerCase();
+
         if (auto !== null){
           document.documentElement.classList.add('auto-download');
-          generatePdf()
-            .then(()=>{ try{ window.close(); }catch{} })
-            .catch(err=>{
-              sendStatus('error', { message: (err && err.message) ? err.message : String(err) });
-              try{ console.error(err); }catch{}
-            });
+          // prioriza servidor (Puppeteer com SVG no header). Se engine=client, força fallback.
+          if (engine === 'client') {
+            generatePdfClient()
+              .then(()=>{ try{ window.close(); }catch{} })
+              .catch(err=>{
+                sendStatus('error', { message: (err && err.message) ? err.message : String(err) });
+                try{ console.error(err); }catch{}
+              });
+          } else {
+            generatePdfServer()
+              .then(()=>{ try{ window.close(); }catch{} })
+              .catch(err=>{
+                sendStatus('error', { message: (err && err.message) ? err.message : String(err) });
+                try{ console.error(err); }catch{}
+              });
+          }
         }
       })();
     });
