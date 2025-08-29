@@ -1015,13 +1015,30 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     const headerTemplate = `
       <style>
-        .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 4mm 15mm 0; }
-        .pdf-header .logos { display:flex; align-items:flex-end; justify-content:space-between; gap: 8mm; }
-        /* alturas em mm para bater com o preview do HTML */
-        .pdf-header .logo-sec svg { height: 12mm; width: auto; }
-        .pdf-header .logo-mps svg { height: 8.5mm; width: auto; }
-        /* linha igual ao HTML */
-        .pdf-header .rule { margin-top: 3mm; height: 1.2px; background: #d7dee8; width: 100%; }
+        .pdf-header {
+          font-family: Inter, Arial, sans-serif;
+          width: 100%;
+          /* um pouco mais de respiro em cima e menos nas laterais */
+          padding: 6mm 12mm 0;
+        }
+        .pdf-header .logos {
+          display: flex;
+          align-items: center;              /* centraliza verticalmente as duas logos */
+          justify-content: center;          /* centraliza o grupo no meio da página */
+          gap: 16mm;                        /* espaço entre as duas logos */
+        }
+        /* tamanhos maiores */
+        .pdf-header .logo-sec svg { height: 16mm; width: auto; }
+        .pdf-header .logo-mps svg { height: 12mm; width: auto; }
+
+        /* linha embaixo — borda fica mais nítida no PDF do que um div "cheio" */
+        .pdf-header .rule {
+          margin: 4mm 0 0;
+          height: 0;
+          border-bottom: 1.3px solid #d7dee8;  /* mesma cor do HTML */
+          width: 100%;
+        }
+
         /* esconder os campos padrão do Chrome */
         .date, .title, .url, .pageNumber, .totalPages { display: none; }
       </style>
@@ -1033,6 +1050,7 @@ app.post('/api/termo-pdf', async (req, res) => {
         <div class="rule"></div>
       </div>
     `;
+
     const footerTemplate = `<div></div>`;
 
     const pdf = await page.pdf({
@@ -1041,8 +1059,9 @@ app.post('/api/termo-pdf', async (req, res) => {
       displayHeaderFooter: true,
       headerTemplate,
       footerTemplate,
-      margin: { top: '30mm', right: '0mm', bottom: '12mm', left: '0mm' }
+      margin: { top: '36mm', right: '0mm', bottom: '12mm', left: '0mm' } // era 30mm
     });
+
 
     await page.close();
     page = null;
