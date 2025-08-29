@@ -42,7 +42,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 }
 
 /* Em modo PDF dar um respiro após o header do PDF */
-.pdf-export .term-title{ margin-top:8mm; }
+.pdf-export .term-title{ margin-top:2mm; }
 .pdf-export .page-head{ margin-bottom:6mm; }
 
 /* Logos em linha (preview) */

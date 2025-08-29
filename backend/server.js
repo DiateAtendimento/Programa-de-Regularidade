@@ -822,13 +822,22 @@ function inlineFont(relPath) {
     const buf = fs.readFileSync(abs);
     const b64 = buf.toString('base64');
     const ext = path.extname(abs).toLowerCase();
-    const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : 'application/octet-stream';
-    const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
+
+    const mime = ext === '.woff2' ? 'font/woff2'
+              : ext === '.woff'  ? 'font/woff'
+              : ext === '.ttf'   ? 'font/ttf'
+              : 'application/octet-stream';
+
+    const fmt  = ext === '.woff2' ? 'woff2'
+              : ext === '.woff'  ? 'woff'
+              : 'truetype';
+
     return `url(data:${mime};base64,${b64}) format('${fmt}')`;
   } catch (e) {
     return null;
   }
 }
+
 
 app.post('/api/termo-pdf', async (req, res) => {
   let page;
@@ -931,6 +940,10 @@ app.post('/api/termo-pdf', async (req, res) => {
       'fonts/rawline-700.woff2','fonts/rawline-700.woff','fonts/rawline-700.ttf'
     ]);
 
+    console.log('[PDF] Rawline 400:', !!rawline400 ? 'OK' : 'NÃO ENCONTRADO');
+    console.log('[PDF] Rawline 700:', !!rawline700 ? 'OK' : 'NÃO ENCONTRADO');
+
+
     let fontCSS = '';
     if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
     if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
@@ -944,17 +957,17 @@ app.post('/api/termo-pdf', async (req, res) => {
         html, body, #pdf-root { background:#ffffff !important; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-        /* 🔽 Antes estava: .page-head { display:none } — isso removia o TÍTULO.
-          Agora escondemos só as logos do HTML; as logos do PDF vêm no headerTemplate. */
+        /* No PDF: esconder apenas as LOGOS do HTML (o título permanece) */
         .page-head .logos-wrap { display: none !important; }
 
-        /* mantém o container limpo no PDF */
+        /* Container “flat” no PDF */
         .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
 
-        /* dá um respiro entre o header do PDF e o título da 1ª página */
-        .term-title { margin-top: 8mm !important; }
+        /* Título com respiro pequeno — o “gap” principal vem do header do PDF */
+        .term-title { margin-top: 2mm !important; }
       `
     });
+
 
 
     await page.evaluate(() => {
@@ -969,24 +982,26 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     const headerTemplate = `
       <style>
-        .pdf-header{ font-family: Inter, Arial, sans-serif; width:100%; padding:6px 24px; }
-        .logos{ display:flex; align-items:center; justify-content:center; gap:24px; }
-        .logo svg{ display:block; height:auto; }
-        .logo-sec svg{ width:236px; } /* 62 mm do HTML */
-        .logo-mps svg{ width:137px; } /* 36 mm do HTML */
-        .rule{ margin-top:12px; height:2px; width:100%; background:#d7dee8; }
-        .date,.title,.url,.pageNumber,.totalPages{ display:none; }
+        .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 4mm 15mm 0; }
+        .pdf-header .logos { display:flex; align-items:flex-end; justify-content:space-between; gap: 8mm; }
+        /* alturas em mm para bater com o preview do HTML */
+        .pdf-header .logo-sec svg { height: 12mm; width: auto; }
+        .pdf-header .logo-mps svg { height: 8.5mm; width: auto; }
+        /* linha igual ao HTML */
+        .pdf-header .rule { margin-top: 3mm; height: 1.2px; background: #d7dee8; width: 100%; }
+        /* esconder os campos padrão do Chrome */
+        .date, .title, .url, .pageNumber, .totalPages { display: none; }
       </style>
       <div class="pdf-header">
         <div class="logos">
-          <div class="logo logo-sec">${svgSec}</div>
-          <div class="logo logo-mps">${svgMps}</div>
+          <div class="logo-sec">${svgSec}</div>
+          <div class="logo-mps">${svgMps}</div>
         </div>
         <div class="rule"></div>
       </div>
     `;
-
     const footerTemplate = `<div></div>`;
+
 
     const pdf = await page.pdf({
       printBackground: true,
@@ -995,7 +1010,7 @@ app.post('/api/termo-pdf', async (req, res) => {
       headerTemplate,
       footerTemplate,
       // deixe o top moderado; o espaçamento extra da 1ª página virá do CSS do conteúdo
-      margin: { top: '24mm', right: '0mm', bottom: '12mm', left: '0mm' }
+      margin: { top: '30mm', right: '0mm', bottom: '12mm', left: '0mm' }
     });
 
 
