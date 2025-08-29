@@ -1011,7 +1011,7 @@ app.post('/api/termo-pdf', async (req, res) => {
         .pdf-header {
           font-family: Inter, Arial, sans-serif;
           width: 100%;
-          padding: 6mm 12mm 0;           /* topo 6mm, laterais 12mm */
+          padding: 6mm 12mm 4;           /* topo 6mm, laterais 12mm */
         }
         .pdf-header .logos {
           display: flex;
@@ -1047,7 +1047,7 @@ app.post('/api/termo-pdf', async (req, res) => {
       displayHeaderFooter: true,
       headerTemplate,
       footerTemplate,
-      margin: { top: '34mm', right: '0mm', bottom: '12mm', left: '0mm' }
+      margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
     });
 
     await page.close();
