@@ -822,9 +822,15 @@ app.post('/api/termo-pdf', async (req, res) => {
     const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`;
     const url = `${PUBLIC_URL.replace(/\/+$/, '')}/termo.html?${qs.toString()}`;
 
+    let execPath;
+    try {
+      const p = puppeteer.executablePath && puppeteer.executablePath();
+      if (p && fs.existsSync(p)) execPath = p;
+    } catch (_) { /* ignora */ }
+
     const browser = await puppeteer.launch({
-      executablePath: (puppeteer.executablePath && puppeteer.executablePath()) || undefined,
       headless: 'new',
+      executablePath: execPath, // undefined se não existir — Puppeteer resolve sozinho
       args: ['--no-sandbox','--disable-setuid-sandbox','--font-render-hinting=none']
     });
 
