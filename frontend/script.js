@@ -105,6 +105,64 @@
     setTimeout(()=> modalWelcome.show(), 150);
   });
 
+  /* ========= Persistência (etapa + campos) ========= */
+  const STORAGE_KEY = 'rpps-form-v1';
+
+  function saveState() {
+    const data = {
+      step,
+      values: {},
+      seenWelcome: true
+    };
+    // salve só os campos que existem (evita lixo)
+    [
+      'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
+      'CPF_REP_ENTE','NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
+      'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
+      'DATA_VENCIMENTO_ULTIMO_CRP'
+    ].forEach(id => { const el = document.getElementById(id); if (el) data.values[id] = el.value; });
+
+    // radios/checkboxes relevantes
+    data.values['em_adm'] = !!document.getElementById('em_adm')?.checked;
+    data.values['em_jud'] = !!document.getElementById('em_jud')?.checked;
+
+    // listas marcadas (ids fixos)
+    ['CRITERIOS_IRREGULARES[]','COMPROMISSOS[]','PROVIDENCIAS[]'].forEach(name => {
+      data.values[name] = $$(`input[name="${name}"]:checked`).map(i => i.value);
+    });
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  }
+
+  function restoreState() {
+    const st = loadState(); if (!st) return;
+    // valores
+    Object.entries(st.values || {}).forEach(([k, v]) => {
+      if (k.endsWith('[]')) {
+        // checkboxes por value
+        $$(`input[name="${k}"]`).forEach(i => { i.checked = (v || []).includes(i.value); });
+      } else if (k === 'em_adm' || k === 'em_jud') {
+        const el = document.getElementById(k);
+        if (el) el.checked = !!v;
+      } else {
+        const el = document.getElementById(k);
+        if (el) el.value = v;
+      }
+    });
+    // etapa
+    showStep(Number.isInteger(st.step) ? st.step : 0);
+  }
+
+  window.addEventListener('beforeunload', saveState);
+
   /* ========= Lottie ========= */
   const lotties = {};
   function mountLottie(id, jsonPath, {loop=true, autoplay=true, renderer='svg'}={}) {
@@ -156,6 +214,29 @@
     setErroHeader('erro');
     modalErro.show();
   }
+
+  // --- Controle robusto do modal de "carregando" + Lottie ---
+  let loadingCount = 0;
+  function showLoadingModal() {
+    try { modalLoadingSearch.show(); } catch {}
+  }
+  function hideLoadingModal() {
+    try { modalLoadingSearch.hide(); } catch {}
+  }
+  function startLoading() {
+    loadingCount += 1;
+    if (loadingCount === 1) showLoadingModal();
+  }
+  function stopLoading() {
+    loadingCount = Math.max(0, loadingCount - 1);
+    if (loadingCount === 0) hideLoadingModal();
+  }
+
+  // Destrói a animação quando o modal é fechado, evitando loop eterno em background
+  $('#modalLoadingSearch')?.addEventListener('hidden.bs.modal', () => {
+    const inst = lotties['lottieLoadingSearch'];
+    if (inst) { inst.destroy(); delete lotties['lottieLoadingSearch']; }
+  });
 
   /* ========= Máscaras ========= */
   const maskCPF = v => {
@@ -221,7 +302,7 @@
   let step = 0;   // 0..8
   let cnpjOK = false;
 
-  const sections = $$('[data-step]');
+  const sections = $$('#regularidadeForm [data-step]');
   const stepsUI  = $$('#stepper .step');
   const btnPrev  = $('#btnPrev');
   const btnNext  = $('#btnNext');
@@ -297,6 +378,7 @@
 
     updateNavButtons();
     updateFooterAlign();
+    saveState();
   }
 
   showStep(0);
@@ -435,6 +517,12 @@
     return true;
   }
 
+  const stepsContainer = document.getElementById('stepper');
+  if (stepsContainer) {
+    // segurança para não quebrar se faltar algum botão/elemento
+  }
+
+  // (sem redeclarar) — apenas adiciona o listener usando o btnNext já definido acima
   btnNext?.addEventListener('click', ()=>{
     if (step===0 && !cnpjOK) { showAtencao(['Pesquise e selecione um CNPJ válido antes de prosseguir.']); return; }
     if (!validateStep(step)) return;
@@ -505,7 +593,7 @@
 
     try{
       searching = true;
-      modalLoadingSearch.show();
+      startLoading();
 
       const r = await fetchJSON(`${API_BASE}/api/consulta?cnpj=${cnpj}`, {}, { label:'consulta-cnpj' });
 
@@ -558,7 +646,7 @@
           'Preencha os dados do Ente/UG na Etapa 1 e eles serão cadastrados.'
         ]);
         cnpjOK = true; cnpjMissing = true;
-        $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
+        $('#CNPJ_ENTE').value = (cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5'));
         showStep(1);
         updateNavButtons(); updateFooterAlign();
       } else {
@@ -567,7 +655,7 @@
       }
     }finally{
       searching = false;
-      modalLoadingSearch.hide();
+      stopLoading();
       updateNavButtons(); updateFooterAlign();
     }
   });
@@ -577,7 +665,7 @@
     const cpfd = digits(cpf||'');
     if(cpfd.length!==11) { showAtencao(['Informe um CPF válido.']); return; }
     try{
-      modalLoadingSearch.show();
+      startLoading();
       const r = await fetchJSON(`${API_BASE}/api/rep-by-cpf?cpf=${cpfd}`, {}, { label: 'rep-by-cpf' });
       const data = r.data;
       if(target==='ENTE'){
@@ -600,7 +688,7 @@
         showErro(friendlyErrorMessages(err, 'Falha ao consultar CPF.'));
       }
     }finally{
-      modalLoadingSearch.hide();
+      stopLoading();
     }
   }
 
@@ -708,7 +796,6 @@
       auto: String(autoFlag || '1')
     });
 
-    // marca explícita de 5.x
     const compAgg = String(payload.COMPROMISSO_FIRMADO_ADESAO || '');
     [['5.1','5\\.1'], ['5.2','5\\.2'], ['5.3','5\\.3'], ['5.4','5\\.4'], ['5.5','5\\.5'], ['5.6','5\\.6']]
       .forEach(([code, rx]) => {
@@ -742,7 +829,6 @@
     const a = document.createElement('a');
     a.href = url;
 
-    // filename amigável
     const ente = String(payload.ENTE || 'termo-adesao')
       .normalize('NFD').replace(/\p{Diacritic}/gu,'')
       .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'')
@@ -758,6 +844,7 @@
   /* ========= AÇÃO: Gerar Formulário (download automático do PDF) ========= */
   let gerarBusy = false;
 
+  // (sem redeclarar) — usa o btnGerar já definido acima
   btnGerar?.addEventListener('click', async () => {
     if (gerarBusy) return;
 
@@ -785,7 +872,10 @@
   });
 
   /* ========= Submit / Finalizar ========= */
-  $('#regularidadeForm')?.addEventListener('submit', async (e)=>{
+  const form = document.getElementById('regularidadeForm');
+  // (sem redeclarar) — btnSubmit já existe acima
+
+  form?.addEventListener('submit', async (e)=>{
     e.preventDefault();
     for (let s=1; s<=8; s++){ if(!validateStep(s)) return; }
 
@@ -816,7 +906,7 @@
       btnSubmit.innerHTML = 'Finalizado ✓';
 
       setTimeout(() => {
-        $('#regularidadeForm').reset();
+        form.reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
         $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
         editedFields.clear();
@@ -834,4 +924,6 @@
     }
   });
 
+  // restaura o estado ao carregar
+  restoreState();
 })();

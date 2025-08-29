@@ -77,13 +77,10 @@ function isAllowedOrigin(origin) {
   if (!origin) return true; // requests internas / curl / same-origin do Render
   const o = origin.replace(/\/+$/, '').toLowerCase();
 
-  // sem lista => libera geral (útil em dev)
-  if (ALLOW_LIST.size === 0) return true;
+  if (ALLOW_LIST.size === 0) return true; // sem lista => libera em dev
 
-  // match exato
-  if (ALLOW_LIST.has(o)) return true;
+  if (ALLOW_LIST.has(o)) return true;     // match exato
 
-  // (opcional) qualquer subdomínio *.netlify.app se o site oficial estiver na lista
   if (/^https:\/\/.+\.netlify\.app$/i.test(o) && ALLOW_LIST.has('https://programa-de-regularidade.netlify.app')) {
     return true;
   }
@@ -96,15 +93,13 @@ app.use((req, _res, next) => {
     console.log('CORS ▶ origin recebido:', req.headers.origin || '(sem origin)');
   }
   next();
-
 });
-
 
 const corsOptionsDelegate = (req, cb) => {
   const origin = (req.headers.origin || '').replace(/\/+$/, '').toLowerCase();
   const ok = isAllowedOrigin(origin);
 
-  // sanitiza os headers pedidos no preflight para evitar "Invalid character in header content"
+  // sanitiza headers do preflight
   const reqHdrs = String(req.headers['access-control-request-headers'] || '')
     .replace(/[^\w\-_, ]/g, '');
 
@@ -120,8 +115,6 @@ const corsOptionsDelegate = (req, cb) => {
 
 app.use(cors(corsOptionsDelegate));
 app.options(/.*/, cors(corsOptionsDelegate));
-
-
 
 /* ───────────── Static ───────────── */
 app.use('/', express.static(path.join(__dirname, '../frontend')));
@@ -1018,28 +1011,22 @@ app.post('/api/termo-pdf', async (req, res) => {
         .pdf-header {
           font-family: Inter, Arial, sans-serif;
           width: 100%;
-          /* um pouco mais de respiro em cima e menos nas laterais */
-          padding: 6mm 12mm 0;
+          padding: 6mm 12mm 0;           /* topo 6mm, laterais 12mm */
         }
         .pdf-header .logos {
           display: flex;
-          align-items: center;              /* centraliza verticalmente as duas logos */
-          justify-content: center;          /* centraliza o grupo no meio da página */
-          gap: 16mm;                        /* espaço entre as duas logos */
+          align-items: center;
+          justify-content: center;
+          gap: 16mm;
         }
-        /* tamanhos maiores */
-        .pdf-header .logo-sec svg { height: 18mm; width: auto; }
+        .pdf-header .logo-sec svg { height: 19mm; width: auto; }
         .pdf-header .logo-mps svg { height: 20mm; width: auto; }
-
-        /* linha embaixo — borda fica mais nítida no PDF do que um div "cheio" */
         .pdf-header .rule {
           margin: 4mm 0 0;
           height: 0;
-          border-bottom: 1.3px solid #d7dee8;  /* mesma cor do HTML */
+          border-bottom: 1.3px solid #d7dee8;
           width: 100%;
         }
-
-        /* esconder os campos padrão do Chrome */
         .date, .title, .url, .pageNumber, .totalPages { display: none; }
       </style>
       <div class="pdf-header">
@@ -1053,15 +1040,15 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     const footerTemplate = `<div></div>`;
 
+    // 🔧 margem superior maior para garantir respiro na 2ª página
     const pdf = await page.pdf({
       printBackground: true,
       preferCSSPageSize: true,
       displayHeaderFooter: true,
       headerTemplate,
       footerTemplate,
-      margin: { top: '30mm', right: '0mm', bottom: '12mm', left: '0mm' } 
+      margin: { top: '34mm', right: '0mm', bottom: '12mm', left: '0mm' }
     });
-
 
     await page.close();
     page = null;
