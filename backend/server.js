@@ -819,20 +819,27 @@ app.post('/api/termo-pdf', async (req, res) => {
     // compromissos individuais (comp=5.1 ... comp=5.6)
     compCodes.forEach(code => qs.append('comp', code));
 
+
     const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`;
     const url = `${PUBLIC_URL.replace(/\/+$/, '')}/termo.html?${qs.toString()}`;
 
     let execPath;
     try {
-      const p = puppeteer.executablePath && puppeteer.executablePath();
-      if (p && fs.existsSync(p)) execPath = p;
+      const bin = puppeteer.executablePath && puppeteer.executablePath();
+      if (bin && fs.existsSync(bin)) execPath = bin;
     } catch (_) { /* ignora */ }
 
     const browser = await puppeteer.launch({
       headless: 'new',
-      executablePath: execPath, // undefined se não existir — Puppeteer resolve sozinho
-      args: ['--no-sandbox','--disable-setuid-sandbox','--font-render-hinting=none']
+      executablePath: execPath, // se undefined, o Puppeteer resolve
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--font-render-hinting=none'
+      ]
     });
+
 
     const page = await browser.newPage();
     await page.emulateMediaType('screen'); // usa CSS de tela + print-color-adjust
