@@ -96,19 +96,31 @@ app.use((req, _res, next) => {
     console.log('CORS ▶ origin recebido:', req.headers.origin || '(sem origin)');
   }
   next();
+
 });
 
-app.use(cors({
-  origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: (req, cb) =>
-    cb(null, req.headers['access-control-request-headers'] || 'Content-Type,Authorization,Cache-Control'),
-  exposedHeaders: ['Content-Disposition'],
-  credentials: false
-}));
 
-// garante resposta ao preflight de qualquer rota
-app.options(/.*/, cors());
+const corsOptionsDelegate = (req, cb) => {
+  const origin = (req.headers.origin || '').replace(/\/+$/, '').toLowerCase();
+  const ok = isAllowedOrigin(origin);
+
+  // sanitiza os headers pedidos no preflight para evitar "Invalid character in header content"
+  const reqHdrs = String(req.headers['access-control-request-headers'] || '')
+    .replace(/[^\w\-_, ]/g, '');
+
+  cb(null, {
+    origin: ok,
+    methods: ['GET','POST','OPTIONS'],
+    allowedHeaders: reqHdrs || 'Content-Type,Authorization,Cache-Control',
+    exposedHeaders: ['Content-Disposition'],
+    credentials: false,
+    optionsSuccessStatus: 204,
+  });
+};
+
+app.use(cors(corsOptionsDelegate));
+app.options(/.*/, cors(corsOptionsDelegate));
+
 
 
 /* ───────────── Static ───────────── */
