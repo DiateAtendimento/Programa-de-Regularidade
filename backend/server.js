@@ -750,7 +750,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
         UF: norm(p.UF),
         ENTE: norm(p.ENTE),
         'CAMPOS ALTERADOS': changed.join(', '),
-        'QTD_CAMPOS_ALTERADOS': changed.length,
+        'QTD_CAMPOS ALTERADOS': changed.length,
         MES: t.MES, DATA: t.DATA, HORA: t.HORA
       }, 'Log:add');
     }
@@ -840,18 +840,52 @@ app.post('/api/termo-pdf', async (req, res) => {
       ]
     });
 
-
     const page = await browser.newPage();
+
+    // Garante cores exatas no print e fundo branco (evita "cor estranha" na última folha)
+    await page.addStyleTag({
+      content: `
+        html, body, #pdf-root { background: #ffffff !important; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .pdf-export .page-head { display: none !important; } /* oculta cabeçalho embutido do HTML, pois usaremos o header do PDF */
+      `
+    });
+
     await page.emulateMediaType('screen'); // usa CSS de tela + print-color-adjust
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 45000 });
 
     // ativa modo de exportação (seu CSS pode usar .pdf-export)
     await page.evaluate(() => document.body.classList.add('pdf-export'));
 
+    // Cabeçalho repetido em TODAS as páginas (logos + linha)
+    const logoSec = `${PUBLIC_URL.replace(/\/+$/,'')}/imagens/logo-secretaria-complementar.svg`;
+    const logoMps = `${PUBLIC_URL.replace(/\/+$/,'')}/imagens/logo-termo-drpps.svg`;
+    const headerTemplate = `
+      <style>
+        .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 8px 24px 6px; }
+        .pdf-header .logos { display:flex; align-items:center; justify-content:space-between; }
+        .pdf-header img { height: 28px; }
+        .pdf-header .rule { margin-top: 6px; height: 2px; background: #0b2240; width: 100%; }
+        /* oculta contadores padrão do Chrome */
+        .date, .title, .url, .pageNumber, .totalPages { display: none; }
+      </style>
+      <div class="pdf-header">
+        <div class="logos">
+          <img src="${logoSec}" alt="Secretaria de Regimes Próprios e Complementar" />
+          <img src="${logoMps}" alt="Ministério da Previdência Social" />
+        </div>
+        <div class="rule"></div>
+      </div>
+    `;
+    const footerTemplate = `<div></div>`;
+
     const pdf = await page.pdf({
       printBackground: true,
       preferCSSPageSize: true,     // respeita @page do seu CSS
-      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
+      displayHeaderFooter: true,
+      headerTemplate,
+      footerTemplate,
+      margin: { top: '95px', right: '0mm', bottom: '20px', left: '0mm' }
     });
 
     await browser.close();

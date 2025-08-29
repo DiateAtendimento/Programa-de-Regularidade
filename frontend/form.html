@@ -256,7 +256,6 @@
               <div class="small text-muted mb-2">Selecione todos os itens apontados como irregulares no extrato.</div>
 
               <div class="d-flex flex-column gap-2" id="grpCRITERIOS">
-                <!-- lista mantida -->
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="1-Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)"><span class="form-check-label">1 - Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="2-Atendimento à fiscalização"><span class="form-check-label">2 - Atendimento à fiscalização</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="3-Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar"><span class="form-check-label">3 - Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar</span></label>
@@ -611,21 +610,37 @@
     </div>
   </div>
 
-<!-- Modal "Carregando dados..." (usado só nas PESQUISAS) -->
-<div class="modal fade modal-loading-search" id="modalLoadingSearch" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow">
-      <div class="modal-header bg-brand text-white py-2">
-        <h5 class="modal-title">Buscando informações</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body d-flex flex-column align-items-center justify-content-center">
-        <div id="lottieLoadingSearch" class="lottie-loading"></div>
-        <div class="status-msg mt-2">Carregando dados…</div>
+  <!-- Modal "Carregando dados..." (usado só nas PESQUISAS) -->
+  <div class="modal fade modal-loading-search" id="modalLoadingSearch" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-brand text-white py-2">
+          <h5 class="modal-title">Buscando informações</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body d-flex flex-column align-items-center justify-content-center">
+          <div id="lottieLoadingSearch" class="lottie-loading"></div>
+          <div class="status-msg mt-2">Carregando dados…</div>
+        </div>
       </div>
     </div>
   </div>
-</div>
+
+  <!-- NOVO: Modal “Gerando PDF” (para o botão Gerar formulário) -->
+  <div class="modal fade" id="modalGerandoPdf" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-brand text-white py-2">
+          <h5 class="modal-title">Gerando PDF</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body d-flex flex-column align-items-center justify-content-center">
+          <div id="lottieGerandoPdf" class="lottie-loading"></div>
+          <div class="status-msg mt-2">Aguarde, seu documento está sendo gerado…</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

@@ -194,6 +194,15 @@
 
   <script>
     window.addEventListener('load', () => {
+      // ---- Comunicação com a janela que abriu (form.html) para controlar o modal "Gerando PDF"
+      function sendStatus(status, extra = {}) {
+        try {
+          if (window.opener && typeof window.opener.postMessage === 'function') {
+            window.opener.postMessage({ source: 'termo.html', kind: 'pdf', status, ...extra }, '*');
+          }
+        } catch(e) { /* silencioso */ }
+      }
+
       async function waitFonts(){ try{ if(document.fonts && document.fonts.ready) await document.fonts.ready; }catch{} }
       const p = new URLSearchParams(location.search);
 
@@ -407,6 +416,9 @@
         const root   = document.getElementById('pdf-root');
         const worker = html2pdf().set(opt).from(root).toPdf();
 
+        // avisa o form.html que começou (abre modal "Gerando PDF")
+        sendStatus('start', { filename });
+
         await worker.get('pdf').then(pdf=>{
           const pages = pdf.getNumberOfPages ? pdf.getNumberOfPages() : pdf.internal.getNumberOfPages();
           for(let i=1;i<=pages;i++){
@@ -415,16 +427,26 @@
           }
         }).save();
 
+        // terminou com sucesso
+        sendStatus('done', { filename });
+
         document.getElementById('pdf-root').classList.remove('pdf-export');
       }
 
       // init
       (function init(){
         hydrate(); fitTitle();
+        sendStatus('ready'); // página pronta (opcional)
+
         const auto = new URLSearchParams(location.search).get('auto');
         if (auto !== null){
           document.documentElement.classList.add('auto-download');
-          generatePdf().then(()=>{ try{ window.close(); }catch{} });
+          generatePdf()
+            .then(()=>{ try{ window.close(); }catch{} })
+            .catch(err=>{
+              sendStatus('error', { message: (err && err.message) ? err.message : String(err) });
+              try{ console.error(err); }catch{}
+            });
         }
       })();
     });

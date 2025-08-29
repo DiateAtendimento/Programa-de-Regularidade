@@ -98,6 +98,8 @@
   const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
   const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
+  // >>> NOVO: modal de geração de PDF
+  const modalGerandoPdf = new bootstrap.Modal($('#modalGerandoPdf'), { backdrop:'static', keyboard:false });
 
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(()=> modalWelcome.show(), 150);
@@ -120,6 +122,10 @@
   });
   $('#modalBusca')?.addEventListener('shown.bs.modal', () => {
     mountLottie('lottieErrorBusca', 'animacao/atencao-info.json', { loop:false, autoplay:true });
+  });
+  // >>> NOVO: Lottie da geração de PDF
+  $('#modalGerandoPdf')?.addEventListener('shown.bs.modal', () => {
+    mountLottie('lottieGerandoPdf', 'animacao/gerando-pdf.json', { loop:true, autoplay:true });
   });
 
   function setErroHeader(mode){
@@ -362,7 +368,7 @@
 
     // === Passo 4: Finalidades ===
     if (s === 4) {
-      // 4.0 A ou B OBRIGATÓRIA (Finalidade Inicial da Adesão)
+      // 4.0 A ou B OBRIGATÓRIA
       const finA = $('#fin_parc')?.checked || false;
       const finB = $('#fin_reg')?.checked || false;
       paintGroupLabels(['#fin_parc', '#fin_reg'], !(finA || finB));
@@ -405,7 +411,7 @@
       const all = $$('.grp-comp');
       const checked = all.filter(i=>i.checked);
       const ok = checked.length === all.length;
-      all.forEach(i => paintLabelForInput(i, !ok && !i.checked)); // pinta os que faltam
+      all.forEach(i => paintLabelForInput(i, !ok && !i.checked));
       if (!ok) msgs.push('No item 5, marque todas as declarações de compromisso.');
     }
 
@@ -480,7 +486,6 @@
       EMAIL_UG: $('#EMAIL_UG').value.trim()
     };
     if (digits(body.CNPJ_ENTE).length===14 || digits(body.CNPJ_UG).length===14){
-      // fire-and-forget com timeout curto
       fetchJSON(`${API_BASE}/api/upsert-cnpj`,
         { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) },
         { timeout: 8000, retries: 0, label: 'upsert-cnpj' }
@@ -660,6 +665,7 @@
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300').filter(i=>i.checked).map(i=>i.value).join('; '),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$('input#reg_sem_jud, input#reg_com_jud').filter(i=>i.checked).map(i=>i.value).join('; '),
       DEFICIT_ATUARIAL: $$('input#eq_implano, input#eq_prazos, input#eq_plano_alt').filter(i=>i.checked).map(i=>i.value).join('; '),
+      CRITERIOS_ESTRUT_EStABELECIDOS: undefined, // compat legado (não usar)
       CRITERIOS_ESTRUT_ESTABELECIDOS: $$('input#org_ugu, input#org_outros').filter(i=>i.checked).map(i=>i.value).join('; '),
       MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$('input#man_cert, input#man_melhoria, input#man_acomp').filter(i=>i.checked).map(i=>i.value).join('; '),
       COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked').map(i=>i.value).join('; '),
@@ -751,7 +757,6 @@
 
   /* ========= AÇÃO: Gerar Formulário (download automático do PDF) ========= */
   let gerarBusy = false;
-  const gerarLabel = btnGerar?.innerHTML || 'Gerar formulário';
 
   btnGerar?.addEventListener('click', async () => {
     if (gerarBusy) return;
@@ -760,21 +765,21 @@
     for (let s = 1; s <= 8; s++) { if (!validateStep(s)) return; }
 
     gerarBusy = true;
-    if (btnGerar) { btnGerar.disabled = true; btnGerar.innerHTML = 'Gerando…'; }
+    if (btnGerar) btnGerar.disabled = true;
 
     fillNowHiddenFields();
     const payload = buildPayload();
 
     try {
-      await gerarBaixarPDF(payload);   // ← baixa automaticamente
-      modalSucesso.show();             // feedback visual
+      modalGerandoPdf.show();            // <<< mostra animação + mensagem
+      await gerarBaixarPDF(payload);     // baixa automaticamente
+      modalGerandoPdf.hide();
+      modalSucesso.show();               // feedback visual de sucesso
     } catch (e) {
+      modalGerandoPdf.hide();
       showErro(['Não foi possível gerar o PDF.', e?.message || '']);
     } finally {
-      if (btnGerar) {
-        btnGerar.disabled = false;
-        btnGerar.innerHTML = gerarLabel;
-      }
+      if (btnGerar) btnGerar.disabled = false; // não altera o texto do botão
       gerarBusy = false;
     }
   });
