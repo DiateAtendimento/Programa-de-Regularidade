@@ -1028,8 +1028,8 @@ app.post('/api/termo-pdf', async (req, res) => {
           gap: 16mm;                        /* espaço entre as duas logos */
         }
         /* tamanhos maiores */
-        .pdf-header .logo-sec svg { height: 16mm; width: auto; }
-        .pdf-header .logo-mps svg { height: 12mm; width: auto; }
+        .pdf-header .logo-sec svg { height: 18mm; width: auto; }
+        .pdf-header .logo-mps svg { height: 20mm; width: auto; }
 
         /* linha embaixo — borda fica mais nítida no PDF do que um div "cheio" */
         .pdf-header .rule {
@@ -1059,7 +1059,7 @@ app.post('/api/termo-pdf', async (req, res) => {
       displayHeaderFooter: true,
       headerTemplate,
       footerTemplate,
-      margin: { top: '36mm', right: '0mm', bottom: '12mm', left: '0mm' } // era 30mm
+      margin: { top: '20mm', right: '0mm', bottom: '12mm', left: '0mm' } 
     });
 
 
