@@ -1,4 +1,8 @@
-/* ====== Enterprise Look & Feel ====== */
+/* =========================
+   REGULARIZA RPPS – styles.css
+   ========================= */
+
+/* ---- Design tokens ---- */
 :root{
   --brand:#1e3a8a;
   --brand-600:#2563eb;
@@ -14,26 +18,100 @@
   --divider:#e5e7eb;
   --shadow:0 10px 28px rgba(0,0,0,.08);
 
-  /* usa o azul do projeto onde o Bootstrap usa "primary" */
+  /* usar o azul do projeto onde o Bootstrap usa "primary" */
   --bs-primary: var(--brand-600);
 }
-*{box-sizing:border-box}
-body{font-family:'Rawline','Inter',sans-serif;color:var(--fg);min-height:100vh;position:relative}
-.home-body{font-family:'Rawline','Inter',sans-serif;}
 
-
-/* Background */
-.app-bg{
-  position:fixed; inset:0;
-  background:
-    linear-gradient(180deg, rgba(30,58,138,.35) 0%, rgba(15,23,42,.55) 100%),
-    url('imagens/bg-home.svg') center/cover no-repeat fixed;
-  z-index:-1;
-  filter:saturate(1.05) contrast(1.02);
+/* ---- Reset & segurança contra barra horizontal ---- */
+*,*::before,*::after{ box-sizing:border-box; }
+html, body{
+  margin:0 !important;
+  padding:0 !important;
+  width:100%;
+  min-height:100%;
+  overflow-x:hidden;             /* evita scroll lateral */
+  background:#0b2240;            /* fallback se a imagem não carregar */
 }
-.container{max-width:1120px}
+img{ max-width:100%; height:auto; display:block; }
 
-/* Stepper */
+/* =========================================
+   FUNDO – idêntico no index.html e form.html
+   ========================================= */
+body{
+  color:var(--fg);
+  font-family:'Rawline','Inter',sans-serif;
+  min-height:100vh;
+
+  /* overlay extra para escurecer a foto */
+  background-image:
+    linear-gradient(0deg, rgba(0,0,0,.18), rgba(0,0,0,.18)),
+    linear-gradient(90deg, rgba(2,22,58,.35) 0%, rgba(2,22,58,.15) 40%, rgba(2,22,58,0) 60%),
+    url('imagens/bg-home.svg');
+  background-position:center center, center center, center center;
+  background-repeat:no-repeat, no-repeat, no-repeat;
+  background-size:cover, cover, cover;
+  background-attachment:fixed, fixed, fixed;
+
+  transform:translateZ(0); /* evita artefatos de 1px */
+}
+
+/* Oculta wrappers antigos de BG (se ainda estiverem no HTML) */
+.home-bg, .app-bg{ display:none !important; }
+
+/* =========================================
+   LOGO MPS – mesmo tamanho/posição nas duas
+   ========================================= */
+.mps-header{
+  text-align:center;
+  padding-top:1.25rem;   /* ~20px */
+  padding-bottom:.5rem;  /* ~8px – igual ao form */
+}
+.logo-mps-top,
+.brand img{
+  height:56px !important;
+  width:auto;
+  display:block;
+  margin-inline:auto;
+}
+
+/* =========================================
+   HOME (index.html)
+   ========================================= */
+.home-body{ color:#0b2240; position:relative; min-height:100vh; }
+
+/* respiro nas laterais (sem mexer no HTML) */
+@media (min-width: 992px){
+  .home-wrap .row > [class*="col-"]:first-child{ padding-left: clamp(16px, 4vw, 56px); }
+  .home-wrap .row > [class*="col-"]:last-child{  padding-right: clamp(16px, 4vw, 56px); }
+}
+@media (max-width: 991.98px){
+  .home-wrap{ padding-left: 1rem; padding-right: 1rem; }
+}
+
+.home-logo{ max-width:620px; width:100%; }
+
+.home-menu{ width:100%; }
+
+.home-btn{
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  width:100%;
+  min-height:84px;
+  padding:1.1rem 1.25rem;
+  background:#1e3a8a; /* brand 700 */
+  color:#fff; text-decoration:none;
+  border-radius:999px;
+  box-shadow:0 10px 28px rgba(0,0,0,.12);
+  transition:transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+}
+.home-btn:hover{ background:#2563eb; transform:translateY(-1px); box-shadow:0 14px 30px rgba(0,0,0,.16); }
+
+.home-btn-title{ font-weight:800; letter-spacing:.2px; line-height:1; }
+.home-btn-sub{ font-weight:600; opacity:.95; line-height:1.25; margin-top:.25rem; text-align:center; }
+.home-btn-sub.only{ font-weight:700; margin-top:0; }
+
+/* =========================================
+   FORM (form.html)
+   ========================================= */
 .app-stepper{display:flex;align-items:center;justify-content:center;gap:.5rem}
 .app-stepper .step{
   width:34px;height:34px;border-radius:50%;
@@ -42,83 +120,51 @@ body{font-family:'Rawline','Inter',sans-serif;color:var(--fg);min-height:100vh;p
 }
 .app-stepper .step.active{background:var(--brand-600);color:#fff}
 .app-stepper .divider{flex:1;height:3px;background:#e5e7eb;border-radius:2px}
+#stepper .step.active + .divider{background:linear-gradient(90deg,var(--brand-600),#e5e7eb)}
 
-/* Card */
 .app-card{border:none;border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
-.glass{
-  background:rgba(255,255,255,.88);
-  backdrop-filter:saturate(1.2) blur(6px);
-  border:1px solid rgba(255,255,255,.4);
-}
+.glass{ background:rgba(255,255,255,.92); backdrop-filter:none; }
 
-/* Sections */
 .app-section{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--divider)}
-/* títulos em azul do projeto */
-header h1,
-.section-title{color:var(--brand-700)}
+header h1, .section-title{color:var(--brand-700)}
 .section-title{font-size:1.25rem;font-weight:800;margin-bottom:.25rem}
 .sub-title{font-weight:700;margin-bottom:.35rem;color:#000}
 
-
-/* ===== Passo 8 – caixa IMPORTANTE com legend cortando a borda ===== */
-/* Fieldset */
 .important-box{
-  position: relative;
-  background:#fff;
-  border:1px solid #cbd5e1;
-  border-radius:8px;
-  padding:18px 18px 16px;   /* espaço para o título flutuar */
+  position:relative; background:#fff; border:1px solid #cbd5e1; border-radius:8px; padding:18px 18px 16px;
 }
-
-/* Título cortando a borda – fundo só do tamanho do texto */
 .important-box > legend{
-  position:absolute;
-  top:-11px;
-  left:14px;
-
-  /* >>> overrides do Bootstrap <<< */
-  display:inline-block !important;
-  width:auto !important;
-  max-width:none !important;
-  float:none !important;
-
-  margin:0;
-  padding:0 6px;            /* ajuste o “respiro” lateral */
-  background:#fff;          /* cobre só o texto */
-  font-weight:800;
-  font-size:.95rem;
-  letter-spacing:.2px;
-  color:var(--brand-700);
-  text-transform:uppercase;
-  line-height:1.15;
+  position:absolute; top:-11px; left:14px;
+  display:inline-block !important; width:auto !important; max-width:none !important; float:none !important;
+  margin:0; padding:0 6px; background:#fff;
+  font-weight:800; font-size:.95rem; letter-spacing:.2px; color:var(--brand-700);
+  text-transform:uppercase; line-height:1.15;
 }
 
+/* Título do formulário (branco e negrito) */
+header h1{
+  color:#fff !important;
+  font-weight:800 !important;
+}
 
+/* Utilidade (Bootstrap não tem fw-800 por padrão) */
+.fw-800{ 
+  padding-top:3rem;
+  font-weight:800 !important;
+}
 
-
-/* Inputs focus */
+/* Inputs */
 .form-control:focus,.form-select:focus{
   border-color:var(--brand-600);
   box-shadow:0 0 0 .2rem rgba(37,99,235,.18);
 }
-
-/* Autofilled */
 .form-control.autofilled{
-  background:var(--ghost);
-  border-color:#d1d5db;
-  color:#111827;
-  padding-right:2.25rem;
+  background:var(--ghost); border-color:#d1d5db; color:#111827; padding-right:2.25rem;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='21' height='21' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 20h9'/><path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z'/></svg>");
-  background-repeat:no-repeat;
-  background-position:right .6rem center;
-  background-size:18px 18px;
+  background-repeat:no-repeat; background-position:right .6rem center; background-size:18px 18px;
 }
-.form-control.autofilled:focus{
-  background-color:#eef2ff;
-  border-color:var(--brand-600);
-}
+.form-control.autofilled:focus{ background-color:#eef2ff; border-color:var(--brand-600); }
 
-/* Validation */
 input[type="text"].is-invalid,
 input[type="email"].is-invalid,
 input[type="date"].is-invalid,
@@ -132,7 +178,6 @@ input[type="search"].is-valid,
 textarea.is-valid,
 select.is-valid{border-color:var(--ok)!important}
 
-/* Check/Radio outline */
 input[type="checkbox"].is-invalid,
 input[type="radio"].is-invalid{outline:2px solid var(--err)!important;border-radius:6px}
 input[type="checkbox"].is-valid,
@@ -149,41 +194,22 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
 /* Sub-blocos */
 .card-subblock{padding:1rem;border:1px dashed var(--divider);border-radius:10px;background:#fff}
 
-/* Modais gerais */
+/* Modais */
 .modal-content{border-radius:14px}
 .modal-header{border-bottom:none}
 .modal-footer{border-top:none}
 .bg-warning{background:var(--warn)!important;color:#111827}
 .bg-success{background:var(--ok)!important}
 .bg-danger{background:var(--err)!important}
+.bg-brand{ background:var(--brand-600)!important; color:#fff!important; }
 
-/* Modal Loading “sem fundo” + Lottie maior */
+/* Modal “loading” */
 .modal-loading .modal-content{background:transparent;box-shadow:none;border:0}
 .modal-loading .modal-dialog{max-width:260px}
 .lottie-box{width:64px;height:64px;min-width:64px}
-.lottie-loading{width:180px;height:180px;min-width:180px}
+.lottie-loading{width:160px;height:160px;min-width:160px}
 
-/* Listas nos modais de atenção/erro — alinhadas à esquerda e bonitas */
-#modalAtencao .modal-body,
-#modalErro .modal-body{padding:1.25rem}
-#modalAtencao .modal-body ul,
-#modalErro .modal-body ul{
-  list-style: disc;
-  margin: 0;
-  padding-left: 1.1rem;
-  text-align:left;
-}
-#modalAtencao .modal-body li,
-#modalErro .modal-body li{margin-bottom:.35rem}
-
-/* Navegação rodapé do form */
-#regularidadeForm .mt-2{margin-top:1.25rem!important}
-#btnSubmit.d-none{display:none!important}
-
-/* Cor de marca para cabeçalhos de modais (igual aos outros) */
-.bg-brand{ background:var(--brand-600)!important; color:#fff!important; }
-
-/* Modal de carregamento - mesmo look dos demais */
+/* Modais de busca/carregamento */
 .modal-loading-search .modal-dialog{ max-width: 520px; }
 .modal-loading-search .modal-content{ border-radius:16px; }
 .modal-loading-search .modal-header{
@@ -198,87 +224,23 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
   letter-spacing: .2px;
 }
 
-/* Tamanho da animação de loading (um pouco maior para melhor leitura) */
-.lottie-loading{ width: 160px; height: 160px; min-width:160px; }
+/* Navegação rodapé do form */
+#regularidadeForm .mt-2{margin-top:1.25rem!important}
+#btnSubmit.d-none{display:none!important}
 
-
-/* ====== HOME ====== */
-.home-body{
-  font-family:'Inter',sans-serif;
-  color:#0b2240;
-  min-height:100vh;
-  position:relative;
-  overflow-x:hidden;
-}
-
-.home-bg{
-  position:fixed; inset:0;
-  background:
-    linear-gradient(90deg, rgba(2,22,58,.35) 0%, rgba(2,22,58,.15) 40%, rgba(2,22,58,0) 60%),
-    url('imagens/bg-home.svg') center/cover no-repeat fixed;
-  z-index:-1;
-  filter:saturate(1.05) contrast(1.02);
-}
-
-.home-wrap{ padding-top:0rem; padding-bottom:4rem; }
-
-.home-logo{
-  max-width:620px;
-  width:100%;
-}
-
-/* botões da coluna direita */
-.home-menu{ width:100%; }
-
-.home-btn{
-  display:flex; flex-direction:column; justify-content:center; align-items:center;
-  width:100%; min-height:84px;
-  padding:1.1rem 1.25rem;
-  background:#1e3a8a; /* brand 700 */
-  color:#fff; text-decoration:none;
-  border-radius:999px;
-  box-shadow:0 10px 28px rgba(0,0,0,.12);
-  transition:transform .12s ease, box-shadow .12s ease, background-color .12s ease;
-}
-.home-btn:hover{ background:#2563eb; transform:translateY(-1px); box-shadow:0 14px 30px rgba(0,0,0,.16); }
-
-.home-btn-title{
-  font-weight:800; letter-spacing:.2px; line-height:1;
-}
-.home-btn-sub{
-  font-weight:600; opacity:.95; line-height:1.25; margin-top:.25rem; text-align:center;
-}
-.home-btn-sub.only{ font-weight:700; margin-top:0; }
-
-/* Logo MPS centralizado no topo */
-.mps-header {
-  background: transparent;
-  margin-top: 2rem;
-}
-
-.logo-mps-top {
-  max-width: 240px;
-  height: auto;
-}
-
-
+/* ===== Responsivo rápido ===== */
 @media (max-width: 992px){
   .home-wrap{ padding-top:2.5rem; padding-bottom:2.5rem; }
   .home-logo{ max-width:420px; margin:0 auto; }
 }
 @media (max-width: 576px){
   .home-btn{ min-height:72px; padding:.9rem 1rem; }
-}
-
-
-/* Utilidades responsivas */
-@media (max-width: 576px){
   .app-stepper .divider{display:none}
   .app-stepper{gap:.25rem}
   .section-title{font-size:1.1rem}
 }
 
-/* Acentos extras */
+/* Acentos extras no form */
 .app-section input.is-invalid,
 .app-section select.is-invalid{
   box-shadow:0 0 0 .1rem rgba(220,38,38,.08);
@@ -288,5 +250,150 @@ input[type="radio"].is-valid{outline:2px solid var(--ok)!important;border-radius
 label.form-label{font-weight:600}
 input::placeholder{color:#9ca3af}
 
-/* Stepper gradiente */
-#stepper .step.active + .divider{background:linear-gradient(90deg,var(--brand-600),#e5e7eb)}
+/* ===== MOBILE FIRST TUNING ===== */
+
+/* escalas fluidas */
+:root{
+  --space: clamp(12px, 2.5vw, 24px);
+  --radius: clamp(10px, 2vw, 16px);
+  --h1-mobile: clamp(1.15rem, 2.6vw + .6rem, 2rem);
+  --h2-mobile: clamp(1rem, 1.8vw + .6rem, 1.25rem);
+  --btn-minh: clamp(44px, 6vw, 64px);
+  --home-btn-h: clamp(72px, 9.5vw + 36px, 92px); /* altura fixa para padronizar os 3 botões na home */
+}
+
+body{ -webkit-text-size-adjust:100%; }
+
+/* respiro lateral + áreas seguras (iOS notch) */
+.container,
+.home-wrap{
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+/* evitar qualquer “sangramento” horizontal */
+html, body, .container, .row{ overflow-x: clip; }
+
+/* ===== até 992px ===== */
+@media (max-width: 991.98px){
+  /* evita bug de repaint/scroll no mobile */
+  body{ background-attachment: scroll, scroll, scroll; }
+
+  .mps-header{ padding-top:.75rem; }
+  .logo-mps-top, .brand img{ height:44px !important; }
+
+  /* home */
+  .home-wrap{ padding-top:1.25rem; padding-bottom:2rem; }
+  .home-logo{ max-width:min(440px, 82vw); margin-inline:auto; }
+  .home-menu{ gap:.60rem; }
+  .home-btn{
+    min-height:var(--btn-minh);
+    padding:.85rem 1rem;
+    max-width:560px;                 /* todos com a mesma largura */
+    margin-inline:auto;
+    border-radius:999px;
+  }
+  .home-btn-sub{ font-size:clamp(.9rem, 3.2vw, 1rem); }
+
+  /* reduz a calha do Bootstrap */
+  .row{ --bs-gutter-x: 1rem; }
+
+  /* form */
+  header h1{
+    font-size:var(--h1-mobile);
+    line-height:1.15;
+    letter-spacing:.2px;
+    margin-bottom:.75rem;
+    padding-top:.5rem;
+  }
+  .app-card{ border-radius:var(--radius); }
+  .card-body{ padding:1rem; }
+  .app-section{ margin-bottom:1.25rem; padding-bottom:1rem; }
+
+  .app-stepper{ gap:.35rem; }
+  .app-stepper .step{ width:28px; height:28px; font-size:.85rem; }
+  .app-stepper .divider{ height:2px; }
+
+  .form-control{ height:44px; }
+}
+
+/* ===== telas bem pequenas (≤375px) ===== */
+@media (max-width: 375px){
+  .home-btn{ padding:.8rem; }
+  header h1{ font-size: clamp(1rem, 6vw, 1.3rem); }
+  .app-stepper .step{ width:26px; height:26px; font-size:.8rem; }
+  #stepper{
+    overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:.25rem;
+    justify-content:flex-start;
+  }
+  #stepper::-webkit-scrollbar{ display:none; }
+}
+
+/* ===== telas largas (≥1200px) — equilíbrio visual ===== */
+@media (min-width:1200px){
+  .home-logo{ max-width:640px; }
+  .home-btn{ max-width:620px; }
+}
+
+/* =========================
+   Ajustes mobile extras (≤ 576px)
+   - home-logo mais alta + botões com mesma altura
+   - etapa 0 do form empilhada (Pesquisar abaixo do input)
+   ========================= */
+@media (max-width: 576px){
+  .mps-header{ padding-top:.25rem; padding-bottom:.25rem; }
+
+  .home-wrap{
+    padding-top:.5rem;
+    padding-bottom: max(2.25rem, env(safe-area-inset-bottom, 1rem));
+  }
+  .home-logo{
+    max-width:84%;
+    margin:.25rem auto 1.25rem;      /* sobe o logo e abre espaço */
+  }
+
+  .home-menu{
+    gap: .5rem !important;           /* equivalente ao gap-2 do Bootstrap */
+  }
+
+  /* todos os botões da home com MESMA ALTURA */
+  .home-btn{
+    height: var(--home-btn-h);
+    min-height: unset;
+  }
+  .home-btn-sub{
+    display:block;
+    text-wrap: balance;               /* quebra mais bonita em 2 linhas */
+  }
+
+  /* FORM – etapa 0 (CNPJ + Pesquisar) empilhado e visível */
+  #pesquisaRow{
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;   /* evita ser recortado pela row */
+    row-gap: .5rem;
+    --bs-gutter-x: .5rem;
+  }
+
+  #pesquisaRow > .col-12,
+  #pesquisaRow > .col-md-6,
+  #pesquisaRow > .col-lg-5,
+  #pesquisaRow > .col-auto{
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  #pesquisaRow .col-auto label{ display:none !important; }
+
+  #btnPesquisar{
+    display: block !important;        /* sobrepõe qualquer d-none */
+    width: 100%;
+    margin-top: .25rem;
+  }
+
+  /* se o botão Próximo for movido para o slot, mantém 100% */
+  #slotNextStep0 > *{ width:100%; }
+  #pesquisaRow .col-auto.d-none { display:block !important; }
+}
