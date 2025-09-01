@@ -34,11 +34,61 @@ const SHEETS_RETRIES      = Number(process.env.SHEETS_RETRIES || 2);
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
+/* util env list */
 const splitList = (s = '') =>
   s.split(/[\s,]+/)
    .map(v => v.trim().replace(/\/+$/, ''))
    .filter(Boolean);
 
+/* ───────────── CORS (robusto) ─────────────
+   ⚠️ DEVE vir antes do Helmet para garantir preflight/headers */
+const ALLOW_LIST = new Set(
+  splitList(process.env.CORS_ORIGIN_LIST || process.env.CORS_ORIGIN || '')
+    .map(u => u.replace(/\/+$/, '').toLowerCase())
+);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true; // requests internas / curl / same-origin
+  const o = origin.replace(/\/+$/, '').toLowerCase();
+
+  if (ALLOW_LIST.size === 0) return true;     // sem lista => libera em dev
+  if (ALLOW_LIST.has(o)) return true;         // match exato
+
+  // libera subdomínios do Netlify se a raiz específica estiver na lista
+  if (/^https:\/\/.+\.netlify\.app$/i.test(o) &&
+      ALLOW_LIST.has('https://programa-de-regularidade.netlify.app')) {
+    return true;
+  }
+  return false;
+}
+
+const corsOptionsDelegate = (req, cb) => {
+  const originIn = (req.headers.origin || '').replace(/\/+$/, '').toLowerCase();
+  const ok = isAllowedOrigin(originIn);
+
+  // log de depuração:
+  if (req.path.startsWith('/api/')) {
+    console.log(`CORS ▶ ${originIn || '(sem origin)'} → ${ok ? 'ALLOW' : 'DENY'} | ALLOW_LIST=[${[...ALLOW_LIST].join(', ')}]`);
+  }
+
+  // sanitiza headers do preflight
+  const reqHdrs = String(req.headers['access-control-request-headers'] || '')
+    .replace(/[^\w\-_, ]/g, '');
+
+  cb(null, {
+    origin: ok ? originIn : false,                   // reflete a origem aprovada
+    methods: ['GET','POST','OPTIONS'],
+    allowedHeaders: reqHdrs || 'Content-Type,Authorization,Cache-Control',
+    exposedHeaders: ['Content-Disposition'],
+    credentials: false,
+    optionsSuccessStatus: 204,
+  });
+};
+
+app.use(cors(corsOptionsDelegate));
+app.options(/.*/, cors(corsOptionsDelegate));
+
+/* ───────────── Helmet + demais middlewares ───────────── */
 const connectExtra = splitList(process.env.CORS_ORIGIN || process.env.CORS_ORIGIN_LIST || '');
 
 app.use(helmet({
@@ -68,63 +118,12 @@ app.use(rateLimit({ windowMs: 15*60*1000, max: 400, standardHeaders: true, legac
 app.use(hpp());
 app.use(express.json({ limit: '300kb' }));
 
-/* ───────────── CORS (robusto) ───────────── */
-const ALLOW_LIST = new Set(
-  splitList(process.env.CORS_ORIGIN_LIST || process.env.CORS_ORIGIN || '')
-    .map(u => u.replace(/\/+$/, '').toLowerCase())
-);
-
-function isAllowedOrigin(origin) {
-  if (!origin) return true; // requests internas / curl / same-origin do Render
-  const o = origin.replace(/\/+$/, '').toLowerCase();
-
-  if (ALLOW_LIST.size === 0) return true; // sem lista => libera em dev
-
-  if (ALLOW_LIST.has(o)) return true;     // match exato
-
-  if (/^https:\/\/.+\.netlify\.app$/i.test(o) && ALLOW_LIST.has('https://programa-de-regularidade.netlify.app')) {
-    return true;
-  }
-  return false;
-}
-
-// log para depurar origem real vista pelo servidor
-app.use((req, _res, next) => {
-  if (req.path.startsWith('/api/')) {
-    console.log('CORS ▶ origin recebido:', req.headers.origin || '(sem origin)');
-  }
-  next();
-});
-
-const corsOptionsDelegate = (req, cb) => {
-  const origin = (req.headers.origin || '').replace(/\/+$/, '').toLowerCase();
-  const ok = isAllowedOrigin(origin);
-
-  // sanitiza headers do preflight
-  const reqHdrs = String(req.headers['access-control-request-headers'] || '')
-    .replace(/[^\w\-_, ]/g, '');
-
-  cb(null, {
-    origin: ok,
-    methods: ['GET','POST','OPTIONS'],
-    allowedHeaders: reqHdrs || 'Content-Type,Authorization,Cache-Control',
-    exposedHeaders: ['Content-Disposition'],
-    credentials: false,
-    optionsSuccessStatus: 204,
-  });
-};
-
-app.use(cors(corsOptionsDelegate));
-app.options(/.*/, cors(corsOptionsDelegate));
-
-/* ───────────── Cache-Control das rotas de API (⚠️ novo) ───────────── */
+/* ───────────── Cache-Control das rotas de API ───────────── */
 app.use('/api', (req, res, next) => {
-  // Evita cache na CDN/navegador/proxy para chamadas da API
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('Surrogate-Control', 'no-store');
-  // ajuda a proxies a separar por origem
   res.setHeader('Vary', 'Origin');
   next();
 });
@@ -204,9 +203,9 @@ async function getRowsViaCells(sheet) {
   const sanitize = s =>
     norm(s)
       .toLowerCase()
-      .normalize('NFD').replace(/\p{Diacritic}/gu, '') // remove acentos
-      .replace(/[^\p{L}\p{N}]+/gu, '_')                // separadores → "_"
-      .replace(/_+/g, '_').replace(/^_+|_+$/g, '');    // compacta/limpa
+      .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+      .replace(/[^\p{L}\p{N}]+/gu, '_')
+      .replace(/_+/g, '_').replace(/^_+|_+$/g, '');
 
   const rawHeaders = (sheet.headerValues || []).map(h => norm(h));
   const seen = {};
@@ -601,7 +600,6 @@ app.get('/api/rep-by-cpf', async (req,res)=>{
 });
 
 /* ---------- util: atualizar EMAIL_ENTE / EMAIL_UG em CNPJ_ENTE_UG ---------- */
-// ✅ substitua a função inteira
 async function upsertEmailsInBase(p){
   const emailEnte = norm(p.EMAIL_ENTE);
   const emailUg   = norm(p.EMAIL_UG);
@@ -729,7 +727,6 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
 }
 
 /* util: upsert base do ente/UG quando o CNPJ pesquisado não existir */
-// ✅ substitua a função inteira
 async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EMAIL_UG }){
   const s = await getOrCreateSheet('CNPJ_ENTE_UG',
     ['UF','ENTE','UG','CNPJ_ENTE','CNPJ_UG','EMAIL_ENTE','EMAIL_UG']
@@ -859,7 +856,6 @@ app.post('/api/upsert-rep', async (req,res)=>{
 });
 
 /** POST /api/gerar-termo */
-/** POST /api/gerar-termo */
 app.post('/api/gerar-termo', async (req,res)=>{
   try{
     const p = req.body || {};
@@ -978,9 +974,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
 });
 
 
-/* ========= PDF (Puppeteer) =========
-   Usa termo.html com os mesmos parâmetros de query que o preview.
-   Header do PDF com SVGs INLINE (nítido e sem depender de carregar recursos externos). */
+/* ========= PDF (Puppeteer) ========= */
 const _svgCache = {};
 function inlineSvg(relPath) {
   try {
@@ -1029,7 +1023,6 @@ app.post('/api/termo-pdf', async (req, res) => {
   try {
     const p = req.body || {};
 
-    // compila 'comp' (5.1..5.6) como no openTermoWithPayload()
     const compAgg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
     const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6']
       .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
@@ -1076,13 +1069,11 @@ app.post('/api/termo-pdf', async (req, res) => {
     const pageOpts = {};
     page = await browser.newPage(pageOpts);
 
-    // Intercepta recursos para evitar CORP/CORS e travas de idle
     await page.setRequestInterception(true);
     page.on('request', (reqObj) => {
       const u = reqObj.url();
       const t = reqObj.resourceType();
 
-      // Bloqueia fontes/stylesheet externos que causam NotSameOrigin
       if (/fonts\.cdnfonts\.com|fonts\.gstatic\.com/i.test(u)) {
         if (t === 'stylesheet') {
           return reqObj.respond({ status: 200, contentType: 'text/css', body: '/* font css blocked in pdf */' });
@@ -1090,7 +1081,6 @@ app.post('/api/termo-pdf', async (req, res) => {
         return reqObj.abort();
       }
 
-      // Bloqueia analíticos e afins
       if (/googletagmanager|google-analytics|doubleclick|hotjar|clarity|sentry|facebook|meta\./i.test(u)) {
         return reqObj.abort();
       }
@@ -1098,7 +1088,6 @@ app.post('/api/termo-pdf', async (req, res) => {
       return reqObj.continue();
     });
 
-    // timeouts + logs
     page.setDefaultNavigationTimeout(90_000);
     page.setDefaultTimeout(90_000);
     page.on('console', m => console.log('🖥', m.type().toUpperCase(), m.text()));
@@ -1134,20 +1123,13 @@ app.post('/api/termo-pdf', async (req, res) => {
     if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
     fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
 
-    // CSS de impressão
     await page.addStyleTag({
       content: `
         ${fontCSS}
         html, body, #pdf-root { background:#ffffff !important; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
-        /* No PDF: esconder apenas as LOGOS do HTML (o título permanece) */
         .page-head .logos-wrap { display: none !important; }
-
-        /* Container “flat” no PDF */
         .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
-
-        /* Título com respiro pequeno — o “gap” principal vem do header do PDF */
         .term-title { margin-top: 2mm !important; }
       `
     });
@@ -1158,7 +1140,6 @@ app.post('/api/termo-pdf', async (req, res) => {
       if (root) root.classList.add('pdf-export');
     });
 
-    // ===== Header com SVG inline =====
     const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
     const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
 
@@ -1167,23 +1148,13 @@ app.post('/api/termo-pdf', async (req, res) => {
         .pdf-header {
           font-family: Inter, Arial, sans-serif;
           width: 100%;
-          padding: 6mm 12mm 4mm;           /* topo 6mm, laterais 12mm */
+          padding: 6mm 12mm 4mm;
         }
-        .pdf-header .logos {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 16mm;
-        }
-        .pdf-header .logo-sec svg { height: 19mm; width: auto; }
-        .pdf-header .logo-mps svg { height: 20mm; width: auto; }
-        .pdf-header .rule {
-          margin: 4mm 0 0;
-          height: 0;
-          border-bottom: 1.3px solid #d7dee8;
-          width: 100%;
-        }
-        .date, .title, .url, .pageNumber, .totalPages { display: none; }
+        .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
+        .pdf-header .logo-sec svg { height: 19mm; width:auto; }
+        .pdf-header .logo-mps svg { height: 20mm; width:auto; }
+        .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
+        .date, .title, .url, .pageNumber, .totalPages { display:none; }
       </style>
       <div class="pdf-header">
         <div class="logos">
@@ -1196,7 +1167,6 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     const footerTemplate = `<div></div>`;
 
-    // 🔧 margem superior maior para garantir respiro na 2ª página
     const pdf = await page.pdf({
       printBackground: true,
       preferCSSPageSize: true,
@@ -1234,13 +1204,12 @@ function getVal(row, ...candidates) {
   const normKey = s => (s ?? '')
     .toString()
     .toLowerCase()
-    .normalize('NFD').replace(/\p{Diacritic}/gu, '') // sem acentos
-    .replace(/[^\p{L}\p{N}]+/gu, '_')                // separadores → "_"
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '_')
     .replace(/_+/g, '_')
-    .replace(/__\d+$/,'')                            // ignora sufixos __2/__3
+    .replace(/__\d+$/,'')
     .replace(/^_+|_+$/g, '');
 
-  // mapa “normalizado” → chave real
   const map = new Map(keys.map(k => [normKey(k), k]));
 
   for (const cand of candidates) {
