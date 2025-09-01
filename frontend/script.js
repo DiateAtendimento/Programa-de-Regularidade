@@ -629,7 +629,7 @@
 
   /* ========= Busca por CNPJ ========= */
   let searching = false;
-  $('#btnPesquisar')?.addEventListener('click', async ()=>{
+  $('#btnPesquisar')?.addEventListener('click', async (ev)=>{
     if (searching) return;
     const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
     if(cnpj.length!==14) {
@@ -637,11 +637,29 @@
       return showAtencao(['Informe um CNPJ válido.']);
     }
 
+    // ⇢ Pressionar Shift / Ctrl / ⌘ força nocache=1 na 1ª tentativa
+    const forceNoCache = !!(ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey));
+
     try{
       searching = true;
       startLoading();
 
-      const r = await fetchJSON(`${API_BASE}/api/consulta?cnpj=${cnpj}`, {}, { label:'consulta-cnpj' });
+      let r;
+      try {
+        const url = `${API_BASE}/api/consulta?cnpj=${cnpj}${forceNoCache ? '&nocache=1' : ''}`;
+        r = await fetchJSON(url, {}, { label: forceNoCache ? 'consulta-cnpj(nocache)' : 'consulta-cnpj' });
+      } catch (err1) {
+        // 2ª tentativa automática com nocache=1 (se a 1ª não foi forçada)
+        if (!forceNoCache) {
+          r = await fetchJSON(
+            `${API_BASE}/api/consulta?cnpj=${cnpj}&nocache=1`,
+            {},
+            { label: 'consulta-cnpj(retry-nocache)' }
+          );
+        } else {
+          throw err1;
+        }
+      }
 
       const data = r.data;
       snapshotBase = {
@@ -848,7 +866,7 @@
       manutencao_normas: payload.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS,
       compromisso: payload.COMPROMISSO_FIRMADO_ADESAO,
       providencias: payload.PROVIDENCIA_NECESS_ADESAO,
-      condicao_vigencia: payload.CONDICAO_VIGENCIA,
+      condicao_vigencia: payload.CONDICAO_VIGÊNCIA,
       data_termo: $('#DATA_TERMO_GERADO').value,
       auto: String(autoFlag || '1')
     });

@@ -24,7 +24,7 @@ http.globalAgent.keepAlive = true;
 https.globalAgent.keepAlive = true;
 
 const CACHE_TTL_MS        = Number(process.env.CACHE_TTL_MS || 5 * 60 * 1000);
-const CACHE_TTL_CRP_MS    = Number(process.env.CACHE_TTL_CRP_MS || 2 * 60 * 1000);
+theCACHE_TTL_CRP_MS    = Number(process.env.CACHE_TTL_CRP_MS || 2 * 60 * 1000);
 const SHEETS_CONCURRENCY  = Number(process.env.SHEETS_CONCURRENCY || 3);
 const SHEETS_TIMEOUT_MS   = Number(process.env.SHEETS_TIMEOUT_MS || 20_000);
 const SHEETS_RETRIES      = Number(process.env.SHEETS_RETRIES || 2);
@@ -115,6 +115,18 @@ const corsOptionsDelegate = (req, cb) => {
 
 app.use(cors(corsOptionsDelegate));
 app.options(/.*/, cors(corsOptionsDelegate));
+
+/* ───────────── Cache-Control das rotas de API (⚠️ novo) ───────────── */
+app.use('/api', (req, res, next) => {
+  // Evita cache na CDN/navegador/proxy para chamadas da API
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  // ajuda a proxies a separar por origem
+  res.setHeader('Vary', 'Origin');
+  next();
+});
 
 /* ───────────── Static ───────────── */
 app.use('/', express.static(path.join(__dirname, '../frontend')));
@@ -395,8 +407,9 @@ async function readCRPByFixedColumns(sheet) {
 
 /* Cache específico para CRP */
 let _crpMemo = { data: null, exp: 0 };
-async function getCRPAllCached(sheet) {
-  if (_crpMemo.exp > Date.now() && _crpMemo.data) return _crpMemo.data;
+// ⚠️ atualizado: aceita skipCache
+async function getCRPAllCached(sheet, skipCache = false) {
+  if (!skipCache && _crpMemo.exp > Date.now() && _crpMemo.data) return _crpMemo.data;
   const rows = await withLimiter('CRP:read', () =>
     withTimeoutAndRetry('CRP:read', () => readCRPByFixedColumns(sheet))
   );
@@ -451,16 +464,21 @@ async function authSheets() {
 
 app.get('/api/health', (_req,res)=> res.json({ ok:true }));
 
-/** GET /api/consulta?cnpj=NNNNNNNNNNNNNN */
+/** GET /api/consulta?cnpj=NNNNNNNNNNNNNN[&nocache=1] */
 app.get('/api/consulta', async (req, res) => {
   try {
     const cnpj = digits(req.query.cnpj || '');
     if (cnpj.length !== 14) return res.status(400).json({ error: 'CNPJ inválido.' });
 
-    // cache
+    // ⚠️ novo: permitir pular caches (memória + CRP memo) com ?nocache
+    const skipCache = Object.prototype.hasOwnProperty.call(req.query, 'nocache');
+
+    // cache em memória (só se não pediram para ignorar)
     const cacheKey = `consulta:${cnpj}`;
-    const cached = cacheGet(cacheKey);
-    if (cached) return res.json({ ok: true, data: cached });
+    if (!skipCache) {
+      const cached = cacheGet(cacheKey);
+      if (cached) return res.json({ ok: true, data: cached });
+    }
 
     await authSheets();
 
@@ -475,7 +493,6 @@ app.get('/api/consulta', async (req, res) => {
       console.warn(`[consulta] CNPJ ${cnpj} não encontrado em CNPJ_ENTE_UG`);
       return res.status(404).json({ error: 'CNPJ não encontrado em CNPJ_ENTE_UG.' });
     }
-
 
     const UF          = norm(getVal(base, 'UF'));
     const ENTE        = norm(getVal(base, 'ENTE'));
@@ -493,8 +510,8 @@ app.get('/api/consulta', async (req, res) => {
       reps.find(r => ['','ente','adm direta','administração direta','administracao direta'].includes(low(getVal(r,'UG')||''))) ||
       reps.find(r => low(getVal(r,'UG')||'') !== low(UG)) || reps[0] || {};
 
-    // CRP (B/F/G)
-    const crpAll = await getCRPAllCached(sCrp);
+    // CRP (B/F/G) — usa memo apenas quando skipCache=false
+    const crpAll = await getCRPAllCached(sCrp, skipCache);
     const crpCandidates = crpAll.filter(r => digits(r.CNPJ_ENTE) === CNPJ_ENTE);
     let crp = {};
     if (crpCandidates.length) {
@@ -530,7 +547,8 @@ app.get('/api/consulta', async (req, res) => {
       }
     };
 
-    cacheSet(cacheKey, out);
+    // grava em cache apenas quando NÃO for consulta com nocache
+    if (!skipCache) cacheSet(cacheKey, out);
     return res.json({ ok:true, data: out });
   } catch (err) {
     console.error('❌ /api/consulta:', err);
@@ -1055,7 +1073,7 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     const browser = await getBrowser();
     const pageOpts = {};
-    page = await browser.newPage(pageOpts);
+    const page = await browser.newPage(pageOpts);
 
     // Intercepta recursos para evitar CORP/CORS e travas de idle
     await page.setRequestInterception(true);
@@ -1188,7 +1206,6 @@ app.post('/api/termo-pdf', async (req, res) => {
     });
 
     await page.close();
-    page = null;
 
     const filenameSafe = (p.ENTE || 'termo-adesao')
       .normalize('NFD').replace(/\p{Diacritic}/gu,'')
