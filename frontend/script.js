@@ -866,7 +866,7 @@
       manutencao_normas: payload.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS,
       compromisso: payload.COMPROMISSO_FIRMADO_ADESAO,
       providencias: payload.PROVIDENCIA_NECESS_ADESAO,
-      condicao_vigencia: payload.CONDICAO_VIGÊNCIA,
+      condicao_vigencia: payload.CONDICAO_VIGENCIA,
       data_termo: $('#DATA_TERMO_GERADO').value,
       auto: String(autoFlag || '1')
     });

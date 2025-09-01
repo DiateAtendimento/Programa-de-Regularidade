@@ -23,8 +23,9 @@ const app = express();
 http.globalAgent.keepAlive = true;
 https.globalAgent.keepAlive = true;
 
-const CACHE_TTL_MS        = Number(process.env.CACHE_TTL_MS || 5 * 60 * 1000);
-theCACHE_TTL_CRP_MS    = Number(process.env.CACHE_TTL_CRP_MS || 2 * 60 * 1000);
+const CACHE_TTL_MS       = Number(process.env.CACHE_TTL_MS || 5 * 60 * 1000);
+const CACHE_TTL_CRP_MS   = Number(process.env.CACHE_TTL_CRP_MS || 2 * 60 * 1000);
+
 const SHEETS_CONCURRENCY  = Number(process.env.SHEETS_CONCURRENCY || 3);
 const SHEETS_TIMEOUT_MS   = Number(process.env.SHEETS_TIMEOUT_MS || 20_000);
 const SHEETS_RETRIES      = Number(process.env.SHEETS_RETRIES || 2);
@@ -1073,7 +1074,7 @@ app.post('/api/termo-pdf', async (req, res) => {
 
     const browser = await getBrowser();
     const pageOpts = {};
-    const page = await browser.newPage(pageOpts);
+    page = await browser.newPage(pageOpts);
 
     // Intercepta recursos para evitar CORP/CORS e travas de idle
     await page.setRequestInterception(true);
