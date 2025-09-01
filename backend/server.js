@@ -840,6 +840,7 @@ app.post('/api/upsert-rep', async (req,res)=>{
 });
 
 /** POST /api/gerar-termo */
+/** POST /api/gerar-termo */
 app.post('/api/gerar-termo', async (req,res)=>{
   try{
     const p = req.body || {};
@@ -849,8 +850,8 @@ app.post('/api/gerar-termo', async (req,res)=>{
       'NOME_REP_UG','CPF_REP_UG','CARGO_REP_UG','EMAIL_REP_UG',
       'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP'
     ];
-    for(const k of must){
-      if(!norm(p[k])) return res.status(400).json({ error:`Campo obrigatório ausente: ${k}` });
+    for (const k of must) {
+      if (!norm(p[k])) return res.status(400).json({ error:`Campo obrigatório ausente: ${k}` });
     }
 
     await authSheets();
@@ -873,32 +874,20 @@ app.post('/api/gerar-termo', async (req,res)=>{
       'MES','DATA_TERMO_GERADO','HORA_TERMO_GERADO','ANO_TERMO_GERADO'
     ]);
 
-    // cria a aba de log se faltar
-    const sLog = await getOrCreateSheet('Reg_alteracao_dados_ente_ug', [
-      'UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA'
-    ]);
-
     const { DATA, HORA, ANO, MES } = nowBR();
     const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
       ? p.CRITERIOS_IRREGULARES
       : String(p.CRITERIOS_IRREGULARES || '').split(',').map(s=>s.trim()).filter(Boolean);
 
+    // 1) grava o registro principal (crítico)
     await safeAddRow(sTermos, {
-      ENTE: norm(p.ENTE),
-      UF: norm(p.UF),
-      CNPJ_ENTE: digits(p.CNPJ_ENTE),
-      EMAIL_ENTE: norm(p.EMAIL_ENTE),
-      NOME_REP_ENTE: norm(p.NOME_REP_ENTE),
-      CARGO_REP_ENTE: norm(p.CARGO_REP_ENTE),
-      CPF_REP_ENTE: digits(p.CPF_REP_ENTE),
-      EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE),
-      UG: norm(p.UG),
-      CNPJ_UG: digits(p.CNPJ_UG),
-      EMAIL_UG: norm(p.EMAIL_UG),
-      NOME_REP_UG: norm(p.NOME_REP_UG),
-      CARGO_REP_UG: norm(p.CARGO_REP_UG),
-      CPF_REP_UG: digits(p.CPF_REP_UG),
-      EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
+      ENTE: norm(p.ENTE), UF: norm(p.UF),
+      CNPJ_ENTE: digits(p.CNPJ_ENTE), EMAIL_ENTE: norm(p.EMAIL_ENTE),
+      NOME_REP_ENTE: norm(p.NOME_REP_ENTE), CARGO_REP_ENTE: norm(p.CARGO_REP_ENTE),
+      CPF_REP_ENTE: digits(p.CPF_REP_ENTE), EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE),
+      UG: norm(p.UG), CNPJ_UG: digits(p.CNPJ_UG), EMAIL_UG: norm(p.EMAIL_UG),
+      NOME_REP_UG: norm(p.NOME_REP_UG), CARGO_REP_UG: norm(p.CARGO_REP_UG),
+      CPF_REP_UG: digits(p.CPF_REP_UG), EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
       DATA_VENCIMENTO_ULTIMO_CRP: norm(p.DATA_VENCIMENTO_ULTIMO_CRP),
       TIPO_EMISSAO_ULTIMO_CRP: norm(p.TIPO_EMISSAO_ULTIMO_CRP),
       CRITERIOS_IRREGULARES: criterios.join(', '),
@@ -913,44 +902,52 @@ app.post('/api/gerar-termo', async (req,res)=>{
       MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO
     }, 'Termos:add');
 
-    // Log inteligente (somente campos digitados e permitidos)
-    const snap = p.__snapshot_base || {};
-    const userChanged = new Set(Array.isArray(p.__user_changed_fields) ? p.__user_changed_fields : []);
-    const allowedForLog = new Set([
-      'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
-      'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
-      'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
-      'DATA_VENCIMENTO_ULTIMO_CRP'
-    ]);
+    // 2) responde já ao cliente (encurta a janela para 502)
+    res.json({ ok: true });
 
-    const compareCols = [...allowedForLog];
-    const changed = [];
+    // 3) tarefas não críticas em background (fire-and-forget)
+    setImmediate(async () => {
+      try {
+        const sLog = await getOrCreateSheet('Reg_alteracao_dados_ente_ug', [
+          'UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA'
+        ]);
 
-    if (Object.keys(snap).length && userChanged.size) {
-      for (const col of compareCols) {
-        if (!userChanged.has(col)) continue;
-        const a = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
-          ? digits(snap[col] || '') : norm(snap[col] || '');
-        const b = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
-          ? digits(p[col] || '')   : norm(p[col] || '');
-        if (low(a) !== low(b)) changed.push(col);
+        const snap = p.__snapshot_base || {};
+        const userChanged = new Set(Array.isArray(p.__user_changed_fields) ? p.__user_changed_fields : []);
+        const allowedForLog = new Set([
+          'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
+          'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
+          'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
+          'DATA_VENCIMENTO_ULTIMO_CRP'
+        ]);
+
+        const compareCols = [...allowedForLog];
+        const changed = [];
+        if (Object.keys(snap).length && userChanged.size) {
+          for (const col of compareCols) {
+            if (!userChanged.has(col)) continue;
+            const a = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(snap[col] || '') : norm(snap[col] || '');
+            const b = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(p[col] || '')   : norm(p[col] || '');
+            if (low(a) !== low(b)) changed.push(col);
+          }
+        }
+
+        if (changed.length) {
+          const t = nowBR();
+          await safeAddRow(sLog, {
+            UF: norm(p.UF), ENTE: norm(p.ENTE),
+            'CAMPOS ALTERADOS': changed.join(', '),
+            'QTD_CAMPOS_ALTERADOS': changed.length,
+            MES: t.MES, DATA: t.DATA, HORA: t.HORA
+          }, 'Log:add');
+        }
+
+        await upsertEmailsInBase(p);
+      } catch (bgErr) {
+        console.warn('gerar-termo (background):', bgErr?.message || bgErr);
       }
-    }
+    });
 
-    if (changed.length) {
-      const t = nowBR();
-      await safeAddRow(sLog, {
-        UF: norm(p.UF),
-        ENTE: norm(p.ENTE),
-        'CAMPOS ALTERADOS': changed.join(', '),
-        'QTD_CAMPOS_ALTERADOS': changed.length,
-        MES: t.MES, DATA: t.DATA, HORA: t.HORA
-      }, 'Log:add');
-    }
-
-    await upsertEmailsInBase(p);
-
-    return res.json({ ok:true });
   } catch (err) {
     console.error('❌ /api/gerar-termo:', err);
     const msg = String(err?.message || '').toLowerCase();
@@ -960,6 +957,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
     res.status(500).json({ error:'Falha ao registrar o termo.' });
   }
 });
+
 
 /* ========= PDF (Puppeteer) =========
    Usa termo.html com os mesmos parâmetros de query que o preview.

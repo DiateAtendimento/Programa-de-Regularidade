@@ -904,19 +904,16 @@
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = 'Finalizando…';
 
-    try{
-      const res = await fetch(`${API_BASE}/api/gerar-termo?_ts=${Date.now()}`, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' }, // <<< removido Cache-Control
-        body: JSON.stringify(payload),
-        cache: 'no-store'
-      });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({error:'Erro ao salvar.'}));
-        btnSubmit.disabled = false;
-        btnSubmit.innerHTML = submitOriginalHTML;
-        return showErro([err.error || 'Falha ao registrar termo.']);
-      }
+    try {
+      await fetchJSON(
+        `${API_BASE}/api/gerar-termo`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+        { label: 'gerar-termo', timeout: 30000, retries: 2 }
+      );
 
       btnSubmit.innerHTML = 'Finalizado ✓';
 
@@ -932,12 +929,13 @@
         showStep(0);
       }, 800);
 
-    }catch{
+    } catch (err) {
       btnSubmit.disabled = false;
       btnSubmit.innerHTML = submitOriginalHTML;
-      showErro(['Falha de comunicação com o servidor.']);
+      showErro(friendlyErrorMessages(err, 'Falha ao registrar o termo.'));
     }
   });
+
 
   // restaura o estado ao carregar
   restoreState();

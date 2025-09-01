@@ -52,7 +52,6 @@ body{
   background-size:cover, cover, cover;
   background-attachment:fixed, fixed, fixed;
 
-  transform:translateZ(0); /* evita artefatos de 1px */
 }
 
 /* Oculta wrappers antigos de BG (se ainda estiverem no HTML) */
@@ -271,7 +270,7 @@ body{ -webkit-text-size-adjust:100%; }
   padding-right: max(16px, env(safe-area-inset-right));
 }
 
-/* evitar qualquer “sangramento” horizontal */
+/* r qualquer “sangramento” horizontal */
 html, body, .container, .row{ overflow-x: clip; }
 
 /* ===== até 992px ===== */
@@ -397,3 +396,28 @@ html, body, .container, .row{ overflow-x: clip; }
   #slotNextStep0 > *{ width:100%; }
   #pesquisaRow .col-auto.d-none { display:block !important; }
 }
+
+/* === Backdrops e modais sempre cobrindo a tela inteira === */
+.modal-backdrop,
+.swal2-container,
+.overlay,
+[data-modal-backdrop]{
+  position: fixed !important;
+  inset: 0 !important;          /* top/right/bottom/left: 0 */
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2000 !important;     /* acima do conteúdo */
+  background: rgba(0,0,0,.45);  /* ajuste a opacidade se quiser */
+}
+@supports (height: 100dvh){
+  .modal-backdrop,
+  .swal2-container,
+  .overlay,
+  [data-modal-backdrop]{ height: 100dvh !important; }
+}
+
+/* garante que o modal fique acima do backdrop custom */
+.modal{ z-index: 2005 !important; }
+
+/* trava o scroll quando o modal abre (Bootstrap já adiciona a classe) */
+body.modal-open{ overflow: hidden; }
