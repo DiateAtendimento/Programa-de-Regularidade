@@ -3,6 +3,7 @@
   --page-w: 210mm; --page-h: 297mm;
   --pad: 15mm; --content-w: calc(var(--page-w) - 2 * var(--pad));
   --brand:#0b2240; --ink:#23272f; --muted:#475569; --rule:#d7dee8;
+  --title-band: 22mm;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -29,16 +30,19 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 
 /* ===== Cabeçalho ===== */
 .page-head{
-  display:flex; flex-direction:column; align-items:center;
-  gap:3mm;
+  display:grid;
+  grid-template-rows: auto;
   margin-bottom:6mm;
 }
 .term-title{
-  display:block; margin-top:3mm; text-align:center;
-  font-weight:800; font-size:16px; letter-spacing:.2px; line-height:1.28; color:#0b2240;
-
-  /* evitar que o título quebre para a página seguinte sozinho */
-  break-after: avoid-page; page-break-after: avoid;
+  margin: 0;                      /* remove margens que “puxam” o título */
+  place-self: center;             /* centro vertical + horizontal */
+  text-align: center;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: .2px;
+  line-height: 1.28;
+  color: #0b2240;
 }
 
 /* Em modo PDF dar um respiro após o header do PDF */
