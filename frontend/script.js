@@ -930,7 +930,28 @@
 
   /* ========= Submit / Finalizar ========= */
   const form = document.getElementById('regularidadeForm');
-  // (sem redeclarar) — btnSubmit já existe acima
+  
+  // 1) Evita submit com Enter antes da etapa 8
+  form?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && step < 8) {
+      const t = e.target;
+      const isTextualInput =
+        t && t.tagName === 'INPUT' && !['button','submit','checkbox','radio','file'].includes(t.type);
+      const isTextarea = t && t.tagName === 'TEXTAREA';
+      if (isTextualInput || isTextarea) {
+        e.preventDefault(); // não deixa o form dar submit
+      }
+    }
+  });
+
+  // 2) Enter na pesquisa (etapa 0) = clicar no botão "Pesquisar"
+  document.getElementById('CNPJ_ENTE_PESQ')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('btnPesquisar')?.click();
+    }
+  });
+
 
   form?.addEventListener('submit', async (e)=>{
     e.preventDefault();
