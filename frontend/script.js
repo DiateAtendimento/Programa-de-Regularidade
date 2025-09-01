@@ -1,5 +1,3 @@
-//script.js
-
 // script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas, validação e download automático do PDF
 (() => {
   /* ========= Config API ========= */
@@ -102,12 +100,21 @@
   // >>> NOVO: modal de geração de PDF
   const modalGerandoPdf = new bootstrap.Modal($('#modalGerandoPdf'), { backdrop:'static', keyboard:false });
 
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(()=> modalWelcome.show(), 150);
-  });
-
   /* ========= Persistência (etapa + campos) ========= */
   const STORAGE_KEY = 'rpps-form-v1';
+
+  // >>> Helpers de estado (para controlar o modalWelcome e persistência)
+  function getState(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+    catch { return null; }
+  }
+  function setState(updater){
+    const prev = getState() || { step: 0, values: {}, seenWelcome: false };
+    const next = (typeof updater === 'function') ? updater(prev) : { ...prev, ...updater };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    return next;
+  }
+  function markWelcomeSeen(){ setState(s => ({ ...s, seenWelcome: true })); }
 
   function saveState() {
     const prev = loadState();
@@ -144,42 +151,18 @@
     } catch { return null; }
   }
 
-  function restoreState() {
-    const st = loadState();
-    if (!st) { showStep(0); return; }
-
-    const vals = st.values || {};
-
-    // Restaura campos
-    Object.entries(vals).forEach(([k, v]) => {
-      if (k.endsWith('[]')) {
-        // checkboxes por value
-        $$(`input[name="${k}"]`).forEach(i => {
-          i.checked = Array.isArray(v) && v.includes(i.value);
-        });
-      } else if (k === 'em_adm' || k === 'em_jud') {
-        const el = document.getElementById(k);
-        if (el) el.checked = !!v;
-      } else {
-        const el = document.getElementById(k);
-        if (el) el.value = v ?? '';
-      }
-    });
-
-    // Recalcula flag para liberar "Próximo" na etapa 0
-    cnpjOK = digits(vals.CNPJ_ENTE || vals.CNPJ_UG || '').length === 14;
-
-    // Vai para o passo salvo (limitado ao range 0..8)
-    const n = Number.isFinite(st.step) ? Number(st.step) : 0;
-    showStep(Math.max(0, Math.min(8, n)));
-
-    // Evita reabrir o modal de boas-vindas se já visto
-    if (st.seenWelcome) {
-      try { modalWelcome.hide(); } catch {}
+  // >>> DOMContentLoaded: modalWelcome apenas uma vez
+  document.addEventListener('DOMContentLoaded', () => {
+    const st = getState();
+    if (!st?.seenWelcome) {
+      setTimeout(() => {
+        try { modalWelcome.show(); } catch {}
+        markWelcomeSeen(); // marca como visto para não reabrir após F5
+      }, 150);
     }
-  }
+  });
 
-
+  // Salva antes de sair
   window.addEventListener('beforeunload', saveState);
 
   /* ========= Lottie ========= */
@@ -418,6 +401,15 @@
     updateFooterAlign();
     saveState();
   }
+
+  // >>> se editar/apagar o campo de pesquisa no passo 0, bloqueia "Próximo"
+  document.getElementById('CNPJ_ENTE_PESQ')?.addEventListener('input', () => {
+    if (step === 0) {
+      cnpjOK = false;
+      updateNavButtons();
+      updateFooterAlign();
+    }
+  });
 
   btnPrev?.addEventListener('click', ()=> showStep(step-1));
 
@@ -1017,6 +1009,46 @@
     }
   });
 
+  // >>> restoreState: no passo 0 após reload, força nova pesquisa (Próximo bloqueado).
+  function restoreState() {
+    const st = loadState();
+    if (!st) { showStep(0); return; }
+
+    const vals = st.values || {};
+
+    // Restaura campos
+    Object.entries(vals).forEach(([k, v]) => {
+      if (k.endsWith('[]')) {
+        $$(`input[name="${k}"]`).forEach(i => {
+          i.checked = Array.isArray(v) && v.includes(i.value);
+        });
+      } else if (k === 'em_adm' || k === 'em_jud') {
+        const el = document.getElementById(k);
+        if (el) el.checked = !!v;
+      } else {
+        const el = document.getElementById(k);
+        if (el) el.value = v ?? '';
+      }
+    });
+
+    // Qual passo voltar?
+    let n = Number.isFinite(st.step) ? Number(st.step) : 0;
+
+    // REGRA: se estamos no passo 0 por um reload, bloqueia "Próximo" e limpa pesquisa
+    if (n === 0) {
+      cnpjOK = false; // obriga nova pesquisa
+      const pesq = document.getElementById('CNPJ_ENTE_PESQ');
+      if (pesq) { pesq.value = ''; neutral(pesq); }
+    } else {
+      // Nos passos 1..8, mantém o estado (inclusive "Próximo" liberado)
+      cnpjOK = digits(vals.CNPJ_ENTE || vals.CNPJ_UG || '').length === 14;
+    }
+
+    showStep(Math.max(0, Math.min(8, n)));
+
+    // Por segurança: se já foi visto, garanta que o modal fique fechado
+    if (st.seenWelcome) { try { modalWelcome.hide(); } catch {} }
+  }
 
   // restaura o estado ao carregar
   restoreState();
