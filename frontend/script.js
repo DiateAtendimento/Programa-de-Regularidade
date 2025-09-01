@@ -94,7 +94,6 @@
 
   // Modais
   const modalErro     = new bootstrap.Modal($('#modalErro'));
-  const modalBusca    = new bootstrap.Modal($('#modalBusca'));
   const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
   const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
@@ -194,9 +193,6 @@
   });
   $('#modalSucesso')?.addEventListener('shown.bs.modal', () => {
     mountLottie('lottieSuccess', 'animacao/confirm-success.json', { loop:false, autoplay:true });
-  });
-  $('#modalBusca')?.addEventListener('shown.bs.modal', () => {
-    mountLottie('lottieErrorBusca', 'animacao/atencao-info.json', { loop:false, autoplay:true });
   });
   // >>> NOVO: Lottie da geração de PDF
   $('#modalGerandoPdf')?.addEventListener('shown.bs.modal', () => {
@@ -314,6 +310,28 @@
   function paintGroupLabels(selectors, invalid){
     selectors.forEach(sel => paintLabelForInput(document.querySelector(sel), invalid));
   }
+
+  // Modal de confirmação (genérico para CNPJ/CPF)
+  const modalConfirmAdd = new bootstrap.Modal($('#modalConfirmAdd'));
+  const elConfirmTitle  = $('#modalConfirmAddTitle');
+  const elConfirmMsg    = $('#modalConfirmAddMsg');
+  const btnConfirmYes   = $('#btnConfirmAddYes');
+
+  function openConfirmAdd({ type, value, onYes }) {
+    const isCnpj = (type === 'cnpj');
+    elConfirmTitle.textContent = isCnpj ? 'CNPJ não encontrado' : 'CPF não encontrado';
+
+    const fmt = isCnpj ? maskCNPJ(value) : maskCPF(value);
+    elConfirmMsg.innerHTML = `
+      Não encontramos esse ${isCnpj ? 'CNPJ' : 'CPF'} em nosso banco de dados.<br>
+      Você poderia verificar se os dados estão corretos? <strong>${fmt}</strong>.<br><br>
+      Caso deseje prosseguir mesmo assim, podemos adicioná-lo e continuar com o preenchimento das informações.
+    `;
+
+    btnConfirmYes.onclick = () => { try { onYes?.(); } finally { modalConfirmAdd.hide(); } };
+    modalConfirmAdd.show();
+  }
+
 
   /* ========= Stepper / Navegação ========= */
   let step = 0;   // 0..8
@@ -538,11 +556,21 @@
   }
 
   // (sem redeclarar) — apenas adiciona o listener usando o btnNext já definido acima
-  btnNext?.addEventListener('click', ()=>{
-    if (step===0 && !cnpjOK) { showAtencao(['Pesquise e selecione um CNPJ válido antes de prosseguir.']); return; }
+  btnNext?.addEventListener('click', async () => {
+    if (step === 0 && !cnpjOK) {
+      showAtencao(['Pesquise e selecione um CNPJ válido antes de prosseguir.']);
+      return;
+    }
     if (!validateStep(step)) return;
-    showStep(step+1);
+
+    // Se estamos saindo da etapa 1 e o CNPJ não existia, grava a base agora
+    if (step === 1 && cnpjMissing) {
+      try { await upsertBaseIfMissing(); } catch (_) {}
+    }
+
+    showStep(step + 1);
   });
+
 
   /* ========= Esfera ========= */
   $$('.esf-only-one').forEach(chk=>{
@@ -653,25 +681,31 @@
       cnpjMissing = false;
       editedFields.clear();
       showStep(1);
-    }catch(err){
+    }catch (err) {
       const msgs = friendlyErrorMessages(err, 'Não foi possível consultar o CNPJ.');
       if (err && err.status === 404) {
-        showAtencao([
-          'CNPJ não encontrado no CADPREV.',
-          'Preencha os dados do Ente/UG na Etapa 1 e eles serão cadastrados.'
-        ]);
-        cnpjOK = true; cnpjMissing = true;
-        $('#CNPJ_ENTE').value = (cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5'));
-        showStep(1);
-        updateNavButtons(); updateFooterAlign();
+        openConfirmAdd({
+          type: 'cnpj',
+          value: cnpj,
+          onYes: () => {
+            cnpjOK = true;
+            cnpjMissing = true;
+            $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
+            showStep(1);
+            updateNavButtons();
+            updateFooterAlign();
+            $('#UF')?.focus();
+          }
+        });
       } else {
         showErro(msgs);
         cnpjOK = false;
       }
-    }finally{
+    } finally {
       searching = false;
       stopLoading();
-      updateNavButtons(); updateFooterAlign();
+      updateNavButtons();
+      updateFooterAlign();
     }
   });
 
@@ -694,15 +728,20 @@
         $('#EMAIL_REP_UG').value = data.EMAIL || '';
         $('#TEL_REP_UG').value   = data.TELEFONE || '';
       }
-    }catch(err){
+    }catch (err) {
       if (err && err.status === 404) {
-        showAtencao(['Registro não encontrado no CADPREV, favor inserir seus dados.']);
-        if (target==='ENTE'){ $('#NOME_REP_ENTE')?.focus(); }
-        else { $('#NOME_REP_UG')?.focus(); }
+        openConfirmAdd({
+          type: 'cpf',
+          value: cpfd,
+          onYes: () => {
+            if (target === 'ENTE') { $('#NOME_REP_ENTE')?.focus(); }
+            else { $('#NOME_REP_UG')?.focus(); }
+          }
+        });
       } else {
         showErro(friendlyErrorMessages(err, 'Falha ao consultar CPF.'));
       }
-    }finally{
+    } finally {
       stopLoading();
     }
   }
