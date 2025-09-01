@@ -186,19 +186,33 @@ async function getOrCreateSheet(title, headerValues){
 /* ───── Helpers (headers duplicados) ───── */
 async function getRowsViaCells(sheet) {
   await sheet.loadHeaderRow();
-  const headers = (sheet.headerValues || []).map(h => norm(h));
 
+  const norm = v => (v ?? '').toString().trim();
+  const sanitize = s =>
+    norm(s)
+      .toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu, '') // remove acentos
+      .replace(/[^\p{L}\p{N}]+/gu, '_')                // separadores → "_"
+      .replace(/_+/g, '_').replace(/^_+|_+$/g, '');    // compacta/limpa
+
+  const rawHeaders = (sheet.headerValues || []).map(h => norm(h));
   const seen = {};
-  const headersUnique = headers.map(h => {
-    if (!h) return '';
-    seen[h] = (seen[h] || 0) + 1;
-    return seen[h] === 1 ? h : `${h}__${seen[h]}`;
+  const headersUnique = rawHeaders.map(h => {
+    const base = sanitize(h);
+    if (!base) return '';
+    seen[base] = (seen[base] || 0) + 1;
+    return seen[base] === 1 ? base : `${base}__${seen[base]}`;
   });
 
   const cols = headersUnique.length || sheet.columnCount || 26;
   const endRow = sheet.rowCount || 2000;
 
-  await sheet.loadCells({ startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: cols });
+  await sheet.loadCells({
+    startRowIndex: 1,
+    startColumnIndex: 0,
+    endRowIndex: endRow,
+    endColumnIndex: cols
+  });
 
   const rows = [];
   for (let r = 1; r < endRow; r++) {
@@ -457,7 +471,11 @@ app.get('/api/consulta', async (req, res) => {
     const cnpjRows = await safeGetRows(sCnpj, 'CNPJ:getRows');
     let base = cnpjRows.find(r => digits(getVal(r,'CNPJ_ENTE')) === cnpj);
     if (!base) base = cnpjRows.find(r => digits(getVal(r,'CNPJ_UG')) === cnpj);
-    if (!base) return res.status(404).json({ error: 'CNPJ não encontrado em CNPJ_ENTE_UG.' });
+    if (!base) {
+      console.warn(`[consulta] CNPJ ${cnpj} não encontrado em CNPJ_ENTE_UG`);
+      return res.status(404).json({ error: 'CNPJ não encontrado em CNPJ_ENTE_UG.' });
+    }
+
 
     const UF          = norm(getVal(base, 'UF'));
     const ENTE        = norm(getVal(base, 'ENTE'));
@@ -564,6 +582,7 @@ app.get('/api/rep-by-cpf', async (req,res)=>{
 });
 
 /* ---------- util: atualizar EMAIL_ENTE / EMAIL_UG em CNPJ_ENTE_UG ---------- */
+// ✅ substitua a função inteira
 async function upsertEmailsInBase(p){
   const emailEnte = norm(p.EMAIL_ENTE);
   const emailUg   = norm(p.EMAIL_UG);
@@ -571,22 +590,72 @@ async function upsertEmailsInBase(p){
 
   const sCnpj = await getSheetStrict('CNPJ_ENTE_UG');
   await sCnpj.loadHeaderRow();
-  const rows = await safeGetRows(sCnpj, 'CNPJ:getRows');
+  const headers = sCnpj.headerValues || [];
 
-  const cnpjEnte = digits(p.CNPJ_ENTE);
-  const cnpjUg   = digits(p.CNPJ_UG);
+  const san = s => (s ?? '')
+    .toString().trim().toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .replace(/[^\p{L}\p{N}]+/gu,'_')
+    .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
 
-  const toUpdate = rows.filter(r =>
-    digits(r['CNPJ_ENTE']||'') === cnpjEnte ||
-    digits(r['CNPJ_UG']||'')   === cnpjUg
+  const idxOf = name => headers.findIndex(h => san(h) === san(name));
+
+  const col = {
+    cnpj_ente: idxOf('CNPJ_ENTE'),
+    cnpj_ug:   idxOf('CNPJ_UG'),
+    email_ente:idxOf('EMAIL_ENTE'),
+    email_ug:  idxOf('EMAIL_UG'),
+  };
+  if (col.cnpj_ente < 0 && col.cnpj_ug < 0) {
+    console.warn('upsertEmailsInBase: não achei colunas CNPJ_ENTE/CNPJ_UG');
+    return;
+  }
+
+  const endRow = sCnpj.rowCount || 2000;
+  const endCol = headers.length || sCnpj.columnCount || 26;
+
+  await safeLoadCells(
+    sCnpj,
+    { startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol },
+    'CNPJ:updateEmails:loadCells'
   );
 
-  for (const r of toUpdate) {
-    if (emailEnte) r['EMAIL_ENTE'] = emailEnte;
-    if (emailUg)   r['EMAIL_UG']   = emailUg;
-    await safeSaveRow(r, 'CNPJ:save');
+  const ce = digits(p.CNPJ_ENTE);
+  const cu = digits(p.CNPJ_UG);
+  let changed = 0;
+
+  for (let r = 1; r < endRow; r++) {
+    let match = false;
+
+    if (col.cnpj_ente >= 0) {
+      const v = digits(sCnpj.getCell(r, col.cnpj_ente)?.value || '');
+      if (v && ce && v === ce) match = true;
+    }
+    if (!match && col.cnpj_ug >= 0) {
+      const v = digits(sCnpj.getCell(r, col.cnpj_ug)?.value || '');
+      if (v && cu && v === cu) match = true;
+    }
+    if (!match) continue;
+
+    if (emailEnte && col.email_ente >= 0) {
+      const cell = sCnpj.getCell(r, col.email_ente);
+      const prev = norm(cell.value || '');
+      if (prev !== emailEnte) { cell.value = emailEnte; changed++; }
+    }
+    if (emailUg && col.email_ug >= 0) {
+      const cell = sCnpj.getCell(r, col.email_ug);
+      const prev = norm(cell.value || '');
+      if (prev !== emailUg) { cell.value = emailUg; changed++; }
+    }
+  }
+
+  if (changed) {
+    await withLimiter('CNPJ:saveUpdatedCells', () =>
+      withTimeoutAndRetry('CNPJ:saveUpdatedCells', () => sCnpj.saveUpdatedCells())
+    );
   }
 }
+
 
 /* helper: resolve UG quando vier vazia (caso 2.1) */
 async function resolveUGIfBlank(UF, ENTE, UG) {
@@ -641,30 +710,100 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
 }
 
 /* util: upsert base do ente/UG quando o CNPJ pesquisado não existir */
+// ✅ substitua a função inteira
 async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EMAIL_UG }){
-  const s = await getOrCreateSheet('CNPJ_ENTE_UG', ['UF','ENTE','UG','CNPJ_ENTE','CNPJ_UG','EMAIL_ENTE','EMAIL_UG']);
-  const rows = await safeGetRows(s, 'CNPJ:addOrUpdate:getRows');
-  const ce = digits(CNPJ_ENTE), cu = digits(CNPJ_UG);
+  const s = await getOrCreateSheet('CNPJ_ENTE_UG',
+    ['UF','ENTE','UG','CNPJ_ENTE','CNPJ_UG','EMAIL_ENTE','EMAIL_UG']
+  );
+  await s.loadHeaderRow();
+  const headers = s.headerValues || [];
 
-  let row = rows.find(r => digits(r['CNPJ_ENTE']||'')===ce || digits(r['CNPJ_UG']||'')===cu);
-  if (!row){
+  const san = s => (s ?? '')
+    .toString().trim().toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .replace(/[^\p{L}\p{N}]+/gu,'_')
+    .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+
+  const idxOf = name => headers.findIndex(h => san(h) === san(name));
+
+  const col = {
+    uf:         idxOf('UF'),
+    ente:       idxOf('ENTE'),
+    ug:         idxOf('UG'),
+    cnpj_ente:  idxOf('CNPJ_ENTE'),
+    cnpj_ug:    idxOf('CNPJ_UG'),
+    email_ente: idxOf('EMAIL_ENTE'),
+    email_ug:   idxOf('EMAIL_UG'),
+  };
+
+  const ce = digits(CNPJ_ENTE);
+  const cu = digits(CNPJ_UG);
+
+  // 1) Tenta localizar a linha por CNPJ usando células (funciona mesmo com cabeçalhos duplicados)
+  const endRow = s.rowCount || 2000;
+  const endCol = headers.length || s.columnCount || 26;
+
+  await safeLoadCells(
+    s,
+    { startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol },
+    'CNPJ:addOrUpdate:loadCells'
+  );
+
+  let foundRow = -1;
+  for (let r = 1; r < endRow; r++) {
+    let hit = false;
+    if (col.cnpj_ente >= 0) {
+      const v = digits(s.getCell(r, col.cnpj_ente)?.value || '');
+      if (v && ce && v === ce) hit = true;
+    }
+    if (!hit && col.cnpj_ug >= 0) {
+      const v = digits(s.getCell(r, col.cnpj_ug)?.value || '');
+      if (v && cu && v === cu) hit = true;
+    }
+    if (hit) { foundRow = r; break; }
+  }
+
+  // 2) Se não achou, cria
+  if (foundRow < 0) {
     await safeAddRow(s, {
-      UF: norm(UF), ENTE: norm(ENTE), UG: norm(UG),
-      CNPJ_ENTE: ce, CNPJ_UG: cu, EMAIL_ENTE: norm(EMAIL_ENTE), EMAIL_UG: norm(EMAIL_UG)
+      UF: norm(UF),
+      ENTE: norm(ENTE),
+      UG: norm(UG),
+      CNPJ_ENTE: ce,
+      CNPJ_UG: cu,
+      EMAIL_ENTE: norm(EMAIL_ENTE),
+      EMAIL_UG: norm(EMAIL_UG)
     }, 'CNPJ:addRow');
     return { created: true };
-  } else {
-    if (UF) row['UF']=norm(UF);
-    if (ENTE) row['ENTE']=norm(ENTE);
-    if (UG) row['UG']=norm(UG);
-    if (ce) row['CNPJ_ENTE']=ce;
-    if (cu) row['CNPJ_UG']=cu;
-    if (EMAIL_ENTE) row['EMAIL_ENTE']=norm(EMAIL_ENTE);
-    if (EMAIL_UG)   row['EMAIL_UG']=norm(EMAIL_UG);
-    await safeSaveRow(row, 'CNPJ:update:save');
+  }
+
+  // 3) Se achou, atualiza por célula
+  let changed = 0;
+  const setCellIf = (cIdx, val, transform = x => x) => {
+    if (cIdx < 0 || val == null) return;
+    const cell = s.getCell(foundRow, cIdx);
+    const cur  = norm(cell.value || '');
+    const nxt  = norm(transform(val));
+    if (cur !== nxt) { cell.value = nxt; changed++; }
+  };
+
+  setCellIf(col.uf, UF);
+  setCellIf(col.ente, ENTE);
+  setCellIf(col.ug, UG);
+  setCellIf(col.cnpj_ente, ce);
+  setCellIf(col.cnpj_ug, cu);
+  setCellIf(col.email_ente, EMAIL_ENTE);
+  setCellIf(col.email_ug, EMAIL_UG);
+
+  if (changed) {
+    await withLimiter('CNPJ:saveUpdatedCells', () =>
+      withTimeoutAndRetry('CNPJ:saveUpdatedCells', () => s.saveUpdatedCells())
+    );
     return { updated: true };
   }
+  return { updated: false };
 }
+
 
 /* ───────────── Endpoints de escrita ───────────── */
 
@@ -1011,7 +1150,7 @@ app.post('/api/termo-pdf', async (req, res) => {
         .pdf-header {
           font-family: Inter, Arial, sans-serif;
           width: 100%;
-          padding: 6mm 12mm 4;           /* topo 6mm, laterais 12mm */
+          padding: 6mm 12mm 4mm;           /* topo 6mm, laterais 12mm */
         }
         .pdf-header .logos {
           display: flex;
@@ -1076,11 +1215,22 @@ app.listen(PORT, () => console.log(`🚀 Server rodando na porta ${PORT}`));
 /* ───────────── Helpers locais ───────────── */
 function getVal(row, ...candidates) {
   const keys = Object.keys(row);
+  const normKey = s => (s ?? '')
+    .toString()
+    .toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '') // sem acentos
+    .replace(/[^\p{L}\p{N}]+/gu, '_')                // separadores → "_"
+    .replace(/_+/g, '_')
+    .replace(/__\d+$/,'')                            // ignora sufixos __2/__3
+    .replace(/^_+|_+$/g, '');
+
+  // mapa “normalizado” → chave real
+  const map = new Map(keys.map(k => [normKey(k), k]));
+
   for (const cand of candidates) {
-    const k = keys.find(k =>
-      low(k) === low(cand) || low(k).startsWith(low(cand) + '__')
-    );
-    if (k) return row[k];
+    const nk = normKey(cand);
+    const real = map.get(nk);
+    if (real) return row[real];
   }
   return undefined;
 }
