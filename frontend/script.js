@@ -1,3 +1,5 @@
+//script.js
+
 // script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas, validação e download automático do PDF
 (() => {
   /* ========= Config API ========= */
@@ -108,10 +110,11 @@
   const STORAGE_KEY = 'rpps-form-v1';
 
   function saveState() {
+    const prev = loadState();
     const data = {
       step,
       values: {},
-      seenWelcome: true
+      seenWelcome: prev?.seenWelcome ?? false
     };
     // salve só os campos que existem (evita lixo)
     [

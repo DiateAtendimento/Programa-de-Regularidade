@@ -626,21 +626,46 @@
     </div>
   </div>
 
-  <!-- NOVO: Modal “Gerando PDF” (para o botão Gerar formulário) -->
-  <div class="modal fade" id="modalGerandoPdf" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <!-- Modal: confirmar inclusão (CNPJ/CPF) -->
+  <div class="modal fade" id="modalConfirmAdd" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-brand text-white py-2">
-          <h5 class="modal-title">Gerando Formulário</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      <div class="modal-content shadow-lg">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalConfirmAddTitle">Confirmar inclusão</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-        <div class="modal-body d-flex flex-column align-items-center justify-content-center">
-          <div id="lottieGerandoPdf" class="lottie-loading"></div>
-          <div class="status-msg mt-2">Aguarde, seu documento está sendo gerado…</div>
+        <div class="modal-body">
+          <p id="modalConfirmAddMsg" class="mb-0"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" id="btnConfirmAddCancel" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-primary" id="btnConfirmAddYes">
+            Sim, prosseguir
+          </button>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Modal: “Gerando PDF…” (bloqueia enquanto o PDF é gerado) -->
+  <div class="modal fade" id="modalGerandoPdf" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-brand text-white py-2">
+          <h5 class="modal-title">Gerando PDF…</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body d-flex flex-column align-items-center justify-content-center">
+          <div id="lottieGerandoPdf" class="lottie-loading"></div>
+          <div class="status-msg mt-2">Aguarde, preparando o arquivo…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
