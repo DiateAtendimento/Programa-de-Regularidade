@@ -430,7 +430,7 @@ async function getCRPAllCached(sheet, skipCache = false) {
   return rows;
 }
 
-/* ─────────────── PUPPETEER (robust) ─────────────── */
+
 /* ─────────────── PUPPETEER (robust) ─────────────── */
 process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || path.resolve(__dirname, '.puppeteer');
 process.env.TMPDIR = process.env.TMPDIR || '/tmp';
@@ -616,45 +616,6 @@ app.get('/api/consulta', async (req, res) => {
   }
 });
 
-/** GET /api/rep-by-cpf?cpf=NNNNNNNNNNN */
-app.get('/api/rep-by-cpf', async (req,res)=>{
-  try{
-    const cpf = digits(req.query.cpf || '');
-    if (cpf.length !== 11) return res.status(400).json({ error: 'CPF inválido.' });
-
-    const cacheKey = `rep:${cpf}`;
-    const cached = cacheGet(cacheKey);
-    if (cached) return res.json({ ok: true, data: cached });
-
-    await authSheets();
-    const sReps = await getSheetStrict('Dados_REP_ENTE_UG');
-    const rows = await safeGetRows(sReps, 'Reps:getRows');
-    const found = rows.find(r => digits(getVal(r,'CPF')) === cpf);
-    if(!found) return res.status(404).json({ error:'CPF não encontrado.' });
-
-    const payload = {
-      UF: norm(getVal(found,'UF')),
-      ENTE: norm(getVal(found,'ENTE')),
-      UG: norm(getVal(found,'UG')),
-      NOME: norm(getVal(found,'NOME')),
-      CPF: digits(getVal(found,'CPF')),
-      EMAIL: norm(getVal(found,'EMAIL')),
-      TELEFONE: norm(getVal(found,'TELEFONE_MOVEL') || getVal(found,'TELEFONE')),
-      CARGO: norm(getVal(found,'CARGO')),
-    };
-    cacheSet(cacheKey, payload);
-
-    return res.json({ ok:true, data: payload });
-  }catch(err){
-    console.error('❌ /api/rep-by-cpf:', err);
-    const msg = String(err?.message || '').toLowerCase();
-    if (msg.includes('timeout:') || msg.includes('etimedout')) {
-      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
-    }
-    res.status(500).json({ error:'Falha interna.' });
-  }
-});
-
 /* ---------- util: atualizar EMAIL_ENTE / EMAIL_UG em CNPJ_ENTE_UG ---------- */
 async function upsertEmailsInBase(p){
   const emailEnte = norm(p.EMAIL_ENTE);
@@ -729,6 +690,68 @@ async function upsertEmailsInBase(p){
   }
 }
 
+/* ---------- busca rápida por CPF (coluna única + linha alvo) ---------- */
+async function findRepByCpfFast(cpfDigits) {
+  const sReps = await getSheetStrict('Dados_REP_ENTE_UG');
+  await sReps.loadHeaderRow();
+  const headers = sReps.headerValues || [];
+
+  const san = s => (s ?? '')
+    .toString().trim().toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .replace(/[^\p{L}\p{N}]+/gu,'_')
+    .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+
+  const idx = {
+    UF: headers.findIndex(h => san(h)==='uf'),
+    ENTE: headers.findIndex(h => san(h)==='ente'),
+    UG: headers.findIndex(h => san(h)==='ug'),
+    NOME: headers.findIndex(h => san(h)==='nome'),
+    CPF: headers.findIndex(h => san(h)==='cpf'),
+    EMAIL: headers.findIndex(h => san(h)==='email'),
+    TEL_MOV: headers.findIndex(h => san(h)==='telefone_movel'),
+    TEL: headers.findIndex(h => san(h)==='telefone'),
+    CARGO: headers.findIndex(h => san(h)==='cargo'),
+  };
+  if (idx.CPF < 0) throw new Error('Coluna CPF não encontrada em Dados_REP_ENTE_UG');
+
+  const endRow = sReps.rowCount || 2000;
+
+  // 1) carrega só a coluna CPF
+  await safeLoadCells(
+    sReps,
+    { startRowIndex: 1, startColumnIndex: idx.CPF, endRowIndex: endRow, endColumnIndex: idx.CPF + 1 },
+    'Reps:scanCPF'
+  );
+
+  let rowHit = -1;
+  for (let r = 1; r < endRow; r++) {
+    const v = digits(sReps.getCell(r, idx.CPF)?.value || '');
+    if (v && v === cpfDigits) { rowHit = r; break; }
+  }
+  if (rowHit < 0) return null;
+
+  // 2) carrega somente a linha encontrada (todas as colunas necessárias)
+  const endCol = headers.length || sReps.columnCount || 26;
+  await safeLoadCells(
+    sReps,
+    { startRowIndex: rowHit, startColumnIndex: 0, endRowIndex: rowHit + 1, endColumnIndex: endCol },
+    'Reps:readRow'
+  );
+
+  const getCellByIdx = (c) => (c >= 0 ? (sReps.getCell(rowHit, c)?.value ?? '') : '');
+
+  return {
+    UF: norm(getCellByIdx(idx.UF)),
+    ENTE: norm(getCellByIdx(idx.ENTE)),
+    UG: norm(getCellByIdx(idx.UG)),
+    NOME: norm(getCellByIdx(idx.NOME)),
+    CPF: digits(getCellByIdx(idx.CPF)),
+    EMAIL: norm(getCellByIdx(idx.EMAIL)),
+    TELEFONE: norm(getCellByIdx(idx.TEL_MOV)) || norm(getCellByIdx(idx.TEL)),
+    CARGO: norm(getCellByIdx(idx.CARGO)),
+  };
+}
 
 /* helper: resolve UG quando vier vazia (caso 2.1) */
 async function resolveUGIfBlank(UF, ENTE, UG) {
@@ -747,6 +770,32 @@ async function resolveUGIfBlank(UF, ENTE, UG) {
     return '';
   }
 }
+
+/** GET /api/rep-by-cpf?cpf=NNNNNNNNNNN */
+app.get('/api/rep-by-cpf', async (req,res)=>{
+  try{
+    const cpf = digits(req.query.cpf || '');
+    if (cpf.length !== 11) return res.status(400).json({ error: 'CPF inválido.' });
+
+    const cacheKey = `rep:${cpf}`;
+    const cached = cacheGet(cacheKey);
+    if (cached) return res.json({ ok: true, data: cached });
+
+    await authSheets();
+    const payload = await findRepByCpfFast(cpf);
+    if (!payload) return res.status(404).json({ error:'CPF não encontrado.' });
+
+    cacheSet(cacheKey, payload);
+    return res.json({ ok:true, data: payload });
+  }catch(err){
+    console.error('❌ /api/rep-by-cpf:', err);
+    const msg = String(err?.message || '').toLowerCase();
+    if (msg.includes('timeout:') || msg.includes('etimedout')) {
+      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
+    }
+    res.status(500).json({ error:'Falha interna.' });
+  }
+});
 
 /* util: upsert representante em Dados_REP_ENTE_UG (para CPF inexistente ou atualização) */
 async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
