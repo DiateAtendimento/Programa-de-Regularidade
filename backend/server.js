@@ -14,7 +14,7 @@ const rateLimit = require('express-rate-limit');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const http = require('http');
 const https = require('https');
-const puppeteer = require('puppeteer'); // ← PDF (Puppeteer)
+const puppeteer = require('puppeteer');
 const { executablePath } = require('puppeteer');
 
 const app = express();
@@ -40,8 +40,7 @@ const splitList = (s = '') =>
    .map(v => v.trim().replace(/\/+$/, ''))
    .filter(Boolean);
 
-/* ───────────── CORS (robusto) ─────────────
-   ⚠️ DEVE vir antes do Helmet para garantir preflight/headers */
+/* ───────────── CORS (robusto) ───────────── */
 const ALLOW_LIST = new Set(
   splitList(process.env.CORS_ORIGIN_LIST || process.env.CORS_ORIGIN || '')
     .map(u => u.replace(/\/+$/, '').toLowerCase())
@@ -66,7 +65,7 @@ const corsOptionsDelegate = (req, cb) => {
   const originIn = (req.headers.origin || '').replace(/\/+$/, '').toLowerCase();
   const ok = isAllowedOrigin(originIn);
 
-  // log de depuração:
+  // log de depuração só para /api
   if (req.path.startsWith('/api/')) {
     console.log(`CORS ▶ ${originIn || '(sem origin)'} → ${ok ? 'ALLOW' : 'DENY'} | ALLOW_LIST=[${[...ALLOW_LIST].join(', ')}]`);
   }
@@ -76,7 +75,7 @@ const corsOptionsDelegate = (req, cb) => {
     .replace(/[^\w\-_, ]/g, '');
 
   cb(null, {
-    origin: ok ? (originIn || true) : false, // ✅ reflete origem aprovada (ou true p/ same-origin)
+    origin: ok ? (originIn || true) : false,
     methods: ['GET','POST','OPTIONS'],
     allowedHeaders: reqHdrs || 'Content-Type,Authorization,Cache-Control',
     exposedHeaders: ['Content-Disposition'],
@@ -129,7 +128,23 @@ app.use('/api', (req, res, next) => {
 });
 
 /* ───────────── Static ───────────── */
-app.use('/', express.static(path.join(__dirname, '../frontend')));
+const FRONTEND_DIR = path.join(__dirname, '../frontend');
+app.use('/', express.static(FRONTEND_DIR));
+
+/* pequenos utilitários para evitar 404 no console do PDF */
+function trySendStatic(res, relPath) {
+  const abs = path.join(FRONTEND_DIR, relPath);
+  if (fs.existsSync(abs)) return res.sendFile(abs);
+  return null;
+}
+app.get(['/favicon.ico','/favicon.png'], (req, res) => {
+  if (trySendStatic(res, 'favicon.ico')) return;
+  if (trySendStatic(res, 'favicon.png')) return;
+  res.status(204).end(); // evita 404 no headless
+});
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain').send('User-agent: *\nDisallow:\n');
+});
 
 /* ───────────── Google Sheets ───────────── */
 const SHEET_ID = process.env.SHEET_ID;
@@ -374,7 +389,6 @@ async function readCRPByFixedColumns(sheet) {
 
     const cnpj = digits(cnpjCell?.value ?? '');
 
-    // validade (dd/mm/aaaa e ISO)
     let validadeDMY = '';
     let validadeISO = '';
 
@@ -386,7 +400,7 @@ async function readCRPByFixedColumns(sheet) {
     } else if (valCell?.value instanceof Date) {
       validadeDMY = formatDateDMY(valCell.value);
       validadeISO = formatDateISO(valCell.value);
-    } else if (typeof valCell?.value === 'number') { // serial -> Date
+    } else if (typeof valCell?.value === 'number') {
       const epoch = new Date(Date.UTC(1899, 11, 30));
       const d = new Date(epoch.getTime() + valCell.value * 86400000);
       validadeDMY = formatDateDMY(d);
@@ -407,7 +421,6 @@ async function readCRPByFixedColumns(sheet) {
 
 /* Cache específico para CRP */
 let _crpMemo = { data: null, exp: 0 };
-// ⚠️ atualizado: aceita skipCache
 async function getCRPAllCached(sheet, skipCache = false) {
   if (!skipCache && _crpMemo.exp > Date.now() && _crpMemo.data) return _crpMemo.data;
   const rows = await withLimiter('CRP:read', () =>
@@ -463,6 +476,9 @@ async function authSheets() {
 }
 
 app.get('/api/health', (_req,res)=> res.json({ ok:true }));
+app.get('/api/healthz', (_req,res)=> {
+  res.json({ ok:true, uptime: process.uptime(), ts: Date.now() });
+});
 
 /** GET /api/consulta?cnpj=NNNNNNNNNNNNNN[&nocache=1] */
 app.get('/api/consulta', async (req, res) => {
@@ -470,10 +486,8 @@ app.get('/api/consulta', async (req, res) => {
     const cnpj = digits(req.query.cnpj || '');
     if (cnpj.length !== 14) return res.status(400).json({ error: 'CNPJ inválido.' });
 
-    // ⚠️ novo: permitir pular caches (memória + CRP memo) com ?nocache
     const skipCache = Object.prototype.hasOwnProperty.call(req.query, 'nocache');
 
-    // cache em memória (só se não pediram para ignorar)
     const cacheKey = `consulta:${cnpj}`;
     if (!skipCache) {
       const cached = cacheGet(cacheKey);
@@ -494,7 +508,7 @@ app.get('/api/consulta', async (req, res) => {
 
       const out = {
         UF: '', ENTE: '',
-        CNPJ_ENTE: cnpj,   // preenche o que o usuário digitou
+        CNPJ_ENTE: cnpj,
         UG: '', CNPJ_UG: '',
         EMAIL_ENTE: '', EMAIL_UG: '',
         CRP_DATA_VALIDADE_DMY: '', CRP_DATA_VALIDADE_ISO: '',
@@ -502,11 +516,8 @@ app.get('/api/consulta', async (req, res) => {
         ESFERA_SUGERIDA: '',
         __snapshot: {}
       };
-
-      // 200 OK com marcador de “missing”, sem cache
       return res.json({ ok: true, data: out, missing: true });
     }
-
 
     const UF          = norm(getVal(base, 'UF'));
     const ENTE        = norm(getVal(base, 'ENTE'));
@@ -516,7 +527,6 @@ app.get('/api/consulta', async (req, res) => {
     const EMAIL_ENTE  = norm(getVal(base, 'EMAIL_ENTE'));
     const EMAIL_UG    = norm(getVal(base, 'EMAIL_UG'));
 
-    // Reps (snapshot informativo)
     const repsAll = await safeGetRows(sReps, 'Reps:getRows');
     const reps = repsAll.filter(r => low(getVal(r,'UF')) === low(UF) && low(getVal(r,'ENTE')) === low(ENTE));
     const repUG = reps.find(r => low(getVal(r,'UG')) === low(UG)) || reps[0] || {};
@@ -524,7 +534,6 @@ app.get('/api/consulta', async (req, res) => {
       reps.find(r => ['','ente','adm direta','administração direta','administracao direta'].includes(low(getVal(r,'UG')||''))) ||
       reps.find(r => low(getVal(r,'UG')||'') !== low(UG)) || reps[0] || {};
 
-    // CRP (B/F/G) — usa memo apenas quando skipCache=false
     const crpAll = await getCRPAllCached(sCrp, skipCache);
     const crpCandidates = crpAll.filter(r => digits(r.CNPJ_ENTE) === CNPJ_ENTE);
     let crp = {};
@@ -561,7 +570,6 @@ app.get('/api/consulta', async (req, res) => {
       }
     };
 
-    // grava em cache apenas quando NÃO for consulta com nocache
     if (!skipCache) cacheSet(cacheKey, out);
     return res.json({ ok:true, data: out, missing: false });
   } catch (err) {
@@ -769,7 +777,6 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
   const ce = digits(CNPJ_ENTE);
   const cu = digits(CNPJ_UG);
 
-  // 1) Tenta localizar a linha por CNPJ usando células (funciona mesmo com cabeçalhos duplicados)
   const endRow = s.rowCount || 2000;
   const endCol = headers.length || s.columnCount || 26;
 
@@ -793,7 +800,6 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
     if (hit) { foundRow = r; break; }
   }
 
-  // 2) Se não achou, cria
   if (foundRow < 0) {
     await safeAddRow(s, {
       UF: norm(UF),
@@ -807,7 +813,6 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
     return { created: true };
   }
 
-  // 3) Se achou, atualiza por célula
   let changed = 0;
   const setCellIf = (cIdx, val, transform = x => x) => {
     if (cIdx < 0 || val == null) return;
@@ -908,7 +913,6 @@ app.post('/api/gerar-termo', async (req,res)=>{
       ? p.CRITERIOS_IRREGULARES
       : String(p.CRITERIOS_IRREGULARES || '').split(',').map(s=>s.trim()).filter(Boolean);
 
-    // 1) grava o registro principal (crítico)
     await safeAddRow(sTermos, {
       ENTE: norm(p.ENTE), UF: norm(p.UF),
       CNPJ_ENTE: digits(p.CNPJ_ENTE), EMAIL_ENTE: norm(p.EMAIL_ENTE),
@@ -931,10 +935,8 @@ app.post('/api/gerar-termo', async (req,res)=>{
       MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO
     }, 'Termos:add');
 
-    // 2) responde já ao cliente (encurta a janela para 502)
     res.json({ ok: true });
 
-    // 3) tarefas não críticas em background (fire-and-forget)
     setImmediate(async () => {
       try {
         const sLog = await getOrCreateSheet('Reg_alteracao_dados_ente_ug', [
@@ -1076,12 +1078,15 @@ app.post('/api/termo-pdf', async (req, res) => {
       .forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
     compCodes.forEach(code => qs.append('comp', code));
 
-    const PUBLIC_URL = (process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/,'');
+    // PUBLIC_URL robusto por request (pega host e protocolo corretos atrás do proxy)
+    const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http');
+    const host  = req.get('host');
+    const FALLBACK_BASE = `${proto}://${host}`;
+    const PUBLIC_URL = (process.env.PUBLIC_URL || FALLBACK_BASE).replace(/\/+$/, '');
     const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
 
     const browser = await getBrowser();
-    const pageOpts = {};
-    page = await browser.newPage(pageOpts);
+    page = await browser.newPage();
 
     await page.setRequestInterception(true);
     page.on('request', (reqObj) => {
@@ -1094,11 +1099,9 @@ app.post('/api/termo-pdf', async (req, res) => {
         }
         return reqObj.abort();
       }
-
       if (/googletagmanager|google-analytics|doubleclick|hotjar|clarity|sentry|facebook|meta\./i.test(u)) {
         return reqObj.abort();
       }
-
       return reqObj.continue();
     });
 
@@ -1200,6 +1203,7 @@ app.post('/api/termo-pdf', async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="termo-${filenameSafe}.pdf"`);
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
     res.send(pdf);
   } catch (e) {
     console.error('❌ /api/termo-pdf:', e);
@@ -1211,6 +1215,14 @@ app.post('/api/termo-pdf', async (req, res) => {
 /* ───────────── Start ───────────── */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server rodando na porta ${PORT}`));
+
+/* ───────────── Captura global de erros (defensivo) ───────────── */
+process.on('uncaughtException', (err) => {
+  console.error('⛑️  uncaughtException:', err && err.stack || err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('⛑️  unhandledRejection:', reason);
+});
 
 /* ───────────── Helpers locais ───────────── */
 function getVal(row, ...candidates) {
