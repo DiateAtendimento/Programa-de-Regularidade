@@ -753,6 +753,7 @@
         $('#EMAIL_REP_UG').value = data.EMAIL || '';
         $('#TEL_REP_UG').value   = data.TELEFONE || '';
       }
+       forceCloseLoading();
     }catch (err) {
       forceCloseLoading();
       if (err && err.status === 404) {
@@ -771,6 +772,7 @@
       stopLoading();
     }
   }
+
 
   $('#btnPesqRepEnte')?.addEventListener('click', ()=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE'));
   $('#btnPesqRepUg')?.addEventListener('click',   ()=> buscarRepByCPF($('#CPF_REP_UG').value,'UG'));
