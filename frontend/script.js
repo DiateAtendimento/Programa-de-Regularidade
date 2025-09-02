@@ -202,17 +202,30 @@
     const ul = $('#modalErroLista'); ul.innerHTML='';
     msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
     setErroHeader('atencao');
-    modalErro.show();
+    safeShowModal(modalErro);
   }
   function showErro(msgs){
     const ul = $('#modalErroLista'); ul.innerHTML='';
     msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
     setErroHeader('erro');
-    modalErro.show();
+    safeShowModal(modalErro);
   }
 
   // --- Controle robusto do modal de "carregando" + Lottie ---
   let loadingCount = 0;
+
+  // Destrava qualquer resíduo de modal/backdrop
+  function killBackdropLocks() {
+    try { modalLoadingSearch.hide(); } catch {}
+    try { modalGerandoPdf.hide(); } catch {}
+    setTimeout(() => {
+      $$('.modal.show').forEach(m => m.classList.remove('show'));
+      $$('.modal-backdrop').forEach(b => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+    }, 0);
+  }
+
   function showLoadingModal() {
     try { modalLoadingSearch.show(); } catch {}
   }
@@ -246,12 +259,20 @@
     stopLoading();
   }
 
-
   // Destrói a animação quando o modal é fechado, evitando loop eterno em background
   $('#modalLoadingSearch')?.addEventListener('hidden.bs.modal', () => {
     const inst = lotties['lottieLoadingSearch'];
     if (inst) { inst.destroy(); delete lotties['lottieLoadingSearch']; }
+    // reforça limpeza
+    killBackdropLocks();
   });
+
+  function safeShowModal(modalInstance){
+    // antes de abrir qualquer modal, garanta que o "carregando" está fechado e sem backdrops órfãos
+    forceCloseLoading();
+    killBackdropLocks();
+    try { modalInstance.show(); } catch {}
+  }
 
   /* ========= Máscaras ========= */
   const maskCPF = v => {
@@ -330,8 +351,8 @@
       Caso deseje prosseguir mesmo assim, podemos adicioná-lo e continuar com o preenchimento das informações.
     `;
 
-    btnConfirmYes.onclick = () => { try { onYes?.(); } finally { modalConfirmAdd.hide(); } };
-    modalConfirmAdd.show();
+    btnConfirmYes.onclick = () => { try { onYes?.(); } finally { modalConfirmAdd.hide(); killBackdropLocks(); } };
+    safeShowModal(modalConfirmAdd);
   }
 
   /* ========= Stepper / Navegação ========= */
@@ -753,9 +774,13 @@
         $('#EMAIL_REP_UG').value = data.EMAIL || '';
         $('#TEL_REP_UG').value   = data.TELEFONE || '';
       }
-       forceCloseLoading();
-    }catch (err) {
+      // fechamento imediato + limpeza defensiva
       forceCloseLoading();
+      killBackdropLocks();
+    }catch (err) {
+      // fecha qualquer loading antes de abrir outro modal
+      forceCloseLoading();
+      killBackdropLocks();
       if (err && err.status === 404) {
         openConfirmAdd({
           type: 'cpf',
@@ -770,9 +795,10 @@
       }
     } finally {
       stopLoading();
+      // reforço final para nunca deixar backdrop/lock
+      killBackdropLocks();
     }
   }
-
 
   $('#btnPesqRepEnte')?.addEventListener('click', ()=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE'));
   $('#btnPesqRepUg')?.addEventListener('click',   ()=> buscarRepByCPF($('#CPF_REP_UG').value,'UG'));
@@ -939,14 +965,15 @@
     const payload = buildPayload();
 
     try {
-      modalGerandoPdf.show();            // <<< mostra animação + mensagem
+      safeShowModal(modalGerandoPdf);    // <<< mostra animação + mensagem
       await gerarBaixarPDF(payload);     // baixa automaticamente
-      modalGerandoPdf.hide();
-      modalSucesso.show();               // feedback visual de sucesso
+      try { modalGerandoPdf.hide(); } catch {}
+      safeShowModal(modalSucesso);       // feedback visual de sucesso
     } catch (e) {
-      modalGerandoPdf.hide();
+      try { modalGerandoPdf.hide(); } catch {}
       showErro(['Não foi possível gerar o PDF.', e?.message || '']);
     } finally {
+      killBackdropLocks();
       if (btnGerar) btnGerar.disabled = false; // não altera o texto do botão
       gerarBusy = false;
     }
