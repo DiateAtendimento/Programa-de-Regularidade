@@ -225,8 +225,27 @@
   }
   function stopLoading() {
     loadingCount = Math.max(0, loadingCount - 1);
-    if (loadingCount === 0) hideLoadingModal();
+    if (loadingCount === 0) {
+      try { modalLoadingSearch.hide(); } catch {}
+      // limpa transição/backdrop teimosos do Bootstrap
+      setTimeout(() => {
+        const el = $('#modalLoadingSearch');
+        el?.classList.remove('show');
+        document.body.classList.remove('modal-open');
+        $$('.modal-backdrop')?.forEach(b => b.remove());
+        // garante destruição do Lottie
+        const inst = lotties['lottieLoadingSearch'];
+        if (inst) { inst.destroy(); delete lotties['lottieLoadingSearch']; }
+      }, 60);
+    }
   }
+
+  // helper para encerrar imediatamente (usaremos após sucesso/erro)
+  function forceCloseLoading() {
+    loadingCount = 0;
+    stopLoading();
+  }
+
 
   // Destrói a animação quando o modal é fechado, evitando loop eterno em background
   $('#modalLoadingSearch')?.addEventListener('hidden.bs.modal', () => {
@@ -735,6 +754,7 @@
         $('#TEL_REP_UG').value   = data.TELEFONE || '';
       }
     }catch (err) {
+      forceCloseLoading();
       if (err && err.status === 404) {
         openConfirmAdd({
           type: 'cpf',

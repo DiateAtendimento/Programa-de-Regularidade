@@ -431,14 +431,47 @@ async function getCRPAllCached(sheet, skipCache = false) {
 }
 
 /* ─────────────── PUPPETEER (robust) ─────────────── */
-process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || '/opt/render/.cache/puppeteer';
+/* ─────────────── PUPPETEER (robust) ─────────────── */
+process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || path.resolve(__dirname, '.puppeteer');
 process.env.TMPDIR = process.env.TMPDIR || '/tmp';
+
+function findChromeIn(dir) {
+  try {
+    if (!fs.existsSync(dir)) return null;
+    const chromeDir = path.join(dir, 'chrome');
+    if (!fs.existsSync(chromeDir)) return null;
+    const platforms = fs.readdirSync(chromeDir).filter(n => n.startsWith('linux-'));
+    for (const p of platforms) {
+      const candidate = path.join(chromeDir, p, 'chrome-linux64', 'chrome');
+      if (fs.existsSync(candidate)) return candidate;
+    }
+  } catch (_) {}
+  return null;
+}
 
 let _browserPromise;
 async function getBrowser() {
   if (!_browserPromise) {
-    const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH || executablePath();
-    console.log('🔎 Chrome path:', chromePath);
+    // ordem de resolução: ENV → .puppeteer local → puppeteer.executablePath()
+    const localPuppeteerDir = path.resolve(__dirname, '.puppeteer');
+    const altBackendDir = path.resolve(__dirname, '../backend/.puppeteer'); // caso rode de outra pasta
+    const resolved =
+      process.env.PUPPETEER_EXECUTABLE_PATH ||
+      findChromeIn(localPuppeteerDir) ||
+      findChromeIn(altBackendDir);
+
+    // fallback para API do pacote (pode retornar vazio se não baixou no postinstall)
+    const byApi = (() => {
+      try { return require('puppeteer').executablePath(); } catch { return null; }
+    })();
+
+    const chromePath = resolved || byApi;
+    console.log('🔎 Chrome path (resolved):', chromePath || '(none)');
+
+    if (!chromePath || !fs.existsSync(chromePath)) {
+      throw new Error(`Chrome não encontrado. Ajuste build para baixar em ".puppeteer" ou defina PUPPETEER_EXECUTABLE_PATH. Tentado: ${chromePath || '(vazio)'}`);
+    }
+
     _browserPromise = puppeteer.launch({
       executablePath: chromePath,
       headless: 'new',
@@ -455,6 +488,7 @@ async function getBrowser() {
   }
   return _browserPromise;
 }
+
 
 /* ─────────────── ROTAS ─────────────── */
 
