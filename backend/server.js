@@ -76,7 +76,7 @@ const corsOptionsDelegate = (req, cb) => {
     .replace(/[^\w\-_, ]/g, '');
 
   cb(null, {
-    origin: ok ? originIn : false,                   // reflete a origem aprovada
+    origin: ok ? (originIn || true) : false, // ✅ reflete origem aprovada (ou true p/ same-origin)
     methods: ['GET','POST','OPTIONS'],
     allowedHeaders: reqHdrs || 'Content-Type,Authorization,Cache-Control',
     exposedHeaders: ['Content-Disposition'],
@@ -199,15 +199,15 @@ async function getOrCreateSheet(title, headerValues){
 async function getRowsViaCells(sheet) {
   await sheet.loadHeaderRow();
 
-  const norm = v => (v ?? '').toString().trim();
+  const normStr = v => (v ?? '').toString().trim();
   const sanitize = s =>
-    norm(s)
+    normStr(s)
       .toLowerCase()
       .normalize('NFD').replace(/\p{Diacritic}/gu, '')
       .replace(/[^\p{L}\p{N}]+/gu, '_')
       .replace(/_+/g, '_').replace(/^_+|_+$/g, '');
 
-  const rawHeaders = (sheet.headerValues || []).map(h => norm(h));
+  const rawHeaders = (sheet.headerValues || []).map(h => normStr(h));
   const seen = {};
   const headersUnique = rawHeaders.map(h => {
     const base = sanitize(h);
@@ -477,7 +477,7 @@ app.get('/api/consulta', async (req, res) => {
     const cacheKey = `consulta:${cnpj}`;
     if (!skipCache) {
       const cached = cacheGet(cacheKey);
-      if (cached) return res.json({ ok: true, data: cached });
+      if (cached) return res.json({ ok: true, data: cached, missing: false });
     }
 
     await authSheets();
@@ -491,8 +491,22 @@ app.get('/api/consulta', async (req, res) => {
     if (!base) base = cnpjRows.find(r => digits(getVal(r,'CNPJ_UG')) === cnpj);
     if (!base) {
       console.warn(`[consulta] CNPJ ${cnpj} não encontrado em CNPJ_ENTE_UG`);
-      return res.status(404).json({ error: 'CNPJ não encontrado em CNPJ_ENTE_UG.' });
+
+      const out = {
+        UF: '', ENTE: '',
+        CNPJ_ENTE: cnpj,   // preenche o que o usuário digitou
+        UG: '', CNPJ_UG: '',
+        EMAIL_ENTE: '', EMAIL_UG: '',
+        CRP_DATA_VALIDADE_DMY: '', CRP_DATA_VALIDADE_ISO: '',
+        CRP_DECISAO_JUDICIAL: '',
+        ESFERA_SUGERIDA: '',
+        __snapshot: {}
+      };
+
+      // 200 OK com marcador de “missing”, sem cache
+      return res.json({ ok: true, data: out, missing: true });
     }
+
 
     const UF          = norm(getVal(base, 'UF'));
     const ENTE        = norm(getVal(base, 'ENTE'));
@@ -549,7 +563,7 @@ app.get('/api/consulta', async (req, res) => {
 
     // grava em cache apenas quando NÃO for consulta com nocache
     if (!skipCache) cacheSet(cacheKey, out);
-    return res.json({ ok:true, data: out });
+    return res.json({ ok:true, data: out, missing: false });
   } catch (err) {
     console.error('❌ /api/consulta:', err);
     const msg = String(err?.message || '').toLowerCase();

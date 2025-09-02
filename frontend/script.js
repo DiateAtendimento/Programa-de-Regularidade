@@ -1,12 +1,9 @@
 // script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas, validação e download automático do PDF
 (() => {
   /* ========= Config API ========= */
-  const API_BASE = (() => {
-    const h = location.hostname;
-    if (h.endsWith('netlify.app')) return 'https://programa-de-regularidade.onrender.com';
-    if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:3000';
-    return '';
-  })();
+  const API_BASE = 'https://programa-de-regularidade.onrender.com';
+  // Se rodar local, descomente a linha abaixo:
+  // const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3000' : API_BASE;
 
   // ===== Robustez de rede =====
   const FETCH_TIMEOUT_MS = 20000; // 20s
@@ -318,7 +315,6 @@
     modalConfirmAdd.show();
   }
 
-
   /* ========= Stepper / Navegação ========= */
   let step = 0;   // 0..8
   let cnpjOK = false;
@@ -545,11 +541,6 @@
     return true;
   }
 
-  const stepsContainer = document.getElementById('stepper');
-  if (stepsContainer) {
-    // segurança para não quebrar se faltar algum botão/elemento
-  }
-
   // (sem redeclarar) — apenas adiciona o listener usando o btnNext já definido acima
   btnNext?.addEventListener('click', async () => {
     if (step === 0 && !cnpjOK) {
@@ -565,7 +556,6 @@
 
     showStep(step + 1);
   });
-
 
   /* ========= Esfera ========= */
   $$('.esf-only-one').forEach(chk=>{
@@ -654,6 +644,10 @@
       }
 
       const data = r.data;
+
+      // >>> correção: manter a flag de "não encontrado" vinda do backend
+      cnpjMissing = !!r.missing;
+
       snapshotBase = {
         UF: data.UF, ENTE: data.ENTE, CNPJ_ENTE: data.CNPJ_ENTE, UG: data.UG, CNPJ_UG: data.CNPJ_UG,
         NOME_REP_ENTE: data.__snapshot?.NOME_REP_ENTE || '',
@@ -691,7 +685,6 @@
       autoselectEsferaByEnte(data.ENTE);
 
       cnpjOK = true;
-      cnpjMissing = false;
       editedFields.clear();
       showStep(1);
     }catch (err) {
@@ -911,7 +904,6 @@
   /* ========= AÇÃO: Gerar Formulário (download automático do PDF) ========= */
   let gerarBusy = false;
 
-  // (sem redeclarar) — usa o btnGerar já definido acima
   btnGerar?.addEventListener('click', async () => {
     if (gerarBusy) return;
 
@@ -961,7 +953,6 @@
       document.getElementById('btnPesquisar')?.click();
     }
   });
-
 
   form?.addEventListener('submit', async (e)=>{
     e.preventDefault();
