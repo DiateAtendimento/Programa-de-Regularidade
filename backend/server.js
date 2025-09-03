@@ -219,6 +219,22 @@ async function getOrCreateSheet(title, headerValues){
   return s;
 }
 
+// ➕ PATCH 1 — helper para garantir colunas obrigatórias no header da planilha
+async function ensureSheetHasColumns(sheet, requiredHeaders = []) {
+  await sheet.loadHeaderRow();
+  const current = sheet.headerValues || [];
+  const have = new Set(current.map(s => String(s ?? '').trim().toUpperCase()));
+  const missing = requiredHeaders.filter(h => !have.has(String(h).toUpperCase()));
+  if (!missing.length) return false;
+
+  const next = [...current, ...missing];
+  await withLimiter(`${sheet.title}:setHeaderRow`, () =>
+    withTimeoutAndRetry(`${sheet.title}:setHeaderRow`, () => sheet.setHeaderRow(next))
+  );
+  return true;
+}
+
+
 /* Helpers p/ headers duplicados */
 async function getRowsViaCells(sheet) {
   await sheet.loadHeaderRow();
@@ -1073,6 +1089,8 @@ app.post('/api/gerar-termo', async (req,res)=>{
     ]);
 
     await sTermos.loadHeaderRow();
+    // ➕ NOVO: garante que a coluna de idempotência exista (evita duplicados)
+    await ensureSheetHasColumns(sTermos, ['IDEMP_KEY']);
 
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
     const idemBody   = String(p.IDEMP_KEY || '').trim();
@@ -1217,208 +1235,205 @@ function inlineFont(relPath) {
   }
 }
 
+// ➕ PATCH 3 — wrapper externo evita que qualquer rejeição derrube o processo
 app.post('/api/termo-pdf', async (req, res) => {
-  await withPdfLimiter(async () => {
-    // Contexto único (sem incognito) + retry defensivo para TargetCloseError
-    let page;
-    let browser;
-    let triedRestart = false;
-    try {
-      const p = req.body || {};
-
-      const compAgg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
-      const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6']
-        .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
-
-      const qs = new URLSearchParams({
-        uf: p.UF || '',
-        ente: p.ENTE || '',
-        cnpj_ente: p.CNPJ_ENTE || '',
-        email_ente: p.EMAIL_ENTE || '',
-        ug: p.UG || '',
-        cnpj_ug: p.CNPJ_UG || '',
-        email_ug: p.EMAIL_UG || '',
-        esfera: p.ESFERA || '',
-        nome_rep_ente: p.NOME_REP_ENTE || '',
-        cpf_rep_ente: p.CPF_REP_ENTE || '',
-        cargo_rep_ente: p.CARGO_REP_ENTE || '',
-        email_rep_ente: p.EMAIL_REP_ENTE || '',
-        nome_rep_ug: p.NOME_REP_UG || '',
-        cpf_rep_ug: p.CPF_REP_UG || '',
-        cargo_rep_ug: p.CARGO_REP_UG || '',
-        email_rep_ug: p.EMAIL_REP_UG || '',
-        venc_ult_crp: p.DATA_VENCIMENTO_ULTIMO_CRP || '',
-        tipo_emissao_crp: p.TIPO_EMISSAO_ULTIMO_CRP || '',
-        celebracao: p.CELEBRACAO_TERMO_PARCELA_DEBITOS || '',
-        regularizacao: p.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '',
-        deficit: p.DEFICIT_ATUARIAL || '',
-        criterios_estrut: p.CRITERIOS_ESTRUT_ESTABELECIDOS || '',
-        manutencao_normas: p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '',
-        compromisso: p.COMPROMISSO_FIRMADO_ADESAO || '',
-        providencias: p.PROVIDENCIA_NECESS_ADESAO || '',
-        condicao_vigencia: p.CONDICAO_VIGENCIA || '',
-        data_termo: p.DATA_TERMO_GERADO || '',
-        auto: '1'
-      });
-
-      (Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [])
-        .forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
-      compCodes.forEach(code => qs.append('comp', code));
-
-      // PUBLIC_URL robusto por request (pega host e protocolo corretos atrás do proxy)
-      const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http');
-      const host  = req.get('host');
-      const FALLBACK_BASE = `${proto}://${host}`;
-      const PUBLIC_URL = (process.env.PUBLIC_URL || FALLBACK_BASE).replace(/\/+$/, '');
-      const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
-
-      // ==== abre o Chrome e cria a página com retry uma vez se necessário
+  try {
+    await withPdfLimiter(async () => {
+      // === A partir daqui, mantenha exatamente o SEU conteúdo atual da rota ===
+      // Contexto único (sem incognito) + retry defensivo para TargetCloseError
+      let page;
+      let browser;
+      let triedRestart = false;
       try {
-        browser = await getBrowser();
-        page = await browser.newPage();
-      } catch (e) {
-        const msg = String(e?.message || '');
-        if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
-          triedRestart = true;
-          try { await browser?.close().catch(()=>{}); } catch(_){}
-          _browserPromise = null;
+        const p = req.body || {};
+
+        const compAgg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
+        const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6']
+          .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
+
+        const qs = new URLSearchParams({
+          uf: p.UF || '',
+          ente: p.ENTE || '',
+          cnpj_ente: p.CNPJ_ENTE || '',
+          email_ente: p.EMAIL_ENTE || '',
+          ug: p.UG || '',
+          cnpj_ug: p.CNPJ_UG || '',
+          email_ug: p.EMAIL_UG || '',
+          esfera: p.ESFERA || '',
+          nome_rep_ente: p.NOME_REP_ENTE || '',
+          cpf_rep_ente: p.CPF_REP_ENTE || '',
+          cargo_rep_ente: p.CARGO_REP_ENTE || '',
+          email_rep_ente: p.EMAIL_REP_ENTE || '',
+          nome_rep_ug: p.NOME_REP_UG || '',
+          cpf_rep_ug: p.CPF_REP_UG || '',
+          cargo_rep_ug: p.CARGO_REP_UG || '',
+          email_rep_ug: p.EMAIL_REP_UG || '',
+          venc_ult_crp: p.DATA_VENCIMENTO_ULTIMO_CRP || '',
+          tipo_emissao_crp: p.TIPO_EMISSAO_ULTIMO_CRP || '',
+          celebracao: p.CELEBRACAO_TERMO_PARCELA_DEBITOS || '',
+          regularizacao: p.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '',
+          deficit: p.DEFICIT_ATUARIAL || '',
+          criterios_estrut: p.CRITERIOS_ESTRUT_ESTABELECIDOS || '',
+          manutencao_normas: p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '',
+          compromisso: p.COMPROMISSO_FIRMADO_ADESAO || '',
+          providencias: p.PROVIDENCIA_NECESS_ADESAO || '',
+          condicao_vigencia: p.CONDICAO_VIGENCIA || '',
+          data_termo: p.DATA_TERMO_GERADO || '',
+          auto: '1'
+        });
+
+        (Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [])
+          .forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
+        compCodes.forEach(code => qs.append('comp', code));
+
+        const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http');
+        const host  = req.get('host');
+        const FALLBACK_BASE = `${proto}://${host}`;
+        const PUBLIC_URL = (process.env.PUBLIC_URL || FALLBACK_BASE).replace(/\/+$/, '');
+        const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
+
+        try {
           browser = await getBrowser();
           page = await browser.newPage();
-        } else {
-          throw e;
-        }
-      }
-
-      await page.setCacheEnabled(false);
-
-      await page.setRequestInterception(true);
-      page.on('request', (reqObj) => {
-        const u = reqObj.url();
-        const t = reqObj.resourceType();
-
-        if (/fonts\.cdnfonts\.com|fonts\.gstatic\.com/i.test(u)) {
-          if (t === 'stylesheet') {
-            return reqObj.respond({ status: 200, contentType: 'text/css', body: '/* font css blocked in pdf */' });
+        } catch (e) {
+          const msg = String(e?.message || '');
+          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
+            triedRestart = true;
+            try { await browser?.close().catch(()=>{}); } catch(_){}
+            _browserPromise = null;
+            browser = await getBrowser();
+            page = await browser.newPage();
+          } else {
+            throw e;
           }
-          return reqObj.abort();
         }
-        if (/googletagmanager|google-analytics|doubleclick|hotjar|clarity|sentry|facebook|meta\./i.test(u)) {
-          return reqObj.abort();
-        }
-        return reqObj.continue();
-      });
 
-      page.setDefaultNavigationTimeout(90_000);
-      page.setDefaultTimeout(90_000);
-      if (DEBUG_PDF) {
-        page.on('console', m => console.log('🖥', m.type().toUpperCase(), m.text()));
-        page.on('requestfailed', r => console.log('⚠️ FAIL', r.url(), r.failure()?.errorText));
-      }
-
-      await page.emulateMediaType('screen');
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-      await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
-
-      function findFont(candidates){
-        for (const rel of candidates){
-          const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
-          if (fs.existsSync(abs)) return inlineFont(rel);
-        }
-        return null;
-      }
-
-      const rawline400 = findFont([
-        'fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf',
-        'fonts/rawline-400.woff2','fonts/rawline-400.woff','fonts/rawline-400.ttf'
-      ]);
-
-      const rawline700 = findFont([
-        'fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf',
-        'fonts/rawline-700.woff2','fonts/rawline-700.woff','fonts/rawline-700.ttf'
-      ]);
-
-      if (LOG_LEVEL === 'debug') {
-        console.log('[PDF] Rawline 400:', !!rawline400 ? 'OK' : 'NÃO ENCONTRADO');
-        console.log('[PDF] Rawline 700:', !!rawline700 ? 'OK' : 'NÃO ENCONTRADO');
-      }
-
-      let fontCSS = '';
-      if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
-      if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
-      fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
-
-      await page.addStyleTag({
-        content: `
-          ${fontCSS}
-          html, body, #pdf-root { background:#ffffff !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .page-head .logos-wrap { display: none !important; }
-          .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
-          .term-title { margin-top: 2mm !important; }
-        `
-      });
-
-      await page.evaluate(() => {
-        document.body.classList.add('pdf-export');
-        const root = document.getElementById('pdf-root');
-        if (root) root.classList.add('pdf-export');
-      });
-
-      const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
-      const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
-
-      const headerTemplate = `
-        <style>
-          .pdf-header {
-            font-family: Inter, Arial, sans-serif;
-            width: 100%;
-            padding: 6mm 12mm 4mm;
+        await page.setCacheEnabled(false);
+        await page.setRequestInterception(true);
+        page.on('request', (reqObj) => {
+          const u = reqObj.url();
+          const t = reqObj.resourceType();
+          if (/fonts\.cdnfonts\.com|fonts\.gstatic\.com/i.test(u)) {
+            if (t === 'stylesheet') {
+              return reqObj.respond({ status: 200, contentType: 'text/css', body: '/* font css blocked in pdf */' });
+            }
+            return reqObj.abort();
           }
-          .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
-          .pdf-header .logo-sec svg { height: 19mm; width:auto; }
-          .pdf-header .logo-mps svg { height: 20mm; width:auto; }
-          .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
-          .date, .title, .url, .pageNumber, .totalPages { display:none; }
-        </style>
-        <div class="pdf-header">
-          <div class="logos">
-            <div class="logo-sec">${svgSec}</div>
-            <div class="logo-mps">${svgMps}</div>
+          if (/googletagmanager|google-analytics|doubleclick|hotjar|clarity|sentry|facebook|meta\./i.test(u)) {
+            return reqObj.abort();
+          }
+          return reqObj.continue();
+        });
+
+        page.setDefaultNavigationTimeout(90_000);
+        page.setDefaultTimeout(90_000);
+
+        await page.emulateMediaType('screen');
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
+
+        function findFont(candidates){
+          for (const rel of candidates){
+            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
+            if (fs.existsSync(abs)) return inlineFont(rel);
+          }
+          return null;
+        }
+
+        const rawline400 = findFont([
+          'fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf',
+          'fonts/rawline-400.woff2','fonts/rawline-400.woff','fonts/rawline-400.ttf'
+        ]);
+
+        const rawline700 = findFont([
+          'fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf',
+          'fonts/rawline-700.woff2','fonts/rawline-700.woff','fonts/rawline-700.ttf'
+        ]);
+
+        let fontCSS = '';
+        if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
+        if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
+        fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
+
+        await page.addStyleTag({
+          content: `
+            ${fontCSS}
+            html, body, #pdf-root { background:#ffffff !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .page-head .logos-wrap { display: none !important; }
+            .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
+            .term-title { margin-top: 2mm !important; }
+          `
+        });
+
+        await page.evaluate(() => {
+          document.body.classList.add('pdf-export');
+          const root = document.getElementById('pdf-root');
+          if (root) root.classList.add('pdf-export');
+        });
+
+        const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
+        const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
+
+        const headerTemplate = `
+          <style>
+            .pdf-header {
+              font-family: Inter, Arial, sans-serif;
+              width: 100%;
+              padding: 6mm 12mm 4mm;
+            }
+            .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
+            .pdf-header .logo-sec svg { height: 19mm; width:auto; }
+            .pdf-header .logo-mps svg { height: 20mm; width:auto; }
+            .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
+            .date, .title, .url, .pageNumber, .totalPages { display:none; }
+          </style>
+          <div class="pdf-header">
+            <div class="logos">
+              <div class="logo-sec">${svgSec}</div>
+              <div class="logo-mps">${svgMps}</div>
+            </div>
+            <div class="rule"></div>
           </div>
-          <div class="rule"></div>
-        </div>
-      `;
+        `;
 
-      const footerTemplate = `<div></div>`;
+        const footerTemplate = `<div></div>`;
 
-      const pdf = await page.pdf({
-        printBackground: true,
-        preferCSSPageSize: true,
-        displayHeaderFooter: true,
-        headerTemplate,
-        footerTemplate,
-        margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
-      });
+        const pdf = await page.pdf({
+          printBackground: true,
+          preferCSSPageSize: true,
+          displayHeaderFooter: true,
+          headerTemplate,
+          footerTemplate,
+          margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
+        });
 
-      await page.close();
+        await page.close();
 
-      const filenameSafe = (p.ENTE || 'termo-adesao')
-        .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-        .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'')
-        .toLowerCase();
+        const filenameSafe = (p.ENTE || 'termo-adesao')
+          .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+          .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'')
+          .toLowerCase();
 
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="termo-${filenameSafe}.pdf"`);
-      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
-      res.setHeader('Cache-Control', 'no-store, max-age=0');
-      res.send(pdf);
-    } catch (e) {
-      console.error('❌ /api/termo-pdf:', e);
-      try { if (page) await page.close(); } catch(_) {}
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="termo-${filenameSafe}.pdf"`);
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+        res.setHeader('Cache-Control', 'no-store, max-age=0');
+        res.send(pdf);
+      } catch (e) {
+        console.error('❌ /api/termo-pdf:', e);
+        try { if (page) await page.close(); } catch(_) {}
+        res.status(500).json({ error: 'Falha ao gerar PDF' });
+      }
+    });
+  } catch (e) {
+    console.error('❌ (outer) /api/termo-pdf:', e);
+    if (!res.headersSent) {
       res.status(500).json({ error: 'Falha ao gerar PDF' });
     }
-  });
+  }
 });
+
 
 /* ───────────── Start ───────────── */
 const PORT = process.env.PORT || 3000;
