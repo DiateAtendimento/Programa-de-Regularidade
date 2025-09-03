@@ -1,5 +1,3 @@
-//server.js
-
 // server.js — API RPPS (multi-etapas)
 // Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP (colunas fixas B/F/G = 1/5/6),
 // grava em Termos_registrados e registra alterações em Reg_alteracao_dados_ente_ug (auto-cria se faltar)
@@ -182,6 +180,8 @@ let _lastLoadInfo = 0;
 const norm   = v => (v ?? '').toString().trim();
 const low    = v => norm(v).toLowerCase();
 const digits = v => norm(v).replace(/\D+/g,'');
+// >>> NOVO: normalizador consistente para CNPJ (sempre 14 dígitos, preserva zeros à esquerda)
+const cnpj14 = v => digits(v).padStart(14, '0').slice(-14);
 
 function nowBR(){
   const tz = 'America/Sao_Paulo';
@@ -525,7 +525,8 @@ app.get('/api/healthz', (_req,res)=> {
 /** GET /api/consulta?cnpj=NNNNNNNNNNNNNN[&nocache=1] */
 app.get('/api/consulta', async (req, res) => {
   try {
-    const cnpj = digits(req.query.cnpj || '');
+    // >>> usa normalização de 14 dígitos para preservar zeros à esquerda
+    const cnpj = cnpj14(req.query.cnpj || '');
     if (cnpj.length !== 14) return res.status(400).json({ error: 'CNPJ inválido.' });
 
     const skipCache = Object.prototype.hasOwnProperty.call(req.query, 'nocache');
@@ -543,8 +544,9 @@ app.get('/api/consulta', async (req, res) => {
     const sCrp  = await getSheetStrict('CRP');
 
     const cnpjRows = await safeGetRows(sCnpj, 'CNPJ:getRows');
-    let base = cnpjRows.find(r => digits(getVal(r,'CNPJ_ENTE')) === cnpj);
-    if (!base) base = cnpjRows.find(r => digits(getVal(r,'CNPJ_UG')) === cnpj);
+    // >>> comparação por CNPJ normalizado (evita erro com zeros à esquerda)
+    let base = cnpjRows.find(r => cnpj14(getVal(r,'CNPJ_ENTE')) === cnpj);
+    if (!base) base = cnpjRows.find(r => cnpj14(getVal(r,'CNPJ_UG')) === cnpj);
     if (!base) {
       console.warn(`[consulta] CNPJ ${cnpj} não encontrado em CNPJ_ENTE_UG`);
 
@@ -564,8 +566,8 @@ app.get('/api/consulta', async (req, res) => {
     const UF          = norm(getVal(base, 'UF'));
     const ENTE        = norm(getVal(base, 'ENTE'));
     const UG          = norm(getVal(base, 'UG'));
-    const CNPJ_ENTE   = digits(getVal(base, 'CNPJ_ENTE'));
-    const CNPJ_UG     = digits(getVal(base, 'CNPJ_UG'));
+    const CNPJ_ENTE   = cnpj14(getVal(base, 'CNPJ_ENTE'));
+    const CNPJ_UG     = cnpj14(getVal(base, 'CNPJ_UG'));
     const EMAIL_ENTE  = norm(getVal(base, 'EMAIL_ENTE'));
     const EMAIL_UG    = norm(getVal(base, 'EMAIL_UG'));
 
@@ -577,7 +579,8 @@ app.get('/api/consulta', async (req, res) => {
       reps.find(r => low(getVal(r,'UG')||'') !== low(UG)) || reps[0] || {};
 
     const crpAll = await getCRPAllCached(sCrp, skipCache);
-    const crpCandidates = crpAll.filter(r => digits(r.CNPJ_ENTE) === CNPJ_ENTE);
+    // >>> CRP também compara por CNPJ normalizado
+    const crpCandidates = crpAll.filter(r => cnpj14(r.CNPJ_ENTE) === CNPJ_ENTE);
     let crp = {};
     if (crpCandidates.length) {
       crpCandidates.sort((a,b) => (parseDMYorYMD(b.DATA_VALIDADE_DMY) - parseDMYorYMD(a.DATA_VALIDADE_DMY)));
@@ -662,19 +665,20 @@ async function upsertEmailsInBase(p){
     'CNPJ:updateEmails:loadCells'
   );
 
-  const ce = digits(p.CNPJ_ENTE);
-  const cu = digits(p.CNPJ_UG);
+  // >>> normaliza CNPJ para 14 dígitos
+  const ce = cnpj14(p.CNPJ_ENTE);
+  const cu = cnpj14(p.CNPJ_UG);
   let changed = 0;
 
   for (let r = 1; r < endRow; r++) {
     let match = false;
 
     if (col.cnpj_ente >= 0) {
-      const v = digits(sCnpj.getCell(r, col.cnpj_ente)?.value || '');
+      const v = cnpj14(sCnpj.getCell(r, col.cnpj_ente)?.value || '');
       if (v && ce && v === ce) match = true;
     }
     if (!match && col.cnpj_ug >= 0) {
-      const v = digits(sCnpj.getCell(r, col.cnpj_ug)?.value || '');
+      const v = cnpj14(sCnpj.getCell(r, col.cnpj_ug)?.value || '');
       if (v && cu && v === cu) match = true;
     }
     if (!match) continue;
@@ -865,8 +869,9 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
     email_ug:   idxOf('EMAIL_UG'),
   };
 
-  const ce = digits(CNPJ_ENTE);
-  const cu = digits(CNPJ_UG);
+  // >>> normaliza para comparação e gravação
+  const ce = cnpj14(CNPJ_ENTE);
+  const cu = cnpj14(CNPJ_UG);
 
   const endRow = s.rowCount || 2000;
   const endCol = headers.length || s.columnCount || 26;
@@ -881,11 +886,11 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
   for (let r = 1; r < endRow; r++) {
     let hit = false;
     if (col.cnpj_ente >= 0) {
-      const v = digits(s.getCell(r, col.cnpj_ente)?.value || '');
+      const v = cnpj14(s.getCell(r, col.cnpj_ente)?.value || '');
       if (v && ce && v === ce) hit = true;
     }
     if (!hit && col.cnpj_ug >= 0) {
-      const v = digits(s.getCell(r, col.cnpj_ug)?.value || '');
+      const v = cnpj14(s.getCell(r, col.cnpj_ug)?.value || '');
       if (v && cu && v === cu) hit = true;
     }
     if (hit) { foundRow = r; break; }
@@ -1155,7 +1160,8 @@ function inlineFont(relPath) {
 
 app.post('/api/termo-pdf', async (req, res) => {
   await withPdfLimiter(async () => {
-    let page;
+    // >>> NOVO: contexto isolado por job (libera memória e evita 502 intermitente)
+    let page, context;
     try {
       const p = req.body || {};
 
@@ -1206,7 +1212,11 @@ app.post('/api/termo-pdf', async (req, res) => {
       const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
 
       const browser = await getBrowser();
-      page = await browser.newPage();
+
+      // >>> NOVO: cria contexto incógnito e página sem cache
+      context = await browser.createIncognitoBrowserContext();
+      page = await context.newPage();
+      await page.setCacheEnabled(false);
 
       await page.setRequestInterception(true);
       page.on('request', (reqObj) => {
@@ -1314,6 +1324,7 @@ app.post('/api/termo-pdf', async (req, res) => {
       });
 
       await page.close();
+      await context.close(); // >>> NOVO: libera tudo
 
       const filenameSafe = (p.ENTE || 'termo-adesao')
         .normalize('NFD').replace(/\p{Diacritic}/gu,'')
@@ -1328,6 +1339,7 @@ app.post('/api/termo-pdf', async (req, res) => {
     } catch (e) {
       console.error('❌ /api/termo-pdf:', e);
       try { if (page) await page.close(); } catch(_) {}
+      try { if (context) await context.close(); } catch(_) {}
       res.status(500).json({ error: 'Falha ao gerar PDF' });
     }
   });

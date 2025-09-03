@@ -334,6 +334,15 @@
     selectors.forEach(sel => paintLabelForInput(document.querySelector(sel), invalid));
   }
 
+  // >>> NOVO: limpa validação residual ao entrar numa etapa (corrige "passo 4 todo vermelho")
+  function clearValidationIn(stepNumber){
+    const sec = [...document.querySelectorAll('#regularidadeForm [data-step]')]
+      .find(s => Number(s.dataset.step) === stepNumber);
+    if (!sec) return;
+    sec.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    sec.querySelectorAll('label.invalid').forEach(el => el.classList.remove('invalid'));
+  }
+
   // Modal de confirmação (genérico para CNPJ/CPF)
   const modalConfirmAdd = new bootstrap.Modal($('#modalConfirmAdd'));
   const elConfirmTitle  = $('#modalConfirmAddTitle');
@@ -435,6 +444,10 @@
 
     updateNavButtons();
     updateFooterAlign();
+
+    // >>> NOVO: zera avisos/cores da etapa atual (evita "passo 4 todo vermelho" ao entrar)
+    clearValidationIn(step);
+
     saveState();
   }
 
