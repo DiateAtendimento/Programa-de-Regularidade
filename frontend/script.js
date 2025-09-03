@@ -161,6 +161,7 @@
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
   const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
   const modalGerandoPdf = new bootstrap.Modal($('#modalGerandoPdf'), { backdrop:'static', keyboard:false });
+  const btnGerar = document.getElementById('btnGerarForm');
 
   /* ========= Persistência (etapa + campos) ========= */
   const STORAGE_KEY = 'rpps-form-v1';
@@ -217,7 +218,6 @@
     } catch { return null; }
   }
 
-  // --- (restante do arquivo permanece igual até o buildPayload) ---
 
   // ======== payload ========
   function buildPayload(){
