@@ -1,6 +1,7 @@
-// server.js — API RPPS (multi-etapas)
+// server.js — API RPPS (multi-etapas) c/ idempotência em /api/gerar-termo
 // Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP (colunas fixas B/F/G = 1/5/6),
-// grava em Termos_registrados e registra alterações em Reg_alteracao_dados_ente_ug (auto-cria se faltar)
+// grava em Termos_registrados (com coluna IDEMP_KEY para idempotência)
+// e registra alterações em Reg_alteracao_dados_ente_ug (auto-cria se faltar)
 // Também dá suporte a “upsert” de representantes (CPF não encontrado) e de base CNPJ (CNPJ não encontrado)
 
 require('dotenv').config();
@@ -15,6 +16,7 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const http = require('http');
 const https = require('https');
 const puppeteer = require('puppeteer');
+const crypto = require('crypto');
 
 const app = express();
 
@@ -76,7 +78,7 @@ const corsOptionsDelegate = (req, cb) => {
   cb(null, {
     origin: ok ? (originIn || true) : false,
     methods: ['GET','POST','OPTIONS'],
-    allowedHeaders: reqHdrs || 'Content-Type,Authorization,Cache-Control',
+    allowedHeaders: reqHdrs || 'Content-Type,Authorization,Cache-Control,X-Idempotency-Key',
     exposedHeaders: ['Content-Disposition'],
     credentials: false,
     optionsSuccessStatus: 204,
@@ -936,6 +938,46 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
 
 /* ───────────── Endpoints de escrita ───────────── */
 
+/* ===== util de idempotência ===== */
+function makeIdemKeyFromPayload(p) {
+  // chaves principais que definem "mesmo termo"
+  const keyObj = {
+    UF: norm(p.UF),
+    ENTE: norm(p.ENTE),
+    CNPJ_ENTE: cnpj14(p.CNPJ_ENTE),
+    UG: norm(p.UG),
+    CNPJ_UG: cnpj14(p.CNPJ_UG),
+    CPF_REP_ENTE: digits(p.CPF_REP_ENTE),
+    CPF_REP_UG: digits(p.CPF_REP_UG),
+    DATA_VENCIMENTO_ULTIMO_CRP: norm(p.DATA_VENCIMENTO_ULTIMO_CRP),
+    COMP: norm(p.COMPROMISSO_FIRMADO_ADESAO || ''),
+    PROVID: norm(p.PROVIDENCIA_NECESS_ADESAO || ''),
+    TS_DIA: String(p.DATA_TERMO_GERADO || ''),   // dia do termo
+  };
+  const raw = JSON.stringify(keyObj);
+  return 'fp_' + crypto.createHash('sha256').update(raw).digest('hex').slice(0, 24);
+}
+
+async function findTermoByIdemKey(sTermos, idemKey) {
+  await sTermos.loadHeaderRow();
+  const headers = sTermos.headerValues || [];
+  const idx = headers.findIndex(h => String(h).trim().toUpperCase() === 'IDEMP_KEY');
+  if (idx < 0) return null;
+
+  const endRow = sTermos.rowCount || 2000;
+  await safeLoadCells(
+    sTermos,
+    { startRowIndex: 1, startColumnIndex: idx, endRowIndex: endRow, endColumnIndex: idx + 1 },
+    'Termos:scanIDEMP'
+  );
+
+  for (let r = 1; r < endRow; r++) {
+    const v = String(sTermos.getCell(r, idx)?.value || '').trim();
+    if (v && v === idemKey) return r;
+  }
+  return null;
+}
+
 app.post('/api/upsert-cnpj', async (req,res)=>{
   try{
     await authSheets();
@@ -968,7 +1010,7 @@ app.post('/api/upsert-rep', async (req,res)=>{
   }
 });
 
-/** POST /api/gerar-termo */
+/** POST /api/gerar-termo  — AGORA IDEMPOTENTE */
 app.post('/api/gerar-termo', async (req,res)=>{
   try{
     const p = req.body || {};
@@ -999,8 +1041,23 @@ app.post('/api/gerar-termo', async (req,res)=>{
       'COMPROMISSO_FIRMADO_ADESAO',
       'PROVIDENCIA_NECESS_ADESAO',
       'CONDICAO_VIGENCIA',
-      'MES','DATA_TERMO_GERADO','HORA_TERMO_GERADO','ANO_TERMO_GERADO'
+      'MES','DATA_TERMO_GERADO','HORA_TERMO_GERADO','ANO_TERMO_GERADO',
+      'IDEMP_KEY' // <<< nova coluna p/ idempotência
     ]);
+
+    // garante coluna IDEMP_KEY (se planilha antiga) — só em memória: se não existir, addRow já cria
+    await sTermos.loadHeaderRow();
+
+    // resolve idemKey
+    const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
+    const idemBody   = String(p.IDEMP_KEY || '').trim();
+    const idemKey    = idemHeader || idemBody || makeIdemKeyFromPayload(p);
+
+    // Se já existir linha com esse IDEMP_KEY, responde OK e sai (idempotência)
+    const existingRowIdx = await findTermoByIdemKey(sTermos, idemKey);
+    if (existingRowIdx !== null) {
+      return res.json({ ok: true, dedup: true });
+    }
 
     const { DATA, HORA, ANO, MES } = nowBR();
     const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
@@ -1026,7 +1083,8 @@ app.post('/api/gerar-termo', async (req,res)=>{
       COMPROMISSO_FIRMADO_ADESAO: norm(p.COMPROMISSO_FIRMADO_ADESAO),
       PROVIDENCIA_NECESS_ADESAO: norm(p.PROVIDENCIA_NECESS_ADESAO),
       CONDICAO_VIGENCIA: norm(p.CONDICAO_VIGENCIA),
-      MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO
+      MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO,
+      IDEMP_KEY: idemKey
     }, 'Termos:add');
 
     // 🔐 Garante que os e-mails fiquem na base principal ANTES da resposta

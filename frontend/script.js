@@ -1,11 +1,41 @@
-// script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas, validação e download automático do PDF
+// script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas, validação,
+// download automático do PDF e SUBMIT resiliente com idempotência + espera do serviço.
+
 (() => {
   /* ========= Config API ========= */
   const API_BASE = 'https://programa-de-regularidade.onrender.com';
-  // Se rodar local, descomente a linha abaixo:
+  // Para rodar local em dev:
   // const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3000' : API_BASE;
 
-  // ===== Robustez de rede =====
+  /* ========= Idempotência (frontend) ========= */
+  const IDEM_STORE_KEY = 'rpps-idem-submit';
+
+  function hex(bytes) {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+  function newIdemKey() {
+    try {
+      const a = new Uint8Array(16);
+      crypto.getRandomValues(a);
+      return 'id_' + hex(a);
+    } catch {
+      return 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+  }
+  function rememberIdemKey(key) {
+    try { localStorage.setItem(IDEM_STORE_KEY, JSON.stringify({ key, ts: Date.now() })); } catch {}
+  }
+  function takeIdemKey() {
+    try {
+      const raw = localStorage.getItem(IDEM_STORE_KEY);
+      if (!raw) return null;
+      const { key } = JSON.parse(raw);
+      return key || null;
+    } catch { return null; }
+  }
+  function clearIdemKey() { try { localStorage.removeItem(IDEM_STORE_KEY); } catch {} }
+
+  /* ========= Robustez de rede ========= */
   const FETCH_TIMEOUT_MS = 20000; // 20s
   const FETCH_RETRIES = 2;        // tentativas além da primeira
 
@@ -53,11 +83,13 @@
       } catch (e) {
         clearTimeout(to);
         const m = String(e?.message || '').toLowerCase();
+        const isHttp = (e && typeof e.status === 'number');
         const retriable =
-          (e && typeof e.status === 'number' && (e.status === 429 || e.status >= 500)) ||
+          (isHttp && (e.status === 429 || e.status === 502 || e.status === 503 || e.status === 504 || e.status >= 500)) ||
           m.includes('etimedout') || m.includes('timeout:') || m.includes('abort') ||
           m.includes('econnreset') || m.includes('socket hang up') || m.includes('eai_again') ||
-          (!navigator.onLine);
+          (!navigator.onLine) ||
+          m.includes('failed') || m.includes('bad gateway');
 
         if (!retriable || attempt > (retries + 1)) throw e;
 
@@ -68,12 +100,25 @@
     }
   }
 
+  async function waitForService({ timeoutMs = 60_000, pollMs = 2000 } = {}) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const r = await fetchJSON(`${API_BASE}/api/health`, {}, { label: 'health', timeout: 4000, retries: 0 });
+        if (r && r.ok) return true;
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, pollMs));
+    }
+    return false;
+  }
+
   function friendlyErrorMessages(err, fallback='Falha ao comunicar com o servidor.') {
     const status = err?.status;
     const msg = String(err?.message || '').toLowerCase();
 
     if (!navigator.onLine) return ['Sem conexão com a internet. Verifique sua rede e tente novamente.'];
     if (status === 504 || msg.includes('timeout:')) return ['Tempo de resposta esgotado. Tente novamente em instantes.'];
+    if (status === 502 || msg.includes('bad gateway')) return ['Servidor reiniciando. Tente novamente em alguns segundos.'];
     if (status === 429 || msg.includes('rate limit')) return ['Muitas solicitações no momento. Aguarde alguns segundos e tente novamente.'];
     if (status === 404) return ['Registro não encontrado. Verifique os dados informados.'];
     if (status && status >= 500) return ['Instabilidade no servidor. Tente novamente em instantes.'];
@@ -94,13 +139,13 @@
   const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
   const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
-  // >>> NOVO: modal de geração de PDF
+  // >>> modal de geração de PDF
   const modalGerandoPdf = new bootstrap.Modal($('#modalGerandoPdf'), { backdrop:'static', keyboard:false });
 
   /* ========= Persistência (etapa + campos) ========= */
   const STORAGE_KEY = 'rpps-form-v1';
 
-  // >>> Helpers de estado (para controlar o modalWelcome e persistência)
+  // Helpers de estado
   function getState(){
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
     catch { return null; }
@@ -120,7 +165,6 @@
       values: {},
       seenWelcome: prev?.seenWelcome ?? false
     };
-    // salve só os campos que existem (evita lixo)
     [
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
       'CPF_REP_ENTE','NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
@@ -128,11 +172,9 @@
       'DATA_VENCIMENTO_ULTIMO_CRP'
     ].forEach(id => { const el = document.getElementById(id); if (el) data.values[id] = el.value; });
 
-    // radios/checkboxes relevantes
     data.values['em_adm'] = !!document.getElementById('em_adm')?.checked;
     data.values['em_jud'] = !!document.getElementById('em_jud')?.checked;
 
-    // listas marcadas (ids fixos)
     ['CRITERIOS_IRREGULARES[]','COMPROMISSOS[]','PROVIDENCIAS[]'].forEach(name => {
       data.values[name] = $$(`input[name="${name}"]:checked`).map(i => i.value);
     });
@@ -151,7 +193,6 @@
   // --- Controle robusto do modal de "carregando" + Lottie ---
   let loadingCount = 0;
 
-  // Destrava qualquer resíduo de modal/backdrop
   function killBackdropLocks() {
     try { modalLoadingSearch.hide(); } catch {}
     try { modalGerandoPdf.hide(); } catch {}
@@ -163,7 +204,6 @@
     }, 0);
   }
 
-  // >>> NOVO: fail-safe universal para travas de UI
   function unlockUI() {
     try { killBackdropLocks(); } catch {}
     document.body.classList.remove('modal-open');
@@ -184,35 +224,25 @@
     loadingCount = Math.max(0, loadingCount - 1);
     if (loadingCount === 0) {
       try { modalLoadingSearch.hide(); } catch {}
-      // limpa transição/backdrop teimosos do Bootstrap
       setTimeout(() => {
         const el = $('#modalLoadingSearch');
         el?.classList.remove('show');
         document.body.classList.remove('modal-open');
         $$('.modal-backdrop')?.forEach(b => b.remove());
-        // garante destruição do Lottie
         const inst = lotties['lottieLoadingSearch'];
         if (inst) { inst.destroy(); delete lotties['lottieLoadingSearch']; }
       }, 60);
     }
   }
+  function forceCloseLoading() { loadingCount = 0; stopLoading(); }
 
-  // helper para encerrar imediatamente (usaremos após sucesso/erro)
-  function forceCloseLoading() {
-    loadingCount = 0;
-    stopLoading();
-  }
-
-  // Destrói a animação quando o modal é fechado, evitando loop eterno em background
   $('#modalLoadingSearch')?.addEventListener('hidden.bs.modal', () => {
     const inst = lotties['lottieLoadingSearch'];
     if (inst) { inst.destroy(); delete lotties['lottieLoadingSearch']; }
-    // reforça limpeza
     killBackdropLocks();
   });
 
   function safeShowModal(modalInstance){
-    // antes de abrir qualquer modal, garanta que o "carregando" está fechado e sem backdrops órfãos
     forceCloseLoading();
     killBackdropLocks();
     try { modalInstance.show(); } catch {}
@@ -233,7 +263,6 @@
   $('#modalSucesso')?.addEventListener('shown.bs.modal', () => {
     mountLottie('lottieSuccess', 'animacao/confirm-success.json', { loop:false, autoplay:true });
   });
-  // >>> NOVO: Lottie da geração de PDF
   $('#modalGerandoPdf')?.addEventListener('shown.bs.modal', () => {
     mountLottie('lottieGerandoPdf', 'animacao/gerando-pdf.json', { loop:true, autoplay:true });
   });
@@ -268,19 +297,16 @@
   }
 
   /* ========= DOMContentLoaded / saída ========= */
-  // >>> ao carregar, garanta UI desbloqueada e mostre o modal de boas-vindas apenas 1x
   document.addEventListener('DOMContentLoaded', () => {
-    unlockUI(); // evita resíduo de navegação anterior
+    unlockUI();
     const st = getState();
     if (!st?.seenWelcome) {
       setTimeout(() => {
         try { modalWelcome.show(); } catch {}
-        markWelcomeSeen(); // marca como visto para não reabrir após F5
+        markWelcomeSeen();
       }, 150);
     }
   });
-
-  // Salva antes de sair
   window.addEventListener('beforeunload', saveState);
 
   /* ========= Máscaras ========= */
@@ -330,7 +356,6 @@
   const markInvalid = el => { el.classList.add('is-invalid'); el.classList.remove('is-valid'); };
   const neutral     = el => el.classList.remove('is-valid','is-invalid');
 
-  // Pinta/despinta label de checkbox/radio relacionado
   function paintLabelForInput(input, invalid){
     if (!input) return;
     const label = input.closest('.form-check')?.querySelector('label')
@@ -343,7 +368,6 @@
     selectors.forEach(sel => paintLabelForInput(document.querySelector(sel), invalid));
   }
 
-  // >>> NOVO: limpa validação residual ao entrar numa etapa (corrige "passo 4 todo vermelho")
   function clearValidationIn(stepNumber){
     const sec = [...document.querySelectorAll('#regularidadeForm [data-step]')]
       .find(s => Number(s.dataset.step) === stepNumber);
@@ -386,7 +410,6 @@
   const navFooter= $('#navFooter');
   const pesquisaRow = $('#pesquisaRow');
 
-  // âncora para recolocar o Próximo no rodapé (defensivo)
   const nextAnchor = document.createComment('next-button-anchor');
   if (navFooter && btnSubmit && navFooter.contains(btnSubmit)) {
     navFooter.insertBefore(nextAnchor, btnSubmit);
@@ -394,7 +417,6 @@
     navFooter.appendChild(nextAnchor);
   }
 
-  // wrapper col-auto para alinhar com o "Pesquisar" na etapa 0
   let inlineNextCol = null;
 
   function placeNextInline(inline){
@@ -439,7 +461,7 @@
   }
 
   function showStep(n){
-    unlockUI(); // <<< garante que nada da etapa anterior fique travando clique
+    unlockUI();
     step = Math.max(0, Math.min(8, n));
 
     sections.forEach(sec => {
@@ -455,13 +477,11 @@
     updateNavButtons();
     updateFooterAlign();
 
-    // >>> NOVO: zera avisos/cores da etapa atual (evita "passo 4 todo vermelho" ao entrar)
     clearValidationIn(step);
 
     saveState();
   }
 
-  // >>> se editar/apagar o campo de pesquisa no passo 0, bloqueia "Próximo"
   document.getElementById('CNPJ_ENTE_PESQ')?.addEventListener('input', () => {
     unlockUI();
     if (step === 0) {
@@ -471,7 +491,6 @@
     }
   });
 
-  // >>> NOVO: ao digitar nos documentos principais, destrave UI
   ;['CNPJ_ENTE','CNPJ_UG','CPF_REP_ENTE','CPF_REP_UG'].forEach(id=>{
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', unlockUI);
@@ -517,24 +536,20 @@
       return ok;
     };
 
-    // === Passos 1..3 campos de texto ===
     if (s<=3) {
       (reqAll[s]||[]).forEach(o => { if(!checkField(o.id,o.type)) msgs.push(o.label); });
       if (s===1) {
-        // 1.1 Esfera
         const items = $$('input[name="ESFERA_GOVERNO[]"]');
         const ok = items.some(i=>i.checked);
         items.forEach(i => paintLabelForInput(i, !ok));
         if(!ok) msgs.push('Esfera de Governo');
       }
       if (s===3) {
-        // 3.2 tipo de emissão
         const adm = $('#em_adm'), jud = $('#em_jud');
         const rOK = adm?.checked || jud?.checked;
         [adm,jud].forEach(i => paintLabelForInput(i, !rOK));
         if (!rOK) msgs.push('Tipo de emissão do último CRP (item 3.2)');
 
-        // 3.3 critérios
         const crits = $$('input[name="CRITERIOS_IRREGULARES[]"]');
         const cOK = crits.some(i=>i.checked);
         crits.forEach(i => paintLabelForInput(i, !cOK));
@@ -542,9 +557,7 @@
       }
     }
 
-    // === Passo 4: Finalidades ===
     if (s === 4) {
-      // 4.0 A ou B OBRIGATÓRIA
       const finA = $('#fin_parc')?.checked || false;
       const finB = $('#fin_reg')?.checked || false;
       paintGroupLabels(['#fin_parc', '#fin_reg'], !(finA || finB));
@@ -552,7 +565,6 @@
         msgs.push('Marque a Finalidade Inicial da Adesão: A (Parcelamento) ou B (Regularização para CRP).');
       }
 
-      // 4.1 e 4.2: detalhamentos – pelo menos um dos grupos precisa ter seleção
       const g41 = ['#parc60', '#parc300'];
       const g42 = ['#reg_sem_jud', '#reg_com_jud'];
       const ok41_any = g41.some(sel => $(sel)?.checked);
@@ -563,26 +575,22 @@
         msgs.push('Marque ao menos uma finalidade detalhada (4.1 ou 4.2).');
       }
 
-      // 4.3
       const g43 = ['#eq_implano', '#eq_prazos', '#eq_plano_alt'];
       const ok43 = g43.some(sel => $(sel)?.checked);
       paintGroupLabels(g43, !ok43);
       if (!ok43) msgs.push('Marque ao menos uma opção no item 4.3 (equacionamento do déficit atuarial).');
 
-      // 4.4
       const g44 = ['#org_ugu', '#org_outros'];
       const ok44 = g44.some(sel => $(sel)?.checked);
       paintGroupLabels(g44, !ok44);
       if (!ok44) msgs.push('Marque ao menos uma opção no item 4.4 (critérios estruturantes).');
 
-      // 4.5
       const g45 = ['#man_cert', '#man_melhoria', '#man_acomp'];
       const ok45 = g45.some(sel => $(sel)?.checked);
       paintGroupLabels(g45, !ok45);
       if (!ok45) msgs.push('Marque ao menos uma opção no item 4.5 (fase de manutenção da conformidade).');
     }
 
-    // === Passo 5: todos os compromissos precisam estar marcados ===
     if (s===5){
       const all = $$('.grp-comp');
       const checked = all.filter(i=>i.checked);
@@ -591,7 +599,6 @@
       if (!ok) msgs.push('No item 5, marque todas as declarações de compromisso.');
     }
 
-    // === Passo 6: uma providência ===
     if (s===6){
       const provs = $$('.grp-prov');
       const ok = provs.some(i=>i.checked);
@@ -599,7 +606,6 @@
       if (!ok) msgs.push('Marque ao menos uma providência (item 6).');
     }
 
-    // === Passo 7: declaração ===
     if (s===7){
       const decl = $('#DECL_CIENCIA');
       const ok = !!decl?.checked;
@@ -611,7 +617,6 @@
     return true;
   }
 
-  // (sem redeclarar) — apenas adiciona o listener usando o btnNext já definido acima
   btnNext?.addEventListener('click', async () => {
     if (step === 0 && !cnpjOK) {
       showAtencao(['Pesquise e selecione um CNPJ válido antes de prosseguir.']);
@@ -619,7 +624,6 @@
     }
     if (!validateStep(step)) return;
 
-    // Se estamos saindo da etapa 1 e o CNPJ não existia, grava a base agora
     if (step === 1 && cnpjMissing) {
       try { await upsertBaseIfMissing(); } catch (_) {}
     }
@@ -689,7 +693,6 @@
       return showAtencao(['Informe um CNPJ válido.']);
     }
 
-    // ⇢ Pressionar Shift / Ctrl / ⌘ força nocache=1 na 1ª tentativa
     const forceNoCache = !!(ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey));
 
     try{
@@ -701,7 +704,6 @@
         const url = `${API_BASE}/api/consulta?cnpj=${cnpj}${forceNoCache ? '&nocache=1' : ''}`;
         r = await fetchJSON(url, {}, { label: forceNoCache ? 'consulta-cnpj(nocache)' : 'consulta-cnpj' });
       } catch (err1) {
-        // 2ª tentativa automática com nocache=1 (se a 1ª não foi forçada)
         if (!forceNoCache) {
           r = await fetchJSON(
             `${API_BASE}/api/consulta?cnpj=${cnpj}&nocache=1`,
@@ -715,7 +717,6 @@
 
       const data = r.data;
 
-      // >>> correção: manter a flag de "não encontrado" vinda do backend
       cnpjMissing = !!r.missing;
 
       snapshotBase = {
@@ -780,7 +781,7 @@
     } finally {
       searching = false;
       stopLoading();
-      unlockUI(); // <<< reforço contra backdrop invisível
+      unlockUI();
       updateNavButtons();
       updateFooterAlign();
     }
@@ -805,12 +806,10 @@
         $('#EMAIL_REP_UG').value = data.EMAIL || '';
         $('#TEL_REP_UG').value   = data.TELEFONE || '';
       }
-      // fechamento imediato + limpeza defensiva
       forceCloseLoading();
       killBackdropLocks();
       unlockUI();
     }catch (err) {
-      // fecha qualquer loading antes de abrir outro modal
       forceCloseLoading();
       killBackdropLocks();
       unlockUI();
@@ -828,7 +827,6 @@
       }
     } finally {
       stopLoading();
-      // reforço final para nunca deixar backdrop/lock
       killBackdropLocks();
       unlockUI();
     }
@@ -860,7 +858,7 @@
     }
   }
 
-  // ======== Util: preencher carimbos de data/hora ========
+  // ======== carimbos ========
   function fillNowHiddenFields(){
     const now = new Date();
     $('#MES').value               = String(now.getMonth()+1).padStart(2,'0');
@@ -869,7 +867,7 @@
     $('#ANO_TERMO_GERADO').value  = String(now.getFullYear());
   }
 
-  // ======== Util: construir o payload ========
+  // ======== payload ========
   function buildPayload(){
     return {
       ENTE: $('#ENTE').value.trim(),
@@ -906,7 +904,9 @@
       HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO').value,
       ANO_TERMO_GERADO: $('#ANO_TERMO_GERADO').value,
       __snapshot_base: snapshotBase,
-      __user_changed_fields: Array.from(editedFields)
+      __user_changed_fields: Array.from(editedFields),
+      // também mandamos no corpo (servidor aceita header ou body)
+      IDEMP_KEY: takeIdemKey() || ''
     };
   }
 
@@ -957,7 +957,7 @@
 
     const res = await fetch(`${API_BASE}/api/termo-pdf?_ts=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }, // <<< sem Cache-Control
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       cache: 'no-store',
       credentials: 'same-origin'
@@ -983,13 +983,12 @@
     URL.revokeObjectURL(url);
   }
 
-  /* ========= AÇÃO: Gerar Formulário (download automático do PDF) ========= */
+  /* ========= AÇÃO: Gerar Formulário (download do PDF) ========= */
   let gerarBusy = false;
 
   btnGerar?.addEventListener('click', async () => {
     if (gerarBusy) return;
 
-    // valida 1..8 antes de gerar
     for (let s = 1; s <= 8; s++) { if (!validateStep(s)) return; }
 
     gerarBusy = true;
@@ -999,38 +998,36 @@
     const payload = buildPayload();
 
     try {
-      safeShowModal(modalGerandoPdf);    // <<< mostra animação + mensagem
-      await gerarBaixarPDF(payload);     // baixa automaticamente
+      safeShowModal(modalGerandoPdf);
+      await gerarBaixarPDF(payload);
       try { modalGerandoPdf.hide(); } catch {}
-      safeShowModal(modalSucesso);       // feedback visual de sucesso
+      safeShowModal(modalSucesso);
     } catch (e) {
       try { modalGerandoPdf.hide(); } catch {}
       showErro(['Não foi possível gerar o PDF.', e?.message || '']);
     } finally {
       killBackdropLocks();
-      unlockUI(); // <<< garante liberação total do UI
-      if (btnGerar) btnGerar.disabled = false; // não altera o texto do botão
+      unlockUI();
+      if (btnGerar) btnGerar.disabled = false;
       gerarBusy = false;
     }
   });
 
-  /* ========= Submit / Finalizar ========= */
+  /* ========= Submit / Finalizar (com espera + reenvio seguro) ========= */
   const form = document.getElementById('regularidadeForm');
-  
-  // 1) Evita submit com Enter antes da etapa 8
+
+  // evita Enter antes da etapa 8
   form?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && step < 8) {
       const t = e.target;
       const isTextualInput =
         t && t.tagName === 'INPUT' && !['button','submit','checkbox','radio','file'].includes(t.type);
       const isTextarea = t && t.tagName === 'TEXTAREA';
-      if (isTextualInput || isTextarea) {
-        e.preventDefault(); // não deixa o form dar submit
-      }
+      if (isTextualInput || isTextarea) e.preventDefault();
     }
   });
 
-  // 2) Enter na pesquisa (etapa 0) = clicar no botão "Pesquisar"
+  // Enter na pesquisa
   document.getElementById('CNPJ_ENTE_PESQ')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -1046,23 +1043,33 @@
     await upsertRepresentantes();
 
     fillNowHiddenFields();
-    const payload = buildPayload();
+
+    // gera/guarda chave de idempotência antes do 1º POST
+    const idem = takeIdemKey() || newIdemKey();
+    rememberIdemKey(idem);
+
+    const payload = buildPayload(); // incluirá IDEMP_KEY (se existir)
 
     const submitOriginalHTML = btnSubmit.innerHTML;
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = 'Finalizando…';
 
     try {
+      // 1ª tentativa
       await fetchJSON(
         `${API_BASE}/api/gerar-termo`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Idempotency-Key': idem
+          },
           body: JSON.stringify(payload),
         },
-        { label: 'gerar-termo', timeout: 30000, retries: 2 }
+        { label: 'gerar-termo', timeout: 30000, retries: 1 }
       );
 
+      clearIdemKey();
       btnSubmit.innerHTML = 'Finalizado ✓';
 
       setTimeout(() => {
@@ -1078,25 +1085,70 @@
       }, 800);
 
     } catch (err) {
+      // se for falha típica de reinício (502/503/504 / timeout / offline), espera e reenfila 1x com MESMA chave
+      const msg = String(err?.message || '').toLowerCase();
+      const status = err?.status || 0;
+      const canWait =
+        status === 502 || status === 503 || status === 504 ||
+        msg.includes('timeout:') || !navigator.onLine || msg.includes('bad gateway');
+
+      if (canWait) {
+        btnSubmit.innerHTML = 'Aguardando serviço…';
+        const ok = await waitForService({ timeoutMs: 60_000, pollMs: 2500 });
+        if (ok) {
+          try {
+            await fetchJSON(
+              `${API_BASE}/api/gerar-termo`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Idempotency-Key': idem
+                },
+                body: JSON.stringify(payload),
+              },
+              { label: 'gerar-termo(retry-after-wait)', timeout: 30000, retries: 0 }
+            );
+            clearIdemKey();
+            btnSubmit.innerHTML = 'Finalizado ✓';
+            setTimeout(() => {
+              form.reset();
+              $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
+              $$('input[type="checkbox"], input[type="radio"]').forEach(el=> el.checked=false);
+              editedFields.clear();
+              snapshotBase = null;
+              cnpjOK = false;
+              btnSubmit.disabled = false;
+              btnSubmit.innerHTML = submitOriginalHTML;
+              showStep(0);
+            }, 800);
+            return;
+          } catch (err2) {
+            // cai para exibir erro amigável
+            showErro(friendlyErrorMessages(err2, 'Falha ao registrar o termo.'));
+          }
+        } else {
+          showErro(['Servidor indisponível no momento. Tente novamente mais tarde.']);
+        }
+      } else {
+        showErro(friendlyErrorMessages(err, 'Falha ao registrar o termo.'));
+      }
+
+      // estado de erro → mantém botão habilitado e preserva idemKey para reenvio manual
       btnSubmit.disabled = false;
       btnSubmit.innerHTML = submitOriginalHTML;
-      showErro(friendlyErrorMessages(err, 'Falha ao registrar o termo.'));
     }
   });
 
-  // >>> restoreState: no passo 0 após reload, força nova pesquisa (Próximo bloqueado).
+  // restoreState
   function restoreState() {
     const st = loadState();
     if (!st) { showStep(0); return; }
 
     const vals = st.values || {};
-
-    // Restaura campos
     Object.entries(vals).forEach(([k, v]) => {
       if (k.endsWith('[]')) {
-        $$(`input[name="${k}"]`).forEach(i => {
-          i.checked = Array.isArray(v) && v.includes(i.value);
-        });
+        $$(`input[name="${k}"]`).forEach(i => { i.checked = Array.isArray(v) && v.includes(i.value); });
       } else if (k === 'em_adm' || k === 'em_jud') {
         const el = document.getElementById(k);
         if (el) el.checked = !!v;
@@ -1106,25 +1158,19 @@
       }
     });
 
-    // Qual passo voltar?
     let n = Number.isFinite(st.step) ? Number(st.step) : 0;
 
-    // REGRA: se estamos no passo 0 por um reload, bloqueia "Próximo" e limpa pesquisa
     if (n === 0) {
-      cnpjOK = false; // obriga nova pesquisa
+      cnpjOK = false;
       const pesq = document.getElementById('CNPJ_ENTE_PESQ');
       if (pesq) { pesq.value = ''; neutral(pesq); }
     } else {
-      // Nos passos 1..8, mantém o estado (inclusive "Próximo" liberado)
       cnpjOK = digits(vals.CNPJ_ENTE || vals.CNPJ_UG || '').length === 14;
     }
 
     showStep(Math.max(0, Math.min(8, n)));
-
-    // Por segurança: se já foi visto, garanta que o modal fique fechado
     if (st.seenWelcome) { try { modalWelcome.hide(); } catch {} }
   }
 
-  // restaura o estado ao carregar
   restoreState();
 })();
