@@ -136,6 +136,30 @@
   const fmtHR = d => d.toLocaleTimeString('pt-BR',{hour12:false,timeZone:'America/Sao_Paulo'});
   const rmAcc = s => String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
 
+
+  function getVal(row, header) {
+    // funciona com getRows() e com objetos "via cells"
+    const k = Object.keys(row).find(h => String(h).trim().toUpperCase() === String(header).trim().toUpperCase());
+    return k ? row[k] : '';
+  }
+
+  // normaliza para comparação “sem ruído”
+  const normCmp = v => (v ?? '').toString().trim()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .replace(/\s+/g,' ')
+    .toLowerCase();
+
+  const onlyDigits = v => (v ?? '').toString().replace(/\D+/g, '');
+
+  function tipoAlteracao(prev, next) {
+    const p = (prev ?? '').toString().trim();
+    const n = (next ?? '').toString().trim();
+    if (!p && n) return 'INCLUSAO';
+    if (p && p !== n) return 'ALTERACAO';
+    return ''; // igual ou vazio → não registra
+  }
+
+
   // Modais
   const modalErro     = new bootstrap.Modal($('#modalErro'));
   const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
