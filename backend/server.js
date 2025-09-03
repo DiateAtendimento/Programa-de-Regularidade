@@ -15,7 +15,6 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const http = require('http');
 const https = require('https');
 const puppeteer = require('puppeteer');
-const { executablePath } = require('puppeteer');
 
 const app = express();
 
@@ -481,8 +480,7 @@ async function getBrowser() {
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--no-zygote',
-        '--single-process',
+        '--disable-gpu',
         '--font-render-hinting=none'
       ],
       timeout: 60_000
@@ -1031,7 +1029,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
       MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO
     }, 'Termos:add');
 
-        // 🔐 Garante que os e-mails fiquem na base principal ANTES da resposta
+    // 🔐 Garante que os e-mails fiquem na base principal ANTES da resposta
     try {
       await upsertEmailsInBase(p);
     } catch (e) {
@@ -1160,8 +1158,10 @@ function inlineFont(relPath) {
 
 app.post('/api/termo-pdf', async (req, res) => {
   await withPdfLimiter(async () => {
-    // >>> Contexto isolado compatível com Puppeteer >= v22
-    let page, context, browser;
+    // Contexto único (sem incognito) + retry defensivo para TargetCloseError
+    let page;
+    let browser;
+    let triedRestart = false;
     try {
       const p = req.body || {};
 
@@ -1211,16 +1211,23 @@ app.post('/api/termo-pdf', async (req, res) => {
       const PUBLIC_URL = (process.env.PUBLIC_URL || FALLBACK_BASE).replace(/\/+$/, '');
       const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
 
-      browser = await getBrowser();
+      // ==== abre o Chrome e cria a página com retry uma vez se necessário
+      try {
+        browser = await getBrowser();
+        page = await browser.newPage();
+      } catch (e) {
+        const msg = String(e?.message || '');
+        if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
+          triedRestart = true;
+          try { await browser?.close().catch(()=>{}); } catch(_){}
+          _browserPromise = null;
+          browser = await getBrowser();
+          page = await browser.newPage();
+        } else {
+          throw e;
+        }
+      }
 
-      // >>> Compat: createBrowserContext (>=v22) | createIncognitoBrowserContext (legacy) | default
-      const canCreateNew = typeof browser.createBrowserContext === 'function';
-      const canIncognito = typeof browser.createIncognitoBrowserContext === 'function';
-      context = canCreateNew
-        ? await browser.createBrowserContext()
-        : (canIncognito ? await browser.createIncognitoBrowserContext() : browser.defaultBrowserContext());
-
-      page = await context.newPage();
       await page.setCacheEnabled(false);
 
       await page.setRequestInterception(true);
@@ -1329,9 +1336,6 @@ app.post('/api/termo-pdf', async (req, res) => {
       });
 
       await page.close();
-      if (context && context.close && context !== browser.defaultBrowserContext()) {
-        await context.close();
-      }
 
       const filenameSafe = (p.ENTE || 'termo-adesao')
         .normalize('NFD').replace(/\p{Diacritic}/gu,'')
@@ -1346,11 +1350,6 @@ app.post('/api/termo-pdf', async (req, res) => {
     } catch (e) {
       console.error('❌ /api/termo-pdf:', e);
       try { if (page) await page.close(); } catch(_) {}
-      try {
-        if (context && context.close && browser && context !== browser.defaultBrowserContext()) {
-          await context.close();
-        }
-      } catch(_) {}
       res.status(500).json({ error: 'Falha ao gerar PDF' });
     }
   });
