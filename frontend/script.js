@@ -520,11 +520,15 @@
     const pad = n=>String(n).padStart(2,'0');
     const fmtBR = d=>d.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'});
     const fmtHR = d=>d.toLocaleTimeString('pt-BR',{hour12:false,timeZone:'America/Sao_Paulo'});
-    document.getElementById('MES')?.value = pad(now.getMonth()+1);
-    document.getElementById('DATA_TERMO_GERADO')?.value = fmtBR(now);
-    document.getElementById('HORA_TERMO_GERADO')?.value = fmtHR(now);
-    document.getElementById('ANO_TERMO_GERADO')?.value = String(now.getFullYear());
+
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+
+    setVal('MES', pad(now.getMonth()+1));
+    setVal('DATA_TERMO_GERADO', fmtBR(now));
+    setVal('HORA_TERMO_GERADO', fmtHR(now));
+    setVal('ANO_TERMO_GERADO', String(now.getFullYear()));
   }
+
 
   // Modal helper básico e destrava UI (versões enxutas)
   function safeShowModal(modalInstance){ try{ modalInstance?.show(); }catch{} }
@@ -532,6 +536,52 @@
 
   // Botão usado no submit (evita ReferenceError na hora de trocar o texto/estado)
   const btnSubmit = document.getElementById('btnSubmit');
+
+
+  const btnNext   = document.getElementById('btnNext');
+  const btnPrev   = document.getElementById('btnPrev');
+  const navFooter = document.getElementById('navFooter');
+  const slotNext0 = document.getElementById('slotNextStep0');
+
+  function updateNav(){
+    // mover o "Próximo" para o slot da etapa 0
+    if (btnNext && slotNext0 && navFooter){
+      if (step === 0 && btnNext.parentElement !== slotNext0) slotNext0.appendChild(btnNext);
+      if (step !== 0 && btnNext.parentElement !== navFooter)  navFooter.appendChild(btnNext);
+    }
+    // mostrar/ocultar botões
+    if (btnPrev)  btnPrev.disabled = (step <= 0);
+    if (btnNext)  btnNext.classList.toggle('d-none', step >= 8);
+    if (btnSubmit) btnSubmit.classList.toggle('d-none', step < 8);
+  }
+
+  function showStep(n){
+    step = Math.max(0, Math.min(8, Number(n)||0));
+
+    // mostrar apenas a seção do passo atual
+    document.querySelectorAll('#regularidadeForm [data-step]').forEach(sec=>{
+      const s = Number(sec.dataset.step)||0;
+      sec.style.display = (s === step ? '' : 'none');
+    });
+
+    // atualizar o stepper visual (1..8; na etapa 0, nenhum ativo)
+    const steps = document.querySelectorAll('#stepper .step');
+    steps.forEach((el, i)=> el.classList.toggle('active', step > 0 && (i+1) === step));
+
+    updateNav();
+  }
+
+  // handlers dos botões
+  btnNext?.addEventListener('click', ()=> showStep(step + 1));
+  btnPrev?.addEventListener('click', ()=> showStep(step - 1));
+
+  // fallback simples para erros (evita ReferenceError se ocorrer falha de rede)
+  function showErro(msgs){
+    const list = Array.isArray(msgs) ? msgs : [String(msgs||'Erro inesperado')];
+    const ul = document.getElementById('modalErroLista');
+    if (ul){ ul.innerHTML = list.map(m=>`<li>${m}</li>`).join(''); safeShowModal(modalErro); }
+    else { alert(list.join('\n')); }
+  }
 
 
   // restoreState — com política de limpeza
