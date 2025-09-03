@@ -213,7 +213,6 @@
   }
 
   function unlockUI() {
-    try { killBackdropLocks(); } catch {}
     document.body.classList.remove('modal-open');
     document.body.style.removeProperty('padding-right');
   }
@@ -275,6 +274,17 @@
     mountLottie('lottieGerandoPdf', 'animacao/gerando-pdf.json', { loop:true, autoplay:true });
   });
 
+  // Destrava tudo (modais/backdrop/body/loader)
+  function fullUnlock() {
+    try { modalWelcome.hide(); } catch {}
+    try { modalLoadingSearch.hide(); } catch {}
+    try { modalGerandoPdf.hide(); } catch {}
+    forceCloseLoading();
+    killBackdropLocks();
+    unlockUI();
+  }
+
+
   function setErroHeader(mode){
     const header = $('#modalErro .modal-header');
     const title  = $('#modalErro .modal-title');
@@ -306,7 +316,7 @@
 
   /* ========= DOMContentLoaded ========= */
   document.addEventListener('DOMContentLoaded', () => {
-    unlockUI();
+    fullUnlock();
 
     // Limpa rascunhos não finalizados/expirados ao abrir
     const st = getState();
@@ -480,7 +490,7 @@
   }
 
   function showStep(n){
-    unlockUI();
+    fullUnlock();
     step = Math.max(0, Math.min(8, n));
 
     sections.forEach(sec => {
@@ -827,11 +837,8 @@
       }
       forceCloseLoading();
       killBackdropLocks();
-      unlockUI();
+      fullUnlock();
     }catch (err) {
-      forceCloseLoading();
-      killBackdropLocks();
-      unlockUI();
       if (err && err.status === 404) {
         openConfirmAdd({
           type: 'cpf',
@@ -847,7 +854,7 @@
     } finally {
       stopLoading();
       killBackdropLocks();
-      unlockUI();
+      fullUnlock();
     }
   }
 
@@ -927,7 +934,6 @@
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
-
   // ======== Preview (opcional) ========
   function openTermoWithPayload(payload, autoFlag){
     const esfera = ($('#esf_mun')?.checked ? 'RPPS Municipal' :
@@ -1025,8 +1031,7 @@
       try { modalGerandoPdf.hide(); } catch {}
       showErro(['Não foi possível gerar o PDF.', e?.message || '']);
     } finally {
-      killBackdropLocks();
-      unlockUI();
+      unlockUI();  // não feche a modal de sucesso/erro
       if (btnGerar) btnGerar.disabled = false;
       gerarBusy = false;
     }

@@ -1,0 +1,18 @@
+name: Keep Render Free Awake
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # a cada 10 min
+  workflow_dispatch:         # permite rodar na mão
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Curl healthz
+        run: |
+          set -euxo pipefail
+          curl -fsS "$URL/api/healthz" || true
+    env:
+      URL: https://programa-de-regularidade.onrender.com
