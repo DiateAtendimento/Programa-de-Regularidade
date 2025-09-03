@@ -20,6 +20,11 @@ const crypto = require('crypto');
 
 const app = express();
 
+/* ───────────── Níveis de log / debug ───────────── */
+const LOG_LEVEL = (process.env.LOG_LEVEL || 'warn').toLowerCase();
+const DEBUG_CORS = process.env.DEBUG_CORS === '1';
+const DEBUG_PDF  = process.env.DEBUG_PDF  === '1';
+
 /* ───────────── Conexões/robustez ───────────── */
 http.globalAgent.keepAlive = true;
 https.globalAgent.keepAlive = true;
@@ -66,8 +71,7 @@ const corsOptionsDelegate = (req, cb) => {
   const originIn = (req.headers.origin || '').replace(/\/+$/, '').toLowerCase();
   const ok = isAllowedOrigin(originIn);
 
-  // log de depuração só para /api
-  if (req.path.startsWith('/api/')) {
+  if (req.path.startsWith('/api/') && DEBUG_CORS) {
     console.log(`CORS ▶ ${originIn || '(sem origin)'} → ${ok ? 'ALLOW' : 'DENY'} | ALLOW_LIST=[${[...ALLOW_LIST].join(', ')}]`);
   }
 
@@ -82,6 +86,7 @@ const corsOptionsDelegate = (req, cb) => {
     exposedHeaders: ['Content-Disposition'],
     credentials: false,
     optionsSuccessStatus: 204,
+    maxAge: 86400, // 24h de cache do preflight
   });
 };
 
@@ -181,7 +186,7 @@ let _lastLoadInfo = 0;
 const norm   = v => (v ?? '').toString().trim();
 const low    = v => norm(v).toLowerCase();
 const digits = v => norm(v).replace(/\D+/g,'');
-// >>> NOVO: normalizador consistente para CNPJ (sempre 14 dígitos, preserva zeros à esquerda)
+// >>> normalizador consistente para CNPJ (sempre 14 dígitos)
 const cnpj14 = v => digits(v).padStart(14, '0').slice(-14);
 
 function nowBR(){
@@ -469,7 +474,9 @@ async function getBrowser() {
     })();
 
     const chromePath = resolved || byApi;
-    console.log('🔎 Chrome path (resolved):', chromePath || '(none)');
+    if (LOG_LEVEL === 'debug') {
+      console.log('🔎 Chrome path (resolved):', chromePath || '(none)');
+    }
 
     if (!chromePath || !fs.existsSync(chromePath)) {
       throw new Error(`Chrome não encontrado. Ajuste build para baixar em ".puppeteer" ou defina PUPPETEER_EXECUTABLE_PATH. Tentado: ${chromePath || '(vazio)'}`);
@@ -488,7 +495,7 @@ async function getBrowser() {
       timeout: 60_000
     }).then(browser => {
       browser.on('disconnected', () => {
-        console.warn('⚠️  Puppeteer desconectado — resetando instância.');
+        if (LOG_LEVEL !== 'silent') console.warn('⚠️  Puppeteer desconectado — resetando instância.');
         _browserPromise = null;
       });
       return browser;
@@ -548,7 +555,7 @@ app.get('/api/consulta', async (req, res) => {
     let base = cnpjRows.find(r => cnpj14(getVal(r,'CNPJ_ENTE')) === cnpj);
     if (!base) base = cnpjRows.find(r => cnpj14(getVal(r,'CNPJ_UG')) === cnpj);
     if (!base) {
-      console.warn(`[consulta] CNPJ ${cnpj} não encontrado em CNPJ_ENTE_UG`);
+      if (LOG_LEVEL === 'debug') console.warn(`[consulta] CNPJ ${cnpj} não encontrado em CNPJ_ENTE_UG`);
 
       const out = {
         UF: '', ENTE: '',
@@ -652,7 +659,7 @@ async function upsertEmailsInBase(p){
     email_ug:  idxOf('EMAIL_UG'),
   };
   if (col.cnpj_ente < 0 && col.cnpj_ug < 0) {
-    console.warn('upsertEmailsInBase: não achei colunas CNPJ_ENTE/CNPJ_UG');
+    if (LOG_LEVEL === 'debug') console.warn('upsertEmailsInBase: não achei colunas CNPJ_ENTE/CNPJ_UG');
     return;
   }
 
@@ -1010,7 +1017,7 @@ app.post('/api/upsert-rep', async (req,res)=>{
   }
 });
 
-/** POST /api/gerar-termo  — AGORA IDEMPOTENTE */
+/** POST /api/gerar-termo  — IDEMPOTENTE */
 app.post('/api/gerar-termo', async (req,res)=>{
   try{
     const p = req.body || {};
@@ -1042,10 +1049,9 @@ app.post('/api/gerar-termo', async (req,res)=>{
       'PROVIDENCIA_NECESS_ADESAO',
       'CONDICAO_VIGENCIA',
       'MES','DATA_TERMO_GERADO','HORA_TERMO_GERADO','ANO_TERMO_GERADO',
-      'IDEMP_KEY' // <<< nova coluna p/ idempotência
+      'IDEMP_KEY' // coluna p/ idempotência
     ]);
 
-    // garante coluna IDEMP_KEY (se planilha antiga) — só em memória: se não existir, addRow já cria
     await sTermos.loadHeaderRow();
 
     // resolve idemKey
@@ -1091,34 +1097,38 @@ app.post('/api/gerar-termo', async (req,res)=>{
     try {
       await upsertEmailsInBase(p);
     } catch (e) {
-      console.warn('upsertEmailsInBase falhou:', e?.message || e);
+      if (LOG_LEVEL === 'debug') console.warn('upsertEmailsInBase falhou:', e?.message || e);
     }
     res.json({ ok: true });
 
+    // ===== LOG de alterações (comparação ampla; snapshot opcional)
     setImmediate(async () => {
       try {
         const sLog = await getOrCreateSheet('Reg_alteracao_dados_ente_ug', [
           'UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA'
         ]);
 
-        const snap = p.__snapshot_base || {};
-        const userChanged = new Set(Array.isArray(p.__user_changed_fields) ? p.__user_changed_fields : []);
-        const allowedForLog = new Set([
+        const snap = (req.body && req.body.__snapshot_base) || {};
+        const allowed = [
           'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
           'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
           'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
           'DATA_VENCIMENTO_ULTIMO_CRP'
-        ]);
+        ];
 
-        const compareCols = [...allowedForLog];
         const changed = [];
-        if (Object.keys(snap).length && userChanged.size) {
-          for (const col of compareCols) {
-            if (!userChanged.has(col)) continue;
-            const a = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(snap[col] || '') : norm(snap[col] || '');
-            const b = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL')) ? digits(p[col] || '')   : norm(p[col] || '');
-            if (low(a) !== low(b)) changed.push(col);
-          }
+        for (const col of allowed) {
+          const normOld = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
+            ? digits(snap[col] || '')
+            : (snap[col] ?? '').toString().trim();
+
+          const normNew = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
+            ? digits(p[col] || '')
+            : (p[col] ?? '').toString().trim();
+
+          const hasSnap = Object.keys(snap).length > 0;
+          const isDiff  = hasSnap ? (normOld.toLowerCase() !== normNew.toLowerCase()) : !!normNew;
+          if (isDiff) changed.push(col);
         }
 
         if (changed.length) {
@@ -1132,7 +1142,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
         }
 
       } catch (bgErr) {
-        console.warn('gerar-termo (background):', bgErr?.message || bgErr);
+        if (LOG_LEVEL !== 'silent') console.warn('gerar-termo (background):', bgErr?.message || bgErr);
       }
     });
 
@@ -1186,7 +1196,7 @@ function inlineSvg(relPath) {
     _svgCache[abs] = cleaned;
     return cleaned;
   } catch (e) {
-    console.warn('⚠️  Falha ao ler SVG:', relPath, e.message);
+    if (LOG_LEVEL === 'debug') console.warn('⚠️  Falha ao ler SVG:', relPath, e.message);
     return '';
   }
 }
@@ -1307,8 +1317,10 @@ app.post('/api/termo-pdf', async (req, res) => {
 
       page.setDefaultNavigationTimeout(90_000);
       page.setDefaultTimeout(90_000);
-      page.on('console', m => console.log('🖥', m.type().toUpperCase(), m.text()));
-      page.on('requestfailed', r => console.log('⚠️ FAIL', r.url(), r.failure()?.errorText));
+      if (DEBUG_PDF) {
+        page.on('console', m => console.log('🖥', m.type().toUpperCase(), m.text()));
+        page.on('requestfailed', r => console.log('⚠️ FAIL', r.url(), r.failure()?.errorText));
+      }
 
       await page.emulateMediaType('screen');
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 });
@@ -1332,8 +1344,10 @@ app.post('/api/termo-pdf', async (req, res) => {
         'fonts/rawline-700.woff2','fonts/rawline-700.woff','fonts/rawline-700.ttf'
       ]);
 
-      console.log('[PDF] Rawline 400:', !!rawline400 ? 'OK' : 'NÃO ENCONTRADO');
-      console.log('[PDF] Rawline 700:', !!rawline700 ? 'OK' : 'NÃO ENCONTRADO');
+      if (LOG_LEVEL === 'debug') {
+        console.log('[PDF] Rawline 400:', !!rawline400 ? 'OK' : 'NÃO ENCONTRADO');
+        console.log('[PDF] Rawline 700:', !!rawline700 ? 'OK' : 'NÃO ENCONTRADO');
+      }
 
       let fontCSS = '';
       if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;

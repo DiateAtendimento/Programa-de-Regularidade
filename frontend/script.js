@@ -1,11 +1,13 @@
-// script.js — Multi-etapas com: máscaras, stepper, modais/Lottie, buscas, validação,
-// download automático do PDF e SUBMIT resiliente com idempotência + espera do serviço.
+// script.js — Multi-etapas 100% estável: máscaras, stepper, modais/Lottie,
+// buscas, validação, idempotência, retries e limpeza automática de rascunhos.
 
 (() => {
-  /* ========= Config API ========= */
+  /* ========= Config ========= */
   const API_BASE = 'https://programa-de-regularidade.onrender.com';
-  // Para rodar local em dev:
-  // const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:3000' : API_BASE;
+
+  // Limpeza automática de rascunhos não finalizados ao abrir a página
+  const AUTO_CLEAR_DRAFTS = true;                 // mude para false se quiser permitir retomar rascunho
+  const FORM_TTL_MS = 30 * 60 * 1000;             // 30 min de validade do rascunho
 
   /* ========= Idempotência (frontend) ========= */
   const IDEM_STORE_KEY = 'rpps-idem-submit';
@@ -39,7 +41,6 @@
   const FETCH_TIMEOUT_MS = 20000; // 20s
   const FETCH_RETRIES = 2;        // tentativas além da primeira
 
-  // Helper com timeout + retries + cache-busting
   async function fetchJSON(
     url,
     { method = 'GET', headers = {}, body = null } = {},
@@ -47,7 +48,7 @@
   ) {
     let attempt = 0;
 
-    // cache-busting por querystring (evita precisar dar Ctrl+F5)
+    // cache-busting por querystring
     const bust = `_ts=${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const sep = url.includes('?') ? '&' : '?';
     const finalURL = `${url}${sep}${bust}`;
@@ -66,7 +67,8 @@
           signal: ctrl.signal,
           cache: 'no-store',
           credentials: 'same-origin',
-          redirect: 'follow'
+          redirect: 'follow',
+          mode: 'cors'
         });
         clearTimeout(to);
 
@@ -139,31 +141,37 @@
   const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
   const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
-  // >>> modal de geração de PDF
   const modalGerandoPdf = new bootstrap.Modal($('#modalGerandoPdf'), { backdrop:'static', keyboard:false });
 
   /* ========= Persistência (etapa + campos) ========= */
   const STORAGE_KEY = 'rpps-form-v1';
 
-  // Helpers de estado
+  function clearAllState() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    clearIdemKey();
+  }
+
   function getState(){
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
     catch { return null; }
   }
   function setState(updater){
-    const prev = getState() || { step: 0, values: {}, seenWelcome: false };
+    const prev = getState() || { step: 0, values: {}, seenWelcome: false, lastSaved: 0, finalizedAt: 0 };
     const next = (typeof updater === 'function') ? updater(prev) : { ...prev, ...updater };
+    next.lastSaved = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     return next;
   }
   function markWelcomeSeen(){ setState(s => ({ ...s, seenWelcome: true })); }
 
   function saveState() {
-    const prev = loadState();
+    const prev = getState();
     const data = {
       step,
       values: {},
-      seenWelcome: prev?.seenWelcome ?? false
+      seenWelcome: prev?.seenWelcome ?? false,
+      lastSaved: Date.now(),
+      finalizedAt: prev?.finalizedAt || 0
     };
     [
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
@@ -296,11 +304,22 @@
     safeShowModal(modalErro);
   }
 
-  /* ========= DOMContentLoaded / saída ========= */
+  /* ========= DOMContentLoaded ========= */
   document.addEventListener('DOMContentLoaded', () => {
     unlockUI();
+
+    // Limpa rascunhos não finalizados/expirados ao abrir
     const st = getState();
-    if (!st?.seenWelcome) {
+    const now = Date.now();
+    const isExpired = !!st?.lastSaved && (now - st.lastSaved > FORM_TTL_MS);
+    const notFinalized = !st?.finalizedAt;
+
+    if (AUTO_CLEAR_DRAFTS && (st && (isExpired || notFinalized))) {
+      clearAllState();
+    }
+
+    const st2 = getState(); // recarrega após possível limpeza
+    if (!st2?.seenWelcome) {
       setTimeout(() => {
         try { modalWelcome.show(); } catch {}
         markWelcomeSeen();
@@ -905,7 +924,6 @@
       ANO_TERMO_GERADO: $('#ANO_TERMO_GERADO').value,
       __snapshot_base: snapshotBase,
       __user_changed_fields: Array.from(editedFields),
-      // também mandamos no corpo (servidor aceita header ou body)
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
@@ -960,7 +978,8 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       cache: 'no-store',
-      credentials: 'same-origin'
+      credentials: 'same-origin',
+      mode: 'cors'
     });
     if (!res.ok) {
       const txt = await res.text().catch(()=> '');
@@ -1072,6 +1091,7 @@
       clearIdemKey();
       btnSubmit.innerHTML = 'Finalizado ✓';
 
+      // Limpa TUDO (zera rascunho) e volta para o passo 0
       setTimeout(() => {
         form.reset();
         $$('.is-valid, .is-invalid').forEach(el=>el.classList.remove('is-valid','is-invalid'));
@@ -1079,6 +1099,7 @@
         editedFields.clear();
         snapshotBase = null;
         cnpjOK = false;
+        clearAllState(); // <- apaga STORAGE_KEY + idem
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = submitOriginalHTML;
         showStep(0);
@@ -1118,13 +1139,13 @@
               editedFields.clear();
               snapshotBase = null;
               cnpjOK = false;
+              clearAllState();
               btnSubmit.disabled = false;
               btnSubmit.innerHTML = submitOriginalHTML;
               showStep(0);
             }, 800);
             return;
           } catch (err2) {
-            // cai para exibir erro amigável
             showErro(friendlyErrorMessages(err2, 'Falha ao registrar o termo.'));
           }
         } else {
@@ -1140,10 +1161,24 @@
     }
   });
 
-  // restoreState
+  // restoreState — com política de limpeza
   function restoreState() {
     const st = loadState();
     if (!st) { showStep(0); return; }
+
+    // Se AUTO_CLEAR_DRAFTS estiver ativo, não restauramos rascunhos
+    if (AUTO_CLEAR_DRAFTS) {
+      clearAllState();
+      showStep(0);
+      return;
+    }
+
+    const now = Date.now();
+    if (st.lastSaved && (now - st.lastSaved > FORM_TTL_MS)) {
+      clearAllState();
+      showStep(0);
+      return;
+    }
 
     const vals = st.values || {};
     Object.entries(vals).forEach(([k, v]) => {
