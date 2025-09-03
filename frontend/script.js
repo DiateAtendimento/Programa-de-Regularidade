@@ -101,6 +101,61 @@
     }
   }
 
+  // === NOVO: fetchBinary (Blob) com timeout + retries (mesma política do fetchJSON) ===
+  async function fetchBinary(
+    url,
+    { method = 'GET', headers = {}, body = null } = {},
+    { label = 'binary', timeout = FETCH_TIMEOUT_MS, retries = FETCH_RETRIES } = {}
+  ) {
+    let attempt = 0;
+
+    const bust = `_ts=${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const sep = url.includes('?') ? '&' : '?';
+    const finalURL = `${url}${sep}${bust}`;
+
+    while (true) {
+      attempt++;
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(`timeout:${label}`), timeout);
+      try {
+        const res = await fetch(finalURL, {
+          method,
+          headers,
+          body,
+          signal: ctrl.signal,
+          cache: 'no-store',
+          credentials: 'same-origin',
+          redirect: 'follow',
+          mode: 'cors'
+        });
+        clearTimeout(to);
+
+        if (!res.ok) {
+          const err = new Error(`HTTP ${res.status}`);
+          err.status = res.status;
+          throw err;
+        }
+        return await res.blob();
+      } catch (e) {
+        clearTimeout(to);
+        const m = String(e?.message || '').toLowerCase();
+        const isHttp = (e && typeof e.status === 'number');
+        const retriable =
+          (isHttp && (e.status === 429 || e.status === 502 || e.status === 503 || e.status === 504 || e.status >= 500)) ||
+          m.includes('etimedout') || m.includes('timeout:') || m.includes('abort') ||
+          m.includes('econnreset') || m.includes('socket hang up') || m.includes('eai_again') ||
+          (!navigator.onLine) ||
+          m.includes('failed') || m.includes('bad gateway');
+
+        if (!retriable || attempt > (retries + 1)) throw e;
+
+        const backoff = 300 * Math.pow(2, attempt - 1);
+        await new Promise(r => setTimeout(r, backoff));
+      }
+    }
+  }
+
+
   async function waitForService({ timeoutMs = 60_000, pollMs = 2000 } = {}) {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
@@ -979,41 +1034,74 @@ async function buscarRepByCPF(cpf, target){
     window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
   }
 
-  /* ========= Helper: gerar & baixar PDF ========= */
+   /* ========= Helper: gerar & baixar PDF ========= */
   async function gerarBaixarPDF(payload){
     const esfera =
       ($('#esf_mun')?.checked ? 'RPPS Municipal' :
       ($('#esf_est')?.checked ? 'Estadual/Distrital' : ''));
     const body = { ...payload, ESFERA: esfera };
 
-    const res = await fetch(`${API_BASE}/api/termo-pdf?_ts=${Date.now()}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      cache: 'no-store',
-      credentials: 'same-origin',
-      mode: 'cors'
-    });
-    if (!res.ok) {
-      const txt = await res.text().catch(()=> '');
-      throw new Error(`Falha ao gerar PDF (${res.status}) ${txt}`);
+    try {
+      // 1ª tentativa com timeout/retry interno
+      const blob = await fetchBinary(
+        `${API_BASE}/api/termo-pdf`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+        { label: 'termo-pdf', timeout: 60000, retries: 1 }
+      );
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      const ente = String(payload.ENTE || 'termo-adesao')
+        .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+        .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'')
+        .toLowerCase();
+      a.download = `termo-${ente}.pdf`;
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+    } catch (e) {
+      // se for queda/reinício, aguarda serviço de pé e tenta 1x novamente
+      const msg = String(e?.message || '').toLowerCase();
+      const status = e?.status || 0;
+      const canWait =
+        status === 502 || status === 503 || status === 504 ||
+        msg.includes('timeout:') || !navigator.onLine || msg.includes('bad gateway');
+
+      if (canWait) {
+        const ok = await waitForService({ timeoutMs: 60_000, pollMs: 2500 });
+        if (ok) {
+          const blob = await fetchBinary(
+            `${API_BASE}/api/termo-pdf`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+            { label: 'termo-pdf(retry-after-wait)', timeout: 60000, retries: 0 }
+          );
+
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+
+          const ente = String(payload.ENTE || 'termo-adesao')
+            .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+            .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'')
+            .toLowerCase();
+          a.download = `termo-${ente}.pdf`;
+
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          return;
+        }
+      }
+      throw e;
     }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-
-    const ente = String(payload.ENTE || 'termo-adesao')
-      .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-      .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'')
-      .toLowerCase();
-    a.download = `termo-${ente}.pdf`;
-
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
   }
+
 
   /* ========= AÇÃO: Gerar Formulário (download do PDF) ========= */
   let gerarBusy = false;

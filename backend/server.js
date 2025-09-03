@@ -994,6 +994,49 @@ app.post('/api/upsert-rep', async (req,res)=>{
   }
 });
 
+/* NOVO: logger síncrono para Reg_alteracao_dados_ente_ug */
+async function logAlteracoesInline(p, snapshotRaw) {
+  const sLog = await getOrCreateSheet('Reg_alteracao_dados_ente_ug', [
+    'UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA'
+  ]);
+
+  const snap = snapshotRaw || {};
+  const allowed = [
+    'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
+    'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
+    'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
+    'DATA_VENCIMENTO_ULTIMO_CRP'
+  ];
+
+  const changed = [];
+  for (const col of allowed) {
+    const normOld = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
+      ? digits(snap[col] || '')
+      : (snap[col] ?? '').toString().trim();
+
+    const normNew = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
+      ? digits(p[col] || '')
+      : (p[col] ?? '').toString().trim();
+
+    const hasSnap = Object.keys(snap).length > 0;
+    const isDiff  = hasSnap ? (normOld.toLowerCase() !== normNew.toLowerCase()) : !!normNew;
+    if (isDiff) changed.push(col);
+  }
+
+  if (!changed.length) return 0;
+
+  const t = nowBR();
+  await safeAddRow(sLog, {
+    UF: norm(p.UF), ENTE: norm(p.ENTE),
+    'CAMPOS ALTERADOS': changed.join(', '),
+    'QTD_CAMPOS_ALTERADOS': changed.length,
+    MES: t.MES, DATA: t.DATA, HORA: t.HORA
+  }, 'Log:add');
+
+  return changed.length;
+}
+
+
 /** POST /api/gerar-termo  — IDEMPOTENTE */
 app.post('/api/gerar-termo', async (req,res)=>{
   try{
@@ -1036,8 +1079,21 @@ app.post('/api/gerar-termo', async (req,res)=>{
     const idemKey    = idemHeader || idemBody || makeIdemKeyFromPayload(p);
 
     const existingRowIdx = await findTermoByIdemKey(sTermos, idemKey);
+
+    // snapshot vindo do front (para comparar alterações)
+    const snapshot = (req.body && req.body.__snapshot_base) || {};
+    let logStatus = 'skip';
+
     if (existingRowIdx !== null) {
-      return res.json({ ok: true, dedup: true });
+      // Mesmo em dedup, logamos as alterações de forma síncrona
+      try {
+        const n = await logAlteracoesInline(p, snapshot);
+        logStatus = n ? 'ok' : 'empty';
+      } catch (e) {
+        logStatus = 'error';
+        if (LOG_LEVEL !== 'silent') console.warn('logAlteracoes (dedup):', e?.message || e);
+      }
+      return res.json({ ok: true, dedup: true, log: logStatus });
     }
 
     const { DATA, HORA, ANO, MES } = nowBR();
@@ -1068,52 +1124,19 @@ app.post('/api/gerar-termo', async (req,res)=>{
       IDEMP_KEY: idemKey
     }, 'Termos:add');
 
+    // Atualiza base de e-mails (falha aqui não bloqueia a resposta)
     try { await upsertEmailsInBase(p); } catch (_) {}
 
-    res.json({ ok: true });
+    // Logger síncrono (sem setImmediate) — não derruba o processo se falhar
+    try {
+      const n = await logAlteracoesInline(p, snapshot);
+      logStatus = n ? 'ok' : 'empty';
+    } catch (e) {
+      logStatus = 'error';
+      if (LOG_LEVEL !== 'silent') console.warn('logAlteracoes:', e?.message || e);
+    }
 
-    setImmediate(async () => {
-      try {
-        const sLog = await getOrCreateSheet('Reg_alteracao_dados_ente_ug', [
-          'UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA'
-        ]);
-
-        const snap = (req.body && req.body.__snapshot_base) || {};
-        const allowed = [
-          'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
-          'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
-          'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
-          'DATA_VENCIMENTO_ULTIMO_CRP'
-        ];
-
-        const changed = [];
-        for (const col of allowed) {
-          const normOld = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
-            ? digits(snap[col] || '')
-            : (snap[col] ?? '').toString().trim();
-
-          const normNew = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
-            ? digits(p[col] || '')
-            : (p[col] ?? '').toString().trim();
-
-          const hasSnap = Object.keys(snap).length > 0;
-          const isDiff  = hasSnap ? (normOld.toLowerCase() !== normNew.toLowerCase()) : !!normNew;
-          if (isDiff) changed.push(col);
-        }
-
-        if (changed.length) {
-          const t = nowBR();
-          await safeAddRow(sLog, {
-            UF: norm(p.UF), ENTE: norm(p.ENTE),
-            'CAMPOS ALTERADOS': changed.join(', '),
-            'QTD_CAMPOS_ALTERADOS': changed.length,
-            MES: t.MES, DATA: t.DATA, HORA: t.HORA
-          }, 'Log:add');
-        }
-      } catch (bgErr) {
-        if (LOG_LEVEL !== 'silent') console.warn('gerar-termo (background):', bgErr?.message || bgErr);
-      }
-    });
+    return res.json({ ok: true, log: logStatus });
 
   } catch (err) {
     console.error('❌ /api/gerar-termo:', err);
@@ -1124,6 +1147,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
     res.status(500).json({ error:'Falha ao registrar o termo.' });
   }
 });
+
 
 
 /* ========= PDF (Puppeteer) ========= */
