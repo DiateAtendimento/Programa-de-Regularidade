@@ -148,19 +148,75 @@
     } catch { return null; }
   }
 
-  // >>> DOMContentLoaded: modalWelcome apenas uma vez
-  document.addEventListener('DOMContentLoaded', () => {
-    const st = getState();
-    if (!st?.seenWelcome) {
+  // --- Controle robusto do modal de "carregando" + Lottie ---
+  let loadingCount = 0;
+
+  // Destrava qualquer resíduo de modal/backdrop
+  function killBackdropLocks() {
+    try { modalLoadingSearch.hide(); } catch {}
+    try { modalGerandoPdf.hide(); } catch {}
+    setTimeout(() => {
+      $$('.modal.show').forEach(m => m.classList.remove('show'));
+      $$('.modal-backdrop').forEach(b => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+    }, 0);
+  }
+
+  // >>> NOVO: fail-safe universal para travas de UI
+  function unlockUI() {
+    try { killBackdropLocks(); } catch {}
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('padding-right');
+  }
+
+  function showLoadingModal() {
+    try { modalLoadingSearch.show(); } catch {}
+  }
+  function hideLoadingModal() {
+    try { modalLoadingSearch.hide(); } catch {}
+  }
+  function startLoading() {
+    loadingCount += 1;
+    if (loadingCount === 1) showLoadingModal();
+  }
+  function stopLoading() {
+    loadingCount = Math.max(0, loadingCount - 1);
+    if (loadingCount === 0) {
+      try { modalLoadingSearch.hide(); } catch {}
+      // limpa transição/backdrop teimosos do Bootstrap
       setTimeout(() => {
-        try { modalWelcome.show(); } catch {}
-        markWelcomeSeen(); // marca como visto para não reabrir após F5
-      }, 150);
+        const el = $('#modalLoadingSearch');
+        el?.classList.remove('show');
+        document.body.classList.remove('modal-open');
+        $$('.modal-backdrop')?.forEach(b => b.remove());
+        // garante destruição do Lottie
+        const inst = lotties['lottieLoadingSearch'];
+        if (inst) { inst.destroy(); delete lotties['lottieLoadingSearch']; }
+      }, 60);
     }
+  }
+
+  // helper para encerrar imediatamente (usaremos após sucesso/erro)
+  function forceCloseLoading() {
+    loadingCount = 0;
+    stopLoading();
+  }
+
+  // Destrói a animação quando o modal é fechado, evitando loop eterno em background
+  $('#modalLoadingSearch')?.addEventListener('hidden.bs.modal', () => {
+    const inst = lotties['lottieLoadingSearch'];
+    if (inst) { inst.destroy(); delete lotties['lottieLoadingSearch']; }
+    // reforça limpeza
+    killBackdropLocks();
   });
 
-  // Salva antes de sair
-  window.addEventListener('beforeunload', saveState);
+  function safeShowModal(modalInstance){
+    // antes de abrir qualquer modal, garanta que o "carregando" está fechado e sem backdrops órfãos
+    forceCloseLoading();
+    killBackdropLocks();
+    try { modalInstance.show(); } catch {}
+  }
 
   /* ========= Lottie ========= */
   const lotties = {};
@@ -211,68 +267,21 @@
     safeShowModal(modalErro);
   }
 
-  // --- Controle robusto do modal de "carregando" + Lottie ---
-  let loadingCount = 0;
-
-  // Destrava qualquer resíduo de modal/backdrop
-  function killBackdropLocks() {
-    try { modalLoadingSearch.hide(); } catch {}
-    try { modalGerandoPdf.hide(); } catch {}
-    setTimeout(() => {
-      $$('.modal.show').forEach(m => m.classList.remove('show'));
-      $$('.modal-backdrop').forEach(b => b.remove());
-      document.body.classList.remove('modal-open');
-      document.body.style.removeProperty('padding-right');
-    }, 0);
-  }
-
-  function showLoadingModal() {
-    try { modalLoadingSearch.show(); } catch {}
-  }
-  function hideLoadingModal() {
-    try { modalLoadingSearch.hide(); } catch {}
-  }
-  function startLoading() {
-    loadingCount += 1;
-    if (loadingCount === 1) showLoadingModal();
-  }
-  function stopLoading() {
-    loadingCount = Math.max(0, loadingCount - 1);
-    if (loadingCount === 0) {
-      try { modalLoadingSearch.hide(); } catch {}
-      // limpa transição/backdrop teimosos do Bootstrap
+  /* ========= DOMContentLoaded / saída ========= */
+  // >>> ao carregar, garanta UI desbloqueada e mostre o modal de boas-vindas apenas 1x
+  document.addEventListener('DOMContentLoaded', () => {
+    unlockUI(); // evita resíduo de navegação anterior
+    const st = getState();
+    if (!st?.seenWelcome) {
       setTimeout(() => {
-        const el = $('#modalLoadingSearch');
-        el?.classList.remove('show');
-        document.body.classList.remove('modal-open');
-        $$('.modal-backdrop')?.forEach(b => b.remove());
-        // garante destruição do Lottie
-        const inst = lotties['lottieLoadingSearch'];
-        if (inst) { inst.destroy(); delete lotties['lottieLoadingSearch']; }
-      }, 60);
+        try { modalWelcome.show(); } catch {}
+        markWelcomeSeen(); // marca como visto para não reabrir após F5
+      }, 150);
     }
-  }
-
-  // helper para encerrar imediatamente (usaremos após sucesso/erro)
-  function forceCloseLoading() {
-    loadingCount = 0;
-    stopLoading();
-  }
-
-  // Destrói a animação quando o modal é fechado, evitando loop eterno em background
-  $('#modalLoadingSearch')?.addEventListener('hidden.bs.modal', () => {
-    const inst = lotties['lottieLoadingSearch'];
-    if (inst) { inst.destroy(); delete lotties['lottieLoadingSearch']; }
-    // reforça limpeza
-    killBackdropLocks();
   });
 
-  function safeShowModal(modalInstance){
-    // antes de abrir qualquer modal, garanta que o "carregando" está fechado e sem backdrops órfãos
-    forceCloseLoading();
-    killBackdropLocks();
-    try { modalInstance.show(); } catch {}
-  }
+  // Salva antes de sair
+  window.addEventListener('beforeunload', saveState);
 
   /* ========= Máscaras ========= */
   const maskCPF = v => {
@@ -430,6 +439,7 @@
   }
 
   function showStep(n){
+    unlockUI(); // <<< garante que nada da etapa anterior fique travando clique
     step = Math.max(0, Math.min(8, n));
 
     sections.forEach(sec => {
@@ -453,11 +463,18 @@
 
   // >>> se editar/apagar o campo de pesquisa no passo 0, bloqueia "Próximo"
   document.getElementById('CNPJ_ENTE_PESQ')?.addEventListener('input', () => {
+    unlockUI();
     if (step === 0) {
       cnpjOK = false;
       updateNavButtons();
       updateFooterAlign();
     }
+  });
+
+  // >>> NOVO: ao digitar nos documentos principais, destrave UI
+  ;['CNPJ_ENTE','CNPJ_UG','CPF_REP_ENTE','CPF_REP_UG'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', unlockUI);
   });
 
   btnPrev?.addEventListener('click', ()=> showStep(step-1));
@@ -763,6 +780,7 @@
     } finally {
       searching = false;
       stopLoading();
+      unlockUI(); // <<< reforço contra backdrop invisível
       updateNavButtons();
       updateFooterAlign();
     }
@@ -790,10 +808,12 @@
       // fechamento imediato + limpeza defensiva
       forceCloseLoading();
       killBackdropLocks();
+      unlockUI();
     }catch (err) {
       // fecha qualquer loading antes de abrir outro modal
       forceCloseLoading();
       killBackdropLocks();
+      unlockUI();
       if (err && err.status === 404) {
         openConfirmAdd({
           type: 'cpf',
@@ -810,6 +830,7 @@
       stopLoading();
       // reforço final para nunca deixar backdrop/lock
       killBackdropLocks();
+      unlockUI();
     }
   }
 
@@ -987,6 +1008,7 @@
       showErro(['Não foi possível gerar o PDF.', e?.message || '']);
     } finally {
       killBackdropLocks();
+      unlockUI(); // <<< garante liberação total do UI
       if (btnGerar) btnGerar.disabled = false; // não altera o texto do botão
       gerarBusy = false;
     }
