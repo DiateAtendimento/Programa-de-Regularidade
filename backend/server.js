@@ -1160,8 +1160,8 @@ function inlineFont(relPath) {
 
 app.post('/api/termo-pdf', async (req, res) => {
   await withPdfLimiter(async () => {
-    // >>> NOVO: contexto isolado por job (libera memória e evita 502 intermitente)
-    let page, context;
+    // >>> Contexto isolado compatível com Puppeteer >= v22
+    let page, context, browser;
     try {
       const p = req.body || {};
 
@@ -1211,10 +1211,15 @@ app.post('/api/termo-pdf', async (req, res) => {
       const PUBLIC_URL = (process.env.PUBLIC_URL || FALLBACK_BASE).replace(/\/+$/, '');
       const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
 
-      const browser = await getBrowser();
+      browser = await getBrowser();
 
-      // >>> NOVO: cria contexto incógnito e página sem cache
-      context = await browser.createIncognitoBrowserContext();
+      // >>> Compat: createBrowserContext (>=v22) | createIncognitoBrowserContext (legacy) | default
+      const canCreateNew = typeof browser.createBrowserContext === 'function';
+      const canIncognito = typeof browser.createIncognitoBrowserContext === 'function';
+      context = canCreateNew
+        ? await browser.createBrowserContext()
+        : (canIncognito ? await browser.createIncognitoBrowserContext() : browser.defaultBrowserContext());
+
       page = await context.newPage();
       await page.setCacheEnabled(false);
 
@@ -1324,7 +1329,9 @@ app.post('/api/termo-pdf', async (req, res) => {
       });
 
       await page.close();
-      await context.close(); // >>> NOVO: libera tudo
+      if (context && context.close && context !== browser.defaultBrowserContext()) {
+        await context.close();
+      }
 
       const filenameSafe = (p.ENTE || 'termo-adesao')
         .normalize('NFD').replace(/\p{Diacritic}/gu,'')
@@ -1339,7 +1346,11 @@ app.post('/api/termo-pdf', async (req, res) => {
     } catch (e) {
       console.error('❌ /api/termo-pdf:', e);
       try { if (page) await page.close(); } catch(_) {}
-      try { if (context) await context.close(); } catch(_) {}
+      try {
+        if (context && context.close && browser && context !== browser.defaultBrowserContext()) {
+          await context.close();
+        }
+      } catch(_) {}
       res.status(500).json({ error: 'Falha ao gerar PDF' });
     }
   });
