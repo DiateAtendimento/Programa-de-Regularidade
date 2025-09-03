@@ -437,8 +437,70 @@ async function getCRPAllCached(sheet, skipCache = false) {
   return rows;
 }
 
+
 /* ─────────────── PUPPETEER (robust) ─────────────── */
-// (mantemos como está; apenas inicialização p/ PDF em outra parte do arquivo)
+process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || path.resolve(__dirname, '.puppeteer');
+process.env.TMPDIR = process.env.TMPDIR || '/tmp';
+
+function findChromeIn(dir) {
+  try {
+    if (!fs.existsSync(dir)) return null;
+    const chromeDir = path.join(dir, 'chrome');
+    if (!fs.existsSync(chromeDir)) return null;
+    const platforms = fs.readdirSync(chromeDir).filter(n => n.startsWith('linux-'));
+    for (const p of platforms) {
+      const candidate = path.join(chromeDir, p, 'chrome-linux64', 'chrome');
+      if (fs.existsSync(candidate)) return candidate;
+    }
+  } catch (_) {}
+  return null;
+}
+
+let _browserPromise;
+async function getBrowser() {
+  if (!_browserPromise) {
+    // ordem: ENV → .puppeteer local → API do pacote
+    const localPuppeteerDir = path.resolve(__dirname, '.puppeteer');
+    const altBackendDir = path.resolve(__dirname, '../backend/.puppeteer'); // caso rode de outra pasta
+    const resolved =
+      process.env.PUPPETEER_EXECUTABLE_PATH ||
+      findChromeIn(localPuppeteerDir) ||
+      findChromeIn(altBackendDir);
+
+    const byApi = (() => {
+      try { return require('puppeteer').executablePath(); } catch { return null; }
+    })();
+
+    const chromePath = resolved || byApi;
+    if (!chromePath || !fs.existsSync(chromePath)) {
+      throw new Error(`Chrome não encontrado. Defina PUPPETEER_EXECUTABLE_PATH ou garanta o download em ".puppeteer" (postinstall).`);
+    }
+
+    _browserPromise = puppeteer.launch({
+      executablePath: chromePath,
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--font-render-hinting=none'
+      ],
+      timeout: 60_000
+    }).then(browser => {
+      browser.on('disconnected', () => {
+        if ((process.env.LOG_LEVEL || '').toLowerCase() !== 'silent') {
+          console.warn('⚠️  Puppeteer desconectado — resetando instância.');
+        }
+        _browserPromise = null;
+      });
+      return browser;
+    });
+  }
+  return _browserPromise;
+}
+
+
 
 /* ─────────────── ROTAS ─────────────── */
 
