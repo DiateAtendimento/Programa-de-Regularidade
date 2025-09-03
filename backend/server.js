@@ -1,3 +1,5 @@
+// server.js
+
 // server.js — API RPPS (multi-etapas) c/ idempotência em /api/gerar-termo
 // Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP (colunas fixas B/F/G = 1/5/6),
 // grava em Termos_registrados (com coluna IDEMP_KEY para idempotência)
@@ -55,11 +57,8 @@ const ALLOW_LIST = new Set(
 function isAllowedOrigin(origin) {
   if (!origin) return true; // requests internas / curl / same-origin
   const o = origin.replace(/\/+$/, '').toLowerCase();
-
-  if (ALLOW_LIST.size === 0) return true;     // sem lista => libera em dev
-  if (ALLOW_LIST.has(o)) return true;         // match exato
-
-  // libera subdomínios do Netlify se a raiz específica estiver na lista
+  if (ALLOW_LIST.size === 0) return true;
+  if (ALLOW_LIST.has(o)) return true;
   if (/^https:\/\/.+\.netlify\.app$/i.test(o) &&
       ALLOW_LIST.has('https://programa-de-regularidade.netlify.app')) {
     return true;
@@ -75,7 +74,6 @@ const corsOptionsDelegate = (req, cb) => {
     console.log(`CORS ▶ ${originIn || '(sem origin)'} → ${ok ? 'ALLOW' : 'DENY'} | ALLOW_LIST=[${[...ALLOW_LIST].join(', ')}]`);
   }
 
-  // sanitiza headers do preflight
   const reqHdrs = String(req.headers['access-control-request-headers'] || '')
     .replace(/[^\w\-_, ]/g, '');
 
@@ -86,21 +84,27 @@ const corsOptionsDelegate = (req, cb) => {
     exposedHeaders: ['Content-Disposition'],
     credentials: false,
     optionsSuccessStatus: 204,
-    maxAge: 86400, // 24h de cache do preflight
+    maxAge: 86400,
   });
 };
 
 app.use(cors(corsOptionsDelegate));
 app.options(/.*/, cors(corsOptionsDelegate));
 
+/* injeta CORS também em respostas de erro internas (defensivo) */
+app.use((req, res, next) => {
+  const o = req.headers.origin;
+  if (!o || isAllowedOrigin(o)) {
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Origin', o || '*');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+  }
+  next();
+});
+
 /* ───────────── Helmet + demais middlewares ───────────── */
 const connectExtra = splitList(process.env.CORS_ORIGIN || process.env.CORS_ORIGIN_LIST || '');
-
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  crossOriginEmbedderPolicy: false,
-}));
-
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, crossOriginEmbedderPolicy: false }));
 app.use(helmet.contentSecurityPolicy({
   useDefaults: true,
   directives: {
@@ -137,7 +141,6 @@ app.use('/api', (req, res, next) => {
 const FRONTEND_DIR = path.join(__dirname, '../frontend');
 app.use('/', express.static(FRONTEND_DIR));
 
-/* pequenos utilitários para evitar 404 no console do PDF */
 function trySendStatic(res, relPath) {
   const abs = path.join(FRONTEND_DIR, relPath);
   if (fs.existsSync(abs)) return res.sendFile(abs);
@@ -146,7 +149,7 @@ function trySendStatic(res, relPath) {
 app.get(['/favicon.ico','/favicon.png'], (req, res) => {
   if (trySendStatic(res, 'favicon.ico')) return;
   if (trySendStatic(res, 'favicon.png')) return;
-  res.status(204).end(); // evita 404 no headless
+  res.status(204).end();
 });
 app.get('/robots.txt', (_req, res) => {
   res.type('text/plain').send('User-agent: *\nDisallow:\n');
@@ -186,7 +189,6 @@ let _lastLoadInfo = 0;
 const norm   = v => (v ?? '').toString().trim();
 const low    = v => norm(v).toLowerCase();
 const digits = v => norm(v).replace(/\D+/g,'');
-// >>> normalizador consistente para CNPJ (sempre 14 dígitos)
 const cnpj14 = v => digits(v).padStart(14, '0').slice(-14);
 
 function nowBR(){
@@ -209,7 +211,6 @@ async function getSheetStrict(title){
   if (!s) throw new Error(`Aba '${title}' não encontrada.`);
   return s;
 }
-
 async function getOrCreateSheet(title, headerValues){
   let s = doc.sheetsByTitle[title];
   if (s) return s;
@@ -218,7 +219,7 @@ async function getOrCreateSheet(title, headerValues){
   return s;
 }
 
-/* ───── Helpers (headers duplicados) ───── */
+/* Helpers p/ headers duplicados */
 async function getRowsViaCells(sheet) {
   await sheet.loadHeaderRow();
 
@@ -264,7 +265,6 @@ async function getRowsViaCells(sheet) {
   }
   return rows;
 }
-
 async function getRowsSafe(sheet) {
   try {
     return await sheet.getRows();
@@ -296,7 +296,6 @@ function withLimiter(tag, fn) {
     _runNext();
   });
 }
-
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function withTimeoutAndRetry(label, fn) {
   let attempt = 0;
@@ -358,7 +357,7 @@ function cacheSet(key, data, ttl = CACHE_TTL_MS) {
   _cache.set(key, { data, exp: Date.now() + ttl });
 }
 
-/* ───── Datas ───── */
+/* Datas */
 function parseDMYorYMD(s) {
   const v = norm(s);
   if (!v) return new Date(0);
@@ -381,7 +380,7 @@ const formatDateISO = d => {
   return `${yy}-${mm}-${dd}`;
 };
 
-/* ───── Leitura CRP (B/F/G = 1/5/6) ───── */
+/* CRP (B/F/G = 1/5/6) */
 async function readCRPByFixedColumns(sheet) {
   const colCNPJ = 1, colVal = 5, colDec = 6; // 0-based
   const endRow = sheet.rowCount || 2000;
@@ -427,7 +426,7 @@ async function readCRPByFixedColumns(sheet) {
   return rows;
 }
 
-/* Cache específico para CRP */
+/* Cache CRP */
 let _crpMemo = { data: null, exp: 0 };
 async function getCRPAllCached(sheet, skipCache = false) {
   if (!skipCache && _crpMemo.exp > Date.now() && _crpMemo.data) return _crpMemo.data;
@@ -438,72 +437,8 @@ async function getCRPAllCached(sheet, skipCache = false) {
   return rows;
 }
 
-
 /* ─────────────── PUPPETEER (robust) ─────────────── */
-process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || path.resolve(__dirname, '.puppeteer');
-process.env.TMPDIR = process.env.TMPDIR || '/tmp';
-
-function findChromeIn(dir) {
-  try {
-    if (!fs.existsSync(dir)) return null;
-    const chromeDir = path.join(dir, 'chrome');
-    if (!fs.existsSync(chromeDir)) return null;
-    const platforms = fs.readdirSync(chromeDir).filter(n => n.startsWith('linux-'));
-    for (const p of platforms) {
-      const candidate = path.join(chromeDir, p, 'chrome-linux64', 'chrome');
-      if (fs.existsSync(candidate)) return candidate;
-    }
-  } catch (_) {}
-  return null;
-}
-
-let _browserPromise;
-async function getBrowser() {
-  if (!_browserPromise) {
-    // ordem de resolução: ENV → .puppeteer local → puppeteer.executablePath()
-    const localPuppeteerDir = path.resolve(__dirname, '.puppeteer');
-    const altBackendDir = path.resolve(__dirname, '../backend/.puppeteer'); // caso rode de outra pasta
-    const resolved =
-      process.env.PUPPETEER_EXECUTABLE_PATH ||
-      findChromeIn(localPuppeteerDir) ||
-      findChromeIn(altBackendDir);
-
-    // fallback para API do pacote (pode retornar vazio se não baixou no postinstall)
-    const byApi = (() => {
-      try { return require('puppeteer').executablePath(); } catch { return null; }
-    })();
-
-    const chromePath = resolved || byApi;
-    if (LOG_LEVEL === 'debug') {
-      console.log('🔎 Chrome path (resolved):', chromePath || '(none)');
-    }
-
-    if (!chromePath || !fs.existsSync(chromePath)) {
-      throw new Error(`Chrome não encontrado. Ajuste build para baixar em ".puppeteer" ou defina PUPPETEER_EXECUTABLE_PATH. Tentado: ${chromePath || '(vazio)'}`);
-    }
-
-    _browserPromise = puppeteer.launch({
-      executablePath: chromePath,
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--font-render-hinting=none'
-      ],
-      timeout: 60_000
-    }).then(browser => {
-      browser.on('disconnected', () => {
-        if (LOG_LEVEL !== 'silent') console.warn('⚠️  Puppeteer desconectado — resetando instância.');
-        _browserPromise = null;
-      });
-      return browser;
-    });
-  }
-  return _browserPromise;
-}
-
+// (mantemos como está; apenas inicialização p/ PDF em outra parte do arquivo)
 
 /* ─────────────── ROTAS ─────────────── */
 
@@ -525,14 +460,11 @@ async function authSheets() {
 }
 
 app.get('/api/health', (_req,res)=> res.json({ ok:true }));
-app.get('/api/healthz', (_req,res)=> {
-  res.json({ ok:true, uptime: process.uptime(), ts: Date.now() });
-});
+app.get('/api/healthz', (_req,res)=> res.json({ ok:true, uptime: process.uptime(), ts: Date.now() }));
 
 /** GET /api/consulta?cnpj=NNNNNNNNNNNNNN[&nocache=1] */
 app.get('/api/consulta', async (req, res) => {
   try {
-    // >>> usa normalização de 14 dígitos para preservar zeros à esquerda
     const cnpj = cnpj14(req.query.cnpj || '');
     if (cnpj.length !== 14) return res.status(400).json({ error: 'CNPJ inválido.' });
 
@@ -551,12 +483,9 @@ app.get('/api/consulta', async (req, res) => {
     const sCrp  = await getSheetStrict('CRP');
 
     const cnpjRows = await safeGetRows(sCnpj, 'CNPJ:getRows');
-    // >>> comparação por CNPJ normalizado (evita erro com zeros à esquerda)
     let base = cnpjRows.find(r => cnpj14(getVal(r,'CNPJ_ENTE')) === cnpj);
     if (!base) base = cnpjRows.find(r => cnpj14(getVal(r,'CNPJ_UG')) === cnpj);
     if (!base) {
-      if (LOG_LEVEL === 'debug') console.warn(`[consulta] CNPJ ${cnpj} não encontrado em CNPJ_ENTE_UG`);
-
       const out = {
         UF: '', ENTE: '',
         CNPJ_ENTE: cnpj,
@@ -586,7 +515,6 @@ app.get('/api/consulta', async (req, res) => {
       reps.find(r => low(getVal(r,'UG')||'') !== low(UG)) || reps[0] || {};
 
     const crpAll = await getCRPAllCached(sCrp, skipCache);
-    // >>> CRP também compara por CNPJ normalizado
     const crpCandidates = crpAll.filter(r => cnpj14(r.CNPJ_ENTE) === CNPJ_ENTE);
     let crp = {};
     if (crpCandidates.length) {
@@ -658,10 +586,7 @@ async function upsertEmailsInBase(p){
     email_ente:idxOf('EMAIL_ENTE'),
     email_ug:  idxOf('EMAIL_UG'),
   };
-  if (col.cnpj_ente < 0 && col.cnpj_ug < 0) {
-    if (LOG_LEVEL === 'debug') console.warn('upsertEmailsInBase: não achei colunas CNPJ_ENTE/CNPJ_UG');
-    return;
-  }
+  if (col.cnpj_ente < 0 && col.cnpj_ug < 0) return;
 
   const endRow = sCnpj.rowCount || 2000;
   const endCol = headers.length || sCnpj.columnCount || 26;
@@ -672,14 +597,12 @@ async function upsertEmailsInBase(p){
     'CNPJ:updateEmails:loadCells'
   );
 
-  // >>> normaliza CNPJ para 14 dígitos
   const ce = cnpj14(p.CNPJ_ENTE);
   const cu = cnpj14(p.CNPJ_UG);
-  let changed = 0;
 
+  let changed = 0;
   for (let r = 1; r < endRow; r++) {
     let match = false;
-
     if (col.cnpj_ente >= 0) {
       const v = cnpj14(sCnpj.getCell(r, col.cnpj_ente)?.value || '');
       if (v && ce && v === ce) match = true;
@@ -709,7 +632,7 @@ async function upsertEmailsInBase(p){
   }
 }
 
-/* ---------- busca rápida por CPF (coluna única + linha alvo) ---------- */
+/* ---------- busca rápida por CPF ---------- */
 async function findRepByCpfFast(cpfDigits) {
   const sReps = await getSheetStrict('Dados_REP_ENTE_UG');
   await sReps.loadHeaderRow();
@@ -736,7 +659,6 @@ async function findRepByCpfFast(cpfDigits) {
 
   const endRow = sReps.rowCount || 2000;
 
-  // 1) carrega só a coluna CPF
   await safeLoadCells(
     sReps,
     { startRowIndex: 1, startColumnIndex: idx.CPF, endRowIndex: endRow, endColumnIndex: idx.CPF + 1 },
@@ -750,7 +672,6 @@ async function findRepByCpfFast(cpfDigits) {
   }
   if (rowHit < 0) return null;
 
-  // 2) carrega somente a linha encontrada (todas as colunas necessárias)
   const endCol = headers.length || sReps.columnCount || 26;
   await safeLoadCells(
     sReps,
@@ -816,7 +737,7 @@ app.get('/api/rep-by-cpf', async (req,res)=>{
   }
 });
 
-/* util: upsert representante em Dados_REP_ENTE_UG (para CPF inexistente ou atualização) */
+/* util: upsert representante */
 async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
   const sReps = await getOrCreateSheet('Dados_REP_ENTE_UG', ['UF','ENTE','NOME','CPF','EMAIL','TELEFONE','TELEFONE_MOVEL','CARGO','UG']);
   const rows = await safeGetRows(sReps, 'Reps:getRows');
@@ -876,7 +797,6 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
     email_ug:   idxOf('EMAIL_UG'),
   };
 
-  // >>> normaliza para comparação e gravação
   const ce = cnpj14(CNPJ_ENTE);
   const cu = cnpj14(CNPJ_UG);
 
@@ -942,12 +862,8 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
   return { updated: false };
 }
 
-
-/* ───────────── Endpoints de escrita ───────────── */
-
 /* ===== util de idempotência ===== */
 function makeIdemKeyFromPayload(p) {
-  // chaves principais que definem "mesmo termo"
   const keyObj = {
     UF: norm(p.UF),
     ENTE: norm(p.ENTE),
@@ -959,12 +875,11 @@ function makeIdemKeyFromPayload(p) {
     DATA_VENCIMENTO_ULTIMO_CRP: norm(p.DATA_VENCIMENTO_ULTIMO_CRP),
     COMP: norm(p.COMPROMISSO_FIRMADO_ADESAO || ''),
     PROVID: norm(p.PROVIDENCIA_NECESS_ADESAO || ''),
-    TS_DIA: String(p.DATA_TERMO_GERADO || ''),   // dia do termo
+    TS_DIA: String(p.DATA_TERMO_GERADO || ''),
   };
   const raw = JSON.stringify(keyObj);
   return 'fp_' + crypto.createHash('sha256').update(raw).digest('hex').slice(0, 24);
 }
-
 async function findTermoByIdemKey(sTermos, idemKey) {
   await sTermos.loadHeaderRow();
   const headers = sTermos.headerValues || [];
@@ -1049,17 +964,15 @@ app.post('/api/gerar-termo', async (req,res)=>{
       'PROVIDENCIA_NECESS_ADESAO',
       'CONDICAO_VIGENCIA',
       'MES','DATA_TERMO_GERADO','HORA_TERMO_GERADO','ANO_TERMO_GERADO',
-      'IDEMP_KEY' // coluna p/ idempotência
+      'IDEMP_KEY'
     ]);
 
     await sTermos.loadHeaderRow();
 
-    // resolve idemKey
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
     const idemBody   = String(p.IDEMP_KEY || '').trim();
     const idemKey    = idemHeader || idemBody || makeIdemKeyFromPayload(p);
 
-    // Se já existir linha com esse IDEMP_KEY, responde OK e sai (idempotência)
     const existingRowIdx = await findTermoByIdemKey(sTermos, idemKey);
     if (existingRowIdx !== null) {
       return res.json({ ok: true, dedup: true });
@@ -1093,15 +1006,10 @@ app.post('/api/gerar-termo', async (req,res)=>{
       IDEMP_KEY: idemKey
     }, 'Termos:add');
 
-    // 🔐 Garante que os e-mails fiquem na base principal ANTES da resposta
-    try {
-      await upsertEmailsInBase(p);
-    } catch (e) {
-      if (LOG_LEVEL === 'debug') console.warn('upsertEmailsInBase falhou:', e?.message || e);
-    }
+    try { await upsertEmailsInBase(p); } catch (_) {}
+
     res.json({ ok: true });
 
-    // ===== LOG de alterações (comparação ampla; snapshot opcional)
     setImmediate(async () => {
       try {
         const sLog = await getOrCreateSheet('Reg_alteracao_dados_ente_ug', [
@@ -1140,7 +1048,6 @@ app.post('/api/gerar-termo', async (req,res)=>{
             MES: t.MES, DATA: t.DATA, HORA: t.HORA
           }, 'Log:add');
         }
-
       } catch (bgErr) {
         if (LOG_LEVEL !== 'silent') console.warn('gerar-termo (background):', bgErr?.message || bgErr);
       }
