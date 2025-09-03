@@ -96,8 +96,8 @@
 
       <p class="mt"><strong>4.1 Celebração de termos de parcelamento de débitos</strong></p>
       <ul id="opt-4-1">
-        <li data-code="4.1.1">4.1.1 em até sessenta parcelas, com base nas regras previstas nos arts. 14 e 15 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025.</li>
-        <li data-code="4.1.2">4.1.2 em até trezentas parcelas, com base nas regras previstas nos arts. 115 e 117 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025, conforme disposto nos arts. 4º a 11 do Anexo XVII da Portaria MTP nº 1.467/2022.</li>
+        <li data-code="4.1.1">4.1.1 em até sessenta parcelas, com base nas regras previstas nos arts. 14 e 15 do ADCT, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025.</li>
+        <li data-code="4.1.2">4.1.2 em até trezentas parcelas, com base nas regras previstas nos arts. 115 e 117 do ADCT, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025, conforme disposto nos arts. 4º a 11 do Anexo XVII da Portaria MTP nº 1.467/2022.</li>
       </ul>
 
       <p class="mt"><strong>4.2 Regularização de pendências para a emissão administrativa e regular do CRP</strong></p>
@@ -191,14 +191,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" referrerpolicy="no-referrer"></script>
 
   <script>
+    // <<< NOVO: base do backend >>>
+    const API_BASE = 'https://programa-de-regularidade.onrender.com';
+
     window.addEventListener('load', () => {
-      // ---- Comunicação com a janela que abriu (form.html) para controlar o modal "Gerando PDF"
       function sendStatus(status, extra = {}) {
         try {
           if (window.opener && typeof window.opener.postMessage === 'function') {
             window.opener.postMessage({ source: 'termo.html', kind: 'pdf', status, ...extra }, '*');
           }
-        } catch(e) { /* silencioso */ }
+        } catch(e) {}
       }
 
       async function waitFonts(){ try{ if(document.fonts && document.fonts.ready) await document.fonts.ready; }catch{} }
@@ -222,7 +224,6 @@
         };
         Object.entries(map).forEach(([q,k])=> setTextAll(k, (p.get(q)||'').toString()));
 
-        // 1.1 – mostra só a opção escolhida
         const esfera = (p.get('esfera')||'').toLowerCase();
         const liEsfera = document.getElementById('li-esfera');
         if (liEsfera){
@@ -231,7 +232,6 @@
           else liEsfera.innerHTML = '<em>Não informado.</em>';
         }
 
-        // 3.3 – lista de critérios marcados
         const ul = document.getElementById('criterios-list'); ul.innerHTML = '';
         const criterios = [];
         for (const [k,v] of p.entries()){
@@ -243,7 +243,6 @@
           criterios.forEach(c => { const li=document.createElement('li'); li.textContent=c; ul.appendChild(li); });
         }
 
-        // 4 – Finalidade Inicial da Adesão (mostrar rótulos completos A/B)
         const hasA = !!(p.get('celebracao')||'').trim();
         const hasB = !!(p.get('regularizacao')||'').trim();
         const labels = [];
@@ -252,7 +251,6 @@
         document.getElementById('finalidades-iniciais').textContent =
           labels.length ? labels.join(' e/ou ') : 'Não informado.';
 
-        // 4.x – manter apenas as opções selecionadas
         filterOptions('celebracao', 'opt-4-1', [
           {code:'4.1.1', test:/4\.1\.1|sessent|60\b/i},
           {code:'4.1.2', test:/4\.1\.2|trezent|300\b/i},
@@ -271,7 +269,6 @@
           {code:'4.4.2', test:/4\.4\.2|outro\s+crit/i},
         ]);
 
-        // 5 – mostrar somente os subitens marcados (5.1–5.6)
         filterOptionsFlexible('compromissos', 'opt-5', [
           {code:'5.1', test:/5\.?1\b|repasses|parcelas\b/i},
           {code:'5.2', test:/5\.?2\b|encaminhamento|solicita/i},
@@ -281,7 +278,6 @@
           {code:'5.6', test:/5\.?6\b|planos?\s+de\s+a(?:ç|c)[aã]o/i},
         ]);
 
-        // 6 – mostrar somente 6.1 ou 6.2, conforme seleção
         filterOptionsFlexible('providencias', 'opt-6', [
           {code:'6.1', test:/6\.?1\b|inclus[aã]o|incluir|cadprev/i},
           {code:'6.2', test:/6\.?2\b|inexist[eê]ncia|j[aá]\s*regulariz/i},
@@ -303,7 +299,6 @@
         }
       }
 
-      // versão flexível (compromissos/providências)
       function filterOptionsFlexible(paramKey, listId, rules){
         const rawParam = (p.get(paramKey)||'').toString();
         const rawAllPairs = [...p.entries()].map(([k,v]) => `${k}=${v}`).join(' ');
@@ -334,7 +329,6 @@
 
       function fitTitle(){ const t=document.getElementById('term-title'); if (t) t.style.whiteSpace='normal'; }
 
-      // Cabeçalho (snapshot) — usado só no fallback (html2pdf)
       async function captureHeaderDataURL(){
         const el = document.querySelector('.logos-wrap');
         const canvas = await html2canvas(el, {
@@ -355,21 +349,17 @@
 
       function sanitizeFilename(s){ return String(s||'Sem município').replace(/[\\/:*?"<>|]+/g,'').trim(); }
 
-      /* ========= Gerador PDF (fallback no navegador) ========= */
       async function generatePdfClient(){
         await waitFonts(); fitTitle();
 
-        // Nome do arquivo
         const municipio = sanitizeFilename(p.get('ente')||'');
         const ufSafe    = sanitizeFilename(p.get('uf')||'');
         const muniUF    = municipio ? `${municipio}${ufSafe ? `-${ufSafe}` : ''}` : 'Sem municipio';
         const filename  = `Form_Prog_Reg_Prev - ${muniUF}.pdf`;
 
-        // Cabeçalho (logos)
         const header = await captureHeaderDataURL();
         const ratio  = header.h / header.w;
 
-        // Layout A4 em mm
         const PAGE_W_MM   = 210;
         const SIDE_PAD_MM = 15;
         const HEAD_TOP_MM = 2;
@@ -377,7 +367,6 @@
         const headerHmm   = headerWmm * ratio;
         const GAP_BELOW   = 6;
 
-        // ===== Footer inteligente: quebra só se não couber =====
         (function decideFooterBreak(){
           const root   = document.getElementById('pdf-root');
           const footer = root?.querySelector('.term-footer');
@@ -401,7 +390,6 @@
           if (!fitsFirstPage) footer.classList.add('footer-force-break');
         })();
 
-        // Força modo exportação também no <html> e <body> (fundo branco 100%)
         document.documentElement.classList.add('pdf-export');
         document.body.classList.add('pdf-export');
         document.getElementById('pdf-root').classList.add('pdf-export');
@@ -434,7 +422,6 @@
         document.documentElement.classList.remove('pdf-export');
       }
 
-      /* ========= Gerador PDF (servidor / Puppeteer) ========= */
       function buildServerPayloadFromQuery(){
         const payload = {
           UF: p.get('uf') || '',
@@ -460,14 +447,12 @@
           DEFICIT_ATUARIAL: p.get('deficit') || '',
           CRITERIOS_ESTRUT_ESTABELECIDOS: p.get('criterios_estrut') || '',
           MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: p.get('manutencao_normas') || '',
-          // aceitamos tanto 'compromisso' quanto 'compromissos'
           COMPROMISSO_FIRMADO_ADESAO: p.get('compromisso') || p.get('compromissos') || '',
           PROVIDENCIA_NECESS_ADESAO: p.get('providencias') || '',
           CONDICAO_VIGENCIA: p.get('condicao_vigencia') || '',
           DATA_TERMO_GERADO: p.get('data_termo') || ''
         };
 
-        // critérios irregulares em array
         const crit = [];
         for (const [k,v] of p.entries()){
           if (/^criterio\d+$/i.test(k) && v) crit.push(v);
@@ -476,10 +461,10 @@
         return payload;
       }
 
+      // <<< ALTERADO: usa API_BASE e cache-busting >>>
       async function generatePdfServer(){
         await waitFonts(); fitTitle();
 
-        // nome de fallback
         const municipio = sanitizeFilename(p.get('ente')||'');
         const ufSafe    = sanitizeFilename(p.get('uf')||'');
         const muniUF    = municipio ? `${municipio}${ufSafe ? `-${ufSafe}` : ''}` : 'Sem municipio';
@@ -488,7 +473,7 @@
         sendStatus('start', { filename });
 
         try{
-          const resp = await fetch('/api/termo-pdf', {
+          const resp = await fetch(`${API_BASE}/api/termo-pdf?_ts=${Date.now()}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             mode: 'cors',
@@ -496,13 +481,11 @@
           });
 
           if (!resp.ok) {
-            // tenta ler JSON de erro
             let errText = 'Falha ao gerar PDF no servidor.';
             try { const j = await resp.json(); if (j && j.error) errText = j.error; } catch {}
             throw new Error(errText);
           }
 
-          // tenta extrair filename do Content-Disposition
           const cd = resp.headers.get('Content-Disposition') || '';
           const m = cd.match(/filename\*?=(?:UTF-8''|")?([^\";]+)/i);
           if (m && m[1]) {
@@ -519,22 +502,19 @@
           sendStatus('done', { filename });
         } catch (err){
           sendStatus('error', { message: (err && err.message) ? err.message : String(err) });
-          // fallback automático para o gerador no navegador
-          try { await generatePdfClient(); } catch(e){ /* último recurso: log */ console.error(e); }
+          try { await generatePdfClient(); } catch(e){ console.error(e); }
         }
       }
 
-      // init
       (function init(){
         hydrate(); fitTitle();
-        sendStatus('ready'); // página pronta
+        sendStatus('ready');
 
         const auto = new URLSearchParams(location.search).get('auto');
         const engine = (new URLSearchParams(location.search).get('engine') || 'server').toLowerCase();
 
         if (auto !== null){
           document.documentElement.classList.add('auto-download');
-          // prioriza servidor (Puppeteer com SVG no header). Se engine=client, força fallback.
           if (engine === 'client') {
             generatePdfClient()
               .then(()=>{ try{ window.close(); }catch{} })
