@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Página em construção — Legislação do Programa</title>
+
+  <!-- tipografia do projeto -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/rawline" rel="stylesheet">
+
+  <style>
+    :root{
+      --brand:#1e3a8a;      /* 700 */
+      --brand-600:#2563eb;  /* 600 */
+      --fg:#111827;
+      --card:#ffffff;
+      --divider:#e5e7eb;
+      --shadow:0 10px 28px rgba(0,0,0,.10);
+    }
+    *,*::before,*::after{ box-sizing:border-box; }
+    html,body{
+      margin:0; padding:0; width:100%; min-height:100%;
+      overflow-x:hidden; -webkit-text-size-adjust:100%;
+      color:var(--fg);
+      font-family:'Rawline','Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+
+      /* mesmo fundo do projeto */
+      background-image:
+        linear-gradient(0deg, rgba(0,0,0,.18), rgba(0,0,0,.18)),
+        linear-gradient(90deg, rgba(2,22,58,.35) 0%, rgba(2,22,58,.15) 40%, rgba(2,22,58,0) 60%),
+        url('imagens/bg-home.svg');
+      background-position:center center, center center, center center;
+      background-repeat:no-repeat, no-repeat, no-repeat;
+      background-size:cover, cover, cover;
+      background-attachment:fixed, fixed, fixed;
+      background-color:#0b2240; /* fallback */
+    }
+    @media (max-width: 991.98px){
+      html,body{ background-attachment:scroll, scroll, scroll; }
+    }
+
+    /* layout: header fixo no topo e conteúdo centralizado */
+    .shell{ min-height:100dvh; display:flex; flex-direction:column; }
+    .mps-header{
+      text-align:center;
+      padding-top:1.25rem;   /* ~20px */
+      padding-bottom:.5rem;  /* ~8px */
+    }
+    .logo-mps-top{
+      height:56px; width:auto; display:block; margin:0 auto;
+    }
+
+    .page{
+      flex:1; /* ocupa o restante abaixo do header */
+      display:grid; place-items:center;
+      padding: max(16px, env(safe-area-inset-top))
+               max(16px, env(safe-area-inset-right))
+               max(24px, env(safe-area-inset-bottom))
+               max(16px, env(safe-area-inset-left));
+    }
+    .notice{
+      width:min(720px, 92vw);
+      background:rgba(255,255,255,.92);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--divider);
+      padding: clamp(16px, 4vw, 28px);
+      text-align:center;
+      backdrop-filter: saturate(1.15) blur(2px);
+    }
+    h1{
+      margin:0 0 .25rem 0;
+      font-weight:800;
+      font-size: clamp(1.2rem, 2.2vw + .8rem, 1.8rem);
+      color:#0b2240;
+      letter-spacing:.2px;
+    }
+    .sub{
+      margin:0 auto clamp(14px, 2.5vw, 18px);
+      max-width:56ch;
+      color:#1f2937;
+      opacity:.95;
+      font-weight:600;
+    }
+    #lottieBuild{
+      width: clamp(180px, 28vw, 280px);
+      height: clamp(180px, 28vw, 280px);
+      margin: 0 auto clamp(12px, 2.2vw, 18px);
+    }
+    .btn{
+      appearance:none; border:0; cursor:pointer;
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:.5rem; text-decoration:none; user-select:none;
+      font-weight:600;
+      padding:.9rem 1.1rem;
+      border-radius:999px;
+      transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+    }
+    .btn-primary{
+      color:#fff; background:var(--brand);
+      box-shadow:0 10px 24px rgba(0,0,0,.12);
+    }
+    .btn-primary:hover{ background:var(--brand-600); transform:translateY(-1px); }
+    .btns{ display:flex; justify-content:center; gap:.5rem; flex-wrap:wrap; }
+    .chev{
+      width:1em; height:1em; display:inline-block;
+      border-inline-start:2px solid currentColor;
+      border-block-start:2px solid currentColor;
+      transform: rotate(-45deg);
+      margin-right:.1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <!-- LOGO NO TOPO (fora do card) -->
+    <header class="mps-header">
+      <img class="logo-mps-top" src="imagens/logo-mps.svg" alt="Ministério da Previdência Social">
+    </header>
+
+    <main class="page">
+      <section class="notice" aria-labelledby="title">
+        <div id="lottieBuild" aria-hidden="true"></div>
+
+        <h1 id="title">Página em construção</h1>
+        <p class="sub">Estamos preparando esta funcionalidade. Em breve ela estará disponível para uso.</p>
+
+        <div class="btns">
+          <a class="btn btn-primary" href="index.html"><span class="chev"></span>Voltar à página inicial</a>
+        </div>
+
+        <noscript>
+          <p class="sub" style="margin-top:12px">Ative o JavaScript para visualizar a animação.</p>
+        </noscript>
+      </section>
+    </main>
+  </div>
+
+  <!-- Lottie -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+  <script>
+    // Aponta para a pasta correta: frontend/animacao/em-construcao.json
+    const container = document.getElementById('lottieBuild');
+    const anim = lottie.loadAnimation({
+      container,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      path: 'animacao/em-construcao.json'
+    });
+
+    // Fallback discreto se o JSON falhar
+    anim.addEventListener('data_failed', () => {
+      container.innerHTML = '<div style="font-size:48px;line-height:1">👷‍♂️</div>';
+    });
+  </script>
+</body>
+</html>
