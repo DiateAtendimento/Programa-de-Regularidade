@@ -4,7 +4,7 @@
   const API_BASE = 'https://programa-de-regularidade.onrender.com';
 
   // Limpeza automática de rascunhos não finalizados ao abrir a página
-  const AUTO_CLEAR_DRAFTS = true;                 // mude para false se quiser permitir retomar rascunho
+  const AUTO_CLEAR_DRAFTS = false;                 // mude para false se quiser permitir retomar rascunho
   const FORM_TTL_MS = 30 * 60 * 1000;             // 30 min de validade do rascunho
 
   /* ========= Idempotência (frontend) ========= */
@@ -453,7 +453,9 @@
   document.addEventListener('DOMContentLoaded', () => {
     fullUnlock();
 
-    // Limpa rascunhos não finalizados/expirados ao abrir
+    /* 
+    
+    Limpa rascunhos não finalizados/expirados ao abrir
     const st = getState();
     const now = Date.now();
     const isExpired = !!st?.lastSaved && (now - st.lastSaved > FORM_TTL_MS);
@@ -462,6 +464,8 @@
     if (AUTO_CLEAR_DRAFTS && (st && (isExpired || notFinalized))) {
       clearAllState();
     }
+    
+    */
 
     const st2 = getState(); // recarrega após possível limpeza
     if (!st2?.seenWelcome) {
@@ -1407,13 +1411,6 @@ async function buscarRepByCPF(cpf, target){
   function restoreState() {
     const st = loadState();
     if (!st) { showStep(0); return; }
-
-    // Se AUTO_CLEAR_DRAFTS estiver ativo, não restauramos rascunhos
-    if (AUTO_CLEAR_DRAFTS) {
-      clearAllState();
-      showStep(0);
-      return;
-    }
 
     const now = Date.now();
     if (st.lastSaved && (now - st.lastSaved > FORM_TTL_MS)) {
