@@ -190,6 +190,59 @@
   const fmtHR = d => d.toLocaleTimeString('pt-BR',{hour12:false,timeZone:'America/Sao_Paulo'});
   const rmAcc = s => String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
 
+
+  /* ========= Replicação imediata de e-mails (colunas F/G da aba CNPJ_ENTE_UG) ========= */
+  function debounce(fn, wait=800) {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), wait);
+    };
+  }
+
+  async function forceReplicateEmails(reason='edit'){
+    try {
+      const cnpjEnte = digits($('#CNPJ_ENTE')?.value || '');
+      const cnpjUg   = digits($('#CNPJ_UG')?.value || '');
+      const emailEnte= ($('#EMAIL_ENTE')?.value || '').trim();
+      const emailUg  = ($('#EMAIL_UG')?.value || '').trim();
+
+      // precisa ter pelo menos 1 CNPJ válido e 1 e-mail válido
+      const hasCnpj = (cnpjEnte.length === 14) || (cnpjUg.length === 14);
+      const hasEmail= (emailEnte && isEmail(emailEnte)) || (emailUg && isEmail(emailUg));
+      if (!hasCnpj || !hasEmail) return;
+
+      const body = {
+        UF:   ($('#UF')?.value || '').trim(),
+        ENTE: ($('#ENTE')?.value || '').trim(),
+        UG:   ($('#UG')?.value || '').trim(),
+        CNPJ_ENTE: cnpjEnte,
+        CNPJ_UG:   cnpjUg,
+        EMAIL_ENTE: (emailEnte && isEmail(emailEnte)) ? emailEnte : '',
+        EMAIL_UG:   (emailUg   && isEmail(emailUg))   ? emailUg   : '',
+        __source: `frontend-email-sync:${reason}`
+      };
+
+      // silencioso: sem modal/loader para não travar a UI
+      fetchJSON(
+        `${API_BASE}/api/upsert-cnpj`,
+        { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) },
+        { label:'upsert-cnpj(email-sync)', timeout: 8000, retries: 1 }
+      ).catch(()=>{ /* silencioso */ });
+    } catch(_) { /* noop */ }
+  }
+
+  const replicateEmails = debounce(forceReplicateEmails, 800);
+
+  // Dispara replicação ao digitar e ao sair do campo
+  ['EMAIL_ENTE', 'EMAIL_UG'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => replicateEmails('input'));
+    el.addEventListener('blur',  () => replicateEmails('blur'));
+  });
+
+
   // Modais
   const modalErro     = new bootstrap.Modal($('#modalErro'));
   const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
@@ -714,19 +767,29 @@
     return true;
   }
 
+/* ========= Navegação: botão Próximo (com trava anticlique duplo) ========= */
+  let navBusy = false;
   btnNext?.addEventListener('click', async () => {
-    if (step === 0 && !cnpjOK) {
-      showAtencao(['Pesquise e selecione um CNPJ válido antes de prosseguir.']);
-      return;
-    }
-    if (!validateStep(step)) return;
+    if (navBusy) return;
+    navBusy = true;
+    try {
+      if (step === 0 && !cnpjOK) {
+        showAtencao(['Pesquise e selecione um CNPJ válido antes de prosseguir.']);
+        return;
+      }
+      if (!validateStep(step)) return;
 
-    if (step === 1 && cnpjMissing) {
-      try { await upsertBaseIfMissing(); } catch (_) {}
-    }
+      if (step === 1 && cnpjMissing) {
+        try { await upsertBaseIfMissing(); } catch (_) {}
+      }
 
-    showStep(step + 1);
+      showStep(step + 1);
+    } finally {
+      // atraso mínimo evita 2 cliques muito próximos em redes lentas
+      setTimeout(() => { navBusy = false; }, 200);
+    }
   });
+
 
   /* ========= Esfera ========= */
   $$('.esf-only-one').forEach(chk=>{
@@ -780,7 +843,7 @@
     }
   }
 
-  /* ========= Busca por CNPJ ========= */
+ /* ========= Busca por CNPJ ========= */
   let searching = false;
   $('#btnPesquisar')?.addEventListener('click', async (ev)=>{
     if (searching) return;
@@ -839,8 +902,11 @@
       $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
       $('#EMAIL_UG').value   = data.EMAIL_UG   || '';
 
+      // >>> NOVO: garante replicação imediata nas colunas F/G da planilha
+      replicateEmails('after-lookup');
+
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
-       'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
+      'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
 
       const iso = data.CRP_DATA_VALIDADE_ISO || '';
@@ -883,6 +949,8 @@
       updateFooterAlign();
     }
   });
+
+
 
 /* ========= Busca reps por CPF ========= */
 async function buscarRepByCPF(cpf, target){
