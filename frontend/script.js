@@ -39,24 +39,26 @@
   const FETCH_TIMEOUT_MS = 20000; // 20s
   const FETCH_RETRIES = 3;        // tentativas além da primeira
 
+  // drop-in replacement
   async function fetchJSON(
     url,
     { method = 'GET', headers = {}, body = null } = {},
     { label = 'request', timeout = FETCH_TIMEOUT_MS, retries = FETCH_RETRIES } = {}
   ) {
     let attempt = 0;
+    let didWait = false;
 
     // cache-busting por querystring
     const bust = `_ts=${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const sep = url.includes('?') ? '&' : '?';
     const finalURL = `${url}${sep}${bust}`;
-
     const finalHeaders = { ...headers };
 
     while (true) {
       attempt++;
       const ctrl = new AbortController();
       const to = setTimeout(() => ctrl.abort(`timeout:${label}`), timeout);
+
       try {
         const res = await fetch(finalURL, {
           method,
@@ -73,29 +75,41 @@
         if (!res.ok) {
           const isJson = (res.headers.get('content-type') || '').includes('application/json');
           const data = isJson ? (await res.json().catch(() => null)) : null;
-          const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
-          const err = new Error(msg);
+          const err = new Error((data && (data.error || data.message)) || `HTTP ${res.status}`);
           err.status = res.status;
           throw err;
         }
+
         const ct = res.headers.get('content-type') || '';
         return ct.includes('application/json') ? res.json() : res.text();
+
       } catch (e) {
         clearTimeout(to);
         const m = String(e?.message || '').toLowerCase();
         const isHttp = (e && typeof e.status === 'number');
+
         const retriable =
           (isHttp && (e.status === 429 || e.status === 502 || e.status === 503 || e.status === 504 || e.status >= 500)) ||
           m.includes('etimedout') || m.includes('timeout:') || m.includes('abort') ||
           m.includes('econnreset') || m.includes('socket hang up') || m.includes('eai_again') ||
-          (!navigator.onLine) ||
-          m.includes('failed') || m.includes('bad gateway');
+          m.includes('bad gateway') || m.includes('failed to fetch') || m.includes('typeerror: failed to fetch') ||
+          m.includes('cors') || (!navigator.onLine);
 
-        if (!retriable || attempt > (retries + 1)) throw e;
+        // tentativas rápidas com backoff exponencial
+        if (retriable && attempt <= (retries + 1)) {
+          const backoff = Math.min(4000, 300 * Math.pow(2, attempt - 1));
+          await new Promise(r => setTimeout(r, backoff));
+          continue;
+        }
 
-        // backoff exponencial simples
-        const backoff = 300 * Math.pow(2, attempt - 1);
-        await new Promise(r => setTimeout(r, backoff));
+        // último recurso: aguarda o serviço responder /api/health e tenta 1x
+        if (retriable && !didWait) {
+          didWait = true;
+          const ok = await waitForService({ timeoutMs: 60_000, pollMs: 2500 });
+          if (ok) continue;
+        }
+
+        throw e;
       }
     }
   }
