@@ -334,16 +334,18 @@
   let loadingCount = 0;
 
   function killBackdropLocks() {
-    defocusIfInsideModal(); // <-- novo
-    try { modalLoadingSearch.hide(); } catch {}
-    try { modalGerandoPdf.hide(); } catch {}
+    // Não feche modais visíveis; apenas limpe travas se não houver nenhuma aberta
+    defocusIfInsideModal();
     setTimeout(() => {
-      $$('.modal.show').forEach(m => m.classList.remove('show'));
-      $$('.modal-backdrop').forEach(b => b.remove());
-      document.body.classList.remove('modal-open');
-      document.body.style.removeProperty('padding-right');
+      const hasOpen = !!document.querySelector('.modal.show');
+      if (!hasOpen) {
+        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('padding-right');
+      }
     }, 0);
   }
+
 
   function unlockUI() {
     document.body.classList.remove('modal-open');
@@ -380,11 +382,15 @@
   });
 
   function safeShowModal(modalInstance){
-    forceCloseLoading();
-    defocusIfInsideModal(); // <-- novo
-    killBackdropLocks();
-    try { modalInstance.show(); } catch {}
+    forceCloseLoading();      // fecha “Carregando…”, se estiver aberto
+    defocusIfInsideModal();
+    setTimeout(() => {
+      try { modalInstance.show(); } catch {}
+      // Limpa backdrops órfãos apenas se não houver outra modal aberta
+      killBackdropLocks();
+    }, 0);
   }
+
 
   /* ========= Lottie ========= */
   const lotties = {};
