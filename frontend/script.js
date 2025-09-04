@@ -926,7 +926,7 @@ async function buscarRepByCPF(cpf, target){
     }
   } finally {
     stopLoading();
-    fullUnlock?.();
+    unlockUI();
   }
 }
 
