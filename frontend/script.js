@@ -928,6 +928,24 @@
         }
       }
 
+      // >>> NOVO: se não encontrou (missing:true), abre o modal e sai
+      if (r && r.missing) {
+        cnpjMissing = true;
+        $('#CNPJ_ENTE').value = maskCNPJ(cnpj); // já deixa preenchido no formulário
+        openConfirmAdd({
+          type: 'cnpj',
+          value: cnpj,
+          onYes: () => {
+            cnpjOK = true;
+            showStep(1);
+            updateNavButtons();
+            updateFooterAlign();
+            $('#UF')?.focus();
+          }
+        });
+        return; // não seguir para o fluxo "encontrado"
+      }
+
       const data = r.data;
       cnpjMissing = !!r.missing;
 
@@ -1022,55 +1040,87 @@
 
 
 
-/* ========= Busca reps por CPF ========= */
-async function buscarRepByCPF(cpf, target){
-  const cpfd = digits(cpf || '');
-  if (cpfd.length !== 11) { showAtencao(['Informe um CPF válido.']); return; }
 
-  try {
-    startLoading();
+  /* ========= Busca reps por CPF ========= */
+  async function buscarRepByCPF(cpf, target, ev){
+    const cpfd = digits(cpf || '');
+    if (cpfd.length !== 11) { showAtencao(['Informe um CPF válido.']); return; }
 
-    const r = await fetchJSON(
-      `${API_BASE}/api/rep-by-cpf?cpf=${cpfd}`,
-      {},
-      { label: 'rep-by-cpf' }
-    );
-    const data = r.data;
+    const forceNoCache = !!(ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey));
 
-    if (target === 'ENTE') {
-      $('#NOME_REP_ENTE').value  = data.NOME || '';
-      $('#CARGO_REP_ENTE').value = data.CARGO || '';
-      $('#EMAIL_REP_ENTE').value = data.EMAIL || '';
-      $('#TEL_REP_ENTE').value   = data.TELEFONE || '';
-    } else {
-      $('#NOME_REP_UG').value  = data.NOME || '';
-      $('#CARGO_REP_UG').value = data.CARGO || '';
-      $('#EMAIL_REP_UG').value = data.EMAIL || '';
-      $('#TEL_REP_UG').value   = data.TELEFONE || '';
-    }
-  } catch (err) {
-    if (err && err.status === 404) {
-      // registro não encontrado: oferece inclusão manual
-      openConfirmAdd({
-        type: 'cpf',
-        value: cpfd,
-        onYes: () => {
-          if (target === 'ENTE') { $('#NOME_REP_ENTE')?.focus(); }
-          else { $('#NOME_REP_UG')?.focus(); }
+    try {
+      startLoading();
+
+      let r;
+      try {
+        const url = `${API_BASE}/api/rep-by-cpf?cpf=${cpfd}${forceNoCache ? '&nocache=1' : ''}`;
+        r = await fetchJSON(url, {}, { label: forceNoCache ? 'rep-by-cpf(nocache)' : 'rep-by-cpf' });
+      } catch (err1) {
+        if (!forceNoCache) {
+          r = await fetchJSON(
+            `${API_BASE}/api/rep-by-cpf?cpf=${cpfd}&nocache=1`,
+            {},
+            { label: 'rep-by-cpf(retry-nocache)' }
+          );
+        } else {
+          throw err1;
         }
-      });
-    } else {
-      showErro(friendlyErrorMessages(err, 'Falha ao consultar CPF.'));
+      }
+
+      // ✅ NOVO: se a API retornar 200 com { missing:true }, abre o modal
+      if (r && r.missing) {
+        openConfirmAdd({
+          type: 'cpf',
+          value: cpfd,
+          onYes: () => {
+            if (target === 'ENTE') { $('#NOME_REP_ENTE')?.focus(); }
+            else { $('#NOME_REP_UG')?.focus(); }
+          }
+        });
+        return;
+      }
+
+      const data = r.data || {};
+
+      if (target === 'ENTE') {
+        $('#NOME_REP_ENTE').value  = data.NOME || '';
+        $('#CARGO_REP_ENTE').value = data.CARGO || '';
+        $('#EMAIL_REP_ENTE').value = data.EMAIL || '';
+        $('#TEL_REP_ENTE').value   = data.TELEFONE || '';
+      } else {
+        $('#NOME_REP_UG').value  = data.NOME || '';
+        $('#CARGO_REP_UG').value = data.CARGO || '';
+        $('#EMAIL_REP_UG').value = data.EMAIL || '';
+        $('#TEL_REP_UG').value   = data.TELEFONE || '';
+      }
+
+      // dispara replicação imediata de e-mails (se válidos) p/ base
+      replicateEmails('rep-by-cpf');
+
+    } catch (err) {
+      if (err && err.status === 404) {
+        // ✅ mantém compatibilidade com backend que retorna 404
+        openConfirmAdd({
+          type: 'cpf',
+          value: cpfd,
+          onYes: () => {
+            if (target === 'ENTE') { $('#NOME_REP_ENTE')?.focus(); }
+            else { $('#NOME_REP_UG')?.focus(); }
+          }
+        });
+      } else {
+        showErro(friendlyErrorMessages(err, 'Falha ao consultar CPF.'));
+      }
+    } finally {
+      stopLoading();
+      unlockUI();
     }
-  } finally {
-    stopLoading();
-    unlockUI();
   }
-}
 
+  /* Atualize os listeners para passar o evento (suporte a nocache por Shift/Ctrl/Cmd) */
+  $('#btnPesqRepEnte')?.addEventListener('click', (ev)=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE', ev));
+  $('#btnPesqRepUg')  ?.addEventListener('click', (ev)=> buscarRepByCPF($('#CPF_REP_UG').value,  'UG',   ev));
 
-  $('#btnPesqRepEnte')?.addEventListener('click', ()=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE'));
-  $('#btnPesqRepUg')?.addEventListener('click',   ()=> buscarRepByCPF($('#CPF_REP_UG').value,'UG'));
 
   async function upsertRepresentantes(){
     const base = {
