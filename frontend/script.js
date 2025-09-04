@@ -470,8 +470,13 @@
         markWelcomeSeen();
       }, 150);
     }
+    
+    fetchJSON(`${API_BASE}/api/warmup`, {}, { label: 'warmup', timeout: 15000, retries: 0 }).catch(()=>{});
+
     // pré-aquecer o backend (evita o 1º 502 na primeira ação do usuário)
     waitForService({ timeoutMs: 15000, pollMs: 1500 }).catch(()=>{});
+ 
+
   });
   window.addEventListener('beforeunload', saveState);
 
@@ -1179,12 +1184,17 @@ async function buscarRepByCPF(cpf, target){
       URL.revokeObjectURL(url);
 
     } catch (e) {
-      // se for queda/reinício, aguarda serviço de pé e tenta 1x novamente
       const msg = String(e?.message || '').toLowerCase();
       const status = e?.status || 0;
+      const looksLikeCorsOrFetch =
+        msg.includes('cors') || msg.includes('preflight') ||
+        msg.includes('access-control-allow-origin') ||
+        msg.includes('failed to fetch') || msg.includes('typeerror: failed to fetch');
+
       const canWait =
         status === 502 || status === 503 || status === 504 ||
-        msg.includes('timeout:') || !navigator.onLine || msg.includes('bad gateway');
+        msg.includes('timeout:') || !navigator.onLine ||
+        msg.includes('bad gateway') || looksLikeCorsOrFetch;
 
       if (canWait) {
         const ok = await waitForService({ timeoutMs: 60_000, pollMs: 2500 });

@@ -56,10 +56,6 @@ function isAllowedOrigin(origin) {
   const o = origin.replace(/\/+$/, '').toLowerCase();
   if (ALLOW_LIST.size === 0) return true;
   if (ALLOW_LIST.has(o)) return true;
-  if (/^https:\/\/.+\.netlify\.app$/i.test(o) &&
-      ALLOW_LIST.has('https://programa-de-regularidade.netlify.app')) {
-    return true;
-  }
   return false;
 }
 
