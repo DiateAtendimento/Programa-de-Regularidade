@@ -37,7 +37,7 @@
 
   /* ========= Robustez de rede ========= */
   const FETCH_TIMEOUT_MS = 20000; // 20s
-  const FETCH_RETRIES = 2;        // tentativas além da primeira
+  const FETCH_RETRIES = 3;        // tentativas além da primeira
 
   async function fetchJSON(
     url,
@@ -470,6 +470,8 @@
         markWelcomeSeen();
       }, 150);
     }
+    // pré-aquecer o backend (evita o 1º 502 na primeira ação do usuário)
+    waitForService({ timeoutMs: 15000, pollMs: 1500 }).catch(()=>{});
   });
   window.addEventListener('beforeunload', saveState);
 
@@ -1321,14 +1323,22 @@ async function buscarRepByCPF(cpf, target){
         btnSubmit.innerHTML = submitOriginalHTML;
         showStep(0);
       }, 800);
-
     } catch (err) {
-      // se for falha típica de reinício (502/503/504 / timeout / offline), espera e reenfila 1x com MESMA chave
       const msg = String(err?.message || '').toLowerCase();
       const status = err?.status || 0;
+
+      // também considera preflight/CORS/Failed to fetch como caso de "esperar e reenviar"
+      const looksLikeCorsOrFetch =
+        msg.includes('cors') ||
+        msg.includes('preflight') ||
+        msg.includes('access-control-allow-origin') ||
+        msg.includes('failed to fetch') ||
+        msg.includes('typeerror: failed to fetch');
+
       const canWait =
         status === 502 || status === 503 || status === 504 ||
-        msg.includes('timeout:') || !navigator.onLine || msg.includes('bad gateway');
+        msg.includes('timeout:') || !navigator.onLine ||
+        msg.includes('bad gateway') || looksLikeCorsOrFetch;
 
       if (canWait) {
         btnSubmit.innerHTML = 'Aguardando serviço…';
@@ -1380,6 +1390,7 @@ async function buscarRepByCPF(cpf, target){
       btnSubmit.disabled = false;
       btnSubmit.innerHTML = submitOriginalHTML;
     }
+
   });
 
   // restoreState — com política de limpeza

@@ -536,6 +536,17 @@ async function authSheets() {
 app.get('/api/health', (_req,res)=> res.json({ ok:true }));
 app.get('/api/healthz', (_req,res)=> res.json({ ok:true, uptime: process.uptime(), ts: Date.now() }));
 
+//aquece Sheets + Puppeteer
+app.get('/api/warmup', async (_req, res) => {
+  try {
+    await authSheets();   // autentica no Google Sheets e dá um loadInfo()
+    await getBrowser();   // garante que o Chrome headless já está aberto
+    res.json({ ok: true, warmed: true, ts: Date.now() });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'warmup failed' });
+  }
+});
+
 /** GET /api/consulta?cnpj=NNNNNNNNNNNNNN[&nocache=1] */
 app.get('/api/consulta', async (req, res) => {
   try {
