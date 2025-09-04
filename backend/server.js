@@ -648,6 +648,8 @@ async function upsertEmailsInBase(p){
 
   const sCnpj = await getSheetStrict('CNPJ_ENTE_UG');
   await sCnpj.loadHeaderRow();
+  await ensureSheetHasColumns(sCnpj, ['EMAIL_ENTE', 'EMAIL_UG']);
+
   const headers = sCnpj.headerValues || [];
 
   const san = s => (s ?? '')

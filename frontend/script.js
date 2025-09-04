@@ -196,6 +196,7 @@
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
   const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
   const modalGerandoPdf = new bootstrap.Modal($('#modalGerandoPdf'), { backdrop:'static', keyboard:false });
+  const modalSalvando = new bootstrap.Modal($('#modalSalvando'), { backdrop:'static', keyboard:false });
 
   /* ========= Persistência (etapa + campos) ========= */
   const STORAGE_KEY = 'rpps-form-v1';
@@ -327,6 +328,14 @@
   $('#modalGerandoPdf')?.addEventListener('shown.bs.modal', () => {
     mountLottie('lottieGerandoPdf', 'animacao/gerando-pdf.json', { loop:true, autoplay:true });
   });
+  $('#modalSalvando')?.addEventListener('shown.bs.modal', () => {
+    mountLottie('lottieSalvando', 'animacao/gerando-pdf.json', { loop:true, autoplay:true });
+  });
+  $('#modalSalvando')?.addEventListener('hidden.bs.modal', () => {
+    const inst = lotties['lottieSalvando'];
+    if (inst) { inst.destroy(); delete lotties['lottieSalvando']; }
+    killBackdropLocks(); // garante que não fique backdrop travado
+  });
 
   // Destrava tudo (modais/backdrop/body/loader)
   function fullUnlock() {
@@ -336,6 +345,11 @@
     forceCloseLoading();
     killBackdropLocks();
     unlockUI();
+  }
+
+  function closeSavingModal(timer){
+  clearTimeout(timer);
+  try { modalSalvando.hide(); } catch {}
   }
 
 
@@ -912,8 +926,6 @@ async function buscarRepByCPF(cpf, target){
     }
   } finally {
     stopLoading();
-    forceCloseLoading?.();
-    killBackdropLocks?.();
     fullUnlock?.();
   }
 }
@@ -1173,6 +1185,12 @@ async function buscarRepByCPF(cpf, target){
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = 'Finalizando…';
 
+    // dispara modal "Aguarde..." após 3s se ainda não finalizou
+    let savingModalTimer = setTimeout(() => {
+      try { safeShowModal(modalSalvando); } catch {}
+    }, 3000);
+
+
     try {
       // 1ª tentativa
       await fetchJSON(
@@ -1188,6 +1206,7 @@ async function buscarRepByCPF(cpf, target){
         { label: 'gerar-termo', timeout: 30000, retries: 1 }
       );
 
+      closeSavingModal(savingModalTimer);
       clearIdemKey();
       btnSubmit.innerHTML = 'Finalizado ✓';
 
@@ -1230,6 +1249,7 @@ async function buscarRepByCPF(cpf, target){
               },
               { label: 'gerar-termo(retry-after-wait)', timeout: 30000, retries: 0 }
             );
+            closeSavingModal(savingModalTimer);
             clearIdemKey();
             btnSubmit.innerHTML = 'Finalizado ✓';
             setTimeout(() => {
@@ -1246,12 +1266,15 @@ async function buscarRepByCPF(cpf, target){
             }, 800);
             return;
           } catch (err2) {
+            closeSavingModal(savingModalTimer);
             showErro(friendlyErrorMessages(err2, 'Falha ao registrar o termo.'));
           }
         } else {
+          closeSavingModal(savingModalTimer);
           showErro(['Servidor indisponível no momento. Tente novamente mais tarde.']);
         }
       } else {
+        closeSavingModal(savingModalTimer);
         showErro(friendlyErrorMessages(err, 'Falha ao registrar o termo.'));
       }
 
