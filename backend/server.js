@@ -644,9 +644,23 @@ app.get('/api/consulta', async (req, res) => {
 });
 
 /* ---------- util: atualizar EMAIL_ENTE / EMAIL_UG em CNPJ_ENTE_UG ---------- */
-async function upsertEmailsInBase(p){
-  const emailEnte = norm(p.EMAIL_ENTE);
-  const emailUg   = norm(p.EMAIL_UG);
+  async function upsertEmailsInBase(p){
+  // helper local p/ validar e-mail
+  const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm(v));
+
+  // valores vindos do payload
+  const emailEnteIn = norm(p.EMAIL_ENTE);
+  const emailUgIn   = norm(p.EMAIL_UG);
+
+  // fallbacks: e-mails dos representantes
+  const emailRepEnteIn = norm(p.EMAIL_REP_ENTE);
+  const emailRepUgIn   = norm(p.EMAIL_REP_UG);
+
+  // escolha final (direto se válido; senão, representante se válido)
+  const emailEnte = isEmail(emailEnteIn) ? emailEnteIn : (isEmail(emailRepEnteIn) ? emailRepEnteIn : '');
+  const emailUg   = isEmail(emailUgIn)   ? emailUgIn   : (isEmail(emailRepUgIn)   ? emailRepUgIn   : '');
+
+  // nada a fazer se ambos vazios
   if (!emailEnte && !emailUg) return;
 
   const sCnpj = await getSheetStrict('CNPJ_ENTE_UG');
@@ -664,10 +678,10 @@ async function upsertEmailsInBase(p){
   const idxOf = name => headers.findIndex(h => san(h) === san(name));
 
   const col = {
-    cnpj_ente: idxOf('CNPJ_ENTE'),
-    cnpj_ug:   idxOf('CNPJ_UG'),
-    email_ente:idxOf('EMAIL_ENTE'),
-    email_ug:  idxOf('EMAIL_UG'),
+    cnpj_ente:  idxOf('CNPJ_ENTE'),
+    cnpj_ug:    idxOf('CNPJ_UG'),
+    email_ente: idxOf('EMAIL_ENTE'),
+    email_ug:   idxOf('EMAIL_UG'),
   };
   if (col.cnpj_ente < 0 && col.cnpj_ug < 0) return;
 
@@ -686,6 +700,7 @@ async function upsertEmailsInBase(p){
   let changed = 0;
   for (let r = 1; r < endRow; r++) {
     let match = false;
+
     if (col.cnpj_ente >= 0) {
       const v = cnpj14(sCnpj.getCell(r, col.cnpj_ente)?.value || '');
       if (v && ce && v === ce) match = true;
@@ -714,6 +729,7 @@ async function upsertEmailsInBase(p){
     );
   }
 }
+
 
 /* ---------- busca rápida por CPF ---------- */
 async function findRepByCpfFast(cpfDigits) {

@@ -199,27 +199,36 @@
     };
   }
 
-  async function forceReplicateEmails(reason='edit'){
+  async function forceReplicateEmails(reason = 'edit') {
     try {
       const cnpjEnte = digits($('#CNPJ_ENTE')?.value || '');
       const cnpjUg   = digits($('#CNPJ_UG')?.value || '');
-      const emailEnte= ($('#EMAIL_ENTE')?.value || '').trim();
-      const emailUg  = ($('#EMAIL_UG')?.value || '').trim();
 
-      // precisa ter pelo menos 1 CNPJ válido e 1 e-mail válido
-      const hasCnpj = (cnpjEnte.length === 14) || (cnpjUg.length === 14);
-      const hasEmail= (emailEnte && isEmail(emailEnte)) || (emailUg && isEmail(emailUg));
+      // e-mails diretos
+      const emailEnte    = ($('#EMAIL_ENTE')?.value || '').trim();
+      const emailUg      = ($('#EMAIL_UG')?.value || '').trim();
+      // fallbacks (representantes)
+      const emailRepEnte = ($('#EMAIL_REP_ENTE')?.value || '').trim();
+      const emailRepUg   = ($('#EMAIL_REP_UG')?.value || '').trim();
+
+      // escolhe: valor direto se válido, senão usa o do representante (se válido)
+      const finalEmailEnte = isEmail(emailEnte) ? emailEnte : (isEmail(emailRepEnte) ? emailRepEnte : '');
+      const finalEmailUg   = isEmail(emailUg)   ? emailUg   : (isEmail(emailRepUg)   ? emailRepUg   : '');
+
+      // precisa ter pelo menos 1 CNPJ válido e 1 e-mail válido (direto ou fallback)
+      const hasCnpj  = (cnpjEnte.length === 14) || (cnpjUg.length === 14);
+      const hasEmail = !!finalEmailEnte || !!finalEmailUg;
       if (!hasCnpj || !hasEmail) return;
 
       const body = {
-        UF:   ($('#UF')?.value || '').trim(),
-        ENTE: ($('#ENTE')?.value || '').trim(),
-        UG:   ($('#UG')?.value || '').trim(),
-        CNPJ_ENTE: cnpjEnte,
-        CNPJ_UG:   cnpjUg,
-        EMAIL_ENTE: (emailEnte && isEmail(emailEnte)) ? emailEnte : '',
-        EMAIL_UG:   (emailUg   && isEmail(emailUg))   ? emailUg   : '',
-        __source: `frontend-email-sync:${reason}`
+        UF:         ($('#UF')?.value || '').trim(),
+        ENTE:       ($('#ENTE')?.value || '').trim(),
+        UG:         ($('#UG')?.value || '').trim(),
+        CNPJ_ENTE:  cnpjEnte,
+        CNPJ_UG:    cnpjUg,
+        EMAIL_ENTE: finalEmailEnte,
+        EMAIL_UG:   finalEmailUg,
+        __source:   `frontend-email-sync:${reason}`
       };
 
       // silencioso: sem modal/loader para não travar a UI
@@ -227,19 +236,21 @@
         `${API_BASE}/api/upsert-cnpj`,
         { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) },
         { label:'upsert-cnpj(email-sync)', timeout: 8000, retries: 1 }
-      ).catch(()=>{ /* silencioso */ });
-    } catch(_) { /* noop */ }
+      ).catch(() => { /* silencioso */ });
+    } catch (_) { /* noop */ }
   }
+
 
   const replicateEmails = debounce(forceReplicateEmails, 800);
 
   // Dispara replicação ao digitar e ao sair do campo
-  ['EMAIL_ENTE', 'EMAIL_UG'].forEach(id => {
+  ['EMAIL_ENTE','EMAIL_UG','EMAIL_REP_ENTE','EMAIL_REP_UG'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('input', () => replicateEmails('input'));
     el.addEventListener('blur',  () => replicateEmails('blur'));
   });
+
 
 
   // Modais
