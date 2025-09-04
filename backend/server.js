@@ -1,5 +1,3 @@
-// server.js
-
 // server.js — API RPPS (multi-etapas) c/ idempotência em /api/gerar-termo
 // Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP (colunas fixas B/F/G = 1/5/6),
 // grava em Termos_registrados (com coluna IDEMP_KEY para idempotência)
@@ -25,7 +23,6 @@ const app = express();
 /* ───────────── Níveis de log / debug ───────────── */
 const LOG_LEVEL = (process.env.LOG_LEVEL || 'warn').toLowerCase();
 const DEBUG_CORS = process.env.DEBUG_CORS === '1';
-const DEBUG_PDF  = process.env.DEBUG_PDF  === '1';
 
 /* ───────────── Conexões/robustez ───────────── */
 http.globalAgent.keepAlive = true;
@@ -50,7 +47,7 @@ const splitList = (s = '') =>
 
 /* ───────────── CORS (robusto) ───────────── */
 const ALLOW_LIST = new Set(
-  splitList(process.env.CORS_ORIGIN_LIST || process.env.CORS_ORIGIN || '')
+  splitList(process.env.CORS_ORIGIN_LIST || '')
     .map(u => u.replace(/\/+$/, '').toLowerCase())
 );
 
@@ -103,7 +100,7 @@ app.use((req, res, next) => {
 });
 
 /* ───────────── Helmet + demais middlewares ───────────── */
-const connectExtra = splitList(process.env.CORS_ORIGIN || process.env.CORS_ORIGIN_LIST || '');
+const connectExtra = splitList(process.env.CORS_ORIGIN_LIST || '');
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, crossOriginEmbedderPolicy: false }));
 app.use(helmet.contentSecurityPolicy({
   useDefaults: true,
@@ -128,12 +125,11 @@ app.use(hpp());
 app.use(express.json({ limit: '300kb' }));
 
 /* ───────────── Cache-Control das rotas de API ───────────── */
-app.use('/api', (req, res, next) => {
+app.use('/api', (_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('Surrogate-Control', 'no-store');
-  res.setHeader('Vary', 'Origin');
   next();
 });
 
@@ -219,7 +215,7 @@ async function getOrCreateSheet(title, headerValues){
   return s;
 }
 
-// ➕ PATCH 1 — helper para garantir colunas obrigatórias no header da planilha
+// ➕ helper para garantir colunas obrigatórias no header da planilha
 async function ensureSheetHasColumns(sheet, requiredHeaders = []) {
   await sheet.loadHeaderRow();
   const current = sheet.headerValues || [];
@@ -1091,7 +1087,7 @@ app.post('/api/gerar-termo', async (req,res)=>{
     ]);
 
     await sTermos.loadHeaderRow();
-    // ➕ NOVO: garante que a coluna de idempotência exista (evita duplicados)
+    // garante que a coluna de idempotência exista (evita duplicados)
     await ensureSheetHasColumns(sTermos, ['IDEMP_KEY']);
 
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
@@ -1237,11 +1233,11 @@ function inlineFont(relPath) {
   }
 }
 
-// ➕ PATCH 3 — wrapper externo evita que qualquer rejeição derrube o processo
+
+// ➕ wrapper externo evita que qualquer rejeição derrube o processo
 app.post('/api/termo-pdf', async (req, res) => {
   try {
     await withPdfLimiter(async () => {
-      // === A partir daqui, mantenha exatamente o SEU conteúdo atual da rota ===
       // Contexto único (sem incognito) + retry defensivo para TargetCloseError
       let page;
       let browser;

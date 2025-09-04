@@ -1,5 +1,4 @@
 //script.js
-
 (() => {
   /* ========= Config ========= */
   const API_BASE = 'https://programa-de-regularidade.onrender.com';
@@ -321,7 +320,6 @@
     }, 0);
   }
 
-
   function unlockUI() {
     document.body.classList.remove('modal-open');
     document.body.style.removeProperty('padding-right');
@@ -329,9 +327,6 @@
 
   function showLoadingModal() {
     try { modalLoadingSearch.show(); } catch {}
-  }
-  function hideLoadingModal() {
-    try { modalLoadingSearch.hide(); } catch {}
   }
   function startLoading() {
     loadingCount += 1;
@@ -421,10 +416,9 @@
   document.addEventListener('hidden.bs.modal', defocusIfInsideModal, true);
 
   function closeSavingModal(timer){
-  clearTimeout(timer);
-  try { modalSalvando.hide(); } catch {}
+    clearTimeout(timer);
+    try { modalSalvando.hide(); } catch {}
   }
-
 
   function setErroHeader(mode){
     const header = $('#modalErro .modal-header');
@@ -1100,7 +1094,6 @@ async function buscarRepByCPF(cpf, target){
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300').filter(i=>i.checked).map(i=>i.value).join('; '),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$('input#reg_sem_jud, input#reg_com_jud').filter(i=>i.checked).map(i=>i.value).join('; '),
       DEFICIT_ATUARIAL: $$('input#eq_implano, input#eq_prazos, input#eq_plano_alt').filter(i=>i.checked).map(i=>i.value).join('; '),
-      CRITERIOS_ESTRUT_EStABELECIDOS: undefined, // compat legado (não usar)
       CRITERIOS_ESTRUT_ESTABELECIDOS: $$('input#org_ugu, input#org_outros').filter(i=>i.checked).map(i=>i.value).join('; '),
       MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$('input#man_cert, input#man_melhoria, input#man_acomp').filter(i=>i.checked).map(i=>i.value).join('; '),
       COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked').map(i=>i.value).join('; '),
@@ -1115,7 +1108,6 @@ async function buscarRepByCPF(cpf, target){
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
-
   // ======== Preview (opcional) ========
   function openTermoWithPayload(payload, autoFlag){
     const esfera = ($('#esf_mun')?.checked ? 'RPPS Municipal' :
@@ -1154,7 +1146,7 @@ async function buscarRepByCPF(cpf, target){
     window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
   }
 
-   /* ========= Helper: gerar & baixar PDF ========= */
+  /* ========= Helper: gerar & baixar PDF ========= */
   async function gerarBaixarPDF(payload){
     const esfera =
       ($('#esf_mun')?.checked ? 'RPPS Municipal' :
@@ -1221,7 +1213,6 @@ async function buscarRepByCPF(cpf, target){
       throw e;
     }
   }
-
 
   /* ========= AÇÃO: Gerar Formulário (download do PDF) ========= */
   let gerarBusy = false;
@@ -1297,7 +1288,6 @@ async function buscarRepByCPF(cpf, target){
     let savingModalTimer = setTimeout(() => {
       try { safeShowModal(modalSalvando); } catch {}
     }, 3000);
-
 
     try {
       // 1ª tentativa
@@ -1440,3 +1430,5 @@ async function buscarRepByCPF(cpf, target){
 
   restoreState();
 })();
+
+  
