@@ -910,6 +910,11 @@
       return showAtencao(['Informe um CNPJ válido.']);
     }
 
+    const current = digits($('#CNPJ_ENTE')?.value || $('#CNPJ_UG')?.value || '');
+    if (current && current !== cnpj) {
+      clearAllState(); // evita “vazar” dados do rascunho anterior
+    }
+
     const forceNoCache = !!(ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey));
     const btn = $('#btnPesquisar');
 
@@ -934,22 +939,25 @@
         }
       }
 
-      // >>> NOVO: se não encontrou (missing:true), abre o modal e sai
       if (r && r.missing) {
         cnpjMissing = true;
-        $('#CNPJ_ENTE').value = maskCNPJ(cnpj); // já deixa preenchido no formulário
         openConfirmAdd({
           type: 'cnpj',
           value: cnpj,
           onYes: () => {
+            // limpa rascunho + UI antes de continuar
+            clearAllState();
+            resetFormUI();
+            cnpjMissing = true;
             cnpjOK = true;
+            $('#CNPJ_ENTE').value = maskCNPJ(cnpj); // ✅ só agora
             showStep(1);
             updateNavButtons();
             updateFooterAlign();
             $('#UF')?.focus();
           }
         });
-        return; // não seguir para o fluxo "encontrado"
+        return;
       }
 
       const data = r.data;
@@ -1021,6 +1029,8 @@
           type: 'cnpj',
           value: cnpj,
           onYes: () => {
+            clearAllState();
+            resetFormUI();
             cnpjOK = true;
             cnpjMissing = true;
             $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
@@ -1342,6 +1352,17 @@
 
   /* ========= Submit / Finalizar (com espera + reenvio seguro) ========= */
   const form = document.getElementById('regularidadeForm');
+
+  /* helper: limpa UI + memória do formulário */
+  function resetFormUI(){
+    try { form?.reset(); } catch {}
+    $$('.is-valid, .is-invalid').forEach(el => el.classList.remove('is-valid','is-invalid'));
+    $$('input[type="checkbox"], input[type="radio"]').forEach(el => el.checked = false);
+    editedFields.clear();
+    snapshotBase = null;
+    cnpjOK = false;
+  }
+
 
   // evita Enter antes da etapa 8
   form?.addEventListener('keydown', (e) => {
