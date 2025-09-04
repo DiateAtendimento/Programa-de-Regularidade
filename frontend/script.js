@@ -310,6 +310,7 @@
   let loadingCount = 0;
 
   function killBackdropLocks() {
+    defocusIfInsideModal(); // <-- novo
     try { modalLoadingSearch.hide(); } catch {}
     try { modalGerandoPdf.hide(); } catch {}
     setTimeout(() => {
@@ -319,6 +320,7 @@
       document.body.style.removeProperty('padding-right');
     }, 0);
   }
+
 
   function unlockUI() {
     document.body.classList.remove('modal-open');
@@ -359,6 +361,7 @@
 
   function safeShowModal(modalInstance){
     forceCloseLoading();
+    defocusIfInsideModal(); // <-- novo
     killBackdropLocks();
     try { modalInstance.show(); } catch {}
   }
@@ -399,6 +402,23 @@
     killBackdropLocks();
     unlockUI();
   }
+
+  // === A11y/foco: evita 'aria-hidden' com foco dentro de modal e cliques perdidos ===
+  function defocusIfInsideModal() {
+    const ae = document.activeElement;
+    if (ae && ae.closest && ae.closest('.modal')) {
+      try { ae.blur(); } catch {}
+      try {
+        document.body.setAttribute('tabindex', '-1');
+        document.body.focus({ preventScroll: true });
+      } catch {}
+      try { document.body.removeAttribute('tabindex'); } catch {}
+    }
+  }
+
+  // Garanta foco limpo quando qualquer modal vai/foi escondido
+  document.addEventListener('hide.bs.modal',   defocusIfInsideModal, true);
+  document.addEventListener('hidden.bs.modal', defocusIfInsideModal, true);
 
   function closeSavingModal(timer){
   clearTimeout(timer);
@@ -843,20 +863,23 @@
     }
   }
 
- /* ========= Busca por CNPJ ========= */
+  /* ========= Busca por CNPJ ========= */
   let searching = false;
   $('#btnPesquisar')?.addEventListener('click', async (ev)=>{
     if (searching) return;
+
     const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
-    if(cnpj.length!==14) {
+    if (cnpj.length !== 14) {
       const el = $('#CNPJ_ENTE_PESQ'); el.classList.add('is-invalid');
       return showAtencao(['Informe um CNPJ válido.']);
     }
 
     const forceNoCache = !!(ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey));
+    const btn = $('#btnPesquisar');
 
     try{
       searching = true;
+      btn?.setAttribute('disabled','disabled');
       startLoading();
 
       let r;
@@ -876,7 +899,6 @@
       }
 
       const data = r.data;
-
       cnpjMissing = !!r.missing;
 
       snapshotBase = {
@@ -902,9 +924,6 @@
       $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
       $('#EMAIL_UG').value   = data.EMAIL_UG   || '';
 
-      // >>> NOVO: garante replicação imediata nas colunas F/G da planilha
-      replicateEmails('after-lookup');
-
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
       'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
@@ -920,8 +939,28 @@
 
       cnpjOK = true;
       editedFields.clear();
-      showStep(1);
-    }catch (err) {
+
+      // Avança para a etapa 1 somente após o modal de loading FECHAR de fato.
+      const loadingEl = document.getElementById('modalLoadingSearch');
+      if (loadingEl) {
+        const onceHidden = () => {
+          loadingEl.removeEventListener('hidden.bs.modal', onceHidden);
+          defocusIfInsideModal();
+          showStep(1);
+          updateNavButtons();
+          updateFooterAlign();
+          $('#UF')?.focus();
+        };
+        loadingEl.addEventListener('hidden.bs.modal', onceHidden);
+      } else {
+        // fallback
+        showStep(1);
+        updateNavButtons();
+        updateFooterAlign();
+        $('#UF')?.focus();
+      }
+
+    } catch (err) {
       const msgs = friendlyErrorMessages(err, 'Não foi possível consultar o CNPJ.');
       if (err && err.status === 404) {
         openConfirmAdd({
@@ -943,8 +982,9 @@
       }
     } finally {
       searching = false;
-      stopLoading();
+      stopLoading();      // dispara o fechamento do modal; o avanço ocorrerá no 'hidden'
       unlockUI();
+      btn?.removeAttribute('disabled');
       updateNavButtons();
       updateFooterAlign();
     }
