@@ -36,8 +36,8 @@
   function clearIdemKey() { try { localStorage.removeItem(IDEM_STORE_KEY); } catch {} }
 
   /* ========= Robustez de rede ========= */
-  const FETCH_TIMEOUT_MS = 45000; // 45s
-  const FETCH_RETRIES = 3;        // tentativas além da primeira
+  const FETCH_TIMEOUT_MS = 120000; 
+  const FETCH_RETRIES = 1;        // tentativas além da primeira
 
   // drop-in replacement
   async function fetchJSON(
