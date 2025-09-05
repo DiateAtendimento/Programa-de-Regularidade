@@ -36,7 +36,7 @@
   function clearIdemKey() { try { localStorage.removeItem(IDEM_STORE_KEY); } catch {} }
 
   /* ========= Robustez de rede ========= */
-  const FETCH_TIMEOUT_MS = 20000; // 20s
+  const FETCH_TIMEOUT_MS = 45000; // 45s
   const FETCH_RETRIES = 3;        // tentativas além da primeira
 
   // drop-in replacement
@@ -937,13 +937,19 @@
       let r;
       try {
         const url = `${API_BASE}/api/consulta?cnpj=${cnpj}${forceNoCache ? '&nocache=1' : ''}`;
-        r = await fetchJSON(url, {}, { label: forceNoCache ? 'consulta-cnpj(nocache)' : 'consulta-cnpj' });
+        await waitForService({ timeoutMs: 60000, pollMs: 1500 });
+           r = await fetchJSON(
+            url,
+            {},
+            { label: forceNoCache ? 'consulta-cnpj(nocache)' : 'consulta-cnpj', timeout: 65000, retries: 0 }
+        );
+
       } catch (err1) {
         if (!forceNoCache) {
           r = await fetchJSON(
             `${API_BASE}/api/consulta?cnpj=${cnpj}&nocache=1`,
             {},
-            { label: 'consulta-cnpj(retry-nocache)' }
+            { label: 'consulta-cnpj(retry-nocache)', timeout: 65000, retries: 0 }
           );
         } else {
           throw err1;
@@ -1081,7 +1087,7 @@
       let r;
       try {
         const url = `${API_BASE}/api/rep-by-cpf?cpf=${cpfd}${forceNoCache ? '&nocache=1' : ''}`;
-        r = await fetchJSON(url, {}, { label: forceNoCache ? 'rep-by-cpf(nocache)' : 'rep-by-cpf' });
+        r = await fetchJSON(url, {}, { label: forceNoCache ? 'rep-by-cpf(nocache)' : 'rep-by-cpf', timeout: 35000, retries: 1 });
       } catch (err1) {
         if (!forceNoCache) {
           r = await fetchJSON(

@@ -1541,7 +1541,18 @@ app.post('/api/termo-pdf', async (req, res) => {
 
 /* ───────────── Start ───────────── */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server rodando na porta ${PORT}`));
+  app.listen(PORT, () => {
+    console.log(`🚀 Server rodando na porta ${PORT}`);
+    (async () => {
+      try {
+        await authSheets(); // autentica e faz loadInfo logo na subida
+        console.log('✅ Google Sheets aquecido (startup)');
+      } catch (e) {
+        console.warn('⚠️  Warmup do Sheets falhou no startup:', e?.message || e);
+      }
+    })();
+  });
+
 
 /* ───────────── Captura global de erros (defensivo) ───────────── */
 process.on('uncaughtException', (err) => {
