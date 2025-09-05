@@ -941,7 +941,7 @@
            r = await fetchJSON(
             url,
             {},
-            { label: forceNoCache ? 'consulta-cnpj(nocache)' : 'consulta-cnpj', timeout: 65000, retries: 0 }
+            { label: forceNoCache ? 'consulta-cnpj(nocache)' : 'consulta-cnpj', timeout: 110000, retries: 0 }
         );
 
       } catch (err1) {
@@ -949,7 +949,7 @@
           r = await fetchJSON(
             `${API_BASE}/api/consulta?cnpj=${cnpj}&nocache=1`,
             {},
-            { label: 'consulta-cnpj(retry-nocache)', timeout: 65000, retries: 0 }
+            { label: 'consulta-cnpj(retry-nocache)', timeout: 110000, retries: 0 }
           );
         } else {
           throw err1;
@@ -1072,8 +1072,6 @@
   });
 
 
-
-
   /* ========= Busca reps por CPF ========= */
   async function buscarRepByCPF(cpf, target, ev){
     const cpfd = digits(cpf || '');
@@ -1087,13 +1085,17 @@
       let r;
       try {
         const url = `${API_BASE}/api/rep-by-cpf?cpf=${cpfd}${forceNoCache ? '&nocache=1' : ''}`;
-        r = await fetchJSON(url, {}, { label: forceNoCache ? 'rep-by-cpf(nocache)' : 'rep-by-cpf', timeout: 35000, retries: 1 });
+        r = await fetchJSON(
+          url,
+          {},
+          { label: forceNoCache ? 'rep-by-cpf(nocache)' : 'rep-by-cpf', timeout: 110000, retries: 1 }
+        );
       } catch (err1) {
         if (!forceNoCache) {
           r = await fetchJSON(
             `${API_BASE}/api/rep-by-cpf?cpf=${cpfd}&nocache=1`,
             {},
-            { label: 'rep-by-cpf(retry-nocache)' }
+            { label: 'rep-by-cpf(retry-nocache)', timeout: 110000, retries: 0 }
           );
         } else {
           throw err1;
@@ -1149,6 +1151,7 @@
       unlockUI();
     }
   }
+
 
   /* Atualize os listeners para passar o evento (suporte a nocache por Shift/Ctrl/Cmd) */
   $('#btnPesqRepEnte')?.addEventListener('click', (ev)=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE', ev));
