@@ -31,8 +31,8 @@ https.globalAgent.keepAlive = true;
 const CACHE_TTL_MS       = Number(process.env.CACHE_TTL_MS || 5 * 60 * 1000);
 const CACHE_TTL_CRP_MS   = Number(process.env.CACHE_TTL_CRP_MS || 2 * 60 * 1000);
 
-const SHEETS_CONCURRENCY  = Number(process.env.SHEETS_CONCURRENCY || 3);
-const SHEETS_TIMEOUT_MS   = Number(process.env.SHEETS_TIMEOUT_MS || 20_000);
+const SHEETS_CONCURRENCY  = Number(process.env.SHEETS_CONCURRENCY || 1);
+const SHEETS_TIMEOUT_MS   = Number(process.env.SHEETS_TIMEOUT_MS || 60_000);
 const SHEETS_RETRIES      = Number(process.env.SHEETS_RETRIES || 2);
 
 /* ───────────── Segurança ───────────── */
