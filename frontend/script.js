@@ -278,6 +278,12 @@
   /* ========= Persistência (etapa + campos) ========= */
   const STORAGE_KEY = 'rpps-form-v1';
 
+  // flag de "bem-vindo" persistente (fora do rascunho)
+  const WELCOME_KEY = 'rpps-welcome-seen';
+  function hasSeenWelcome(){ try { return localStorage.getItem(WELCOME_KEY) === '1'; } catch { return false; } }
+  function rememberWelcome(){ try { localStorage.setItem(WELCOME_KEY, '1'); } catch {} }
+
+
   function clearAllState() {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     clearIdemKey();
@@ -498,13 +504,18 @@
     
     */
 
-    const st2 = getState(); // recarrega após possível limpeza
-    if (!st2?.seenWelcome) {
-      setTimeout(() => {
-        try { modalWelcome.show(); } catch {}
-        markWelcomeSeen();
-      }, 150);
+    const st2 = getState();
+    const alreadySeen = !!(st2?.seenWelcome) || hasSeenWelcome();
+    if (!alreadySeen) {
+      // marca antes de exibir para sobreviver a F5 imediato
+      rememberWelcome();
+      markWelcomeSeen(); // legado (continua no STORAGE_KEY), inofensivo
+      setTimeout(() => { try { modalWelcome.show(); } catch {} }, 0);
+    } else if (st2?.seenWelcome && !hasSeenWelcome()) {
+      // migração: se só existia no STORAGE_KEY, replica na chave dedicada
+      rememberWelcome();
     }
+
     
     fetchJSON(`${API_BASE}/api/warmup`, {}, { label: 'warmup', timeout: 15000, retries: 0 }).catch(()=>{});
 
@@ -1515,7 +1526,7 @@
     if (!st) { showStep(0); return; }
 
     const now = Date.now();
-    if (st.lastSaved && (now - st.lastSaved > FORM_TTL_MS)) {
+    if (AUTO_CLEAR_DRAFTS && st.lastSaved && (now - st.lastSaved > FORM_TTL_MS)) {
       clearAllState();
       showStep(0);
       return;
