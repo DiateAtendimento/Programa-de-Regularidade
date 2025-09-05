@@ -1,5 +1,6 @@
 //script.js
 (() => {
+  
   /* ========= Config ========= */
   const API_BASE = 'https://programa-de-regularidade.onrender.com';
 
@@ -934,10 +935,12 @@
       btn?.setAttribute('disabled','disabled');
       startLoading();
 
+      // ✅ NOVO: pré-checagem do serviço para reduzir 502/timeout na 1ª chamada
+      await waitForService({ timeoutMs: 60000, pollMs: 1500 });
+
       let r;
       try {
         const url = `${API_BASE}/api/consulta?cnpj=${cnpj}${forceNoCache ? '&nocache=1' : ''}`;
-        await waitForService({ timeoutMs: 60000, pollMs: 1500 });
            r = await fetchJSON(
             url,
             {},
@@ -1071,7 +1074,6 @@
     }
   });
 
-
   /* ========= Busca reps por CPF ========= */
   async function buscarRepByCPF(cpf, target, ev){
     const cpfd = digits(cpf || '');
@@ -1081,6 +1083,9 @@
 
     try {
       startLoading();
+
+      // ✅ NOVO: pré-checagem do serviço para reduzir 502/timeout
+      await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
       let r;
       try {
@@ -1102,7 +1107,7 @@
         }
       }
 
-      // ✅ NOVO: se a API retornar 200 com { missing:true }, abre o modal
+      // ✅ se a API retornar 200 com { missing:true }, abre o modal
       if (r && r.missing) {
         openConfirmAdd({
           type: 'cpf',
@@ -1134,7 +1139,7 @@
 
     } catch (err) {
       if (err && err.status === 404) {
-        // ✅ mantém compatibilidade com backend que retorna 404
+        // compatibilidade com backend que retorna 404
         openConfirmAdd({
           type: 'cpf',
           value: cpfd,
@@ -1151,7 +1156,6 @@
       unlockUI();
     }
   }
-
 
   /* Atualize os listeners para passar o evento (suporte a nocache por Shift/Ctrl/Cmd) */
   $('#btnPesqRepEnte')?.addEventListener('click', (ev)=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE', ev));
@@ -1570,5 +1574,3 @@
 
   restoreState();
 })();
-
-  

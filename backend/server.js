@@ -1,8 +1,5 @@
 // server.js — API RPPS (multi-etapas) c/ idempotência em /api/gerar-termo
-// Lê CNPJ_ENTE_UG, Dados_REP_ENTE_UG, CRP (colunas fixas B/F/G = 1/5/6),
-// grava em Termos_registrados (com coluna IDEMP_KEY para idempotência)
-// e registra alterações em Reg_alteracao_dados_ente_ug (auto-cria se faltar)
-// Também dá suporte a “upsert” de representantes (CPF não encontrado) e de base CNPJ (CNPJ não encontrado)
+// Otimizado: remove caminho pesado de CRP que gerava timeout:CRP:read
 
 require('dotenv').config();
 const fs = require('fs');
@@ -41,9 +38,7 @@ app.disable('x-powered-by');
 
 /* util env list */
 const splitList = (s = '') =>
-  s.split(/[\s,]+/)
-   .map(v => v.trim().replace(/\/+$/, ''))
-   .filter(Boolean);
+  s.split(/[\s,]+/).map(v => v.trim().replace(/\/+$/, '')).filter(Boolean);
 
 /* ───────────── CORS (robusto) ───────────── */
 const ALLOW_LIST = new Set(
@@ -52,11 +47,10 @@ const ALLOW_LIST = new Set(
 );
 
 function isAllowedOrigin(origin) {
-  if (!origin) return true; // requests internas / curl / same-origin
+  if (!origin) return true;
   const o = origin.replace(/\/+$/, '').toLowerCase();
   if (ALLOW_LIST.size === 0) return true;
-  if (ALLOW_LIST.has(o)) return true;
-  return false;
+  return ALLOW_LIST.has(o);
 }
 
 const corsOptionsDelegate = (req, cb) => {
@@ -84,7 +78,7 @@ const corsOptionsDelegate = (req, cb) => {
 app.use(cors(corsOptionsDelegate));
 app.options(/.*/, cors(corsOptionsDelegate));
 
-/* injeta CORS também em respostas de erro internas (defensivo) */
+/* injeta CORS também em respostas de erro internas */
 app.use((req, res, next) => {
   const o = req.headers.origin;
   if (!o || isAllowedOrigin(o)) {
@@ -95,7 +89,7 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ───────────── Helmet + demais middlewares ───────────── */
+/* ───────────── Helmet + middlewares ───────────── */
 const connectExtra = splitList(process.env.CORS_ORIGIN_LIST || '');
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, crossOriginEmbedderPolicy: false }));
 app.use(helmet.contentSecurityPolicy({
@@ -122,14 +116,11 @@ const rlWrite  = rateLimit({ windowMs: 15*60*1000, max: 120, standardHeaders: tr
 const rlPdf    = rateLimit({ windowMs: 15*60*1000, max: 20,  standardHeaders: true, legacyHeaders: false });
 
 // livre/sem limite: health, healthz, warmup
-
 app.use('/api/consulta', rlCommon);
 app.use('/api/rep-by-cpf', rlCommon);
-
 app.use('/api/upsert-cnpj', rlWrite);
 app.use('/api/upsert-rep', rlWrite);
 app.use('/api/gerar-termo', rlWrite);
-
 app.use('/api/termo-pdf', rlPdf);
 
 app.use(hpp());
@@ -188,7 +179,6 @@ if (process.env.GOOGLE_CREDENTIALS_B64) {
 }
 
 const doc = new GoogleSpreadsheet(SHEET_ID);
-
 let _sheetsReady = false;
 let _lastLoadInfo = 0;
 
@@ -208,11 +198,9 @@ function nowBR(){
     MES:  String(d.getMonth()+1).padStart(2,'0')
   };
 }
-
 function esferaFromEnte(ente){
   return low(ente).includes('governo do estado') ? 'Estadual/Distrital' : 'RPPS Municipal';
 }
-
 async function getSheetStrict(title){
   const s = doc.sheetsByTitle[title];
   if (!s) throw new Error(`Aba '${title}' não encontrada.`);
@@ -225,15 +213,12 @@ async function getOrCreateSheet(title, headerValues){
   s = await doc.addSheet({ title, headerValues });
   return s;
 }
-
-// ➕ helper para garantir colunas obrigatórias no header da planilha
 async function ensureSheetHasColumns(sheet, requiredHeaders = []) {
   await sheet.loadHeaderRow();
   const current = sheet.headerValues || [];
   const have = new Set(current.map(s => String(s ?? '').trim().toUpperCase()));
   const missing = requiredHeaders.filter(h => !have.has(String(h).toUpperCase()));
   if (!missing.length) return false;
-
   const next = [...current, ...missing];
   await withLimiter(`${sheet.title}:setHeaderRow`, () =>
     withTimeoutAndRetry(`${sheet.title}:setHeaderRow`, () => sheet.setHeaderRow(next))
@@ -241,134 +226,7 @@ async function ensureSheetHasColumns(sheet, requiredHeaders = []) {
   return true;
 }
 
-
-/* Helpers p/ headers duplicados */
-async function getRowsViaCells(sheet) {
-  await sheet.loadHeaderRow();
-
-  const normStr = v => (v ?? '').toString().trim();
-  const sanitize = s =>
-    normStr(s)
-      .toLowerCase()
-      .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-      .replace(/[^\p{L}\p{N}]+/gu, '_')
-      .replace(/_+/g, '_').replace(/^_+|_+$/g, '');
-
-  const rawHeaders = (sheet.headerValues || []).map(h => normStr(h));
-  const seen = {};
-  const headersUnique = rawHeaders.map(h => {
-    const base = sanitize(h);
-    if (!base) return '';
-    seen[base] = (seen[base] || 0) + 1;
-    return seen[base] === 1 ? base : `${base}__${seen[base]}`;
-  });
-
-  const cols = headersUnique.length || sheet.columnCount || 26;
-  const endRow = sheet.rowCount || 2000;
-
-  await sheet.loadCells({
-    startRowIndex: 1,
-    startColumnIndex: 0,
-    endRowIndex: endRow,
-    endColumnIndex: cols
-  });
-
-  const rows = [];
-  for (let r = 1; r < endRow; r++) {
-    let empty = true;
-    const obj = {};
-    for (let c = 0; c < cols; c++) {
-      const key = headersUnique[c]; if (!key) continue;
-      const cell = sheet.getCell(r, c);
-      const val = cell?.value ?? '';
-      if (val !== '' && val !== null) empty = false;
-      obj[key] = val === null ? '' : String(val);
-    }
-    if (!empty) rows.push(obj);
-  }
-  return rows;
-}
-async function getRowsSafe(sheet) {
-  try {
-    return await sheet.getRows();
-  } catch (e) {
-    if (String(e?.message || '').toLowerCase().includes('duplicate header')) {
-      return await getRowsViaCells(sheet);
-    }
-    throw e;
-  }
-}
-
-// === FAST LOOKUP: encontra uma LINHA por CNPJ lendo só as colunas de CNPJ ===
-async function findCnpjRowFast(sheet, cnpjDigits) {
-  await sheet.loadHeaderRow();
-  const headers = sheet.headerValues || [];
-
-  const san = s => (s ?? '')
-    .toString().trim().toLowerCase()
-    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-    .replace(/[^\p{L}\p{N}]+/gu,'_')
-    .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
-
-  const idx = {
-    cnpj_ente: headers.findIndex(h => san(h) === 'cnpj_ente'),
-    cnpj_ug:   headers.findIndex(h => san(h) === 'cnpj_ug'),
-  };
-  if (idx.cnpj_ente < 0 && idx.cnpj_ug < 0) return null;
-
-  // Varre apenas as colunas de CNPJ
-  const endRow = sheet.rowCount || 2000;
-
-  // Varrer CNPJ_ENTE
-  if (idx.cnpj_ente >= 0) {
-    await safeLoadCells(
-      sheet,
-      { startRowIndex: 1, startColumnIndex: idx.cnpj_ente, endRowIndex: endRow, endColumnIndex: idx.cnpj_ente + 1 },
-      'CNPJ:scan_ENTE'
-    );
-    for (let r = 1; r < endRow; r++) {
-      const v = (sheet.getCell(r, idx.cnpj_ente)?.value ?? '').toString().replace(/\D+/g,'');
-      if (v && v === cnpjDigits) {
-        // carrega a linha inteira
-        const endCol = headers.length || sheet.columnCount || 26;
-        await safeLoadCells(sheet, { startRowIndex: r, startColumnIndex: 0, endRowIndex: r + 1, endColumnIndex: endCol }, 'CNPJ:readRow_ENTE');
-        const rowObj = {};
-        for (let c = 0; c < endCol; c++) {
-          const key = headers[c] || `COL_${c+1}`;
-          rowObj[key] = String(sheet.getCell(r, c)?.value ?? '');
-        }
-        return rowObj;
-      }
-    }
-  }
-
-  // Varrer CNPJ_UG
-  if (idx.cnpj_ug >= 0) {
-    await safeLoadCells(
-      sheet,
-      { startRowIndex: 1, startColumnIndex: idx.cnpj_ug, endRowIndex: endRow, endColumnIndex: idx.cnpj_ug + 1 },
-      'CNPJ:scan_UG'
-    );
-    for (let r = 1; r < endRow; r++) {
-      const v = (sheet.getCell(r, idx.cnpj_ug)?.value ?? '').toString().replace(/\D+/g,'');
-      if (v && v === cnpjDigits) {
-        const endCol = headers.length || sheet.columnCount || 26;
-        await safeLoadCells(sheet, { startRowIndex: r, startColumnIndex: 0, endRowIndex: r + 1, endColumnIndex: endCol }, 'CNPJ:readRow_UG');
-        const rowObj = {};
-        for (let c = 0; c < endCol; c++) {
-          const key = headers[c] || `COL_${c+1}`;
-          rowObj[key] = String(sheet.getCell(r, c)?.value ?? '');
-        }
-        return rowObj;
-      }
-    }
-  }
-
-  return null;
-}
-
-
-/* ===== Concorrência + Timeout/Retry + Cache (Sheets) ===== */
+/* ===== Concorrência + Timeout/Retry (Sheets) ===== */
 const _q = [];
 let _active = 0;
 function _runNext() {
@@ -412,11 +270,19 @@ async function withTimeoutAndRetry(label, fn) {
         msg.includes('socket hang up') ||
         msg.includes('econnreset') ||
         msg.includes('eai_again');
-
       if (!retriable || attempt >= max) throw err;
-      const backoff = Math.min(5000, 800 * Math.pow(2, attempt - 1)); // 0.8s, 1.6s, 3.2s, máx 5s
+      const backoff = Math.min(5000, 800 * Math.pow(2, attempt - 1));
       await sleep(backoff);
     }
+  }
+}
+async function getRowsSafe(sheet) {
+  try { return await sheet.getRows(); }
+  catch (e) {
+    if (String(e?.message || '').toLowerCase().includes('duplicate header')) {
+      return await getRowsViaCells(sheet);
+    }
+    throw e;
   }
 }
 async function safeGetRows(sheet, label) {
@@ -449,6 +315,41 @@ function cacheSet(key, data, ttl = CACHE_TTL_MS) {
   _cache.set(key, { data, exp: Date.now() + ttl });
 }
 
+/* Helpers p/ headers duplicados */
+async function getRowsViaCells(sheet) {
+  await sheet.loadHeaderRow();
+  const normStr = v => (v ?? '').toString().trim();
+  const sanitize = s =>
+    normStr(s)
+      .toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+      .replace(/[^\p{L}\p{N}]+/gu, '_')
+      .replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+  const rawHeaders = (sheet.headerValues || []).map(h => normStr(h));
+  const seen = {};
+  const headersUnique = rawHeaders.map(h => {
+    const base = sanitize(h); if (!base) return '';
+    seen[base] = (seen[base] || 0) + 1;
+    return seen[base] === 1 ? base : `${base}__${seen[base]}`;
+  });
+  const cols = headersUnique.length || sheet.columnCount || 26;
+  const endRow = sheet.rowCount || 2000;
+  await sheet.loadCells({ startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: cols });
+  const rows = [];
+  for (let r = 1; r < endRow; r++) {
+    let empty = true; const obj = {};
+    for (let c = 0; c < cols; c++) {
+      const key = headersUnique[c]; if (!key) continue;
+      const cell = sheet.getCell(r, c);
+      const val = cell?.value ?? '';
+      if (val !== '' && val !== null) empty = false;
+      obj[key] = val === null ? '' : String(val);
+    }
+    if (!empty) rows.push(obj);
+  }
+  return rows;
+}
+
 /* Datas */
 function parseDMYorYMD(s) {
   const v = norm(s);
@@ -472,63 +373,62 @@ const formatDateISO = d => {
   return `${yy}-${mm}-${dd}`;
 };
 
-/* CRP (B/F/G = 1/5/6) */
-async function readCRPByFixedColumns(sheet) {
-  const colCNPJ = 1, colVal = 5, colDec = 6; // 0-based
+/* === CRP FAST LOOKUP: lê só as colunas necessárias da(s) linha(s) do CNPJ === */
+async function findCRPByCnpjFast(sheet, cnpjDigits) {
+  const colCNPJ = 1, colVal = 5, colDec = 6; // 0-based: B, F, G
   const endRow = sheet.rowCount || 2000;
-  const endCol = Math.max(colCNPJ, colVal, colDec) + 1;
 
-  await safeLoadCells(sheet, { startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol }, 'CRP:loadCells');
+  await safeLoadCells(
+    sheet,
+    { startRowIndex: 1, startColumnIndex: colCNPJ, endRowIndex: endRow, endColumnIndex: colCNPJ + 1 },
+    'CRP:scanCNPJ'
+  );
 
-  const rows = [];
+  const hits = [];
   for (let r = 1; r < endRow; r++) {
-    const cnpjCell = sheet.getCell(r, colCNPJ);
-    const valCell  = sheet.getCell(r, colVal);
-    const decCell  = sheet.getCell(r, colDec);
+    const v = String(sheet.getCell(r, colCNPJ)?.value ?? '').replace(/\D+/g, '');
+    if (v && v === cnpjDigits) hits.push(r);
+  }
+  if (!hits.length) return null;
 
-    const cnpj = digits(cnpjCell?.value ?? '');
+  let best = null, bestTs = 0;
+  for (const r of hits) {
+    await safeLoadCells(
+      sheet,
+      { startRowIndex: r, startColumnIndex: colVal, endRowIndex: r + 1, endColumnIndex: colDec + 1 },
+      'CRP:readRowMini'
+    );
 
-    let validadeDMY = '';
-    let validadeISO = '';
+    const valCell = sheet.getCell(r, colVal);
+    const decCell = sheet.getCell(r, colDec);
 
+    let d;
     const fv = valCell?.formattedValue;
     if (fv && /^\d{2}\/\d{2}\/\d{4}$/.test(String(fv))) {
-      validadeDMY = String(fv);
-      const [dd,mm,yy] = validadeDMY.split('/');
-      validadeISO = `${yy}-${mm}-${dd}`;
+      const [dd, mm, yy] = String(fv).split('/');
+      d = new Date(`${yy}-${mm}-${dd}T00:00:00`);
     } else if (valCell?.value instanceof Date) {
-      validadeDMY = formatDateDMY(valCell.value);
-      validadeISO = formatDateISO(valCell.value);
+      d = valCell.value;
     } else if (typeof valCell?.value === 'number') {
       const epoch = new Date(Date.UTC(1899, 11, 30));
-      const d = new Date(epoch.getTime() + valCell.value * 86400000);
-      validadeDMY = formatDateDMY(d);
-      validadeISO = formatDateISO(d);
-    } else if (typeof valCell?.value === 'string') {
-      validadeDMY = valCell.value;
-      const m = validadeDMY.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if (m) validadeISO = `${m[3]}-${m[2]}-${m[1]}`;
+      d = new Date(epoch.getTime() + valCell.value * 86400000);
+    } else {
+      d = parseDMYorYMD(valCell?.value || '');
     }
 
-    const decisao  = norm(decCell?.formattedValue ?? decCell?.value ?? '');
+    const ts = d?.getTime?.() || 0;
+    const decisao = norm(decCell?.formattedValue ?? decCell?.value ?? '');
 
-    if (!cnpj && !validadeDMY && !decisao) continue;
-    rows.push({ CNPJ_ENTE: cnpj, DATA_VALIDADE_DMY: validadeDMY, DATA_VALIDADE_ISO: validadeISO, DECISAO_JUDICIAL: decisao });
+    const rec = {
+      DATA_VALIDADE_DMY: formatDateDMY(d),
+      DATA_VALIDADE_ISO: formatDateISO(d),
+      DECISAO_JUDICIAL: decisao
+    };
+
+    if (ts > bestTs) { bestTs = ts; best = rec; }
   }
-  return rows;
+  return best;
 }
-
-/* Cache CRP */
-let _crpMemo = { data: null, exp: 0 };
-async function getCRPAllCached(sheet, skipCache = false) {
-  if (!skipCache && _crpMemo.exp > Date.now() && _crpMemo.data) return _crpMemo.data;
-  const rows = await withLimiter('CRP:read', () =>
-    withTimeoutAndRetry('CRP:read', () => readCRPByFixedColumns(sheet))
-  );
-  _crpMemo = { data: rows, exp: Date.now() + CACHE_TTL_CRP_MS };
-  return rows;
-}
-
 
 /* ─────────────── PUPPETEER (robust) ─────────────── */
 process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || path.resolve(__dirname, '.puppeteer');
@@ -551,18 +451,14 @@ function findChromeIn(dir) {
 let _browserPromise;
 async function getBrowser() {
   if (!_browserPromise) {
-    // ordem: ENV → .puppeteer local → API do pacote
     const localPuppeteerDir = path.resolve(__dirname, '.puppeteer');
-    const altBackendDir = path.resolve(__dirname, '../backend/.puppeteer'); // caso rode de outra pasta
+    const altBackendDir = path.resolve(__dirname, '../backend/.puppeteer');
     const resolved =
       process.env.PUPPETEER_EXECUTABLE_PATH ||
       findChromeIn(localPuppeteerDir) ||
       findChromeIn(altBackendDir);
 
-    const byApi = (() => {
-      try { return require('puppeteer').executablePath(); } catch { return null; }
-    })();
-
+    const byApi = (() => { try { return require('puppeteer').executablePath(); } catch { return null; } })();
     const chromePath = resolved || byApi;
     if (!chromePath || !fs.existsSync(chromePath)) {
       throw new Error(`Chrome não encontrado. Defina PUPPETEER_EXECUTABLE_PATH ou garanta o download em ".puppeteer" (postinstall).`);
@@ -571,13 +467,7 @@ async function getBrowser() {
     _browserPromise = puppeteer.launch({
       executablePath: chromePath,
       headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--font-render-hinting=none'
-      ],
+      args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--font-render-hinting=none'],
       timeout: 60_000
     }).then(browser => {
       browser.on('disconnected', () => {
@@ -592,10 +482,7 @@ async function getBrowser() {
   return _browserPromise;
 }
 
-
-
-/* ─────────────── ROTAS ─────────────── */
-
+/* ─────────────── ROTAS BÁSICAS ─────────────── */
 async function authSheets() {
   return withLimiter('authSheets', async () =>
     withTimeoutAndRetry('authSheets', async () => {
@@ -612,17 +499,14 @@ async function authSheets() {
     })
   );
 }
-
 app.get('/api/health', (_req,res)=> res.json({ ok:true }));
 app.get('/api/healthz', (_req,res)=> res.json({ ok:true, uptime: process.uptime(), ts: Date.now() }));
-
-//aquece Sheets + Puppeteer
 app.get('/api/warmup', async (_req, res) => {
   try {
-    await authSheets();   // autentica no Google Sheets e dá um loadInfo()
-    await getBrowser();   // garante que o Chrome headless já está aberto
+    await authSheets();
+    await getBrowser();
     res.json({ ok: true, warmed: true, ts: Date.now() });
-  } catch (e) {
+  } catch {
     res.status(500).json({ ok: false, error: 'warmup failed' });
   }
 });
@@ -634,7 +518,6 @@ app.get('/api/consulta', async (req, res) => {
     if (cnpj.length !== 14) return res.status(400).json({ error: 'CNPJ inválido.' });
 
     const skipCache = Object.prototype.hasOwnProperty.call(req.query, 'nocache');
-
     const cacheKey = `consulta:${cnpj}`;
     if (!skipCache) {
       const cached = cacheGet(cacheKey);
@@ -642,17 +525,60 @@ app.get('/api/consulta', async (req, res) => {
     }
 
     await authSheets();
-
     const sCnpj = await getSheetStrict('CNPJ_ENTE_UG');
     const sReps = await getSheetStrict('Dados_REP_ENTE_UG');
     const sCrp  = await getSheetStrict('CRP');
 
-    const base = await findCnpjRowFast(sCnpj, cnpj);
+    // FAST: busca a linha do CNPJ sem ler a planilha inteira
+    const base = await (async () => {
+      // varre apenas as colunas CNPJ_ENTE / CNPJ_UG e carrega a linha hit
+      await sCnpj.loadHeaderRow();
+      const headers = sCnpj.headerValues || [];
+      const san = s => (s ?? '').toString().trim().toLowerCase()
+        .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\p{L}\p{N}]+/gu,'_')
+        .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+      const idx = {
+        cnpj_ente: headers.findIndex(h => san(h) === 'cnpj_ente'),
+        cnpj_ug:   headers.findIndex(h => san(h) === 'cnpj_ug'),
+      };
+      if (idx.cnpj_ente < 0 && idx.cnpj_ug < 0) return null;
+
+      const endRow = sCnpj.rowCount || 2000;
+      // ENT(E)
+      if (idx.cnpj_ente >= 0) {
+        await safeLoadCells(sCnpj, { startRowIndex: 1, startColumnIndex: idx.cnpj_ente, endRowIndex: endRow, endColumnIndex: idx.cnpj_ente + 1 }, 'CNPJ:scan_ENTE');
+        for (let r = 1; r < endRow; r++) {
+          const v = String(sCnpj.getCell(r, idx.cnpj_ente)?.value ?? '').replace(/\D+/g,'');
+          if (v && v === cnpj) {
+            const endCol = headers.length || sCnpj.columnCount || 26;
+            await safeLoadCells(sCnpj, { startRowIndex: r, startColumnIndex: 0, endRowIndex: r + 1, endColumnIndex: endCol }, 'CNPJ:readRow_ENTE');
+            const rowObj = {};
+            for (let c = 0; c < endCol; c++) { rowObj[headers[c] || `COL_${c+1}`] = String(sCnpj.getCell(r, c)?.value ?? ''); }
+            return rowObj;
+          }
+        }
+      }
+      // UG
+      if (idx.cnpj_ug >= 0) {
+        await safeLoadCells(sCnpj, { startRowIndex: 1, startColumnIndex: idx.cnpj_ug, endRowIndex: endRow, endColumnIndex: idx.cnpj_ug + 1 }, 'CNPJ:scan_UG');
+        for (let r = 1; r < endRow; r++) {
+          const v = String(sCnpj.getCell(r, idx.cnpj_ug)?.value ?? '').replace(/\D+/g,'');
+          if (v && v === cnpj) {
+            const endCol = headers.length || sCnpj.columnCount || 26;
+            await safeLoadCells(sCnpj, { startRowIndex: r, startColumnIndex: 0, endRowIndex: r + 1, endColumnIndex: endCol }, 'CNPJ:readRow_UG');
+            const rowObj = {};
+            for (let c = 0; c < endCol; c++) { rowObj[headers[c] || `COL_${c+1}`] = String(sCnpj.getCell(r, c)?.value ?? ''); }
+            return rowObj;
+          }
+        }
+      }
+      return null;
+    })();
+
     if (!base) {
       const out = {
         UF: '', ENTE: '',
-        CNPJ_ENTE: cnpj,
-        UG: '', CNPJ_UG: '',
+        CNPJ_ENTE: cnpj, UG: '', CNPJ_UG: '',
         EMAIL_ENTE: '', EMAIL_UG: '',
         CRP_DATA_VALIDADE_DMY: '', CRP_DATA_VALIDADE_ISO: '',
         CRP_DECISAO_JUDICIAL: '',
@@ -661,7 +587,6 @@ app.get('/api/consulta', async (req, res) => {
       };
       return res.json({ ok: true, data: out, missing: true });
     }
-
 
     const UF          = norm(getVal(base, 'UF'));
     const ENTE        = norm(getVal(base, 'ENTE'));
@@ -678,15 +603,16 @@ app.get('/api/consulta', async (req, res) => {
       reps.find(r => ['','ente','adm direta','administração direta','administracao direta'].includes(low(getVal(r,'UG')||''))) ||
       reps.find(r => low(getVal(r,'UG')||'') !== low(UG)) || reps[0] || {};
 
-    const crpAll = await getCRPAllCached(sCrp, skipCache);
-    const crpCandidates = crpAll.filter(r => cnpj14(r.CNPJ_ENTE) === CNPJ_ENTE);
     let crp = {};
-    if (crpCandidates.length) {
-      crpCandidates.sort((a,b) => (parseDMYorYMD(b.DATA_VALIDADE_DMY) - parseDMYorYMD(a.DATA_VALIDADE_DMY)));
-      const top = crpCandidates[0];
-      crp.DATA_VALIDADE_DMY = norm(top.DATA_VALIDADE_DMY || '');
-      crp.DATA_VALIDADE_ISO = norm(top.DATA_VALIDADE_ISO || '');
-      crp.DECISAO_JUDICIAL  = norm(top.DECISAO_JUDICIAL || '');
+    if (CNPJ_ENTE) {
+      const ck = `crp:${CNPJ_ENTE}`;
+      if (!skipCache) crp = cacheGet(ck) || {};
+      if (!crp || (!crp.DATA_VALIDADE_DMY && !crp.DECISAO_JUDICIAL)) {
+        crp = await findCRPByCnpjFast(sCrp, CNPJ_ENTE) || {};
+        if (!skipCache && (crp.DATA_VALIDADE_DMY || crp.DECISAO_JUDICIAL)) {
+          cacheSet(ck, crp, CACHE_TTL_CRP_MS);
+        }
+      }
     }
 
     const out = {
@@ -696,7 +622,6 @@ app.get('/api/consulta', async (req, res) => {
       CRP_DATA_VALIDADE_ISO: crp.DATA_VALIDADE_ISO || '',
       CRP_DECISAO_JUDICIAL:  crp.DECISAO_JUDICIAL || '',
       ESFERA_SUGERIDA: esferaFromEnte(ENTE),
-
       __snapshot: {
         UF, ENTE, CNPJ_ENTE, UG, CNPJ_UG,
         NOME_REP_ENTE: norm(getVal(repEnte,'NOME')),
@@ -725,39 +650,24 @@ app.get('/api/consulta', async (req, res) => {
     res.status(500).json({ error:'Falha interna.' });
   }
 });
-
 /* ---------- util: atualizar EMAIL_ENTE / EMAIL_UG em CNPJ_ENTE_UG ---------- */
-  async function upsertEmailsInBase(p){
-  // helper local p/ validar e-mail
+async function upsertEmailsInBase(p){
   const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm(v));
-
-  // valores vindos do payload
   const emailEnteIn = norm(p.EMAIL_ENTE);
   const emailUgIn   = norm(p.EMAIL_UG);
-
-  // fallbacks: e-mails dos representantes
   const emailRepEnteIn = norm(p.EMAIL_REP_ENTE);
   const emailRepUgIn   = norm(p.EMAIL_REP_UG);
-
-  // escolha final (direto se válido; senão, representante se válido)
   const emailEnte = isEmail(emailEnteIn) ? emailEnteIn : (isEmail(emailRepEnteIn) ? emailRepEnteIn : '');
   const emailUg   = isEmail(emailUgIn)   ? emailUgIn   : (isEmail(emailRepUgIn)   ? emailRepUgIn   : '');
-
-  // nada a fazer se ambos vazios
   if (!emailEnte && !emailUg) return;
 
   const sCnpj = await getSheetStrict('CNPJ_ENTE_UG');
   await sCnpj.loadHeaderRow();
   await ensureSheetHasColumns(sCnpj, ['EMAIL_ENTE', 'EMAIL_UG']);
-
   const headers = sCnpj.headerValues || [];
-
-  const san = s => (s ?? '')
-    .toString().trim().toLowerCase()
-    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-    .replace(/[^\p{L}\p{N}]+/gu,'_')
+  const san = s => (s ?? '').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\p{L}\p{N}]+/gu,'_')
     .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
-
   const idxOf = name => headers.findIndex(h => san(h) === san(name));
 
   const col = {
@@ -783,7 +693,6 @@ app.get('/api/consulta', async (req, res) => {
   let changed = 0;
   for (let r = 1; r < endRow; r++) {
     let match = false;
-
     if (col.cnpj_ente >= 0) {
       const v = cnpj14(sCnpj.getCell(r, col.cnpj_ente)?.value || '');
       if (v && ce && v === ce) match = true;
@@ -805,7 +714,6 @@ app.get('/api/consulta', async (req, res) => {
       if (prev !== emailUg) { cell.value = emailUg; changed++; }
     }
   }
-
   if (changed) {
     await withLimiter('CNPJ:saveUpdatedCells', () =>
       withTimeoutAndRetry('CNPJ:saveUpdatedCells', () => sCnpj.saveUpdatedCells())
@@ -813,19 +721,14 @@ app.get('/api/consulta', async (req, res) => {
   }
 }
 
-
 /* ---------- busca rápida por CPF ---------- */
 async function findRepByCpfFast(cpfDigits) {
   const sReps = await getSheetStrict('Dados_REP_ENTE_UG');
   await sReps.loadHeaderRow();
   const headers = sReps.headerValues || [];
-
-  const san = s => (s ?? '')
-    .toString().trim().toLowerCase()
-    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-    .replace(/[^\p{L}\p{N}]+/gu,'_')
+  const san = s => (s ?? '').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\p{L}\p{N}]+/gu,'_')
     .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
-
   const idx = {
     UF: headers.findIndex(h => san(h)==='uf'),
     ENTE: headers.findIndex(h => san(h)==='ente'),
@@ -840,12 +743,7 @@ async function findRepByCpfFast(cpfDigits) {
   if (idx.CPF < 0) throw new Error('Coluna CPF não encontrada em Dados_REP_ENTE_UG');
 
   const endRow = sReps.rowCount || 2000;
-
-  await safeLoadCells(
-    sReps,
-    { startRowIndex: 1, startColumnIndex: idx.CPF, endRowIndex: endRow, endColumnIndex: idx.CPF + 1 },
-    'Reps:scanCPF'
-  );
+  await safeLoadCells(sReps, { startRowIndex: 1, startColumnIndex: idx.CPF, endRowIndex: endRow, endColumnIndex: idx.CPF + 1 }, 'Reps:scanCPF');
 
   let rowHit = -1;
   for (let r = 1; r < endRow; r++) {
@@ -855,14 +753,9 @@ async function findRepByCpfFast(cpfDigits) {
   if (rowHit < 0) return null;
 
   const endCol = headers.length || sReps.columnCount || 26;
-  await safeLoadCells(
-    sReps,
-    { startRowIndex: rowHit, startColumnIndex: 0, endRowIndex: rowHit + 1, endColumnIndex: endCol },
-    'Reps:readRow'
-  );
+  await safeLoadCells(sReps, { startRowIndex: rowHit, startColumnIndex: 0, endRowIndex: rowHit + 1, endColumnIndex: endCol }, 'Reps:readRow');
 
   const getCellByIdx = (c) => (c >= 0 ? (sReps.getCell(rowHit, c)?.value ?? '') : '');
-
   return {
     UF: norm(getCellByIdx(idx.UF)),
     ENTE: norm(getCellByIdx(idx.ENTE)),
@@ -874,8 +767,6 @@ async function findRepByCpfFast(cpfDigits) {
     CARGO: norm(getCellByIdx(idx.CARGO)),
   };
 }
-
-/* helper: resolve UG quando vier vazia (caso 2.1) */
 async function resolveUGIfBlank(UF, ENTE, UG) {
   const ugIn = norm(UG);
   if (ugIn) return ugIn;
@@ -888,9 +779,7 @@ async function resolveUGIfBlank(UF, ENTE, UG) {
       norm(getVal(r, 'UG'))
     );
     return norm(getVal(match || {}, 'UG'));
-  } catch {
-    return '';
-  }
+  } catch { return ''; }
 }
 
 /** GET /api/rep-by-cpf?cpf=NNNNNNNNNNN */
@@ -943,10 +832,7 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
     row['UG']   = ugFinal    || row['UG'];
     row['NOME'] = norm(NOME) || row['NOME'];
     row['EMAIL']= norm(EMAIL)|| row['EMAIL'];
-    if (telBase) {
-      row['TELEFONE']       = telBase;
-      row['TELEFONE_MOVEL'] = telBase;
-    }
+    if (telBase) { row['TELEFONE'] = telBase; row['TELEFONE_MOVEL'] = telBase; }
     row['CARGO']= norm(CARGO)|| row['CARGO'];
     await safeSaveRow(row, 'Reps:save');
     return { updated: true };
@@ -955,28 +841,17 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
 
 /* util: upsert base do ente/UG quando o CNPJ pesquisado não existir */
 async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EMAIL_UG }){
-  const s = await getOrCreateSheet('CNPJ_ENTE_UG',
-    ['UF','ENTE','UG','CNPJ_ENTE','CNPJ_UG','EMAIL_ENTE','EMAIL_UG']
-  );
+  const s = await getOrCreateSheet('CNPJ_ENTE_UG', ['UF','ENTE','UG','CNPJ_ENTE','CNPJ_UG','EMAIL_ENTE','EMAIL_UG']);
   await s.loadHeaderRow();
   const headers = s.headerValues || [];
-
-  const san = s => (s ?? '')
-    .toString().trim().toLowerCase()
-    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-    .replace(/[^\p{L}\p{N}]+/gu,'_')
+  const san = s => (s ?? '').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\p{L}\p{N}]+/gu,'_')
     .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
-
   const idxOf = name => headers.findIndex(h => san(h) === san(name));
-
   const col = {
-    uf:         idxOf('UF'),
-    ente:       idxOf('ENTE'),
-    ug:         idxOf('UG'),
-    cnpj_ente:  idxOf('CNPJ_ENTE'),
-    cnpj_ug:    idxOf('CNPJ_UG'),
-    email_ente: idxOf('EMAIL_ENTE'),
-    email_ug:   idxOf('EMAIL_UG'),
+    uf: idxOf('UF'), ente: idxOf('ENTE'), ug: idxOf('UG'),
+    cnpj_ente: idxOf('CNPJ_ENTE'), cnpj_ug: idxOf('CNPJ_UG'),
+    email_ente: idxOf('EMAIL_ENTE'), email_ug: idxOf('EMAIL_UG'),
   };
 
   const ce = cnpj14(CNPJ_ENTE);
@@ -985,36 +860,22 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
   const endRow = s.rowCount || 2000;
   const endCol = headers.length || s.columnCount || 26;
 
-  await safeLoadCells(
-    s,
-    { startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol },
-    'CNPJ:addOrUpdate:loadCells'
-  );
+  await safeLoadCells(s, { startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol }, 'CNPJ:addOrUpdate:loadCells');
 
   let foundRow = -1;
   for (let r = 1; r < endRow; r++) {
     let hit = false;
     if (col.cnpj_ente >= 0) {
-      const v = cnpj14(s.getCell(r, col.cnpj_ente)?.value || '');
-      if (v && ce && v === ce) hit = true;
+      const v = cnpj14(s.getCell(r, col.cnpj_ente)?.value || ''); if (v && ce && v === ce) hit = true;
     }
     if (!hit && col.cnpj_ug >= 0) {
-      const v = cnpj14(s.getCell(r, col.cnpj_ug)?.value || '');
-      if (v && cu && v === cu) hit = true;
+      const v = cnpj14(s.getCell(r, col.cnpj_ug)?.value || ''); if (v && cu && v === cu) hit = true;
     }
     if (hit) { foundRow = r; break; }
   }
 
   if (foundRow < 0) {
-    await safeAddRow(s, {
-      UF: norm(UF),
-      ENTE: norm(ENTE),
-      UG: norm(UG),
-      CNPJ_ENTE: ce,
-      CNPJ_UG: cu,
-      EMAIL_ENTE: norm(EMAIL_ENTE),
-      EMAIL_UG: norm(EMAIL_UG)
-    }, 'CNPJ:addRow');
+    await safeAddRow(s, { UF: norm(UF), ENTE: norm(ENTE), UG: norm(UG), CNPJ_ENTE: ce, CNPJ_UG: cu, EMAIL_ENTE: norm(EMAIL_ENTE), EMAIL_UG: norm(EMAIL_UG) }, 'CNPJ:addRow');
     return { created: true };
   }
 
@@ -1026,19 +887,12 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
     const nxt  = norm(transform(val));
     if (cur !== nxt) { cell.value = nxt; changed++; }
   };
-
-  setCellIf(col.uf, UF);
-  setCellIf(col.ente, ENTE);
-  setCellIf(col.ug, UG);
-  setCellIf(col.cnpj_ente, ce);
-  setCellIf(col.cnpj_ug, cu);
-  setCellIf(col.email_ente, EMAIL_ENTE);
-  setCellIf(col.email_ug, EMAIL_UG);
+  setCellIf(col.uf, UF); setCellIf(col.ente, ENTE); setCellIf(col.ug, UG);
+  setCellIf(col.cnpj_ente, ce); setCellIf(col.cnpj_ug, cu);
+  setCellIf(col.email_ente, EMAIL_ENTE); setCellIf(col.email_ug, EMAIL_UG);
 
   if (changed) {
-    await withLimiter('CNPJ:saveUpdatedCells', () =>
-      withTimeoutAndRetry('CNPJ:saveUpdatedCells', () => s.saveUpdatedCells())
-    );
+    await withLimiter('CNPJ:saveUpdatedCells', () => withTimeoutAndRetry('CNPJ:saveUpdatedCells', () => s.saveUpdatedCells()));
     return { updated: true };
   }
   return { updated: false };
@@ -1069,11 +923,7 @@ async function findTermoByIdemKey(sTermos, idemKey) {
   if (idx < 0) return null;
 
   const endRow = sTermos.rowCount || 2000;
-  await safeLoadCells(
-    sTermos,
-    { startRowIndex: 1, startColumnIndex: idx, endRowIndex: endRow, endColumnIndex: idx + 1 },
-    'Termos:scanIDEMP'
-  );
+  await safeLoadCells(sTermos, { startRowIndex: 1, startColumnIndex: idx, endRowIndex: endRow, endColumnIndex: idx + 1 }, 'Termos:scanIDEMP');
 
   for (let r = 1; r < endRow; r++) {
     const v = String(sTermos.getCell(r, idx)?.value || '').trim();
@@ -1096,7 +946,6 @@ app.post('/api/upsert-cnpj', async (req,res)=>{
     res.status(500).json({ error:'Falha ao gravar base CNPJ_ENTE_UG.' });
   }
 });
-
 app.post('/api/upsert-rep', async (req,res)=>{
   try{
     const { UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO } = req.body || {};
@@ -1133,11 +982,9 @@ async function logAlteracoesInline(p, snapshotRaw) {
     const normOld = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
       ? digits(snap[col] || '')
       : (snap[col] ?? '').toString().trim();
-
     const normNew = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
       ? digits(p[col] || '')
       : (p[col] ?? '').toString().trim();
-
     const hasSnap = Object.keys(snap).length > 0;
     const isDiff  = hasSnap ? (normOld.toLowerCase() !== normNew.toLowerCase()) : !!normNew;
     if (isDiff) changed.push(col);
@@ -1155,7 +1002,6 @@ async function logAlteracoesInline(p, snapshotRaw) {
 
   return changed.length;
 }
-
 
 /** POST /api/gerar-termo  — IDEMPOTENTE */
 app.post('/api/gerar-termo', async (req,res)=>{
@@ -1193,7 +1039,6 @@ app.post('/api/gerar-termo', async (req,res)=>{
     ]);
 
     await sTermos.loadHeaderRow();
-    // garante que a coluna de idempotência exista (evita duplicados)
     await ensureSheetHasColumns(sTermos, ['IDEMP_KEY']);
 
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
@@ -1202,19 +1047,12 @@ app.post('/api/gerar-termo', async (req,res)=>{
 
     const existingRowIdx = await findTermoByIdemKey(sTermos, idemKey);
 
-    // snapshot vindo do front (para comparar alterações)
     const snapshot = (req.body && req.body.__snapshot_base) || {};
     let logStatus = 'skip';
 
     if (existingRowIdx !== null) {
-      // Mesmo em dedup, logamos as alterações de forma síncrona
-      try {
-        const n = await logAlteracoesInline(p, snapshot);
-        logStatus = n ? 'ok' : 'empty';
-      } catch (e) {
-        logStatus = 'error';
-        if (LOG_LEVEL !== 'silent') console.warn('logAlteracoes (dedup):', e?.message || e);
-      }
+      try { const n = await logAlteracoesInline(p, snapshot); logStatus = n ? 'ok' : 'empty'; }
+      catch (e) { logStatus = 'error'; if (LOG_LEVEL !== 'silent') console.warn('logAlteracoes (dedup):', e?.message || e); }
       return res.json({ ok: true, dedup: true, log: logStatus });
     }
 
@@ -1246,17 +1084,10 @@ app.post('/api/gerar-termo', async (req,res)=>{
       IDEMP_KEY: idemKey
     }, 'Termos:add');
 
-    // Atualiza base de e-mails (falha aqui não bloqueia a resposta)
     try { await upsertEmailsInBase(p); } catch (_) {}
 
-    // Logger síncrono (sem setImmediate) — não derruba o processo se falhar
-    try {
-      const n = await logAlteracoesInline(p, snapshot);
-      logStatus = n ? 'ok' : 'empty';
-    } catch (e) {
-      logStatus = 'error';
-      if (LOG_LEVEL !== 'silent') console.warn('logAlteracoes:', e?.message || e);
-    }
+    try { const n = await logAlteracoesInline(p, snapshot); logStatus = n ? 'ok' : 'empty'; }
+    catch (e) { logStatus = 'error'; if (LOG_LEVEL !== 'silent') console.warn('logAlteracoes:', e?.message || e); }
 
     return res.json({ ok: true, log: logStatus });
 
@@ -1270,124 +1101,64 @@ app.post('/api/gerar-termo', async (req,res)=>{
   }
 });
 
-
-
 /* ========= PDF (Puppeteer) ========= */
-
-/* Limiter dedicado para PDF (evita picos de memória) */
 const PDF_CONCURRENCY = Number(process.env.PDF_CONCURRENCY || 1);
-const _pdfQ = [];
-let _pdfActive = 0;
+const _pdfQ = []; let _pdfActive = 0;
 function _pdfRunNext() {
   if (_pdfActive >= PDF_CONCURRENCY) return;
-  const it = _pdfQ.shift();
-  if (!it) return;
+  const it = _pdfQ.shift(); if (!it) return;
   _pdfActive++;
-  (async () => {
-    try { it.resolve(await it.fn()); }
-    catch (e) { it.reject(e); }
-    finally { _pdfActive--; _pdfRunNext(); }
-  })();
+  (async () => { try { it.resolve(await it.fn()); } catch (e) { it.reject(e); } finally { _pdfActive--; _pdfRunNext(); } })();
 }
 function withPdfLimiter(fn) {
-  return new Promise((resolve, reject) => {
-    _pdfQ.push({ fn, resolve, reject });
-    _pdfRunNext();
-  });
+  return new Promise((resolve, reject) => { _pdfQ.push({ fn, resolve, reject }); _pdfRunNext(); });
 }
-
 const _svgCache = {};
 function inlineSvg(relPath) {
   try {
     const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
     if (_svgCache[abs]) return _svgCache[abs];
     const raw = fs.readFileSync(abs, 'utf8');
-    const cleaned = raw
-      .replace(/<\?xml[^>]*>/g, '')
-      .replace(/<!DOCTYPE[^>]*>/g, '')
-      .replace(/\r?\n|\t/g, ' ')
-      .replace(/>\s+</g, '><')
-      .trim();
-    _svgCache[abs] = cleaned;
-    return cleaned;
-  } catch (e) {
-    if (LOG_LEVEL === 'debug') console.warn('⚠️  Falha ao ler SVG:', relPath, e.message);
-    return '';
-  }
+    const cleaned = raw.replace(/<\?xml[^>]*>/g, '').replace(/<!DOCTYPE[^>]*>/g, '').replace(/\r?\n|\t/g, ' ').replace(/>\s+</g, '><').trim();
+    _svgCache[abs] = cleaned; return cleaned;
+  } catch { return ''; }
 }
-
-/* Fonte local opcional (para evitar bloqueios CORP/CORS em headless) */
 function inlineFont(relPath) {
   try {
     const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/, ''));
     const buf = fs.readFileSync(abs);
     const b64 = buf.toString('base64');
     const ext = path.extname(abs).toLowerCase();
-
-    const mime = ext === '.woff2' ? 'font/woff2'
-              : ext === '.woff'  ? 'font/woff'
-              : ext === '.ttf'   ? 'font/ttf'
-              : 'application/octet-stream';
-
-    const fmt  = ext === '.woff2' ? 'woff2'
-              : ext === '.woff'  ? 'woff'
-              : 'truetype';
-
+    const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : ext === '.ttf' ? 'font/ttf' : 'application/octet-stream';
+    const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
     return `url(data:${mime};base64,${b64}) format('${fmt}')`;
-  } catch (e) {
-    return null;
-  }
+  } catch { return null; }
 }
 
-
-// ➕ wrapper externo evita que qualquer rejeição derrube o processo
 app.post('/api/termo-pdf', async (req, res) => {
   try {
     await withPdfLimiter(async () => {
-      // Contexto único (sem incognito) + retry defensivo para TargetCloseError
-      let page;
-      let browser;
-      let triedRestart = false;
+      let page; let browser; let triedRestart = false;
       try {
         const p = req.body || {};
-
         const compAgg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
         const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6']
           .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
 
         const qs = new URLSearchParams({
-          uf: p.UF || '',
-          ente: p.ENTE || '',
-          cnpj_ente: p.CNPJ_ENTE || '',
-          email_ente: p.EMAIL_ENTE || '',
-          ug: p.UG || '',
-          cnpj_ug: p.CNPJ_UG || '',
-          email_ug: p.EMAIL_UG || '',
+          uf: p.UF || '', ente: p.ENTE || '', cnpj_ente: p.CNPJ_ENTE || '', email_ente: p.EMAIL_ENTE || '',
+          ug: p.UG || '', cnpj_ug: p.CNPJ_UG || '', email_ug: p.EMAIL_UG || '',
           esfera: p.ESFERA || '',
-          nome_rep_ente: p.NOME_REP_ENTE || '',
-          cpf_rep_ente: p.CPF_REP_ENTE || '',
-          cargo_rep_ente: p.CARGO_REP_ENTE || '',
-          email_rep_ente: p.EMAIL_REP_ENTE || '',
-          nome_rep_ug: p.NOME_REP_UG || '',
-          cpf_rep_ug: p.CPF_REP_UG || '',
-          cargo_rep_ug: p.CARGO_REP_UG || '',
-          email_rep_ug: p.EMAIL_REP_UG || '',
-          venc_ult_crp: p.DATA_VENCIMENTO_ULTIMO_CRP || '',
-          tipo_emissao_crp: p.TIPO_EMISSAO_ULTIMO_CRP || '',
-          celebracao: p.CELEBRACAO_TERMO_PARCELA_DEBITOS || '',
-          regularizacao: p.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '',
-          deficit: p.DEFICIT_ATUARIAL || '',
-          criterios_estrut: p.CRITERIOS_ESTRUT_ESTABELECIDOS || '',
+          nome_rep_ente: p.NOME_REP_ENTE || '', cpf_rep_ente: p.CPF_REP_ENTE || '', cargo_rep_ente: p.CARGO_REP_ENTE || '', email_rep_ente: p.EMAIL_REP_ENTE || '',
+          nome_rep_ug: p.NOME_REP_UG || '', cpf_rep_ug: p.CPF_REP_UG || '', cargo_rep_ug: p.CARGO_REP_UG || '', email_rep_ug: p.EMAIL_REP_UG || '',
+          venc_ult_crp: p.DATA_VENCIMENTO_ULTIMO_CRP || '', tipo_emissao_crp: p.TIPO_EMISSAO_ULTIMO_CRP || '',
+          celebracao: p.CELEBRACAO_TERMO_PARCELA_DEBITOS || '', regularizacao: p.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '',
+          deficit: p.DEFICIT_ATUARIAL || '', criterios_estrut: p.CRITERIOS_ESTRUT_ESTABELECIDOS || '',
           manutencao_normas: p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '',
-          compromisso: p.COMPROMISSO_FIRMADO_ADESAO || '',
-          providencias: p.PROVIDENCIA_NECESS_ADESAO || '',
-          condicao_vigencia: p.CONDICAO_VIGENCIA || '',
-          data_termo: p.DATA_TERMO_GERADO || '',
-          auto: '1'
+          compromisso: p.COMPROMISSO_FIRMADO_ADESAO || '', providencias: p.PROVIDENCIA_NECESS_ADESAO || '',
+          condicao_vigencia: p.CONDICAO_VIGENCIA || '', data_termo: p.DATA_TERMO_GERADO || '', auto: '1'
         });
-
-        (Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [])
-          .forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
+        (Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : []).forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
         compCodes.forEach(code => qs.append('comp', code));
 
         const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http');
@@ -1396,42 +1167,30 @@ app.post('/api/termo-pdf', async (req, res) => {
         const PUBLIC_URL = (process.env.PUBLIC_URL || FALLBACK_BASE).replace(/\/+$/, '');
         const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
 
-        try {
-          browser = await getBrowser();
-          page = await browser.newPage();
-        } catch (e) {
+        try { browser = await getBrowser(); page = await browser.newPage(); }
+        catch (e) {
           const msg = String(e?.message || '');
           if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
             triedRestart = true;
             try { await browser?.close().catch(()=>{}); } catch(_){}
-            _browserPromise = null;
-            browser = await getBrowser();
-            page = await browser.newPage();
-          } else {
-            throw e;
-          }
+            _browserPromise = null; browser = await getBrowser(); page = await browser.newPage();
+          } else { throw e; }
         }
 
         await page.setCacheEnabled(false);
         await page.setRequestInterception(true);
         page.on('request', (reqObj) => {
-          const u = reqObj.url();
-          const t = reqObj.resourceType();
+          const u = reqObj.url(); const t = reqObj.resourceType();
           if (/fonts\.cdnfonts\.com|fonts\.gstatic\.com/i.test(u)) {
-            if (t === 'stylesheet') {
-              return reqObj.respond({ status: 200, contentType: 'text/css', body: '/* font css blocked in pdf */' });
-            }
+            if (t === 'stylesheet') return reqObj.respond({ status: 200, contentType: 'text/css', body: '/* font css blocked in pdf */' });
             return reqObj.abort();
           }
-          if (/googletagmanager|google-analytics|doubleclick|hotjar|clarity|sentry|facebook|meta\./i.test(u)) {
-            return reqObj.abort();
-          }
+          if (/googletagmanager|google-analytics|doubleclick|hotjar|clarity|sentry|facebook|meta\./i.test(u)) return reqObj.abort();
           return reqObj.continue();
         });
 
         page.setDefaultNavigationTimeout(90_000);
         page.setDefaultTimeout(90_000);
-
         await page.emulateMediaType('screen');
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 });
         await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
@@ -1443,33 +1202,22 @@ app.post('/api/termo-pdf', async (req, res) => {
           }
           return null;
         }
-
-        const rawline400 = findFont([
-          'fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf',
-          'fonts/rawline-400.woff2','fonts/rawline-400.woff','fonts/rawline-400.ttf'
-        ]);
-
-        const rawline700 = findFont([
-          'fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf',
-          'fonts/rawline-700.woff2','fonts/rawline-700.woff','fonts/rawline-700.ttf'
-        ]);
+        const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf','fonts/rawline-400.woff2','fonts/rawline-400.woff','fonts/rawline-400.ttf']);
+        const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf','fonts/rawline-700.woff2','fonts/rawline-700.woff','fonts/rawline-700.ttf']);
 
         let fontCSS = '';
         if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
         if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
         fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
 
-        await page.addStyleTag({
-          content: `
-            ${fontCSS}
-            html, body, #pdf-root { background:#ffffff !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .page-head .logos-wrap { display: none !important; }
-            .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
-            .term-title { margin-top: 2mm !important; }
-          `
-        });
-
+        await page.addStyleTag({ content: `
+          ${fontCSS}
+          html, body, #pdf-root { background:#ffffff !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .page-head .logos-wrap { display: none !important; }
+          .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
+          .term-title { margin-top: 2mm !important; }
+        `});
         await page.evaluate(() => {
           document.body.classList.add('pdf-export');
           const root = document.getElementById('pdf-root');
@@ -1478,14 +1226,9 @@ app.post('/api/termo-pdf', async (req, res) => {
 
         const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
         const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
-
         const headerTemplate = `
           <style>
-            .pdf-header {
-              font-family: Inter, Arial, sans-serif;
-              width: 100%;
-              padding: 6mm 12mm 4mm;
-            }
+            .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6mm 12mm 4mm; }
             .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
             .pdf-header .logo-sec svg { height: 19mm; width:auto; }
             .pdf-header .logo-mps svg { height: 20mm; width:auto; }
@@ -1498,26 +1241,17 @@ app.post('/api/termo-pdf', async (req, res) => {
               <div class="logo-mps">${svgMps}</div>
             </div>
             <div class="rule"></div>
-          </div>
-        `;
-
+          </div>`;
         const footerTemplate = `<div></div>`;
 
         const pdf = await page.pdf({
-          printBackground: true,
-          preferCSSPageSize: true,
-          displayHeaderFooter: true,
-          headerTemplate,
-          footerTemplate,
-          margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
+          printBackground: true, preferCSSPageSize: true, displayHeaderFooter: true,
+          headerTemplate, footerTemplate, margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
         });
-
         await page.close();
 
         const filenameSafe = (p.ENTE || 'termo-adesao')
-          .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-          .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'')
-          .toLowerCase();
+          .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="termo-${filenameSafe}.pdf"`);
@@ -1532,29 +1266,25 @@ app.post('/api/termo-pdf', async (req, res) => {
     });
   } catch (e) {
     console.error('❌ (outer) /api/termo-pdf:', e);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Falha ao gerar PDF' });
-    }
+    if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
   }
 });
 
-
 /* ───────────── Start ───────────── */
 const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Server rodando na porta ${PORT}`);
-    (async () => {
-      try {
-        await authSheets(); // autentica e faz loadInfo logo na subida
-        console.log('✅ Google Sheets aquecido (startup)');
-      } catch (e) {
-        console.warn('⚠️  Warmup do Sheets falhou no startup:', e?.message || e);
-      }
-    })();
-  });
+app.listen(PORT, () => {
+  console.log(`🚀 Server rodando na porta ${PORT}`);
+  (async () => {
+    try {
+      await authSheets();
+      console.log('✅ Google Sheets aquecido (startup)');
+    } catch (e) {
+      console.warn('⚠️  Warmup do Sheets falhou no startup:', e?.message || e);
+    }
+  })();
+});
 
-
-/* ───────────── Captura global de erros (defensivo) ───────────── */
+/* ───────────── Captura global de erros ───────────── */
 process.on('uncaughtException', (err) => {
   console.error('⛑️  uncaughtException:', err && err.stack || err);
 });
@@ -1573,9 +1303,7 @@ function getVal(row, ...candidates) {
     .replace(/_+/g, '_')
     .replace(/__\d+$/,'')
     .replace(/^_+|_+$/g, '');
-
   const map = new Map(keys.map(k => [normKey(k), k]));
-
   for (const cand of candidates) {
     const nk = normKey(cand);
     const real = map.get(nk);
@@ -1583,3 +1311,4 @@ function getVal(row, ...candidates) {
   }
   return undefined;
 }
+
