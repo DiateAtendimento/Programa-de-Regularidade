@@ -1,8 +1,9 @@
+# .github/workflows/keepalive.yml
 name: Keep Render Free Awake
 on:
   schedule:
-    - cron: "*/10 * * * *"   # a cada 10 min
-  workflow_dispatch:         # permite rodar na mão
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
 concurrency:
   group: keepalive
   cancel-in-progress: false
@@ -10,9 +11,9 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Curl healthz
+      - name: Curl warmup
         run: |
           set -euxo pipefail
-          curl -fsS "$URL/api/healthz" || true
+          curl -fsS "$URL/api/warmup" || true
     env:
       URL: https://programa-de-regularidade.onrender.com

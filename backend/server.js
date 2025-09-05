@@ -116,7 +116,22 @@ app.use(helmet.contentSecurityPolicy({
   },
 }));
 
-app.use(rateLimit({ windowMs: 15*60*1000, max: 400, standardHeaders: true, legacyHeaders: false }));
+// Rate limits por rota
+const rlCommon = rateLimit({ windowMs: 15*60*1000, max: 400, standardHeaders: true, legacyHeaders: false });
+const rlWrite  = rateLimit({ windowMs: 15*60*1000, max: 120, standardHeaders: true, legacyHeaders: false });
+const rlPdf    = rateLimit({ windowMs: 15*60*1000, max: 20,  standardHeaders: true, legacyHeaders: false });
+
+// livre/sem limite: health, healthz, warmup
+
+app.use('/api/consulta', rlCommon);
+app.use('/api/rep-by-cpf', rlCommon);
+
+app.use('/api/upsert-cnpj', rlWrite);
+app.use('/api/upsert-rep', rlWrite);
+app.use('/api/gerar-termo', rlWrite);
+
+app.use('/api/termo-pdf', rlPdf);
+
 app.use(hpp());
 app.use(express.json({ limit: '300kb' }));
 
@@ -284,6 +299,75 @@ async function getRowsSafe(sheet) {
   }
 }
 
+// === FAST LOOKUP: encontra uma LINHA por CNPJ lendo só as colunas de CNPJ ===
+async function findCnpjRowFast(sheet, cnpjDigits) {
+  await sheet.loadHeaderRow();
+  const headers = sheet.headerValues || [];
+
+  const san = s => (s ?? '')
+    .toString().trim().toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .replace(/[^\p{L}\p{N}]+/gu,'_')
+    .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+
+  const idx = {
+    cnpj_ente: headers.findIndex(h => san(h) === 'cnpj_ente'),
+    cnpj_ug:   headers.findIndex(h => san(h) === 'cnpj_ug'),
+  };
+  if (idx.cnpj_ente < 0 && idx.cnpj_ug < 0) return null;
+
+  // Varre apenas as colunas de CNPJ
+  const endRow = sheet.rowCount || 2000;
+
+  // Varrer CNPJ_ENTE
+  if (idx.cnpj_ente >= 0) {
+    await safeLoadCells(
+      sheet,
+      { startRowIndex: 1, startColumnIndex: idx.cnpj_ente, endRowIndex: endRow, endColumnIndex: idx.cnpj_ente + 1 },
+      'CNPJ:scan_ENTE'
+    );
+    for (let r = 1; r < endRow; r++) {
+      const v = (sheet.getCell(r, idx.cnpj_ente)?.value ?? '').toString().replace(/\D+/g,'');
+      if (v && v === cnpjDigits) {
+        // carrega a linha inteira
+        const endCol = headers.length || sheet.columnCount || 26;
+        await safeLoadCells(sheet, { startRowIndex: r, startColumnIndex: 0, endRowIndex: r + 1, endColumnIndex: endCol }, 'CNPJ:readRow_ENTE');
+        const rowObj = {};
+        for (let c = 0; c < endCol; c++) {
+          const key = headers[c] || `COL_${c+1}`;
+          rowObj[key] = String(sheet.getCell(r, c)?.value ?? '');
+        }
+        return rowObj;
+      }
+    }
+  }
+
+  // Varrer CNPJ_UG
+  if (idx.cnpj_ug >= 0) {
+    await safeLoadCells(
+      sheet,
+      { startRowIndex: 1, startColumnIndex: idx.cnpj_ug, endRowIndex: endRow, endColumnIndex: idx.cnpj_ug + 1 },
+      'CNPJ:scan_UG'
+    );
+    for (let r = 1; r < endRow; r++) {
+      const v = (sheet.getCell(r, idx.cnpj_ug)?.value ?? '').toString().replace(/\D+/g,'');
+      if (v && v === cnpjDigits) {
+        const endCol = headers.length || sheet.columnCount || 26;
+        await safeLoadCells(sheet, { startRowIndex: r, startColumnIndex: 0, endRowIndex: r + 1, endColumnIndex: endCol }, 'CNPJ:readRow_UG');
+        const rowObj = {};
+        for (let c = 0; c < endCol; c++) {
+          const key = headers[c] || `COL_${c+1}`;
+          rowObj[key] = String(sheet.getCell(r, c)?.value ?? '');
+        }
+        return rowObj;
+      }
+    }
+  }
+
+  return null;
+}
+
+
 /* ===== Concorrência + Timeout/Retry + Cache (Sheets) ===== */
 const _q = [];
 let _active = 0;
@@ -330,7 +414,7 @@ async function withTimeoutAndRetry(label, fn) {
         msg.includes('eai_again');
 
       if (!retriable || attempt >= max) throw err;
-      const backoff = 300 * Math.pow(2, attempt - 1);
+      const backoff = Math.min(5000, 800 * Math.pow(2, attempt - 1)); // 0.8s, 1.6s, 3.2s, máx 5s
       await sleep(backoff);
     }
   }
@@ -563,9 +647,7 @@ app.get('/api/consulta', async (req, res) => {
     const sReps = await getSheetStrict('Dados_REP_ENTE_UG');
     const sCrp  = await getSheetStrict('CRP');
 
-    const cnpjRows = await safeGetRows(sCnpj, 'CNPJ:getRows');
-    let base = cnpjRows.find(r => cnpj14(getVal(r,'CNPJ_ENTE')) === cnpj);
-    if (!base) base = cnpjRows.find(r => cnpj14(getVal(r,'CNPJ_UG')) === cnpj);
+    const base = await findCnpjRowFast(sCnpj, cnpj);
     if (!base) {
       const out = {
         UF: '', ENTE: '',
@@ -579,6 +661,7 @@ app.get('/api/consulta', async (req, res) => {
       };
       return res.json({ ok: true, data: out, missing: true });
     }
+
 
     const UF          = norm(getVal(base, 'UF'));
     const ENTE        = norm(getVal(base, 'ENTE'));

@@ -1,0 +1,26 @@
+name: Deploy to Render
+on:
+  workflow_dispatch:        # permite rodar na mão ("Run workflow")
+  push:
+    branches: [ main ]      # dispara em push na main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'package.json'
+      - '.github/workflows/deploy-render.yml'
+
+concurrency:
+  group: deploy-render
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy (via secret)
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          set -euo pipefail
+          test -n "${RENDER_DEPLOY_HOOK:-}"  # falha se estiver vazio
+          curl -fsS -X POST -H 'Cache-Control: no-cache' --data-raw '' "$RENDER_DEPLOY_HOOK"
