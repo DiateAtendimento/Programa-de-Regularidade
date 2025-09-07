@@ -811,7 +811,7 @@ app.get('/api/rep-by-cpf', async (req,res)=>{
 /* util: upsert representante */
 async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
   const sReps = await getOrCreateSheet('Dados_REP_ENTE_UG', ['UF','ENTE','NOME','CPF','EMAIL','TELEFONE','TELEFONE_MOVEL','CARGO','UG']);
-  const rows = await safeGetRows(sReps, 'Reps:getRows');
+  const rows = await safeGetRows(sReps, 'Reps:getRows');      // pode retornar Row[] ou objetos “plain” (fallback)
   const cpf = digits(CPF);
   let row = rows.find(r => digits(getVal(r,'CPF')) === cpf);
 
@@ -826,7 +826,10 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
       CARGO: norm(CARGO), UG: ugFinal
     }, 'Reps:add');
     return { created: true };
-  } else {
+  }
+
+  // caminho “normal”: GoogleSpreadsheetRow com save()
+  if (typeof row.save === 'function') {
     row['UF']   = norm(UF)   || row['UF'];
     row['ENTE'] = norm(ENTE) || row['ENTE'];
     row['UG']   = ugFinal    || row['UG'];
@@ -837,7 +840,40 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
     await safeSaveRow(row, 'Reps:save');
     return { updated: true };
   }
+
+  // fallback: atualizar por células
+  await sReps.loadHeaderRow();
+  const headers = sReps.headerValues || [];
+  const san = s => (s ?? '').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\p{L}\p{N}]+/gu,'_')
+    .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+  const idxOf = name => headers.findIndex(h => san(h) === san(name));
+  const colCPF = idxOf('CPF');
+
+  const endRow = sReps.rowCount || 2000;
+  const endCol = headers.length || sReps.columnCount || 26;
+  await safeLoadCells(sReps, { startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: endCol }, 'Reps:updateCells');
+
+  let rIdx = -1;
+  for (let r = 1; r < endRow; r++) {
+    const v = digits(sReps.getCell(r, colCPF)?.value || '');
+    if (v && v === cpf) { rIdx = r; break; }
+  }
+  if (rIdx < 0) {
+    await safeAddRow(sReps, { UF: norm(UF), ENTE: norm(ENTE), NOME: norm(NOME), CPF: cpf, EMAIL: norm(EMAIL), TELEFONE: telBase, TELEFONE_MOVEL: telBase, CARGO: norm(CARGO), UG: ugFinal }, 'Reps:add(fallback)');
+    return { created: true };
+  }
+
+  const setCell = (name, val) => { const c = idxOf(name); if (c >= 0 && norm(val)) sReps.getCell(rIdx, c).value = norm(val); };
+  setCell('UF', UF); setCell('ENTE', ENTE); setCell('UG', ugFinal);
+  setCell('NOME', NOME); setCell('EMAIL', EMAIL);
+  setCell('TELEFONE', telBase); setCell('TELEFONE_MOVEL', telBase);
+  setCell('CARGO', CARGO);
+
+  await withLimiter('Reps:saveUpdatedCells', () => withTimeoutAndRetry('Reps:saveUpdatedCells', () => sReps.saveUpdatedCells()));
+  return { updated: true };
 }
+
 
 /* util: upsert base do ente/UG quando o CNPJ pesquisado não existir */
 async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EMAIL_UG }){
@@ -1199,11 +1235,11 @@ app.post('/api/termo-pdf', async (req, res) => {
         (Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : []).forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
         compCodes.forEach(code => qs.append('comp', code));
 
+        // ==== BASES: loopback primeiro, público depois (fallback) ====
         const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http');
         const host  = req.get('host');
-        const FALLBACK_BASE = `${proto}://${host}`;
-        const PUBLIC_URL = (process.env.PUBLIC_URL || FALLBACK_BASE).replace(/\/+$/, '');
-        const url = `${PUBLIC_URL}/termo.html?${qs.toString()}`;
+        const PUBLIC_BASE   = (process.env.PUBLIC_URL || `${proto}://${host}`).replace(/\/+$/, '');
+        const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
 
         try { browser = await getBrowser(); page = await browser.newPage(); }
         catch (e) {
@@ -1230,7 +1266,20 @@ app.post('/api/termo-pdf', async (req, res) => {
         page.setDefaultNavigationTimeout(90_000);
         page.setDefaultTimeout(90_000);
         await page.emulateMediaType('screen');
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+
+        // tenta carregar via loopback; se falhar, tenta o público
+        const urlsToTry = [
+          `${LOOPBACK_BASE}/termo.html?${qs.toString()}`,
+          `${PUBLIC_BASE}/termo.html?${qs.toString()}`
+        ];
+        let loaded = false; let lastErr = null;
+        for (const u of urlsToTry) {
+          try {
+            await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+            loaded = true; break;
+          } catch (e) { lastErr = e; }
+        }
+        if (!loaded) throw lastErr || new Error('Falha ao carregar termo.html');
         await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
 
         function findFont(candidates){
@@ -1307,6 +1356,7 @@ app.post('/api/termo-pdf', async (req, res) => {
     if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
   }
 });
+
 
 /* ───────────── Start ───────────── */
 const PORT = process.env.PORT || 3000;

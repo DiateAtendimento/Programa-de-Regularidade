@@ -322,7 +322,7 @@
     data.values['em_adm'] = !!document.getElementById('em_adm')?.checked;
     data.values['em_jud'] = !!document.getElementById('em_jud')?.checked;
 
-    ['CRITERIOS_IRREGULARES[]','COMPROMISSOS[]','PROVIDENCIAS[]','ESFERA_GOVERNO[]','FINALIDADES[]']
+    ['CRITERIOS_IRREGULARES[]','COMPROMISSOS[]','PROVIDENCIAS[]','FINALIDADES[]']
       .forEach(name => {
         data.values[name] = $$(`input[name="${name}"]:checked`).map(i => i.value);
     });
@@ -1617,7 +1617,6 @@
 
   });
 
-  // restoreState — com política de limpeza
   function restoreState({ ignore = false } = {}) {
     if (ignore) {            
       showStep(0);
@@ -1635,24 +1634,12 @@
     }
 
     const vals = st.values || {};
-    Object.entries(vals).forEach(([k, v]) => {
-      if (k.endsWith('[]')) {
-        $$(`input[name="${k}"]`).forEach(i => { i.checked = Array.isArray(v) && v.includes(i.value); });
-      } else if (k === 'em_adm' || k === 'em_jud') {
-        const el = document.getElementById(k);
-        if (el) el.checked = !!v;
-      } else {
-        const el = document.getElementById(k);
-        if (el) el.value = v ?? '';
-      }
-    });
-
     let n = Number.isFinite(st.step) ? Number(st.step) : 0;
 
     if (n === 0) {
       cnpjOK = false;
       const pesq = document.getElementById('CNPJ_ENTE_PESQ');
-      if (pesq) { pesq.value = ''; neutral(pesq); }
+      if (pesq) { pesq.value = ''; /* neutral(pesq);*/ }
     } else {
       cnpjOK = digits(vals.CNPJ_ENTE || vals.CNPJ_UG || '').length === 14;
     }
