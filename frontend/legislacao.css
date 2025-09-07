@@ -1,0 +1,235 @@
+/* =========================
+   One-page: Legislação do Programa (PREV+)
+   Foco no conteúdo (BG escurecido) + tópicos brancos
+   ========================= */
+
+:root{
+  --toc-shadow: 0 8px 20px rgba(0,0,0,.06);
+}
+
+/* --- Escurece o BG da página para destacar o conteúdo --- */
+.page-legislacao{ position: relative; }
+.page-legislacao::before{
+  content:"";
+  position: fixed; inset: 0;
+  background: linear-gradient(0deg, rgba(6,17,38,.65), rgba(6,17,38,.45));
+  pointer-events: none;
+  z-index: 0;
+}
+/* garante que o conteúdo fique acima do overlay */
+.mps-header, .leg-hero, #tocNav, main#content, #backToTop{
+    z-index: 1;
+}
+
+/* ou então dar respiro na barra de navegação */
+#tocNav{
+  margin-top: clamp(8px, 1.5vw, 20px);
+}
+
+
+/* ---------- Hero com destaque ---------- */
+.page-legislacao .leg-hero{
+  position: relative;
+  padding-top: clamp(10px, 2.5vw, 18px);
+  padding-bottom: clamp(8px, 2vw, 16px);
+  color: #fff;
+
+  background: linear-gradient(180deg, rgba(6,16,36,.72), rgba(6,16,36,.42));
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.28);
+  backdrop-filter: blur(4px) saturate(115%);
+}
+.page-legislacao .leg-hero h1{ text-shadow: 0 2px 14px rgba(0,0,0,.35); }
+.page-legislacao .leg-hero .lead{ opacity:.95; }
+.page-legislacao .btn-hero{ min-height: 44px; }
+
+/* Botão circular com SVG para voltar à home */
+.btn-icon-home{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:44px; height:44px; border-radius:999px;
+  background: rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.35);
+  backdrop-filter: blur(6px) saturate(110%);
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+.btn-icon-home:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.55);
+}
+.btn-icon-home img,
+.btn-icon-home svg{ display:block; width:70px; height:70px; }
+
+/* ---------- Seções ---------- */
+.section{
+  margin-top: clamp(22px, 5vw, 44px);
+  margin-bottom: clamp(18px, 4vw, 36px);
+}
+
+/* --- Títulos (tópicos) brancos --- */
+.page-legislacao .section-title{
+  display:flex; align-items:center; gap:.5rem;
+  font-weight: 800; color: #fff;
+  text-shadow: 0 1px 0 rgba(0,0,0,.1);
+  margin-bottom: .75rem;
+}
+
+.anchor-wrap{ position: relative; }
+.page-legislacao .anchor-link{
+  margin-left: .25rem;
+  border:0; background:transparent; color: rgba(255,255,255,.7);
+  opacity:0; transform: translateY(2px);
+  transition: opacity .12s ease, color .12s ease;
+}
+.page-legislacao .anchor-wrap:hover .anchor-link,
+.page-legislacao .anchor-link:focus{ opacity:1; color: #fff; }
+
+/* ---------- Navegação sticky (escura) ---------- */
+.toc-nav{
+  background: rgba(6,16,36,.88);
+  backdrop-filter: blur(8px) saturate(110%);
+  box-shadow: var(--toc-shadow);
+  border-top: 1px solid rgba(255,255,255,.06);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  z-index: 1020;
+}
+.toc-list{
+  gap:.35rem; padding-top:.6rem; padding-bottom:.6rem;
+  overflow-x:auto; -webkit-overflow-scrolling: touch;
+}
+.toc-list .nav-link{
+  border-radius: 999px;
+  padding: .4rem .8rem;
+  font-weight: 700;
+  color: rgba(255,255,255,.86);
+  background: transparent;
+  border:1px solid rgba(255,255,255,.18);
+}
+.toc-list .nav-link:hover{
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.24);
+}
+.toc-list .nav-link.active{
+  background: var(--brand-600);
+  color: #fff;
+  border-color: var(--brand-600);
+}
+
+/* ---------- Badges ---------- */
+.badge-law{
+  background: #e5edff; color: var(--brand-700);
+  border:1px solid #cbd5e1; border-radius:999px; padding:.25rem .5rem;
+  font-weight:700;
+}
+.badge.purpose{
+  background: #1e3a8a; color:#fff; border-radius:6px; font-weight:700;
+}
+.badge.crp{
+  background: var(--brand-600); color:#fff; border-radius:6px; font-weight:800;
+}
+
+/* ---------- Checklist tags ---------- */
+.tag-mini{
+  display:inline-block; padding:.12rem .4rem; border-radius:999px;
+  background:#f1f5f9; color:#334155; font-weight:700; font-size:.7rem; margin-right:.4rem;
+}
+
+/* ---------- Timeline ---------- */
+.timeline{
+  position: relative;
+  display:grid; grid-template-columns: repeat(5, minmax(160px, 1fr));
+  gap: 1rem; margin-top:.75rem;
+}
+.timeline-track{
+  position:absolute; left:0; right:0; top: 23px; height: 2px;
+  background: linear-gradient(90deg, #dbeafe, #cbd5e1);
+  z-index:1;
+}
+.timeline-step{ position: relative; z-index:2; }
+.timeline-step .dot{
+  width: 14px; height: 14px; border-radius:50%;
+  background: var(--brand-600);
+  box-shadow: 0 0 0 3px #e5edff;
+  margin-bottom: .5rem;
+}
+.timeline-step .box{ padding:.85rem; border-radius: 12px; }
+.timeline-step .box-hd{
+  display:flex; align-items:center; gap:.5rem; margin-bottom:.25rem;
+}
+.timeline-step .tag{
+  background:#eef2ff; color:#334155; border-radius:999px; padding:.1rem .45rem; font-size:.75rem; font-weight:700;
+}
+
+/* ---------- Documentos (chips) ---------- */
+.doc-grid{
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:.6rem;
+}
+.chip-doc{
+  display:flex; flex-direction:column; gap:.15rem;
+  padding:.65rem .75rem; border-radius:12px; background:#fff; border:1px solid #e5e7eb;
+  box-shadow: var(--shadow);
+  color:inherit; text-decoration:none;
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+
+  /* centraliza conteúdo do card */
+  align-items:center; text-align:center;
+}
+.chip-doc:hover{ transform: translateY(-1px); box-shadow:0 12px 28px rgba(0,0,0,.12); border-color:#d1d5db; }
+
+/* caso use <img class="icon-svg"> ou <svg class="icon-svg"> */
+.chip-doc .icon-svg{
+  width: 50px; height: 50px;
+  flex: 0 0 auto;
+  margin-bottom: .2rem;
+  display: inline-block;
+}
+.chip-doc .txt{ font-weight:700; }
+.chip-doc .meta{ color:#64748b; }
+
+/* ---------- Footer ---------- */
+.leg-footer{
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem 0 2rem;
+  margin-top: 1.5rem;
+}
+
+/* ---------- Back to top (corrigido) ---------- */
+.back-to-top{
+  position: fixed;
+  left: auto;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+
+  z-index: 1030;
+  width: 44px; height: 44px; border-radius: 999px; border: 0;
+  background: var(--brand-600); color: #fff; font-weight: 800;
+  box-shadow: var(--shadow);
+  display:none; align-items:center; justify-content:center;
+}
+.back-to-top.show{ display:flex; }
+.back-to-top:hover{ background: var(--brand-700); }
+
+/* ---------- Reveal on scroll ---------- */
+.reveal{ opacity:0; transform: translateY(12px); transition: opacity .5s ease, transform .6s ease; }
+.reveal.is-visible{ opacity:1; transform: translateY(0); }
+
+/* ---------- Impressão ---------- */
+@media print{
+  .mps-header, .leg-hero, .toc-nav, #backToTop{ display:none !important; }
+  body{ background:#fff !important; }
+  .app-card, .card{ box-shadow:none !important; border:1px solid #e5e7eb !important; }
+  .chip-doc{ box-shadow:none !important; }
+  .accordion-collapse{ display:block !important; height:auto !important; }
+  a:after{
+    content: " (" attr(href) ")";
+    font-size: 10px; color:#6b7280;
+  }
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 991.98px){
+  .timeline{ grid-template-columns: 1fr; }
+  .timeline-track{ display:none; }
+  .timeline-step .dot{ display:none; }
+}
