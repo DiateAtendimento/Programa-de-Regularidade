@@ -322,8 +322,24 @@
     data.values['em_adm'] = !!document.getElementById('em_adm')?.checked;
     data.values['em_jud'] = !!document.getElementById('em_jud')?.checked;
 
-    ['CRITERIOS_IRREGULARES[]','COMPROMISSOS[]','PROVIDENCIAS[]'].forEach(name => {
-      data.values[name] = $$(`input[name="${name}"]:checked`).map(i => i.value);
+    ['CRITERIOS_IRREGULARES[]','COMPROMISSOS[]','PROVIDENCIAS[]','ESFERA_GOVERNO[]','FINALIDADES[]']
+      .forEach(name => {
+        data.values[name] = $$(`input[name="${name}"]:checked`).map(i => i.value);
+    });
+
+      // ✅ checkboxes “soltos” (1.1, 4.x e 7)
+    [
+      'esf_mun','esf_est',
+      'fin_parc','fin_reg',
+      'parc60','parc300',
+      'reg_sem_jud','reg_com_jud',
+      'eq_implano','eq_prazos','eq_plano_alt',
+      'org_ugu','org_outros',
+      'man_cert','man_melhoria','man_acomp',
+      'DECL_CIENCIA'
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) data.values[id] = !!el.checked;
     });
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -333,9 +349,34 @@
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
-      return JSON.parse(raw);
+      const st = JSON.parse(raw);
+      const vals = st?.values || {};
+
+      // 1) Restaurar arrays (ex.: ESFERA_GOVERNO[], CRITERIOS_IRREGULARES[])
+      Object.entries(vals).forEach(([k, v]) => {
+        if (k.endsWith('[]')) {
+          $$(`input[name="${k}"]`).forEach(i => {
+            i.checked = Array.isArray(v) && v.includes(i.value);
+          });
+        }
+      });
+
+      // 2) Restaurar inputs “simples”
+      Object.entries(vals).forEach(([k, v]) => {
+        if (k.endsWith('[]')) return; // já feito acima
+        const el = document.getElementById(k);
+        if (!el) return;
+        if (el.type === 'checkbox' || el.type === 'radio') {
+          el.checked = !!v;
+        } else {
+          el.value = v ?? '';
+        }
+      });
+
+      return st;
     } catch { return null; }
   }
+
 
   // --- Controle robusto do modal de "carregando" + Lottie ---
   let loadingCount = 0;
@@ -523,6 +564,13 @@
     // pré-aquecer o backend (evita o 1º 502 na primeira ação do usuário)
     waitForService({ timeoutMs: 15000, pollMs: 1500 }).catch(()=>{});
  
+    // salvar sempre que o usuário muda algo (sem travar a UI)
+    const formEl = document.getElementById('regularidadeForm');
+    if (formEl) {
+      const saveStateDebounced = debounce(saveState, 400);
+      formEl.addEventListener('input', saveStateDebounced);
+      formEl.addEventListener('change', saveStateDebounced);
+    }
 
   });
   window.addEventListener('beforeunload', saveState);
@@ -756,12 +804,21 @@
 
     if (s<=3) {
       (reqAll[s]||[]).forEach(o => { if(!checkField(o.id,o.type)) msgs.push(o.label); });
-      if (s===1) {
-        const items = $$('input[name="ESFERA_GOVERNO[]"]');
-        const ok = items.some(i=>i.checked);
-        items.forEach(i => paintLabelForInput(i, !ok));
-        if(!ok) msgs.push('Esfera de Governo');
+      if (s === 1) {
+        const grp = $$('input[name="ESFERA_GOVERNO[]"]');
+        let ok = false;
+
+        if (grp.length) {
+          ok = grp.some(i => i.checked);
+          grp.forEach(i => paintLabelForInput(i, !ok));
+        } else {
+          const m = $('#esf_mun'), e = $('#esf_est');
+          ok = !!(m?.checked || e?.checked);
+          [m, e].forEach(i => paintLabelForInput(i, !ok));
+        }
+        if (!ok) msgs.push('Esfera de Governo');
       }
+
       if (s===3) {
         const adm = $('#em_adm'), jud = $('#em_jud');
         const rOK = adm?.checked || jud?.checked;
@@ -878,11 +935,38 @@
 
   const editedFields = new Set();
   const trackIds = [
-    'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
+    // 1.2 / 1.3
+    'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
+
+    // 1.1 Esfera (dois checkboxes)
+    'esf_mun','esf_est',
+
+    // 2. Representantes (ENTE/UG)
     'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
     'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
-    'DATA_VENCIMENTO_ULTIMO_CRP','EMAIL_ENTE','EMAIL_UG'
+
+    // 3. CRP
+    'DATA_VENCIMENTO_ULTIMO_CRP','em_adm','em_jud',
+
+    // 4. Finalidades (todos os itens)
+    'fin_parc','fin_reg',
+    'parc60','parc300',
+    'reg_sem_jud','reg_com_jud',
+    'eq_implano','eq_prazos','eq_plano_alt',
+    'org_ugu','org_outros',
+    'man_cert','man_melhoria','man_acomp',
+
+    // 5. Compromissos (grupo)
+    // (grupo via name=[], mas mantemos um representante pra garantir)
+    'grpCOMPROMISSOS',
+
+    // 6. Providências (grupo)
+    'grpPROVIDENCIAS',
+
+    // 7. Condições
+    'DECL_CIENCIA'
   ];
+
   trackIds.forEach(id=>{
     const el = $('#'+id); if(!el) return;
     const ev = (el.tagName==='SELECT' || el.type==='date') ? 'change' : 'input';
