@@ -1618,7 +1618,12 @@
   });
 
   // restoreState — com política de limpeza
-  function restoreState() {
+  function restoreState({ ignore = false } = {}) {
+    if (ignore) {            
+      showStep(0);
+      return;
+    }
+
     const st = loadState();
     if (!st) { showStep(0); return; }
 
@@ -1656,5 +1661,10 @@
     if (st.seenWelcome) { try { modalWelcome.hide(); } catch {} }
   }
 
-  restoreState();
+  // antes era: restoreState();
+  const TAB_FLAG = 'rpps-tab-init';
+  const ignoreRestoreThisTab = !sessionStorage.getItem(TAB_FLAG);
+  sessionStorage.setItem(TAB_FLAG, '1');
+  restoreState({ ignore: ignoreRestoreThisTab });
+
 })();
