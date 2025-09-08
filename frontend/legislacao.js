@@ -1,6 +1,6 @@
 // One-page Legislação — efeitos leves, scroll suave, scrollspy e utilitários
 (() => {
-  const $ = (s, r=document) => r.querySelector(s);
+  const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
   /* ========= Reveal on Scroll ========= */
@@ -40,7 +40,7 @@
 
   // links de âncora nos títulos (ícone de link)
   $$('.anchor-link').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+    btn.addEventListener('click', async () => {
       const hash = btn.getAttribute('data-anchor');
       const url = location.origin + location.pathname + (hash || '');
       try {
@@ -48,7 +48,7 @@
         btn.classList.add('copied');
         setTimeout(() => btn.classList.remove('copied'), 1000);
       } catch {
-        // fallback
+        // fallback silencioso
       }
       if (hash) {
         history.pushState(null, '', hash);
@@ -66,7 +66,6 @@
 
   /* ========= ScrollSpy (Bootstrap) ========= */
   try {
-    // usa o body para monitorar o scroll
     new bootstrap.ScrollSpy(document.body, {
       target: '#tocNav',
       offset: 110
@@ -94,4 +93,39 @@
       } catch {}
     });
   });
+
+  /* ========= Baixar PDF (Google Drive → download direto) ========= */
+  // Cole aqui o link de compartilhamento do Google Drive
+  const SHARE_URL = "https://drive.google.com/file/d/1uDR5iMRGuHmNapNUkrxKxyKUCA5IlzcR/view?usp=drive_link";
+
+  // Converte o link de "view" do Drive para a URL de download direto
+  function driveDirectDownload(url) {
+    const m = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/);
+    const id = m ? m[1] : null;
+    return id ? `https://drive.google.com/uc?export=download&id=${id}` : url;
+  }
+
+  const direct = driveDirectDownload(SHARE_URL);
+
+  // Preferencialmente um elemento com id="btnBaixarPDF".
+  // Se não houver, pega o primeiro .btn-hero dentro do .leg-hero.
+  const btnPDF =
+    $('#btnBaixarPDF') ||
+    $('.leg-hero .btn-hero');
+
+  if (btnPDF && direct) {
+    btnPDF.setAttribute('href', direct);
+    btnPDF.setAttribute('target', '_blank');   // abre em nova aba
+    btnPDF.setAttribute('rel', 'noopener');    // segurança
+    btnPDF.setAttribute('download', 'Programa-Regularidade.pdf'); // sugestão de nome
+
+    // Fallback: se algum navegador bloquear o "download" cross-origin
+    btnPDF.addEventListener('click', (e) => {
+      // Se o href não estiver aplicável, força a abertura
+      if (!btnPDF.href || btnPDF.href === '#') {
+        e.preventDefault();
+        window.open(direct, '_blank', 'noopener');
+      }
+    });
+  }
 })();
