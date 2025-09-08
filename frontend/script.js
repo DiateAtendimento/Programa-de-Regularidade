@@ -279,10 +279,14 @@
   /* ========= Persistência (etapa + campos) ========= */
   const STORAGE_KEY = 'rpps-form-v1';
 
-  // flag de "bem-vindo" persistente (fora do rascunho)
-  const WELCOME_KEY = 'rpps-welcome-seen';
-  function hasSeenWelcome(){ try { return localStorage.getItem(WELCOME_KEY) === '1'; } catch { return false; } }
-  function rememberWelcome(){ try { localStorage.setItem(WELCOME_KEY, '1'); } catch {} }
+  // flag de "bem-vindo" por ABA (sobrevive a refresh, zera ao fechar a aba)
+  const WELCOME_SESSION_KEY = 'rpps-welcome-seen:session';
+  function hasSeenWelcomeSession(){ try { return sessionStorage.getItem(WELCOME_SESSION_KEY) === '1'; } catch { return false; } }
+  function rememberWelcomeSession(){ try { sessionStorage.setItem(WELCOME_SESSION_KEY, '1'); } catch {} }
+
+  // (limpa legado persistente, opcional)
+  try { localStorage.removeItem('rpps-welcome-seen'); } catch {}
+
 
 
   function clearAllState() {
@@ -546,16 +550,11 @@
     
     */
 
-    const st2 = getState();
-    const alreadySeen = !!(st2?.seenWelcome) || hasSeenWelcome();
+    const alreadySeen = hasSeenWelcomeSession();
     if (!alreadySeen) {
-      // marca antes de exibir para sobreviver a F5 imediato
-      rememberWelcome();
-      markWelcomeSeen(); // legado (continua no STORAGE_KEY), inofensivo
+      // marca antes de abrir para sobreviver a F5
+      rememberWelcomeSession();
       setTimeout(() => { try { modalWelcome.show(); } catch {} }, 0);
-    } else if (st2?.seenWelcome && !hasSeenWelcome()) {
-      // migração: se só existia no STORAGE_KEY, replica na chave dedicada
-      rememberWelcome();
     }
 
     

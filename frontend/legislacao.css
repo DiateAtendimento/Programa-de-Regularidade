@@ -252,9 +252,12 @@
 }
 
 
+
 /* ---------- Responsivo ---------- */
 @media (max-width: 991.98px){
   .timeline{ grid-template-columns: 1fr; }
   .timeline-track{ display:none; }
   .timeline-step .dot{ display:none; }
 }
+
+
