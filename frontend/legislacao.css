@@ -227,6 +227,31 @@
   }
 }
 
+/* Garante que todo conteúdo fique acima do overlay */
+.page-legislacao{
+  position: relative;
+  isolation: isolate;          /* cria um stacking context próprio */
+}
+.page-legislacao::before{
+  z-index: 0;                   /* véu escuro */
+}
+
+/* Torna os blocos "posicionados" e acima do véu */
+.page-legislacao .mps-header,
+.page-legislacao .leg-hero,
+.page-legislacao #tocNav,
+.page-legislacao main#content,
+.page-legislacao #backToTop{
+  position: relative;           /* <— essencial para o z-index funcionar */
+  z-index: 1;
+}
+
+/* Se quiser garantir a logo ainda mais acima, suba um nível */
+.page-legislacao .mps-header{
+  z-index: 2;
+}
+
+
 /* ---------- Responsivo ---------- */
 @media (max-width: 991.98px){
   .timeline{ grid-template-columns: 1fr; }
