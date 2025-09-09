@@ -835,34 +835,12 @@
       const sec4 = document.querySelector('[data-step="4"]');
       const chks = sec4 ? Array.from(sec4.querySelectorAll('input[type="checkbox"]')) : [];
       const ok = chks.some(i => i.checked);
+
+      // pinta/limpa feedback visual dos rótulos
       chks.forEach(i => paintLabelForInput(i, !ok));
+
       if (!ok) msgs.push('Marque pelo menos um item na etapa 4.');
-    
 
-      const g41 = ['#parc60', '#parc300'];
-      const g42 = ['#reg_sem_jud', '#reg_com_jud'];
-      const ok41_any = g41.some(sel => $(sel)?.checked);
-      const ok42_any = g42.some(sel => $(sel)?.checked);
-      paintGroupLabels(g41, !ok41_any && !ok42_any);
-      paintGroupLabels(g42, !ok41_any && !ok42_any);
-      if (!ok41_any && !ok42_any) {
-        msgs.push('Marque ao menos uma finalidade detalhada (4.1 ou 4.2).');
-      }
-
-      const g43 = ['#eq_implano', '#eq_prazos', '#eq_plano_alt'];
-      const ok43 = g43.some(sel => $(sel)?.checked);
-      paintGroupLabels(g43, !ok43);
-      if (!ok43) msgs.push('Marque ao menos uma opção no item 4.3 (equacionamento do déficit atuarial).');
-
-      const g44 = ['#org_ugu', '#org_outros'];
-      const ok44 = g44.some(sel => $(sel)?.checked);
-      paintGroupLabels(g44, !ok44);
-      if (!ok44) msgs.push('Marque ao menos uma opção no item 4.4 (critérios estruturantes).');
-
-      const g45 = ['#man_cert', '#man_melhoria', '#man_acomp'];
-      const ok45 = g45.some(sel => $(sel)?.checked);
-      paintGroupLabels(g45, !ok45);
-      if (!ok45) msgs.push('Marque ao menos uma opção no item 4.5 (fase de manutenção da conformidade).');
     }
 
     if (s===5){
