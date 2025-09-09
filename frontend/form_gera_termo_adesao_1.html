@@ -265,7 +265,7 @@
               <div class="small text-muted mb-2">Selecione todos os itens apontados como irregulares no extrato.</div>
 
               <div class="d-flex flex-column gap-2" id="grpCRITERIOS">
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="1-Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)"><span class="form-check-label">1 - Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="1-Aplicações Financeiras Resolv. CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)"><span class="form-check-label">1 - Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="2-Atendimento à fiscalização"><span class="form-check-label">2 - Atendimento à fiscalização</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="3-Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar"><span class="form-check-label">3 - Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar</span></label>
                 <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="4-Caráter contributivo – repasses (objeto de Processo Administrativo Previdenciário)"><span class="form-check-label">4 - Caráter contributivo – repasses (objeto de Processo Administrativo Previdenciário)</span></label>
@@ -404,6 +404,10 @@
                 <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Cumprir Planos de Ação nas fases Específica e de Manutenção">
                 <span class="form-check-label">5.6 Cumprimento dos Planos de Ação que vierem a ser apresentados nas fases Específica e de Manutenção da Conformidade previstas no Programa de Regularidade Previdenciária.</span>
               </label>
+              <label class="form-check">
+                <input class="form-check-input me-2 grp-comp" type="checkbox" name="COMPROMISSOS[]" value="Promover o equilíbrio financeiro e atuarial do RPPS e a sustentabilidade do seu plano de custeio e de benefícios">
+                <span class="form-check-label">5.7 Promover o equilíbrio financeiro e atuarial do RPPS e a sustentabilidade do seu plano de custeio e de benefícios</span>
+              </label>
             </div>
           </section>
 
@@ -426,20 +430,35 @@
             </div>
           </section>
 
-          <!-- ETAPA 7 -->
-          <section class="app-section" data-step="7">
-            <div class="section-head">
-              <h2 class="section-title">7. Condições para vigência do Programa de Regularidade Previdenciária</h2>
-              <p class="small text-muted mb-0">Marque a declaração de ciência.</p>
-            </div>
+          <!-- ETAPA 7 — Condições de vigência (todos obrigatórios) -->
+          <div class="mb-3">
+            <label class="form-label d-block mb-2">7. Condições de vigência</label>
 
-            <div class="form-check mb-3" id="grpCONDICOES">
-              <input class="form-check-input me-2" type="checkbox" id="DECL_CIENCIA" name="CONDICOES_VIGENCIA" value="Declaro ciência das condições do art. 6º do Anexo XVIII da Portaria MTP 1.467/2022">
-              <label class="form-check-label" for="DECL_CIENCIA">
-                Declaro ter ciência que a vigência do Programa de Regularidade Previdenciária e a emissão de CRP emergenciais dependem do: I) atendimento aos requisitos do art. 3º; II) cumprimento de planos de ação do art. 4º; III) cumprimento de prazos/condições do art. 6º do Anexo XVII para entes com termos baseados na EC nº xx/2025; e IV) não ingresso com ação judicial para obtenção de CRP ou para descumprimento do programa.
-              </label>
-            </div>
-          </section>
+            <label class="form-check">
+              <input class="form-check-input me-2 grp-cond" type="checkbox" name="CONDICOES[]" id="cond_71"
+                value="7.1 O atendimento às condições e aos compromissos do Programa.">
+              <span class="form-check-label">7.1 O atendimento às condições e aos compromissos do Programa.</span>
+            </label>
+
+            <label class="form-check">
+              <input class="form-check-input me-2 grp-cond" type="checkbox" name="CONDICOES[]" id="cond_72"
+                value="7.2 O cumprimento dos planos de ação.">
+              <span class="form-check-label">7.2 O cumprimento dos planos de ação.</span>
+            </label>
+
+            <label class="form-check">
+              <input class="form-check-input me-2 grp-cond" type="checkbox" name="CONDICOES[]" id="cond_73"
+                value="7.3 O cumprimento dos prazos e das condições previstos no art. 7º do Anexo XVII da Portaria MTP nº 1.467/2022, em relação aos entes federativos que celebrarem termos de acordos de parcelamento junto ao RPPS com base nas regras estabelecidas pela Emenda Constitucional nº xx, de xxxxx de setembro de 2025.">
+              <span class="form-check-label">7.3 O cumprimento dos prazos e das condições previstos no art. 7º do Anexo XVII da Portaria MTP nº 1.467/2022, em relação aos entes federativos que celebrarem termos de acordos de parcelamento junto ao RPPS com base nas regras estabelecidas pela Emenda Constitucional nº xx, de xxxxx de setembro de 2025.</span>
+            </label>
+
+            <label class="form-check">
+              <input class="form-check-input me-2 grp-cond" type="checkbox" name="CONDICOES[]" id="cond_74"
+                value="7.4 O não ingresso com ação judicial para obtenção de CRP ou para descumprimento do programa.">
+              <span class="form-check-label">7.4 O não ingresso com ação judicial para obtenção de CRP ou para descumprimento do programa.</span>
+            </label>
+          </div>
+
 
           <!-- ETAPA 8 -->
           <section class="app-section" data-step="8">

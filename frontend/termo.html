@@ -161,7 +161,9 @@
         <li>III – observância de prazos/condições do art. 6º do Anexo XVII (para parcelamentos – EC xx/2025); e/ou</li>
         <li>IV – não ingresso com ação judicial para obter CRP ou para descumprimento do Programa.</li>
       </ul>
-      <p><strong>Declaração informada:</strong> <span data-k="condicao_vigencia"></span></p>
+      <p class="mt"><strong>Declarações marcadas no formulário</strong></p>
+      <ul id="condicoes-list"></ul>
+
     </section>
 
     <!-- Assinaturas -->
@@ -242,6 +244,29 @@
         } else {
           criterios.forEach(c => { const li=document.createElement('li'); li.textContent=c; ul.appendChild(li); });
         }
+
+        // 7.x — monta a lista com as declarações marcadas
+        const ulCond = document.getElementById('condicoes-list');
+        if (ulCond) {
+          ulCond.innerHTML = '';
+          const marcadas = (p.get('condicao_vigencia') || '')
+            .split(';')
+            .map(s => s.trim())
+            .filter(Boolean);
+
+          if (marcadas.length) {
+            marcadas.forEach(txt => {
+              const li = document.createElement('li');
+              li.textContent = txt;
+              ulCond.appendChild(li);
+            });
+          } else {
+            const li = document.createElement('li');
+            li.innerHTML = '<em>Não informado.</em>';
+            ulCond.appendChild(li);
+          }
+}
+
 
         const hasA = !!(p.get('celebracao')||'').trim();
         const hasB = !!(p.get('regularizacao')||'').trim();

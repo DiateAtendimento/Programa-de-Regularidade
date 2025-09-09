@@ -326,7 +326,7 @@
     data.values['em_adm'] = !!document.getElementById('em_adm')?.checked;
     data.values['em_jud'] = !!document.getElementById('em_jud')?.checked;
 
-    ['CRITERIOS_IRREGULARES[]','COMPROMISSOS[]','PROVIDENCIAS[]','FINALIDADES[]']
+    ['CRITERIOS_IRREGULARES[]','COMPROMISSOS[]','PROVIDENCIAS[]','FINALIDADES[]','CONDICOES[]']
       .forEach(name => {
         data.values[name] = $$(`input[name="${name}"]:checked`).map(i => i.value);
     });
@@ -832,12 +832,12 @@
     }
 
     if (s === 4) {
-      const finA = $('#fin_parc')?.checked || false;
-      const finB = $('#fin_reg')?.checked || false;
-      paintGroupLabels(['#fin_parc', '#fin_reg'], !(finA || finB));
-      if (!(finA || finB)) {
-        msgs.push('Marque a Finalidade Inicial da Adesão: A (Parcelamento) ou B (Regularização para CRP).');
-      }
+      const sec4 = document.querySelector('[data-step="4"]');
+      const chks = sec4 ? Array.from(sec4.querySelectorAll('input[type="checkbox"]')) : [];
+      const ok = chks.some(i => i.checked);
+      chks.forEach(i => paintLabelForInput(i, !ok));
+      if (!ok) msgs.push('Marque pelo menos um item na etapa 4.');
+    
 
       const g41 = ['#parc60', '#parc300'];
       const g42 = ['#reg_sem_jud', '#reg_com_jud'];
@@ -880,11 +880,11 @@
       if (!ok) msgs.push('Marque ao menos uma providência (item 6).');
     }
 
-    if (s===7){
-      const decl = $('#DECL_CIENCIA');
-      const ok = !!decl?.checked;
-      paintLabelForInput(decl, !ok);
-      if (!ok) msgs.push('Confirme a ciência das condições (item 7).');
+    if (s === 7) {
+      const all = $$('.grp-cond');
+      const ok = all.length > 0 && all.every(i => i.checked);
+      all.forEach(i => paintLabelForInput(i, !ok && !i.checked));
+      if (!ok) msgs.push('Marque os quatro itens do item 7 (7.1 a 7.4).');
     }
 
     if (msgs.length){ showAtencao(msgs); return false; }
@@ -1307,7 +1307,7 @@
       MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$('input#man_cert, input#man_melhoria, input#man_acomp').filter(i=>i.checked).map(i=>i.value).join('; '),
       COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked').map(i=>i.value).join('; '),
       PROVIDENCIA_NECESS_ADESAO: $$('input[name="PROVIDENCIAS[]"]:checked').map(i=>i.value).join('; '),
-      CONDICAO_VIGENCIA: $('#DECL_CIENCIA').checked ? 'Declaro ciência das condições' : '',
+      CONDICAO_VIGENCIA: $$('input[name="CONDICOES[]"]:checked').map(i => i.value).join('; '),
       MES: $('#MES').value,
       DATA_TERMO_GERADO: $('#DATA_TERMO_GERADO').value,
       HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO').value,
@@ -1346,10 +1346,11 @@
     });
 
     const compAgg = String(payload.COMPROMISSO_FIRMADO_ADESAO || '');
-    [['5.1','5\\.1'], ['5.2','5\\.2'], ['5.3','5\\.3'], ['5.4','5\\.4'], ['5.5','5\\.5'], ['5.6','5\\.6']]
+    [['5.1','5\\.1'], ['5.2','5\\.2'], ['5.3','5\\.3'], ['5.4','5\\.4'], ['5.5','5\\.5'], ['5.6','5\\.6'], ['5.7','5\\.7']]
       .forEach(([code, rx]) => {
         if (new RegExp(`(^|\\D)${rx}(\\D|$)`).test(compAgg)) qs.append('comp', code);
       });
+
 
     payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
     window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
@@ -1652,5 +1653,4 @@
   const ignoreRestoreThisTab = !sessionStorage.getItem(TAB_FLAG);
   sessionStorage.setItem(TAB_FLAG, '1');
   restoreState({ ignore: ignoreRestoreThisTab });
-
 })();

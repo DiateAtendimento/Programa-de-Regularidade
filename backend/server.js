@@ -1216,8 +1216,9 @@ app.post('/api/termo-pdf', async (req, res) => {
       try {
         const p = req.body || {};
         const compAgg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
-        const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6']
+        const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6','5.7']
           .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
+
 
         const qs = new URLSearchParams({
           uf: p.UF || '', ente: p.ENTE || '', cnpj_ente: p.CNPJ_ENTE || '', email_ente: p.EMAIL_ENTE || '',
