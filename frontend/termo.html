@@ -1,3 +1,4 @@
+<!-- termo.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -187,7 +188,6 @@
       </div>
     </footer>
   </main>
-
   <!-- libs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" referrerpolicy="no-referrer"></script>
@@ -265,8 +265,7 @@
             li.innerHTML = '<em>Não informado.</em>';
             ulCond.appendChild(li);
           }
-}
-
+        }
 
         const hasA = !!(p.get('celebracao')||'').trim();
         const hasB = !!(p.get('regularizacao')||'').trim();
@@ -295,12 +294,14 @@
         ]);
 
         filterOptionsFlexible('compromissos', 'opt-5', [
-          {code:'5.1', test:/5\.?1\b|repasses|parcelas\b/i},
-          {code:'5.2', test:/5\.?2\b|encaminhamento|solicita/i},
-          {code:'5.3', test:/5\.?3\b|9\.796|utiliza(?:ç|c)ão dos recursos/i},
-          {code:'5.4', test:/5\.?4\b|CMN|aplica(?:ç|c)ão dos recursos/i},
-          {code:'5.5', test:/5\.?5\b|adequa(?:ç|c)(?:ões|ao)\s+legisla/i},
-          {code:'5.6', test:/5\.?6\b|planos?\s+de\s+a(?:ç|c)[aã]o/i},
+          { code: '5.1', test: /5\.?1\b|repasses|parcelas\b/i },
+          { code: '5.2', test: /5\.?2\b|encaminhamento|solicita/i },
+          { code: '5.3', test: /5\.?3\b|9\.?796\b|utiliza(?:ç|c)[aã]o\s+dos\s+recursos/i },
+          { code: '5.4', test: /5\.?4\b|CMN|aplica(?:ç|c)[aã]o\s+dos\s+recursos/i },
+          { code: '5.5', test: /5\.?5\b|adequa(?:ç|c)(?:ões|ao)\s+legisla/i },
+          { code: '5.6', test: /5\.?6\b|planos?\s+de\s+a(?:ç|c)[aã]o/i },
+          // se quiser refletir o item extra do formulário:
+          { code: '5.7', test: /5\.?7\b|equil[ií]brio\s+financeiro|atuarial/i },
         ]);
 
         filterOptionsFlexible('providencias', 'opt-6', [

@@ -2,6 +2,7 @@
 // Otimizado: remove caminho pesado de CRP que gerava timeout:CRP:read
 
 require('dotenv').config();
+const Joi = require('joi');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -67,7 +68,7 @@ const corsOptionsDelegate = (req, cb) => {
   cb(null, {
     origin: ok ? (originIn || true) : false,
     methods: ['GET','POST','OPTIONS'],
-    allowedHeaders: reqHdrs || 'Content-Type,Authorization,Cache-Control,X-Idempotency-Key',
+    allowedHeaders: reqHdrs || 'Content-Type,Authorization,Cache-Control,X-Idempotency-Key,X-API-Key',
     exposedHeaders: ['Content-Disposition'],
     credentials: false,
     optionsSuccessStatus: 204,
@@ -78,13 +79,13 @@ const corsOptionsDelegate = (req, cb) => {
 app.use(cors(corsOptionsDelegate));
 app.options(/.*/, cors(corsOptionsDelegate));
 
-/* injeta CORS também em respostas de erro internas */
+
 app.use((req, res, next) => {
-  const o = req.headers.origin;
-  if (!o || isAllowedOrigin(o)) {
-    res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Origin', o || '*');
-    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+  const o = (req.headers.origin || '').replace(/\/+$/,'').toLowerCase();
+  if (o && isAllowedOrigin(o)) {
+    res.setHeader('Vary','Origin');
+    res.setHeader('Access-Control-Allow-Origin', o);
+    res.setHeader('Access-Control-Expose-Headers','Content-Disposition');
   }
   next();
 });
@@ -96,19 +97,19 @@ app.use(helmet.contentSecurityPolicy({
   useDefaults: true,
   directives: {
     defaultSrc: ["'self'"],
-    scriptSrc:  ["'self'","https://cdn.jsdelivr.net","https://cdnjs.cloudflare.com","'unsafe-inline'"],
-    styleSrc:   ["'self'","https://cdn.jsdelivr.net","https://fonts.googleapis.com","https://fonts.cdnfonts.com","'unsafe-inline'"],
-    fontSrc:    ["'self'","https://fonts.gstatic.com","https://fonts.cdnfonts.com","data:"],
-    imgSrc:     ["'self'","data:","blob:"],
+    scriptSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+    styleSrc: ["'self'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com", "https://fonts.cdnfonts.com", "'unsafe-inline'"],
+    fontSrc:  ["'self'", "https://fonts.gstatic.com", "https://fonts.cdnfonts.com", "data:"],
+    imgSrc:   ["'self'", "data:", "blob:"],
     connectSrc: ["'self'", ...connectExtra],
-    workerSrc:  ["'self'","blob:"],
-    objectSrc:  ["'none'"],
-    frameSrc:   ["'none'"],
+    objectSrc: ["'none'"],
+    frameSrc: ["'none'"],
     frameAncestors: ["'none'"],
-    baseUri:    ["'self'"],
+    baseUri: ["'self'"],
     formAction: ["'self'"],
   },
 }));
+
 
 // Rate limits por rota
 const rlCommon = rateLimit({ windowMs: 15*60*1000, max: 400, standardHeaders: true, legacyHeaders: false });
@@ -188,6 +189,55 @@ const low    = v => norm(v).toLowerCase();
 const digits = v => norm(v).replace(/\D+/g,'');
 const cnpj14 = v => digits(v).padStart(14, '0').slice(-14);
 const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm(v));
+
+/* ───────────── Segurança extra: compare seguro, escape HTML e planilha-safe ───────────── */
+function safeEqual(a, b) {
+  try {
+    const A = Buffer.from(String(a) || '', 'utf8');
+    const B = Buffer.from(String(b) || '', 'utf8');
+    if (A.length !== B.length) return false;
+    return crypto.timingSafeEqual(A, B);
+  } catch { return false; }
+}
+
+/** Protege endpoints: só ativa se API_KEY existir no .env */
+function requireKey(req, res, next) {
+  const must = process.env.API_KEY;
+  if (!must) return next(); // desativado por padrão (retrocompatível)
+  const got = req.headers['x-api-key'];
+  if (safeEqual(must, got)) return next();
+  return res.status(401).json({ error: 'API key ausente ou inválida.' });
+}
+
+/** Escape rápido para HTML (se quiser usar no termo.html — ver seção 5) */
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+/** Mitiga CSV/Planilha injection (prefixa ' quando começa com = + - @ ou tab) */
+function sanitizeForSheet(v) {
+  const s = String(v ?? '');
+  if (!s) return '';
+  if (s.startsWith("'")) return s;                 // já seguro
+  if (/^[=\+\-@]/.test(s)) return `'${s}`;         // gatilhos de fórmula
+  if (/^\t/.test(s)) return `'${s}`;               // tab no início
+  return s;
+}
+
+/** Aplica sanitize em objeto plano (somente campos string) */
+function sheetSanObject(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj || {})) {
+    out[k] = (typeof v === 'string') ? sanitizeForSheet(v) : v;
+  }
+  return out;
+}
+
 
 function nowBR(){
   const tz = 'America/Sao_Paulo';
@@ -651,6 +701,7 @@ app.get('/api/consulta', async (req, res) => {
     res.status(500).json({ error:'Falha interna.' });
   }
 });
+
 /* ---------- util: atualizar EMAIL_ENTE / EMAIL_UG em CNPJ_ENTE_UG ---------- */
 async function upsertEmailsInBase(p){
   const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm(v));
@@ -729,7 +780,7 @@ async function findRepByCpfFast(cpfDigits) {
   const headers = sReps.headerValues || [];
   const san = s => (s ?? '').toString().trim().toLowerCase()
     .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\p{L}\p{N}]+/gu,'_')
-    .replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+    .replace(/_+/g, '_').replace(/^_+|_+$/g, '');
   const idx = {
     UF: headers.findIndex(h => san(h)==='uf'),
     ENTE: headers.findIndex(h => san(h)==='ente'),

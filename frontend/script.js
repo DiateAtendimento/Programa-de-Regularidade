@@ -1,4 +1,6 @@
 //script.js
+
+//script.js
 (() => {
   
   /* ========= Config ========= */
@@ -881,7 +883,6 @@
     if (msgs.length){ showAtencao(msgs); return false; }
     return true;
   }
-
 /* ========= Navegação: botão Próximo (com trava anticlique duplo) ========= */
   let navBusy = false;
   btnNext?.addEventListener('click', async () => {
@@ -913,6 +914,42 @@
       else { neutral(chk); }
     });
   });
+
+  /* ───────────── Etapa 5: mapeia COMPROMISSOS[] → códigos 5.1..5.7 ───────────── */
+  const COMP_VALUE_TO_CODE = {
+    'Manter regularidade nos repasses e nas parcelas (arts. 14 e 15 da Portaria MTP 1.467/2022)': '5.1',
+    'Regularidade no encaminhamento de documentos (art. 241 da Portaria MTP 1.467/2022)': '5.2',
+    'Utilizar recursos previdenciários apenas para finalidades legais': '5.3',
+    'Aplicar recursos conforme CMN': '5.4',
+    'Promover adequações na legislação do RPPS': '5.5',
+    'Cumprir Planos de Ação nas fases Específica e de Manutenção': '5.6',
+    'Promover o equilíbrio financeiro e atuarial do RPPS e a sustentabilidade do seu plano de custeio e de benefícios': '5.7'
+  };
+  
+  function extractCompCodesFromBody(p) {
+    const seen = new Set();
+
+    // 1) se vier string com "5.1", "5.2", etc.
+    const agg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
+    ['5.1','5.2','5.3','5.4','5.5','5.6','5.7'].forEach(code => {
+      const re = new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`);
+      if (re.test(agg)) seen.add(code);
+    });
+
+    // 2) se vier arrays do front
+    const arrRaw = []
+      .concat(Array.isArray(p.COMPROMISSOS) ? p.COMPROMISSOS : [])
+      .concat(Array.isArray(p['COMPROMISSOS[]']) ? p['COMPROMISSOS[]'] : []);
+    arrRaw.forEach(v => {
+      const code = COMP_VALUE_TO_CODE[String(v || '').trim()];
+      if (code) seen.add(code);
+    });
+
+    // ordena naturalmente
+    const order = ['5.1','5.2','5.3','5.4','5.5','5.6','5.7'];
+    return order.filter(c => seen.has(c));
+  }
+
 
   // Exclusividade na ETAPA 6 (6.1 x 6.2)
   function enforceProvOnlyOne() {
@@ -1664,3 +1701,5 @@
   sessionStorage.setItem(TAB_FLAG, '1');
   restoreState({ ignore: ignoreRestoreThisTab });
 })();
+
+
