@@ -515,7 +515,7 @@
     }else{
       header.classList.remove('bg-warning');
       header.classList.add('bg-danger','text-white');
-      title.textContent = 'Atenção';
+      title.textContent = 'Erro';
       mountLottie('lottieError', 'animacao/confirm-error.json', { loop:false, autoplay:true });
     }
   }
