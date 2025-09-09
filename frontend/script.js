@@ -255,6 +255,14 @@
     } catch (_) { /* noop */ }
   }
 
+  function emailFinal(fieldId, repFieldId){
+    const ok = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||'').trim());
+    const v  = (document.getElementById(fieldId)?.value || '').trim();
+    const vr = (document.getElementById(repFieldId)?.value || '').trim();
+    return ok(v) ? v : (ok(vr) ? vr : '');
+  }
+
+
 
   const replicateEmails = debounce(forceReplicateEmails, 800);
 
@@ -843,7 +851,7 @@
 
     }
 
-    if (s===5){
+    if (s === 5){
       const all = $$('.grp-comp');
       const checked = all.filter(i=>i.checked);
       const ok = checked.length === all.length;
@@ -851,11 +859,16 @@
       if (!ok) msgs.push('No item 5, marque todas as declarações de compromisso.');
     }
 
-    if (s===6){
+    if (s === 6){
       const provs = $$('.grp-prov');
-      const ok = provs.some(i=>i.checked);
+      const count = provs.filter(i => i.checked).length;
+      const ok = (count === 1);
       provs.forEach(i => paintLabelForInput(i, !ok));
-      if (!ok) msgs.push('Marque ao menos uma providência (item 6).');
+      if (!ok) {
+        msgs.push(count === 0
+          ? 'Marque exatamente uma providência (item 6).'
+          : 'No item 6, marque apenas uma opção (6.1 ou 6.2).');
+      }
     }
 
     if (s === 7) {
@@ -900,6 +913,25 @@
       else { neutral(chk); }
     });
   });
+
+  // Exclusividade na ETAPA 6 (6.1 x 6.2)
+  function enforceProvOnlyOne() {
+    const chks = $$('.grp-prov');
+    const checked = chks.filter(i => i.checked);
+    if (checked.length > 1) checked.slice(1).forEach(i => i.checked = false);
+  }
+  $$('.grp-prov').forEach(chk => {
+    chk.addEventListener('change', () => {
+      if (chk.checked) {
+        $$('.grp-prov').forEach(o => { if (o !== chk) o.checked = false; });
+      }
+    });
+  });
+  // corrige rascunhos antigos ao carregar
+  document.addEventListener('DOMContentLoaded', enforceProvOnlyOne);
+
+
+
   function autoselectEsferaByEnte(ente){
     const estadual = rmAcc(ente).includes('governo do estado');
     const chkEst = $('#esf_est'), chkMun = $('#esf_mun');
@@ -1261,14 +1293,14 @@
       ENTE: $('#ENTE').value.trim(),
       UF: $('#UF').value.trim(),
       CNPJ_ENTE: digits($('#CNPJ_ENTE').value),
-      EMAIL_ENTE: $('#EMAIL_ENTE').value.trim(),
+      EMAIL_ENTE: emailFinal('EMAIL_ENTE','EMAIL_REP_ENTE'),
       NOME_REP_ENTE: $('#NOME_REP_ENTE').value.trim(),
       CARGO_REP_ENTE: $('#CARGO_REP_ENTE').value.trim(),
       CPF_REP_ENTE: digits($('#CPF_REP_ENTE').value),
       EMAIL_REP_ENTE: $('#EMAIL_REP_ENTE').value.trim(),
       UG: $('#UG').value.trim(),
       CNPJ_UG: digits($('#CNPJ_UG').value),
-      EMAIL_UG: $('#EMAIL_UG').value.trim(),
+      EMAIL_UG:   emailFinal('EMAIL_UG','EMAIL_REP_UG'),
       NOME_REP_UG: $('#NOME_REP_UG').value.trim(),
       CARGO_REP_UG: $('#CARGO_REP_UG').value.trim(),
       CPF_REP_UG: digits($('#CPF_REP_UG').value),

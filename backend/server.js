@@ -187,6 +187,7 @@ const norm   = v => (v ?? '').toString().trim();
 const low    = v => norm(v).toLowerCase();
 const digits = v => norm(v).replace(/\D+/g,'');
 const cnpj14 = v => digits(v).padStart(14, '0').slice(-14);
+const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm(v));
 
 function nowBR(){
   const tz = 'America/Sao_Paulo';
@@ -1125,13 +1126,19 @@ app.post('/api/gerar-termo', async (req, res) => {
     // Datas atuais (carimbos)
     const { DATA, HORA, ANO, MES } = nowBR();
 
+    const emailEnteFinal = isEmail(p.EMAIL_ENTE) ? norm(p.EMAIL_ENTE)
+                     : isEmail(p.EMAIL_REP_ENTE) ? norm(p.EMAIL_REP_ENTE) : '';
+    const emailUgFinal   = isEmail(p.EMAIL_UG)   ? norm(p.EMAIL_UG)
+                     : isEmail(p.EMAIL_REP_UG)   ? norm(p.EMAIL_REP_UG)   : '';
+
+
     // Gravação principal (fatal se falhar)
     await safeAddRow(sTermos, {
       ENTE: norm(p.ENTE), UF: norm(p.UF),
-      CNPJ_ENTE: digits(p.CNPJ_ENTE), EMAIL_ENTE: norm(p.EMAIL_ENTE),
+      CNPJ_ENTE: digits(p.CNPJ_ENTE), EMAIL_ENTE: emailEnteFinal,
       NOME_REP_ENTE: norm(p.NOME_REP_ENTE), CARGO_REP_ENTE: norm(p.CARGO_REP_ENTE),
       CPF_REP_ENTE: digits(p.CPF_REP_ENTE), EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE),
-      UG: norm(p.UG), CNPJ_UG: digits(p.CNPJ_UG), EMAIL_UG: norm(p.EMAIL_UG),
+      UG: norm(p.UG), CNPJ_UG: digits(p.CNPJ_UG), EMAIL_UG:   emailUgFinal,
       NOME_REP_UG: norm(p.NOME_REP_UG), CARGO_REP_UG: norm(p.CARGO_REP_UG),
       CPF_REP_UG: digits(p.CPF_REP_UG), EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
       DATA_VENCIMENTO_ULTIMO_CRP: norm(p.DATA_VENCIMENTO_ULTIMO_CRP),
