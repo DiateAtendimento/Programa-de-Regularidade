@@ -1,5 +1,9 @@
 // server.js — API RPPS (multi-etapas) c/ idempotência em /api/gerar-termo
-// Otimizado: remove caminho pesado de CRP que gerava timeout:CRP:read
+// Hardened: CORS allowlist obrigatório, API key em prod, sanitização p/ Sheets,
+// Puppeteer same-origin only, Helmet extra (Referrer, COOP, HSTS), rate-limit fallback,
+// Joi validation e trust proxy ajustável.
+
+'use strict';
 
 require('dotenv').config();
 const Joi = require('joi');
@@ -15,6 +19,7 @@ const http = require('http');
 const https = require('https');
 const puppeteer = require('puppeteer');
 const crypto = require('crypto');
+const url = require('url');
 
 const app = express();
 
@@ -34,26 +39,31 @@ const SHEETS_TIMEOUT_MS   = Number(process.env.SHEETS_TIMEOUT_MS || 60_000);
 const SHEETS_RETRIES      = Number(process.env.SHEETS_RETRIES || 2);
 
 /* ───────────── Segurança ───────────── */
-app.set('trust proxy', 1);
+// trust proxy ajustável (útil p/ Render/NGINX). Exemplos aceitos: "1", "true", "loopback", "127.0.0.1"
+const TRUST_PROXY_RAW = (process.env.TRUST_PROXY ?? '1').trim().toLowerCase();
+let TRUST_PROXY;
+if (TRUST_PROXY_RAW === '0' || TRUST_PROXY_RAW === 'false' || TRUST_PROXY_RAW === 'off') TRUST_PROXY = false;
+else if (TRUST_PROXY_RAW === 'true' || TRUST_PROXY_RAW === '1') TRUST_PROXY = 1;
+else TRUST_PROXY = TRUST_PROXY_RAW; // passa string como 'loopback' ou IP/CIDR
+app.set('trust proxy', TRUST_PROXY);
+
 app.disable('x-powered-by');
 
 /* util env list */
 const splitList = (s = '') =>
   s.split(/[\s,]+/).map(v => v.trim().replace(/\/+$/, '')).filter(Boolean);
 
-/* ───────────── CORS (robusto) ───────────── */
+/* ───────────── CORS (allowlist obrigatória) ───────────── */
 const ALLOW_LIST = new Set(
   splitList(process.env.CORS_ORIGIN_LIST || '')
     .map(u => u.replace(/\/+$/, '').toLowerCase())
 );
-
 function isAllowedOrigin(origin) {
-  if (!origin) return true;
+  if (!origin) return false; // sem origin ⇒ nega (evita burlas de CORS)
   const o = origin.replace(/\/+$/, '').toLowerCase();
-  if (ALLOW_LIST.size === 0) return true;
+  if (ALLOW_LIST.size === 0) return false; // allowlist obrigatória
   return ALLOW_LIST.has(o);
 }
-
 const corsOptionsDelegate = (req, cb) => {
   const originIn = (req.headers.origin || '').replace(/\/+$/, '').toLowerCase();
   const ok = isAllowedOrigin(originIn);
@@ -66,7 +76,7 @@ const corsOptionsDelegate = (req, cb) => {
     .replace(/[^\w\-_, ]/g, '');
 
   cb(null, {
-    origin: ok ? (originIn || true) : false,
+    origin: ok ? originIn : false,
     methods: ['GET','POST','OPTIONS'],
     allowedHeaders: reqHdrs || 'Content-Type,Authorization,Cache-Control,X-Idempotency-Key,X-API-Key',
     exposedHeaders: ['Content-Disposition'],
@@ -75,24 +85,23 @@ const corsOptionsDelegate = (req, cb) => {
     maxAge: 86400,
   });
 };
-
 app.use(cors(corsOptionsDelegate));
 app.options(/.*/, cors(corsOptionsDelegate));
-
-
+// Opcional: deixa explícito o Vary de CORS
 app.use((req, res, next) => {
-  const o = (req.headers.origin || '').replace(/\/+$/,'').toLowerCase();
-  if (o && isAllowedOrigin(o)) {
-    res.setHeader('Vary','Origin');
-    res.setHeader('Access-Control-Allow-Origin', o);
-    res.setHeader('Access-Control-Expose-Headers','Content-Disposition');
-  }
+  res.vary('Origin');
+  res.vary('Access-Control-Request-Headers');
+  res.vary('Access-Control-Request-Method');
   next();
 });
 
+
 /* ───────────── Helmet + middlewares ───────────── */
 const connectExtra = splitList(process.env.CORS_ORIGIN_LIST || '');
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, crossOriginEmbedderPolicy: false }));
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // servimos estáticos
+  crossOriginEmbedderPolicy: false,                      // evitamos COEP p/ PDF
+}));
 app.use(helmet.contentSecurityPolicy({
   useDefaults: true,
   directives: {
@@ -109,20 +118,50 @@ app.use(helmet.contentSecurityPolicy({
     formAction: ["'self'"],
   },
 }));
+// Referrer-Policy + COOP
+app.use(helmet.referrerPolicy({ policy: 'no-referrer' }));
+app.use(helmet.crossOriginOpenerPolicy({ policy: 'same-origin' }));
 
+// HSTS somente quando Express considerar a conexão segura (respeita trust proxy)
+const hstsMw = (req, res, next) => {
+  if (req.secure) {
+    return helmet.hsts({ maxAge: 15552000, includeSubDomains: true, preload: true })(req, res, next);
+  }
+  return next();
+};
 
-// Rate limits por rota
-const rlCommon = rateLimit({ windowMs: 15*60*1000, max: 400, standardHeaders: true, legacyHeaders: false });
-const rlWrite  = rateLimit({ windowMs: 15*60*1000, max: 120, standardHeaders: true, legacyHeaders: false });
-const rlPdf    = rateLimit({ windowMs: 15*60*1000, max: 20,  standardHeaders: true, legacyHeaders: false });
+app.use(hstsMw);
 
-// livre/sem limite: health, healthz, warmup
+// Rate limits por rota + fallback
+const rlCommon   = rateLimit({ windowMs: 15*60*1000, max: 400, standardHeaders: true, legacyHeaders: false });
+const rlWrite    = rateLimit({ windowMs: 15*60*1000, max: 120, standardHeaders: true, legacyHeaders: false });
+const rlPdf      = rateLimit({ windowMs: 15*60*1000, max: 20,  standardHeaders: true, legacyHeaders: false });
+const rlFallback = rateLimit({ windowMs: 15*60*1000, max: 600, standardHeaders: true, legacyHeaders: false });
+const skipPaths = new Set(['/health','/healthz','/warmup']);
+app.use('/api', (req, res, next) => skipPaths.has((req.path||'').toLowerCase()) ? next() : rlFallback(req,res,next)); // fallback
+
+// específicos
 app.use('/api/consulta', rlCommon);
 app.use('/api/rep-by-cpf', rlCommon);
 app.use('/api/upsert-cnpj', rlWrite);
 app.use('/api/upsert-rep', rlWrite);
 app.use('/api/gerar-termo', rlWrite);
 app.use('/api/termo-pdf', rlPdf);
+
+// Política de API key: exige em produção ou se REQUIRE_API_KEY=1
+const REQUIRE_API_KEY = (process.env.REQUIRE_API_KEY ?? (process.env.NODE_ENV === 'production' ? '1' : '0')) === '1';
+
+// ❗ Bloqueia boot se exigir API key e ela não estiver configurada
+if (REQUIRE_API_KEY && !process.env.API_KEY) {
+  console.error('❌ API_KEY obrigatória quando REQUIRE_API_KEY=1');
+  process.exit(1);
+}
+
+app.use('/api', (req, res, next) => {
+  const p = (req.path || '').toLowerCase();
+  if (req.method === 'OPTIONS' || p === '/health' || p === '/healthz' || p === '/warmup') return next();
+  return REQUIRE_API_KEY ? requireKey(req, res, next) : next();
+});
 
 app.use(hpp());
 app.use(express.json({ limit: '300kb' }));
@@ -200,16 +239,33 @@ function safeEqual(a, b) {
   } catch { return false; }
 }
 
-/** Protege endpoints: só ativa se API_KEY existir no .env */
+/** Protege endpoints: só ativa se API_KEY existir ou se REQUIRE_API_KEY=true */
 function requireKey(req, res, next) {
+  if (!REQUIRE_API_KEY) return next();
+
   const must = process.env.API_KEY;
-  if (!must) return next(); // desativado por padrão (retrocompatível)
   const got = req.headers['x-api-key'];
-  if (safeEqual(must, got)) return next();
+
+  // Não deixe passar silenciosamente em caso de má config
+  if (typeof must !== 'string' || must.length < 8) {
+    return res.status(500).json({ error: 'API key não configurada no servidor.' });
+  }
+  if (typeof got !== 'string' || must.length !== got.length) {
+    return res.status(401).json({ error: 'API key ausente ou inválida.' });
+  }
+
+  try {
+    if (crypto.timingSafeEqual(Buffer.from(must, 'utf8'), Buffer.from(got, 'utf8'))) {
+      return next();
+    }
+  } catch (_) {
+    // fallthrough
+  }
   return res.status(401).json({ error: 'API key ausente ou inválida.' });
 }
 
-/** Escape rápido para HTML (se quiser usar no termo.html — ver seção 5) */
+
+/** Escape rápido para HTML (se quiser usar no termo.html) */
 function esc(s) {
   return String(s ?? '')
     .replace(/&/g,'&amp;')
@@ -223,9 +279,9 @@ function esc(s) {
 function sanitizeForSheet(v) {
   const s = String(v ?? '');
   if (!s) return '';
-  if (s.startsWith("'")) return s;                 // já seguro
-  if (/^[=\+\-@]/.test(s)) return `'${s}`;         // gatilhos de fórmula
-  if (/^\t/.test(s)) return `'${s}`;               // tab no início
+  if (s.startsWith("'")) return s;
+  if (/^[=\+\-@]/.test(s)) return `'${s}`;
+  if (/^\t/.test(s)) return `'${s}`;
   return s;
 }
 
@@ -237,8 +293,9 @@ function sheetSanObject(obj) {
   }
   return out;
 }
+const sanitizeIfStr = v => (typeof v === 'string' ? sanitizeForSheet(v) : v);
 
-
+/* Data/Hora BR */
 function nowBR(){
   const tz = 'America/Sao_Paulo';
   const d = new Date();
@@ -347,8 +404,9 @@ async function safeLoadCells(sheet, opts, label) {
   );
 }
 async function safeAddRow(sheet, data, label) {
+  // SANITIZA ANTES DE GRAVAR
   return withLimiter(`${label || sheet.title}:addRow`, () =>
-    withTimeoutAndRetry(`${label || sheet.title}:addRow`, () => sheet.addRow(data))
+    withTimeoutAndRetry(`${label || sheet.title}:addRow`, () => sheet.addRow(sheetSanObject(data)))
   );
 }
 async function safeSaveRow(row, label) {
@@ -385,7 +443,7 @@ async function getRowsViaCells(sheet) {
   });
   const cols = headersUnique.length || sheet.columnCount || 26;
   const endRow = sheet.rowCount || 2000;
-  await sheet.loadCells({ startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: cols });
+  await safeLoadCells(sheet, { startRowIndex: 1, startColumnIndex: 0, endRowIndex: endRow, endColumnIndex: cols }, 'viaCells:load');
   const rows = [];
   for (let r = 1; r < endRow; r++) {
     let empty = true; const obj = {};
@@ -424,7 +482,7 @@ const formatDateISO = d => {
   return `${yy}-${mm}-${dd}`;
 };
 
-/* === CRP FAST LOOKUP: lê só as colunas necessárias da(s) linha(s) do CNPJ === */
+/* === CRP FAST LOOKUP === */
 async function findCRPByCnpjFast(sheet, cnpjDigits) {
   const colCNPJ = 1, colVal = 5, colDec = 6; // 0-based: B, F, G
   const endRow = sheet.rowCount || 2000;
@@ -481,7 +539,7 @@ async function findCRPByCnpjFast(sheet, cnpjDigits) {
   return best;
 }
 
-/* ─────────────── PUPPETEER (robust) ─────────────── */
+/* ─────────────── PUPPETEER (robust + same-origin only) ─────────────── */
 process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || path.resolve(__dirname, '.puppeteer');
 process.env.TMPDIR = process.env.TMPDIR || '/tmp';
 
@@ -561,7 +619,6 @@ app.get('/api/warmup', async (_req, res) => {
     res.status(500).json({ ok: false, error: 'warmup failed' });
   }
 });
-
 /** GET /api/consulta?cnpj=NNNNNNNNNNNNNN[&nocache=1] */
 app.get('/api/consulta', async (req, res) => {
   try {
@@ -582,7 +639,6 @@ app.get('/api/consulta', async (req, res) => {
 
     // FAST: busca a linha do CNPJ sem ler a planilha inteira
     const base = await (async () => {
-      // varre apenas as colunas CNPJ_ENTE / CNPJ_UG e carrega a linha hit
       await sCnpj.loadHeaderRow();
       const headers = sCnpj.headerValues || [];
       const san = s => (s ?? '').toString().trim().toLowerCase()
@@ -701,10 +757,8 @@ app.get('/api/consulta', async (req, res) => {
     res.status(500).json({ error:'Falha interna.' });
   }
 });
-
 /* ---------- util: atualizar EMAIL_ENTE / EMAIL_UG em CNPJ_ENTE_UG ---------- */
 async function upsertEmailsInBase(p){
-  const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm(v));
   const emailEnteIn = norm(p.EMAIL_ENTE);
   const emailUgIn   = norm(p.EMAIL_UG);
   const emailRepEnteIn = norm(p.EMAIL_REP_ENTE);
@@ -758,12 +812,14 @@ async function upsertEmailsInBase(p){
     if (emailEnte && col.email_ente >= 0) {
       const cell = sCnpj.getCell(r, col.email_ente);
       const prev = norm(cell.value || '');
-      if (prev !== emailEnte) { cell.value = emailEnte; changed++; }
+      const next = sanitizeIfStr(emailEnte);
+      if (prev !== next) { cell.value = next; changed++; }
     }
     if (emailUg && col.email_ug >= 0) {
       const cell = sCnpj.getCell(r, col.email_ug);
       const prev = norm(cell.value || '');
-      if (prev !== emailUg) { cell.value = emailUg; changed++; }
+      const next = sanitizeIfStr(emailUg);
+      if (prev !== next) { cell.value = next; changed++; }
     }
   }
   if (changed) {
@@ -860,10 +916,104 @@ app.get('/api/rep-by-cpf', async (req,res)=>{
   }
 });
 
+/* ===== Joi Schemas ===== */
+const schemaUpsertCnpj = Joi.object({
+  UF: Joi.string().trim().min(1).required(),
+  ENTE: Joi.string().trim().min(1).required(),
+  UG: Joi.string().trim().allow(''),
+  CNPJ_ENTE: Joi.string().pattern(/^\D*\d{14}\D*$/).allow(''),
+  CNPJ_UG: Joi.string().pattern(/^\D*\d{14}\D*$/).allow(''),
+  EMAIL_ENTE: Joi.string().email().allow(''),
+  EMAIL_UG: Joi.string().email().allow(''),
+}).unknown(true);
+
+const schemaUpsertRep = Joi.object({
+  UF: Joi.string().trim().min(1).required(),
+  ENTE: Joi.string().trim().min(1).required(),
+  UG: Joi.string().trim().allow(''),
+  NOME: Joi.string().trim().min(2).required(),
+  CPF: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
+  EMAIL: Joi.string().email().allow(''),
+  TELEFONE: Joi.string().allow(''),
+  CARGO: Joi.string().trim().allow(''),
+}).unknown(true);
+
+const schemaGerarTermo = Joi.object({
+  UF: Joi.string().trim().min(1).required(),
+  ENTE: Joi.string().trim().min(1).required(),
+  CNPJ_ENTE: Joi.string().pattern(/^\D*\d{14}\D*$/).required(),
+  UG: Joi.string().trim().min(1).required(),
+  CNPJ_UG: Joi.string().pattern(/^\D*\d{14}\D*$/).required(),
+  NOME_REP_ENTE: Joi.string().trim().min(2).required(),
+  CPF_REP_ENTE: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
+  CARGO_REP_ENTE: Joi.string().trim().min(2).required(),
+  EMAIL_REP_ENTE: Joi.string().email().allow(''),
+  NOME_REP_UG: Joi.string().trim().min(2).required(),
+  CPF_REP_UG: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
+  CARGO_REP_UG: Joi.string().trim().min(2).required(),
+  EMAIL_REP_UG: Joi.string().email().allow(''),
+  EMAIL_ENTE: Joi.string().email().allow(''),
+  EMAIL_UG: Joi.string().email().allow(''),
+  DATA_VENCIMENTO_ULTIMO_CRP: Joi.string().trim().min(4).required(),
+  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().trim().min(1).required(),
+  CRITERIOS_IRREGULARES: Joi.alternatives().try(
+    Joi.array().items(Joi.string().trim()),
+    Joi.string().allow('')
+  ).optional(),
+  CELEBRACAO_TERMO_PARCELA_DEBITOS: Joi.string().allow(''),
+  REGULARIZACAO_PENDEN_ADMINISTRATIVA: Joi.string().allow(''),
+  DEFICIT_ATUARIAL: Joi.string().allow(''),
+  CRITERIOS_ESTRUT_ESTABELECIDOS: Joi.string().allow(''),
+  MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: Joi.string().allow(''),
+  COMPROMISSO_FIRMADO_ADESAO: Joi.string().allow(''),
+  PROVIDENCIA_NECESS_ADESAO: Joi.string().allow(''),
+  CONDICAO_VIGENCIA: Joi.string().allow(''),
+  __snapshot_base: Joi.object().unknown(true).optional(),
+  __user_changed_fields: Joi.array().items(Joi.string()).optional(),
+  IDEMP_KEY: Joi.string().allow(''),
+}).unknown(true);
+
+const schemaTermoPdf = Joi.object({
+  UF: Joi.string().allow(''),
+  ENTE: Joi.string().allow(''),
+  CNPJ_ENTE: Joi.string().allow(''),
+  UG: Joi.string().allow(''),
+  CNPJ_UG: Joi.string().allow(''),
+  NOME_REP_ENTE: Joi.string().allow(''),
+  CPF_REP_ENTE: Joi.string().allow(''),
+  CARGO_REP_ENTE: Joi.string().allow(''),
+  EMAIL_REP_ENTE: Joi.string().allow(''),
+  NOME_REP_UG: Joi.string().allow(''),
+  CPF_REP_UG: Joi.string().allow(''),
+  CARGO_REP_UG: Joi.string().allow(''),
+  EMAIL_REP_UG: Joi.string().allow(''),
+  DATA_VENCIMENTO_ULTIMO_CRP: Joi.string().allow(''),
+  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().allow(''),
+  CRITERIOS_IRREGULARES: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string()).optional(),
+  CELEBRACAO_TERMO_PARCELA_DEBITOS: Joi.string().allow(''),
+  REGULARIZACAO_PENDEN_ADMINISTRATIVA: Joi.string().allow(''),
+  DEFICIT_ATUARIAL: Joi.string().allow(''),
+  CRITERIOS_ESTRUT_ESTABELECIDOS: Joi.string().allow(''),
+  MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: Joi.string().allow(''),
+  COMPROMISSO_FIRMADO_ADESAO: Joi.string().allow(''),
+  PROVIDENCIA_NECESS_ADESAO: Joi.string().allow(''),
+  CONDICAO_VIGENCIA: Joi.string().allow(''),
+  DATA_TERMO_GERADO: Joi.string().allow(''),
+}).unknown(true);
+
+function validateOr400(res, schema, obj) {
+  const { error, value } = schema.validate(obj, { abortEarly: false, stripUnknown: false, convert: true });
+  if (error) {
+    res.status(400).json({ error: 'VALIDATION', details: error.details.map(d => d.message) });
+    return null;
+  }
+  return value;
+}
+
 /* util: upsert representante */
 async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
   const sReps = await getOrCreateSheet('Dados_REP_ENTE_UG', ['UF','ENTE','NOME','CPF','EMAIL','TELEFONE','TELEFONE_MOVEL','CARGO','UG']);
-  const rows = await safeGetRows(sReps, 'Reps:getRows');      // pode retornar Row[] ou objetos “plain” (fallback)
+  const rows = await safeGetRows(sReps, 'Reps:getRows');
   const cpf = digits(CPF);
   let row = rows.find(r => digits(getVal(r,'CPF')) === cpf);
 
@@ -871,29 +1021,28 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
   const ugFinal = await resolveUGIfBlank(UF, ENTE, UG);
 
   if (!row) {
-    await safeAddRow(sReps, {
+    await safeAddRow(sReps, sheetSanObject({
       UF: norm(UF), ENTE: norm(ENTE), NOME: norm(NOME),
       CPF: cpf, EMAIL: norm(EMAIL),
       TELEFONE: telBase, TELEFONE_MOVEL: telBase,
       CARGO: norm(CARGO), UG: ugFinal
-    }, 'Reps:add');
+    }), 'Reps:add');
     return { created: true };
   }
 
-  // caminho “normal”: GoogleSpreadsheetRow com save()
   if (typeof row.save === 'function') {
-    row['UF']   = norm(UF)   || row['UF'];
-    row['ENTE'] = norm(ENTE) || row['ENTE'];
-    row['UG']   = ugFinal    || row['UG'];
-    row['NOME'] = norm(NOME) || row['NOME'];
-    row['EMAIL']= norm(EMAIL)|| row['EMAIL'];
-    if (telBase) { row['TELEFONE'] = telBase; row['TELEFONE_MOVEL'] = telBase; }
-    row['CARGO']= norm(CARGO)|| row['CARGO'];
+    row['UF']   = sanitizeIfStr(norm(UF)   || row['UF']);
+    row['ENTE'] = sanitizeIfStr(norm(ENTE) || row['ENTE']);
+    row['UG']   = sanitizeIfStr(ugFinal    || row['UG']);
+    row['NOME'] = sanitizeIfStr(norm(NOME) || row['NOME']);
+    row['EMAIL']= sanitizeIfStr(norm(EMAIL)|| row['EMAIL']);
+    if (telBase) { row['TELEFONE'] = sanitizeIfStr(telBase); row['TELEFONE_MOVEL'] = sanitizeIfStr(telBase); }
+    row['CARGO']= sanitizeIfStr(norm(CARGO)|| row['CARGO']);
     await safeSaveRow(row, 'Reps:save');
     return { updated: true };
   }
 
-  // fallback: atualizar por células
+  // fallback por células
   await sReps.loadHeaderRow();
   const headers = sReps.headerValues || [];
   const san = s => (s ?? '').toString().trim().toLowerCase()
@@ -912,11 +1061,11 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
     if (v && v === cpf) { rIdx = r; break; }
   }
   if (rIdx < 0) {
-    await safeAddRow(sReps, { UF: norm(UF), ENTE: norm(ENTE), NOME: norm(NOME), CPF: cpf, EMAIL: norm(EMAIL), TELEFONE: telBase, TELEFONE_MOVEL: telBase, CARGO: norm(CARGO), UG: ugFinal }, 'Reps:add(fallback)');
+    await safeAddRow(sReps, sheetSanObject({ UF: norm(UF), ENTE: norm(ENTE), NOME: norm(NOME), CPF: cpf, EMAIL: norm(EMAIL), TELEFONE: telBase, TELEFONE_MOVEL: telBase, CARGO: norm(CARGO), UG: ugFinal }), 'Reps:add(fallback)');
     return { created: true };
   }
 
-  const setCell = (name, val) => { const c = idxOf(name); if (c >= 0 && norm(val)) sReps.getCell(rIdx, c).value = norm(val); };
+  const setCell = (name, val) => { const c = idxOf(name); if (c >= 0 && norm(val)) sReps.getCell(rIdx, c).value = sanitizeIfStr(norm(val)); };
   setCell('UF', UF); setCell('ENTE', ENTE); setCell('UG', ugFinal);
   setCell('NOME', NOME); setCell('EMAIL', EMAIL);
   setCell('TELEFONE', telBase); setCell('TELEFONE_MOVEL', telBase);
@@ -925,7 +1074,6 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
   await withLimiter('Reps:saveUpdatedCells', () => withTimeoutAndRetry('Reps:saveUpdatedCells', () => sReps.saveUpdatedCells()));
   return { updated: true };
 }
-
 
 /* util: upsert base do ente/UG quando o CNPJ pesquisado não existir */
 async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EMAIL_UG }){
@@ -963,7 +1111,7 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
   }
 
   if (foundRow < 0) {
-    await safeAddRow(s, { UF: norm(UF), ENTE: norm(ENTE), UG: norm(UG), CNPJ_ENTE: ce, CNPJ_UG: cu, EMAIL_ENTE: norm(EMAIL_ENTE), EMAIL_UG: norm(EMAIL_UG) }, 'CNPJ:addRow');
+    await safeAddRow(s, sheetSanObject({ UF: norm(UF), ENTE: norm(ENTE), UG: norm(UG), CNPJ_ENTE: ce, CNPJ_UG: cu, EMAIL_ENTE: norm(EMAIL_ENTE), EMAIL_UG: norm(EMAIL_UG) }), 'CNPJ:addRow');
     return { created: true };
   }
 
@@ -972,7 +1120,7 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
     if (cIdx < 0 || val == null) return;
     const cell = s.getCell(foundRow, cIdx);
     const cur  = norm(cell.value || '');
-    const nxt  = norm(transform(val));
+    const nxt  = sanitizeIfStr(norm(transform(val)));
     if (cur !== nxt) { cell.value = nxt; changed++; }
   };
   setCellIf(col.uf, UF); setCellIf(col.ente, ENTE); setCellIf(col.ug, UG);
@@ -1022,8 +1170,10 @@ async function findTermoByIdemKey(sTermos, idemKey) {
 
 app.post('/api/upsert-cnpj', async (req,res)=>{
   try{
+    const clean = validateOr400(res, schemaUpsertCnpj, req.body || {});
+    if (!clean) return;
     await authSheets();
-    const r = await upsertCNPJBase(req.body||{});
+    const r = await upsertCNPJBase(clean);
     res.json({ ok:true, ...r });
   }catch(e){
     console.error('❌ /api/upsert-cnpj:', e);
@@ -1036,10 +1186,13 @@ app.post('/api/upsert-cnpj', async (req,res)=>{
 });
 app.post('/api/upsert-rep', async (req,res)=>{
   try{
-    const { UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO } = req.body || {};
-    if (digits(CPF).length !== 11) return res.status(400).json({ error:'CPF inválido.' });
+    const clean = validateOr400(res, schemaUpsertRep, req.body || {});
+    if (!clean) return;
+
+    // normalizações consistentes com validação
+    clean.CPF = digits(clean.CPF);
     await authSheets();
-    const r = await upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO });
+    const r = await upsertRep(clean);
     res.json({ ok:true, ...r });
   }catch(e){
     console.error('❌ /api/upsert-rep:', e);
@@ -1050,7 +1203,6 @@ app.post('/api/upsert-rep', async (req,res)=>{
     res.status(500).json({ error:'Falha ao gravar representante.' });
   }
 });
-
 
 async function logAlteracoesInline(p, snapshotRaw = {}) {
   const sLog = await getOrCreateSheet('Reg_alteracao_dados_ente_ug', [
@@ -1068,7 +1220,6 @@ async function logAlteracoesInline(p, snapshotRaw = {}) {
     'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP'
   ];
 
-  // diffs vs snapshot
   const changed = [];
   for (const col of WATCH) {
     const normOld = (col.includes('CPF') || col.includes('CNPJ') || col.includes('TEL'))
@@ -1083,7 +1234,6 @@ async function logAlteracoesInline(p, snapshotRaw = {}) {
     if (diff) changed.push(col);
   }
 
-  // prioriza campos marcados pelo usuário no front, mantendo ordem
   const edited = Array.isArray(p.__user_changed_fields) ? p.__user_changed_fields : [];
   const editedWatched = edited.filter(k => WATCH.includes(k));
   const finalChanged = [...new Set([...editedWatched, ...changed])];
@@ -1091,35 +1241,28 @@ async function logAlteracoesInline(p, snapshotRaw = {}) {
   if (!finalChanged.length) return 0;
 
   const t = nowBR();
-  await safeAddRow(sLog, {
+
+  await safeAddRow(sLog, sheetSanObject({
     UF: (p.UF || '').trim(),
     ENTE: (p.ENTE || '').trim(),
     'CAMPOS ALTERADOS': finalChanged.join(', '),
-    'QTD_CAMPOS_ALTERADOS': finalChanged.length,
+    'QTD_CAMPOS ALTERADOS': finalChanged.length,
     MES: t.MES, DATA: t.DATA, HORA: t.HORA
-  }, 'Reg_alteracao:add');
+  }), 'Reg_alteracao:add');
 
   return finalChanged.length;
 }
 
-
 /** POST /api/gerar-termo  — IDEMPOTENTE */
 app.post('/api/gerar-termo', async (req, res) => {
   try {
-    const p = req.body || {};
-    const must = [
-      'UF','ENTE','CNPJ_ENTE','UG','CNPJ_UG',
-      'NOME_REP_ENTE','CPF_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE',
-      'NOME_REP_UG','CPF_REP_UG','CARGO_REP_UG','EMAIL_REP_UG',
-      'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP'
-    ];
-    for (const k of must) {
-      if (!norm(p[k])) return res.status(400).json({ error: `Campo obrigatório ausente: ${k}` });
-    }
+    const validated = validateOr400(res, schemaGerarTermo, req.body || {});
+    if (!validated) return;
+    const p = validated;
 
     await authSheets();
 
-    const sTermos = await getOrCreateSheet('Termos_registrados', [
+    const sTermosSheet = await getOrCreateSheet('Termos_registrados', [
       'ENTE','UF','CNPJ_ENTE','EMAIL_ENTE',
       'NOME_REP_ENTE','CARGO_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE',
       'UG','CNPJ_UG','EMAIL_UG',
@@ -1127,7 +1270,7 @@ app.post('/api/gerar-termo', async (req, res) => {
       'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP',
       'CRITERIOS_IRREGULARES',
       'CELEBRACAO_TERMO_PARCELA_DEBITOS',
-      'REGULARIZACAO_PENDEN_ADMINISTRATIVA',
+      'REGULARIZACAO_PENDEN ADMINISTRATIVA',
       'DEFICIT_ATUARIAL',
       'CRITERIOS_ESTRUT_ESTABELECIDOS',
       'MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS',
@@ -1137,23 +1280,20 @@ app.post('/api/gerar-termo', async (req, res) => {
       'MES','DATA_TERMO_GERADO','HORA_TERMO_GERADO','ANO_TERMO_GERADO',
       'IDEMP_KEY'
     ]);
-
-    await sTermos.loadHeaderRow();
-    await ensureSheetHasColumns(sTermos, ['IDEMP_KEY']);
+    await sTermosSheet.loadHeaderRow();
+    await ensureSheetHasColumns(sTermosSheet, ['IDEMP_KEY']);
 
     // Idempotência
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
     const idemBody   = String(p.IDEMP_KEY || '').trim();
     const idemKey    = idemHeader || idemBody || makeIdemKeyFromPayload(p);
 
-    const existingRowIdx = await findTermoByIdemKey(sTermos, idemKey);
+    const existingRowIdx = await findTermoByIdemKey(sTermosSheet, idemKey);
 
-    // Snapshot que veio do front (para montar o log de alterações)
-    const snapshot = (req.body && req.body.__snapshot_base) || {};
+    const snapshot = (p && p.__snapshot_base) || {};
     const warnings = [];
     let logStatus = 'skip';
 
-    // Se já existe, só tenta logar alterações e retorna ok (NÃO fatal se o log falhar)
     if (existingRowIdx !== null) {
       try {
         const n = await logAlteracoesInline(p, snapshot);
@@ -1166,7 +1306,6 @@ app.post('/api/gerar-termo', async (req, res) => {
       return res.json({ ok: true, dedup: true, log: logStatus, warnings, idempotency_key: idemKey });
     }
 
-    // Normaliza CRITÉRIOS (array ou string)
     const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
       ? p.CRITERIOS_IRREGULARES
       : String(p.CRITERIOS_IRREGULARES || '')
@@ -1174,7 +1313,6 @@ app.post('/api/gerar-termo', async (req, res) => {
           .map(s => s.trim())
           .filter(Boolean);
 
-    // Datas atuais (carimbos)
     const { DATA, HORA, ANO, MES } = nowBR();
 
     const emailEnteFinal = isEmail(p.EMAIL_ENTE) ? norm(p.EMAIL_ENTE)
@@ -1182,9 +1320,7 @@ app.post('/api/gerar-termo', async (req, res) => {
     const emailUgFinal   = isEmail(p.EMAIL_UG)   ? norm(p.EMAIL_UG)
                      : isEmail(p.EMAIL_REP_UG)   ? norm(p.EMAIL_REP_UG)   : '';
 
-
-    // Gravação principal (fatal se falhar)
-    await safeAddRow(sTermos, {
+    await safeAddRow(sTermosSheet, sheetSanObject({
       ENTE: norm(p.ENTE), UF: norm(p.UF),
       CNPJ_ENTE: digits(p.CNPJ_ENTE), EMAIL_ENTE: emailEnteFinal,
       NOME_REP_ENTE: norm(p.NOME_REP_ENTE), CARGO_REP_ENTE: norm(p.CARGO_REP_ENTE),
@@ -1205,14 +1341,12 @@ app.post('/api/gerar-termo', async (req, res) => {
       CONDICAO_VIGENCIA: norm(p.CONDICAO_VIGENCIA),
       MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO,
       IDEMP_KEY: idemKey
-    }, 'Termos:add');
+    }), 'Termos:add');
 
-    // Replicação de e-mail para base (best-effort)
     try { await upsertEmailsInBase(p); } catch (_) {}
 
-    // *** NÃO-FATAL ***: escrever na aba Reg_alteracao_dados_ente_ug
     try {
-      const n = await logAlteracoesInline(p, snapshot); // sua função já monta CAMPOS_ALTERADOS etc.
+      const n = await logAlteracoesInline(p, snapshot);
       logStatus = n ? 'ok' : 'empty';
     } catch (e) {
       logStatus = 'error';
@@ -1231,8 +1365,6 @@ app.post('/api/gerar-termo', async (req, res) => {
     return res.status(500).json({ error: 'Falha ao registrar o termo.' });
   }
 });
-
-
 /* ========= PDF (Puppeteer) ========= */
 const PDF_CONCURRENCY = Number(process.env.PDF_CONCURRENCY || 1);
 const _pdfQ = []; let _pdfActive = 0;
@@ -1269,14 +1401,15 @@ function inlineFont(relPath) {
 
 app.post('/api/termo-pdf', async (req, res) => {
   try {
+    const p = validateOr400(res, schemaTermoPdf, req.body || {});
+    if (!p) return;
+
     await withPdfLimiter(async () => {
       let page; let browser; let triedRestart = false;
       try {
-        const p = req.body || {};
         const compAgg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
         const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6','5.7']
           .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
-
 
         const qs = new URLSearchParams({
           uf: p.UF || '', ente: p.ENTE || '', cnpj_ente: p.CNPJ_ENTE || '', email_ente: p.EMAIL_ENTE || '',
@@ -1294,11 +1427,11 @@ app.post('/api/termo-pdf', async (req, res) => {
         (Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : []).forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
         compCodes.forEach(code => qs.append('comp', code));
 
-        // ==== BASES: loopback primeiro, público depois (fallback) ====
-        const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http');
-        const host  = req.get('host');
-        const PUBLIC_BASE   = (process.env.PUBLIC_URL || `${proto}://${host}`).replace(/\/+$/, '');
+        // ✅ Não derive URL pública do cabeçalho do request
         const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
+        // Se quiser permitir externo, defina PUBLIC_URL fixo no .env (ex.: https://seu-dominio.gov.br)
+        const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
+
 
         try { browser = await getBrowser(); page = await browser.newPage(); }
         catch (e) {
@@ -1313,24 +1446,28 @@ app.post('/api/termo-pdf', async (req, res) => {
         await page.setCacheEnabled(false);
         await page.setRequestInterception(true);
         page.on('request', (reqObj) => {
-          const u = reqObj.url(); const t = reqObj.resourceType();
-          if (/fonts\.cdnfonts\.com|fonts\.gstatic\.com/i.test(u)) {
-            if (t === 'stylesheet') return reqObj.respond({ status: 200, contentType: 'text/css', body: '/* font css blocked in pdf */' });
-            return reqObj.abort();
-          }
-          if (/googletagmanager|google-analytics|doubleclick|hotjar|clarity|sentry|facebook|meta\./i.test(u)) return reqObj.abort();
-          return reqObj.continue();
+          const u = reqObj.url();
+          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
+
+          const allowed =
+            (u.startsWith(LOOPBACK_BASE)) ||
+            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
+
+          return allowed ? reqObj.continue() : reqObj.abort();
         });
 
         page.setDefaultNavigationTimeout(90_000);
         page.setDefaultTimeout(90_000);
         await page.emulateMediaType('screen');
 
-        // tenta carregar via loopback; se falhar, tenta o público
+        // 1) carrega a página SEM querystring (evita PII em logs/cache)
         const urlsToTry = [
-          `${LOOPBACK_BASE}/termo.html?${qs.toString()}`,
-          `${PUBLIC_BASE}/termo.html?${qs.toString()}`
+          `${LOOPBACK_BASE}/termo.html`
         ];
+        if (PUBLIC_BASE) {
+          urlsToTry.push(`${PUBLIC_BASE}/termo.html`);
+        }
+
         let loaded = false; let lastErr = null;
         for (const u of urlsToTry) {
           try {
@@ -1339,7 +1476,24 @@ app.post('/api/termo-pdf', async (req, res) => {
           } catch (e) { lastErr = e; }
         }
         if (!loaded) throw lastErr || new Error('Falha ao carregar termo.html');
+
+        // 2) injeta os dados na página após o load
+        const payloadForClient = {
+          ...p,
+          // já que antes você colocava alguns campos na querystring:
+          ESFERA: p.ESFERA || '',
+          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [],
+          // reaproveita os códigos que você calculou lá em cima
+          COMP_CODES: compCodes
+        };
+
+        await page.evaluate((payload) => {
+          window.__TERMO_DATA__ = payload;
+          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+        }, payloadForClient);
+
         await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
+
 
         function findFont(candidates){
           for (const rel of candidates){
@@ -1401,7 +1555,6 @@ app.post('/api/termo-pdf', async (req, res) => {
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="termo-${filenameSafe}.pdf"`);
-        res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
         res.setHeader('Cache-Control', 'no-store, max-age=0');
         res.send(pdf);
       } catch (e) {

@@ -1,13 +1,12 @@
-//script.js
+// script.js — Multi-etapas 100% estável: máscaras, stepper, modais/Lottie,
+// buscas, validação, idempotência, retries e limpeza automática de rascunhos.
 
-//script.js
 (() => {
-  
   /* ========= Config ========= */
   const API_BASE = 'https://programa-de-regularidade.onrender.com';
 
   // Limpeza automática de rascunhos não finalizados ao abrir a página
-  const AUTO_CLEAR_DRAFTS = false;                 // mude para false se quiser permitir retomar rascunho
+  const AUTO_CLEAR_DRAFTS = true;                 // (ligado p/ evitar PII persistente)
   const FORM_TTL_MS = 30 * 60 * 1000;             // 30 min de validade do rascunho
 
   /* ========= Idempotência (frontend) ========= */
@@ -171,7 +170,6 @@
     }
   }
 
-
   async function waitForService({ timeoutMs = 60_000, pollMs = 2000 } = {}) {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
@@ -205,7 +203,6 @@
   const fmtBR = d => d.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'});
   const fmtHR = d => d.toLocaleTimeString('pt-BR',{hour12:false,timeZone:'America/Sao_Paulo'});
   const rmAcc = s => String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
-
 
   /* ========= Replicação imediata de e-mails (colunas F/G da aba CNPJ_ENTE_UG) ========= */
   function debounce(fn, wait=800) {
@@ -264,8 +261,6 @@
     return ok(v) ? v : (ok(vr) ? vr : '');
   }
 
-
-
   const replicateEmails = debounce(forceReplicateEmails, 800);
 
   // Dispara replicação ao digitar e ao sair do campo
@@ -275,8 +270,6 @@
     el.addEventListener('input', () => replicateEmails('input'));
     el.addEventListener('blur',  () => replicateEmails('blur'));
   });
-
-
 
   // Modais
   const modalErro     = new bootstrap.Modal($('#modalErro'));
@@ -296,8 +289,6 @@
 
   // (limpa legado persistente, opcional)
   try { localStorage.removeItem('rpps-welcome-seen'); } catch {}
-
-
 
   function clearAllState() {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
@@ -341,7 +332,7 @@
         data.values[name] = $$(`input[name="${name}"]:checked`).map(i => i.value);
     });
 
-      // ✅ checkboxes “soltos” (1.1, 4.x e 7)
+    // ✅ checkboxes “soltos” (1.1, 4.x e 7)
     [
       'esf_mun','esf_est',
       'fin_parc','fin_reg',
@@ -391,7 +382,6 @@
     } catch { return null; }
   }
 
-
   // --- Controle robusto do modal de "carregando" + Lottie ---
   let loadingCount = 0;
 
@@ -407,7 +397,6 @@
       }
     }, 0);
   }
-
 
   function unlockUI() {
     document.body.classList.remove('modal-open');
@@ -452,7 +441,6 @@
       killBackdropLocks();
     }, 0);
   }
-
 
   /* ========= Lottie ========= */
   const lotties = {};
@@ -546,19 +534,14 @@
   document.addEventListener('DOMContentLoaded', () => {
     fullUnlock();
 
-    /* 
-    
-    Limpa rascunhos não finalizados/expirados ao abrir
+    // Limpa rascunhos não finalizados/expirados ao abrir (evita PII em repouso)
     const st = getState();
     const now = Date.now();
     const isExpired = !!st?.lastSaved && (now - st.lastSaved > FORM_TTL_MS);
     const notFinalized = !st?.finalizedAt;
-
     if (AUTO_CLEAR_DRAFTS && (st && (isExpired || notFinalized))) {
       clearAllState();
     }
-    
-    */
 
     const alreadySeen = hasSeenWelcomeSession();
     if (!alreadySeen) {
@@ -567,7 +550,6 @@
       setTimeout(() => { try { modalWelcome.show(); } catch {} }, 0);
     }
 
-    
     fetchJSON(`${API_BASE}/api/warmup`, {}, { label: 'warmup', timeout: 15000, retries: 0 }).catch(()=>{});
 
     // pré-aquecer o backend (evita o 1º 502 na primeira ação do usuário)
@@ -650,7 +632,6 @@
     sec.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
     sec.querySelectorAll('label.invalid').forEach(el => el.classList.remove('invalid'));
   }
-
   // Modal de confirmação (genérico para CNPJ/CPF)
   const modalConfirmAdd = new bootstrap.Modal($('#modalConfirmAdd'));
   const elConfirmTitle  = $('#modalConfirmAddTitle');
@@ -845,12 +826,8 @@
       const sec4 = document.querySelector('[data-step="4"]');
       const chks = sec4 ? Array.from(sec4.querySelectorAll('input[type="checkbox"]')) : [];
       const ok = chks.some(i => i.checked);
-
-      // pinta/limpa feedback visual dos rótulos
       chks.forEach(i => paintLabelForInput(i, !ok));
-
       if (!ok) msgs.push('Marque pelo menos um item na etapa 4.');
-
     }
 
     if (s === 5){
@@ -883,7 +860,8 @@
     if (msgs.length){ showAtencao(msgs); return false; }
     return true;
   }
-/* ========= Navegação: botão Próximo (com trava anticlique duplo) ========= */
+
+  /* ========= Navegação: botão Próximo (com trava anticlique duplo) ========= */
   let navBusy = false;
   btnNext?.addEventListener('click', async () => {
     if (navBusy) return;
@@ -901,11 +879,9 @@
 
       showStep(step + 1);
     } finally {
-      // atraso mínimo evita 2 cliques muito próximos em redes lentas
       setTimeout(() => { navBusy = false; }, 200);
     }
   });
-
 
   /* ========= Esfera ========= */
   $$('.esf-only-one').forEach(chk=>{
@@ -928,15 +904,12 @@
   
   function extractCompCodesFromBody(p) {
     const seen = new Set();
-
-    // 1) se vier string com "5.1", "5.2", etc.
     const agg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
     ['5.1','5.2','5.3','5.4','5.5','5.6','5.7'].forEach(code => {
       const re = new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`);
       if (re.test(agg)) seen.add(code);
     });
 
-    // 2) se vier arrays do front
     const arrRaw = []
       .concat(Array.isArray(p.COMPROMISSOS) ? p.COMPROMISSOS : [])
       .concat(Array.isArray(p['COMPROMISSOS[]']) ? p['COMPROMISSOS[]'] : []);
@@ -945,11 +918,9 @@
       if (code) seen.add(code);
     });
 
-    // ordena naturalmente
     const order = ['5.1','5.2','5.3','5.4','5.5','5.6','5.7'];
     return order.filter(c => seen.has(c));
   }
-
 
   // Exclusividade na ETAPA 6 (6.1 x 6.2)
   function enforceProvOnlyOne() {
@@ -964,10 +935,7 @@
       }
     });
   });
-  // corrige rascunhos antigos ao carregar
   document.addEventListener('DOMContentLoaded', enforceProvOnlyOne);
-
-
 
   function autoselectEsferaByEnte(ente){
     const estadual = rmAcc(ente).includes('governo do estado');
@@ -983,17 +951,13 @@
   const trackIds = [
     // 1.2 / 1.3
     'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
-
     // 1.1 Esfera (dois checkboxes)
     'esf_mun','esf_est',
-
     // 2. Representantes (ENTE/UG)
     'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
     'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
-
     // 3. CRP
     'DATA_VENCIMENTO_ULTIMO_CRP','em_adm','em_jud',
-
     // 4. Finalidades (todos os itens)
     'fin_parc','fin_reg',
     'parc60','parc300',
@@ -1001,14 +965,10 @@
     'eq_implano','eq_prazos','eq_plano_alt',
     'org_ugu','org_outros',
     'man_cert','man_melhoria','man_acomp',
-
     // 5. Compromissos (grupo)
-    // (grupo via name=[], mas mantemos um representante pra garantir)
     'grpCOMPROMISSOS',
-
     // 6. Providências (grupo)
     'grpPROVIDENCIAS',
-
     // 7. Condições
     'DECL_CIENCIA'
   ];
@@ -1065,18 +1025,17 @@
       btn?.setAttribute('disabled','disabled');
       startLoading();
 
-      // ✅ NOVO: pré-checagem do serviço para reduzir 502/timeout na 1ª chamada
+      // ✅ pré-checagem do serviço
       await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
       let r;
       try {
         const url = `${API_BASE}/api/consulta?cnpj=${cnpj}${forceNoCache ? '&nocache=1' : ''}`;
-           r = await fetchJSON(
-            url,
-            {},
-            { label: forceNoCache ? 'consulta-cnpj(nocache)' : 'consulta-cnpj', timeout: 110000, retries: 0 }
+        r = await fetchJSON(
+          url,
+          {},
+          { label: forceNoCache ? 'consulta-cnpj(nocache)' : 'consulta-cnpj', timeout: 110000, retries: 0 }
         );
-
       } catch (err1) {
         if (!forceNoCache) {
           r = await fetchJSON(
@@ -1095,12 +1054,11 @@
           type: 'cnpj',
           value: cnpj,
           onYes: () => {
-            // limpa rascunho + UI antes de continuar
             clearAllState();
             resetFormUI();
             cnpjMissing = true;
             cnpjOK = true;
-            $('#CNPJ_ENTE').value = maskCNPJ(cnpj); // ✅ só agora
+            $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
             showStep(1);
             updateNavButtons();
             updateFooterAlign();
@@ -1137,7 +1095,7 @@
       $('#EMAIL_UG').value   = data.EMAIL_UG   || '';
 
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
-      'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
+       'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
 
       const iso = data.CRP_DATA_VALIDADE_ISO || '';
@@ -1152,7 +1110,7 @@
       cnpjOK = true;
       editedFields.clear();
 
-      // Avança para a etapa 1 somente após o modal de loading FECHAR de fato.
+      // Avança após fechar o modal de loading
       const loadingEl = document.getElementById('modalLoadingSearch');
       if (loadingEl) {
         const onceHidden = () => {
@@ -1165,7 +1123,6 @@
         };
         loadingEl.addEventListener('hidden.bs.modal', onceHidden);
       } else {
-        // fallback
         showStep(1);
         updateNavButtons();
         updateFooterAlign();
@@ -1196,7 +1153,7 @@
       }
     } finally {
       searching = false;
-      stopLoading();      // dispara o fechamento do modal; o avanço ocorrerá no 'hidden'
+      stopLoading();
       unlockUI();
       btn?.removeAttribute('disabled');
       updateNavButtons();
@@ -1213,8 +1170,6 @@
 
     try {
       startLoading();
-
-      // ✅ NOVO: pré-checagem do serviço para reduzir 502/timeout
       await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
       let r;
@@ -1237,7 +1192,6 @@
         }
       }
 
-      // ✅ se a API retornar 200 com { missing:true }, abre o modal
       if (r && r.missing) {
         openConfirmAdd({
           type: 'cpf',
@@ -1251,7 +1205,6 @@
       }
 
       const data = r.data || {};
-
       if (target === 'ENTE') {
         $('#NOME_REP_ENTE').value  = data.NOME || '';
         $('#CARGO_REP_ENTE').value = data.CARGO || '';
@@ -1264,12 +1217,10 @@
         $('#TEL_REP_UG').value   = data.TELEFONE || '';
       }
 
-      // dispara replicação imediata de e-mails (se válidos) p/ base
       replicateEmails('rep-by-cpf');
 
     } catch (err) {
       if (err && err.status === 404) {
-        // compatibilidade com backend que retorna 404
         openConfirmAdd({
           type: 'cpf',
           value: cpfd,
@@ -1287,10 +1238,8 @@
     }
   }
 
-  /* Atualize os listeners para passar o evento (suporte a nocache por Shift/Ctrl/Cmd) */
   $('#btnPesqRepEnte')?.addEventListener('click', (ev)=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE', ev));
   $('#btnPesqRepUg')  ?.addEventListener('click', (ev)=> buscarRepByCPF($('#CPF_REP_UG').value,  'UG',   ev));
-
 
   async function upsertRepresentantes(){
     const base = {
@@ -1364,45 +1313,28 @@
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
-  // ======== Preview (opcional) ========
+
+  // ======== Preview (sem PII na URL) ========
   function openTermoWithPayload(payload, autoFlag){
     const esfera = ($('#esf_mun')?.checked ? 'RPPS Municipal' :
                     ($('#esf_est')?.checked ? 'Estadual/Distrital' : ''));
-    const qs = new URLSearchParams({
-      uf: payload.UF, ente: payload.ENTE, cnpj_ente: $('#CNPJ_ENTE').value,
-      email_ente: payload.EMAIL_ENTE,
-      ug: payload.UG, cnpj_ug: $('#CNPJ_UG').value,
-      email_ug: payload.EMAIL_UG,
-      esfera,
-      nome_rep_ente: payload.NOME_REP_ENTE, cpf_rep_ente: $('#CPF_REP_ENTE').value,
-      cargo_rep_ente: payload.CARGO_REP_ENTE, email_rep_ente: payload.EMAIL_REP_ENTE,
-      nome_rep_ug: payload.NOME_REP_UG, cpf_rep_ug: $('#CPF_REP_UG').value,
-      cargo_rep_ug: payload.CARGO_REP_UG, email_rep_ug: payload.EMAIL_REP_UG,
-      venc_ult_crp: $('#DATA_VENCIMENTO_ULTIMO_CRP').value,
-      tipo_emissao_crp: payload.TIPO_EMISSAO_ULTIMO_CRP,
-      celebracao: payload.CELEBRACAO_TERMO_PARCELA_DEBITOS,
-      regularizacao: payload.REGULARIZACAO_PENDEN_ADMINISTRATIVA,
-      deficit: payload.DEFICIT_ATUARIAL,
-      criterios_estrut: payload.CRITERIOS_ESTRUT_ESTABELECIDOS,
-      manutencao_normas: payload.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS,
-      compromisso: payload.COMPROMISSO_FIRMADO_ADESAO,
-      providencias: payload.PROVIDENCIA_NECESS_ADESAO,
-      condicao_vigencia: payload.CONDICAO_VIGENCIA,
-      data_termo: $('#DATA_TERMO_GERADO').value,
-      auto: String(autoFlag || '1')
-    });
+    const body = {
+      ...payload,
+      ESFERA: esfera,
+      AUTO: String(autoFlag || '1')
+    };
 
-    const compAgg = String(payload.COMPROMISSO_FIRMADO_ADESAO || '');
-    [['5.1','5\\.1'], ['5.2','5\\.2'], ['5.3','5\\.3'], ['5.4','5\\.4'], ['5.5','5\\.5'], ['5.6','5\\.6'], ['5.7','5\\.7']]
-      .forEach(([code, rx]) => {
-        if (new RegExp(`(^|\\D)${rx}(\\D|$)`).test(compAgg)) qs.append('comp', code);
-      });
+    // Abre a página de preview sem querystring (sem PII na URL)
+    const child = window.open('termo.html#preview', '_blank', 'noopener');
 
-
-    payload.CRITERIOS_IRREGULARES.forEach((c, i) => qs.append(`criterio${i+1}`, c));
-    window.open(`termo.html?${qs.toString()}`, '_blank', 'noopener');
+    // Envia os dados via postMessage (o termo.html deve escutar "message")
+    // window.addEventListener('message', (ev) => { if(ev.data?.type==='TERMO_PREVIEW_DATA'){ ... } }, false);
+    setTimeout(() => {
+      try {
+        child?.postMessage({ type: 'TERMO_PREVIEW_DATA', payload: body }, location.origin);
+      } catch (_) {}
+    }, 200);
   }
-
   /* ========= Helper: gerar & baixar PDF ========= */
   async function gerarBaixarPDF(payload){
     const esfera =
@@ -1518,7 +1450,6 @@
     cnpjOK = false;
   }
 
-
   // evita Enter antes da etapa 8
   form?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && step < 8) {
@@ -1598,7 +1529,6 @@
       const msg = String(err?.message || '').toLowerCase();
       const status = err?.status || 0;
 
-      // também considera preflight/CORS/Failed to fetch como caso de "esperar e reenviar"
       const looksLikeCorsOrFetch =
         msg.includes('cors') ||
         msg.includes('preflight') ||
@@ -1701,5 +1631,3 @@
   sessionStorage.setItem(TAB_FLAG, '1');
   restoreState({ ignore: ignoreRestoreThisTab });
 })();
-
-
