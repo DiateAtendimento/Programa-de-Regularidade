@@ -1,8 +1,10 @@
 [build]
-  functions = "netlify/functions"
+base = "frontend"
+publish = "."
+functions = "functions"   # <- relativo ao base => frontend/functions
 
 [[redirects]]
-  from = "/_api/*"
-  to   = "/.netlify/functions/api-proxy/:splat"
-  status = 200
-  force = true
+from = "/_api/*"
+to   = "/.netlify/functions/api-proxy/:splat"
+status = 200
+force = true
