@@ -203,6 +203,23 @@
     // Re-hidrata spans dentro das assinaturas que dependem de 'ente/uf'
     setTextAll('ente', payload.ENTE || '');
     setTextAll('uf',   payload.UF   || '');
+
+    // 🔔 Sinaliza ao backend (Puppeteer) que terminou de renderizar
+    try {
+      // evita disparos duplicados se a função for chamada mais de uma vez
+      if (!window.__TERMO_READY_FIRED__) {
+        window.__TERMO_READY_FIRED__ = true;
+
+        // aguarda fontes (se suportado) e aplica na próxima frame
+        const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+        fontsReady.finally(() => {
+          requestAnimationFrame(() => {
+            document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY'));
+          });
+        });
+      }
+    } catch (_) {}
+
   }
   // ========= Fluxo 1: Preview (janela aberta pelo frontend)
   window.addEventListener('message', (ev) => {

@@ -1,60 +1,213 @@
-    <!-- 5. COMPROMISSOS -->
-    <section class="term-section">
-      <h2>5. COMPROMISSOS FIRMADOS NA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
-      <ul id="opt-5">
-        <li data-code="5.1">5.1 Regularidade nos repasses e nas parcelas de acordos (art. 14 e 15, Portaria MTP nº 1.467/2022).</li>
-        <li data-code="5.2">5.2 Regularidade no encaminhamento de documentos e atendimento às solicitações (art. 241).</li>
-        <li data-code="5.3">5.3 Utilização dos recursos previdenciários conforme Lei nº 9.796/1999.</li>
-        <li data-code="5.4">5.4 Aplicação dos recursos segundo normas do CMN.</li>
-        <li data-code="5.5">5.5 Adequações na legislação do RPPS quando identificadas pela Secretaria.</li>
-        <li data-code="5.6">5.6 Cumprimento dos Planos de Ação das fases Específica e de Manutenção.</li>
-        <li data-code="5.7">5.7 Promover o equilíbrio financeiro e atuarial do RPPS e a sustentabilidade do seu plano de custeio e de benefícios.</li>
-      </ul>
-    </section>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Termo de Adesão ao Programa de Regularidade Previdenciária</title>
 
-    <!-- 6. PROVIDÊNCIAS -->
-    <section class="term-section">
-      <h2>6. PROVIDÊNCIAS NECESSÁRIAS PARA ADESÃO AO PROGRAMA</h2>
-      <ul id="opt-6">
-        <li data-code="6.1">6.1 Inclusão, no Cadprev, de todos os débitos de contribuições/valores até a data da adesão; ou</li>
-        <li data-code="6.2">6.2 Declaração de inexistência de débitos (ou já regularizados) até a adesão.</li>
-      </ul>
-    </section>
+  <!-- Fonts para tela (no PDF o servidor injeta Rawline) -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-    <!-- 7. CONDIÇÕES -->
-    <section class="term-section">
-      <h2>7. CONDIÇÕES PARA VIGÊNCIA DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
-      <ul>
-        <li>I – atendimento aos requisitos do art. 3º do Anexo XVIII;</li>
-        <li>II – cumprimento dos planos de ação do art. 4º do Anexo XVIII;</li>
-        <li>III – observância de prazos/condições do art. 6º do Anexo XVII (para parcelamentos – EC xx/2025); e/ou</li>
-        <li>IV – não ingresso com ação judicial para obter CRP ou para descumprimento do Programa.</li>
-      </ul>
-      <p class="mt"><strong>Declarações marcadas no formulário</strong></p>
-      <ul id="condicoes-list"></ul>
-    </section>
+  <style>
+    :root{
+      --ink:#0f172a;         /* slate-900 */
+      --muted:#475569;       /* slate-600 */
+      --rule:#d7dee8;
+      --accent:#0b5cab;      /* azul gov */
+      --bg:#ffffff;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; color:var(--ink); font:15px/1.45 "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif; background:#fff; }
+    @page{ size:A4 portrait; margin:0; }
+    #pdf-root{ min-height:100vh; background:#fff; }
 
-    <!-- Assinaturas -->
-    <footer class="term-footer">
-      <p class="place-date"><span data-k="ente"></span>/<span data-k="uf"></span>, <span data-k="data_termo"></span>.</p>
+    .page-head{ background:#fff; }
+    .page-head .logos-wrap{
+      display:flex; align-items:center; justify-content:center; gap:48px;
+      padding:16px 16px 8px;
+    }
+    .page-head .logos-wrap img{ height:64px; width:auto; display:block; }
+    .page-head .rule{ height:0; border-bottom:1.3px solid var(--rule); margin:0 0 10px; }
 
-      <div class="signature-block">
-        <div class="signature-line" aria-hidden="true"></div>
-        <p class="signature-caption">
-          <strong><span data-k="nome_rep_ente"></span></strong><br>
-          <span id="sig-cap-ente">Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span></span>
-        </p>
+    .term-wrap{
+      max-width:800px; margin:18px auto 40px; padding:24px 28px; background:#fff;
+      border-radius:16px; box-shadow:0 4px 18px rgba(10,20,40,.06);
+    }
+    .term-title{ margin:8px 0 18px; text-align:center; font-weight:700; font-size:20px; letter-spacing:.2px; }
+    .term-meta{ margin:6px 0 18px; text-align:center; color:var(--muted); font-size:13px; }
+
+    .term-section{ margin:18px 0 14px; }
+    .term-section h2{ margin:0 0 10px; font-size:16px; line-height:1.3; font-weight:700; color:var(--accent); }
+    .term-section h3{ margin:10px 0 8px; font-size:14px; color:var(--ink); }
+
+    .grid{ display:grid; gap:8px 16px; grid-template-columns:1fr 1fr; }
+    .grid.full{ grid-template-columns:1fr; }
+    .field{ display:flex; gap:8px; align-items:baseline; }
+    .label{ min-width:210px; color:var(--muted); font-size:13px; }
+    .value{ font-weight:600; word-break:break-word; }
+
+    ul{ margin:8px 0 0 18px; padding:0; }
+    li{ margin:4px 0; }
+    .mt{ margin-top:10px; }
+    .muted{ color:var(--muted); }
+    .note{ font-size:12.5px; color:var(--muted); }
+
+    /* Destaque para itens selecionados via script */
+    #opt-5 li[data-selected="1"],
+    #opt-6 li[data-selected="1"]{
+      position:relative; padding-left:6px;
+    }
+    #opt-5 li[data-selected="1"]::before,
+    #opt-6 li[data-selected="1"]::before{
+      content:"▣"; position:absolute; left:-16px; top:1px; font-size:12px;
+    }
+
+    /* Assinaturas */
+    .term-footer{ margin-top:20px; }
+    .place-date{ text-align:right; margin:0 0 24px; }
+    .signature-block{ margin:28px 0 20px; }
+    .signature-line{ border-bottom:1.6px solid var(--ink); height:0; margin:0 0 6px; }
+    .signature-caption{ margin:0; font-size:14px; text-align:center; }
+    .signature-caption strong{ font-weight:700; }
+
+    /* Modo PDF (o backend adiciona .pdf-export) */
+    .pdf-export .term-wrap{ box-shadow:none; border-radius:0; margin:0; }
+    .pdf-export .term-title{ margin-top:6px; }
+    [data-k]{ font-variant-numeric:tabular-nums; }
+    .avoid-break{ break-inside:avoid; page-break-inside:avoid; }
+  </style>
+</head>
+<body>
+  <div id="pdf-root">
+    <header class="page-head">
+      <div class="logos-wrap">
+        <img src="/imagens/logo-secretaria-complementar.svg" alt="Secretaria" loading="eager" />
+        <img src="/imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
       </div>
+      <div class="rule"></div>
+    </header>
 
-      <div class="signature-block">
-        <div class="signature-line" aria-hidden="true"></div>
-        <p class="signature-caption">
-          <strong><span data-k="nome_rep_ug"></span></strong><br>
-          Representante legal do <span data-k="ug"></span>
-        </p>
-      </div>
-    </footer>
-  </main>
+    <main class="term-wrap">
+      <h1 class="term-title">TERMO DE ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h1>
+      <p class="term-meta">
+        Ente: <strong data-k="ente"></strong> / UF: <strong data-k="uf"></strong> • UG: <strong data-k="ug"></strong>
+      </p>
+
+      <!-- 1. IDENTIFICAÇÃO -->
+      <section class="term-section avoid-break">
+        <h2>1. IDENTIFICAÇÃO DO ENTE FEDERADO E DA UNIDADE GESTORA</h2>
+        <div class="grid">
+          <div class="field"><span class="label">Ente federado</span><span class="value" data-k="ente"></span></div>
+          <div class="field"><span class="label">UF</span><span class="value" data-k="uf"></span></div>
+
+          <div class="field"><span class="label">CNPJ do Ente</span><span class="value" data-k="cnpj_ente"></span></div>
+          <div class="field"><span class="label">E-mail do Ente</span><span class="value" data-k="email_ente"></span></div>
+
+          <div class="field"><span class="label">Unidade Gestora (UG)</span><span class="value" data-k="ug"></span></div>
+          <div class="field"><span class="label">CNPJ da UG</span><span class="value" data-k="cnpj_ug"></span></div>
+
+          <div class="field"><span class="label">E-mail da UG</span><span class="value" data-k="email_ug"></span></div>
+          <div class="field"><span class="label">Esfera sugerida</span><span class="value" data-k="esfera"></span></div>
+        </div>
+      </section>
+
+      <!-- 2. REPRESENTANTES -->
+      <section class="term-section avoid-break">
+        <h2>2. REPRESENTANTES LEGAIS</h2>
+
+        <h3>2.1 Do Ente Federado</h3>
+        <div class="grid">
+          <div class="field"><span class="label">Nome</span><span class="value" data-k="nome_rep_ente"></span></div>
+          <div class="field"><span class="label">CPF</span><span class="value" data-k="cpf_rep_ente"></span></div>
+          <div class="field"><span class="label">Cargo</span><span class="value" data-k="cargo_rep_ente"></span></div>
+          <div class="field"><span class="label">E-mail</span><span class="value" data-k="email_rep_ente"></span></div>
+        </div>
+
+        <h3>2.2 Da Unidade Gestora</h3>
+        <div class="grid">
+          <div class="field"><span class="label">Nome</span><span class="value" data-k="nome_rep_ug"></span></div>
+          <div class="field"><span class="label">CPF</span><span class="value" data-k="cpf_rep_ug"></span></div>
+          <div class="field"><span class="label">Cargo</span><span class="value" data-k="cargo_rep_ug"></span></div>
+          <div class="field"><span class="label">E-mail</span><span class="value" data-k="email_rep_ug"></span></div>
+        </div>
+      </section>
+      <!-- 3. INFORMAÇÕES DO ÚLTIMO CRP -->
+      <section class="term-section avoid-break">
+        <h2>3. INFORMAÇÕES DO ÚLTIMO CRP</h2>
+        <div class="grid">
+          <div class="field"><span class="label">Data de vencimento do último CRP</span><span class="value" data-k="venc_ult_crp"></span></div>
+          <div class="field"><span class="label">Tipo de emissão do último CRP</span><span class="value" data-k="tipo_emissao_crp"></span></div>
+        </div>
+      </section>
+
+      <!-- 4. CRITÉRIOS IRREGULARES (quando houver) -->
+      <section class="term-section avoid-break">
+        <h2>4. CRITÉRIOS IRREGULARES</h2>
+        <p class="note">Listagem dos critérios informados no formulário (campo <code>CRITERIOS_IRREGULARES</code>).</p>
+        <ul id="criterios-list"><!-- preenchido pelo front com window.__TERMO_DATA__.CRITERIOS_IRREGULARES --></ul>
+      </section>
+
+      <!-- 5. COMPROMISSOS -->
+      <section class="term-section">
+        <h2>5. COMPROMISSOS FIRMADOS NA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
+        <ul id="opt-5">
+          <li data-code="5.1">5.1 Regularidade nos repasses e nas parcelas de acordos (art. 14 e 15, Portaria MTP nº 1.467/2022).</li>
+          <li data-code="5.2">5.2 Regularidade no encaminhamento de documentos e atendimento às solicitações (art. 241).</li>
+          <li data-code="5.3">5.3 Utilização dos recursos previdenciários conforme Lei nº 9.796/1999.</li>
+          <li data-code="5.4">5.4 Aplicação dos recursos segundo normas do CMN.</li>
+          <li data-code="5.5">5.5 Adequações na legislação do RPPS quando identificadas pela Secretaria.</li>
+          <li data-code="5.6">5.6 Cumprimento dos Planos de Ação das fases Específica e de Manutenção.</li>
+          <li data-code="5.7">5.7 Promover o equilíbrio financeiro e atuarial do RPPS e a sustentabilidade do seu plano de custeio e de benefícios.</li>
+        </ul>
+      </section>
+      <!-- 6. PROVIDÊNCIAS -->
+      <section class="term-section">
+        <h2>6. PROVIDÊNCIAS NECESSÁRIAS PARA ADESÃO AO PROGRAMA</h2>
+        <ul id="opt-6">
+          <li data-code="6.1">6.1 Inclusão, no Cadprev, de todos os débitos de contribuições/valores até a data da adesão; ou</li>
+          <li data-code="6.2">6.2 Declaração de inexistência de débitos (ou já regularizados) até a adesão.</li>
+        </ul>
+      </section>
+
+      <!-- 7. CONDIÇÕES -->
+      <section class="term-section">
+        <h2>7. CONDIÇÕES PARA VIGÊNCIA DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
+        <ul>
+          <li>I – atendimento aos requisitos do art. 3º do Anexo XVIII;</li>
+          <li>II – cumprimento dos planos de ação do art. 4º do Anexo XVIII;</li>
+          <li>III – observância de prazos/condições do art. 6º do Anexo XVII (para parcelamentos – EC xx/2025); e/ou</li>
+          <li>IV – não ingresso com ação judicial para obter CRP ou para descumprimento do Programa.</li>
+        </ul>
+        <p class="mt"><strong>Declarações marcadas no formulário</strong></p>
+        <ul id="condicoes-list"></ul>
+      </section>
+
+      <!-- Assinaturas -->
+      <footer class="term-footer">
+        <p class="place-date"><span data-k="ente"></span>/<span data-k="uf"></span>, <span data-k="data_termo"></span>.</p>
+
+        <div class="signature-block">
+          <div class="signature-line" aria-hidden="true"></div>
+          <p class="signature-caption">
+            <strong><span data-k="nome_rep_ente"></span></strong><br>
+            <span id="sig-cap-ente">Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span></span>
+          </p>
+        </div>
+
+        <div class="signature-block">
+          <div class="signature-line" aria-hidden="true"></div>
+          <p class="signature-caption">
+            <strong><span data-k="nome_rep_ug"></span></strong><br>
+            Representante legal do <span data-k="ug"></span>
+          </p>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- O front (termo.js) lê window.__TERMO_DATA__ OU a querystring e emite TERMO_PRINT_READY -->
   <script src="/termo.js" defer></script>
 </body>
 </html>

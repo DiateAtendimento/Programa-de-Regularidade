@@ -1209,8 +1209,7 @@ async function logAlteracoesInline(p, snapshotRaw = {}) {
     'UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA'
   ]);
   await sLog.loadHeaderRow();
-  await ensureSheetHasColumns(sLog, ['UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA']);
-
+  await ensureSheetHasColumns(sLog, ['UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS ALTERADOS','MES','DATA','HORA']);
   const snap = snapshotRaw || {};
   const WATCH = [
     'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE',
@@ -1270,7 +1269,7 @@ app.post('/api/gerar-termo', async (req, res) => {
       'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP',
       'CRITERIOS_IRREGULARES',
       'CELEBRACAO_TERMO_PARCELA_DEBITOS',
-      'REGULARIZACAO_PENDEN ADMINISTRATIVA',
+      'REGULARIZACAO_PENDEN_ADMINISTRATIVA',
       'DEFICIT_ATUARIAL',
       'CRITERIOS_ESTRUT_ESTABELECIDOS',
       'MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS',
@@ -1492,7 +1491,30 @@ app.post('/api/termo-pdf', async (req, res) => {
           document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
         }, payloadForClient);
 
+              
         await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
+
+        // Aguarda o front sinalizar que terminou de preencher (ou timeout curto)
+        await page.evaluate(() => new Promise((ok) => {
+          if (window.__TERMO_PRINT_READY__ === true) return ok();
+          document.addEventListener('TERMO_PRINT_READY', () => ok(), { once: true });
+          setTimeout(ok, 1500); // fallback p/ não travar se o evento não vier
+        }));
+
+        // aguarda o front sinalizar que terminou a hidratação/render
+        await page.evaluate(() => {
+          // cria uma promise que resolve quando o front disser que está pronto
+          if (!window.__TERMO_WAIT_PRINT__) {
+            window.__TERMO_WAIT_PRINT__ = new Promise((resolve) => {
+              const done = () => { window.__TERMO_READY = true; resolve(true); };
+              // front moderno dispara este evento quando finalizar o DOM
+              document.addEventListener('TERMO_PRINT_READY', done, { once: true });
+              // segurança: se o front não emitir, ainda assim tenta imprimir após um pequeno atraso
+              setTimeout(done, 2000);
+            });
+          }
+          return window.__TERMO_WAIT_PRINT__;
+        });
 
 
         function findFont(candidates){
