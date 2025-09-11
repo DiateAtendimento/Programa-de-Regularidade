@@ -1,9 +1,8 @@
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
+[build]
+  functions = "netlify/functions"
 
-# Tudo que vier como /_api/* vai para a function
 [[redirects]]
   from = "/_api/*"
-  to = "/.netlify/functions/api-proxy/:splat"
+  to   = "/.netlify/functions/api-proxy/:splat"
   status = 200
+  force = true
