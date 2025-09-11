@@ -1,90 +1,94 @@
-// Serverless Function no Netlify que injeta X-API-Key e repassa ao Render
+// Netlify Function que encaminha para o Render injetando a API key
 export async function handler(event) {
-  const ORIGIN = process.env.CORS_ORIGIN || event.headers.origin || '*';
-
-  // CORS / preflight
+  // ----- CORS / preflight -----
+  const origin = event.headers?.origin || '*';
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 204,
       headers: {
-        'Access-Control-Allow-Origin': ORIGIN,
-        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
         'Access-Control-Allow-Headers':
-          'Content-Type, Cache-Control, X-Idempotency-Key, X-API-Key, api-key, x-api-key',
-        'Vary': 'Origin'
-      }
+          'Content-Type,Cache-Control,X-Idempotency-Key,X-API-Key,Authorization',
+        Vary: 'Origin',
+      },
     };
   }
 
-  const API_BASE = (process.env.API_BASE || 'https://programa-de-regularidade.onrender.com')
-    .replace(/\/+$/, '');
+  // ----- Config -----
+  const API_BASE = (process.env.API_BASE || 'https://programa-de-regularidade.onrender.com').replace(/\/+$/, '');
+  const API_KEY = process.env.API_KEY;
 
-  // Remover prefixo da Function
-  let subpath = event.path.replace(/^\/\.netlify\/functions\/api-proxy/, '');
-  // Remover também qualquer "/_api" inicial (quando vem via redirect)
-  subpath = subpath.replace(/^\/_api(?:\/|$)/, '/');
-
-  // Normaliza: garante exatamente um "/api/" no início do destino
-  if (!subpath.startsWith('/api/')) {
-    subpath = '/api' + (subpath.startsWith('/') ? subpath : `/${subpath}`);
+  if (!API_KEY) {
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origin },
+      body: JSON.stringify({ error: 'API_KEY não definida no ambiente do Netlify.' }),
+    };
   }
 
-  // Health local (aceita /health e /api/health)
-  if (subpath === '/api/health') {
+  // ----- Normaliza subpath (aceita /_api/... ou /.netlify/functions/api-proxy/...) -----
+  const url = new URL(event.rawUrl);
+  let subpath = url.pathname;
+
+  for (const base of ['/.netlify/functions/api-proxy', '/_api']) {
+    if (subpath.startsWith(base)) {
+      subpath = subpath.slice(base.length);
+      break;
+    }
+  }
+  if (!subpath.startsWith('/')) subpath = '/' + subpath;
+
+  // Rota de health local (opcional, deixa mais rápido e não exige key)
+  if (subpath === '/health') {
     return {
       statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': ORIGIN, 'Content-Type': 'application/json', 'Vary': 'Origin' },
-      body: JSON.stringify({ ok: true })
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origin },
+      body: JSON.stringify({ ok: true }),
     };
   }
 
-  const qs = event.rawQuery ? `?${event.rawQuery}` : '';
-  const target = `${API_BASE}${subpath}${qs}`;
+  // Monta destino no Render
+  const search = url.search || '';
+  const target = `${API_BASE}/api${subpath}${search}`;
 
-  // Copia alguns headers úteis do cliente
+  // Headers a repassar + injeção de credenciais
   const pass = {};
   for (const [k, v] of Object.entries(event.headers || {})) {
     const lk = k.toLowerCase();
-    if (['content-type', 'cache-control', 'x-idempotency-key'].includes(lk)) pass[k] = v;
+    if (['content-type', 'cache-control', 'x-idempotency-key', 'user-agent'].includes(lk)) {
+      pass[k] = v;
+    }
   }
 
-  // Injeta a API key do servidor (suporta vários nomes)
-  const apiKey = process.env.API_KEY || process.env.X_API_KEY;
-  if (apiKey) {
-    pass['x-api-key'] = apiKey;
-    pass['api-key'] = apiKey;
-    pass['X-API-Key'] = apiKey;
-  }
+  // Injeção da API key em formatos diferentes
+  pass['x-api-key'] = API_KEY;
+  pass['X-API-Key'] = API_KEY;
+  pass['authorization'] = `Bearer ${API_KEY}`;
 
-  // Monta init da requisição
-  const init = { method: event.httpMethod, headers: pass };
-  if (!['GET', 'HEAD'].includes(event.httpMethod)) {
-    init.body = event.isBase64Encoded ? Buffer.from(event.body || '', 'base64') : (event.body || '');
-  }
+  // Encaminha a requisição
+  const res = await fetch(target, {
+    method: event.httpMethod,
+    headers: pass,
+    body: ['GET', 'HEAD'].includes(event.httpMethod) ? undefined : event.body,
+  });
 
-  // Log útil para depurar em Netlify → Functions → Logs
-  console.log('Proxy →', { from: event.path, to: target });
-
-  const upstream = await fetch(target, init);
-  const arrayBuf = await upstream.arrayBuffer();
-  const buf = Buffer.from(arrayBuf);
-  const ct = upstream.headers.get('content-type') || 'application/octet-stream';
+  const buf = Buffer.from(await res.arrayBuffer());
+  const ct = res.headers.get('content-type') || 'application/octet-stream';
   const isTextLike = /^text\/|application\/(json|javascript)/i.test(ct);
-  const cd = upstream.headers.get('content-disposition');
-  const cacheControl = upstream.headers.get('cache-control');
 
-  const respHeaders = {
+  const outHeaders = {
     'Content-Type': ct,
-    'Access-Control-Allow-Origin': ORIGIN,
-    'Vary': 'Origin'
+    'Access-Control-Allow-Origin': origin,
+    Vary: 'Origin',
   };
-  if (cd) respHeaders['Content-Disposition'] = cd;
-  if (cacheControl) respHeaders['Cache-Control'] = cacheControl;
+  const cd = res.headers.get('content-disposition');
+  if (cd) outHeaders['Content-Disposition'] = cd;
 
   return {
-    statusCode: upstream.status,
-    headers: respHeaders,
+    statusCode: res.status,
+    headers: outHeaders,
     body: isTextLike ? buf.toString('utf8') : buf.toString('base64'),
-    isBase64Encoded: !isTextLike
+    isBase64Encoded: !isTextLike,
   };
 }

@@ -176,7 +176,7 @@
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       try {
-        const r = await fetchJSON(`${API_BASE}/api/health`, {}, { label: 'health', timeout: 4000, retries: 0 });
+        const r = await fetchJSON(`${API_BASE}/health`, {}, { label: 'health', timeout: 4000, retries: 0 });
         if (r && r.ok) return true;
       } catch (_) {}
       await new Promise(r => setTimeout(r, pollMs));
@@ -249,7 +249,7 @@
 
       // silencioso: sem modal/loader para não travar a UI
       fetchJSON(
-        `${API_BASE}/api/upsert-cnpj`,
+        `${API_BASE}/upsert-cnpj`,
         { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) },
         { label:'upsert-cnpj(email-sync)', timeout: 8000, retries: 1 }
       ).catch(() => { /* silencioso */ });
@@ -552,7 +552,7 @@
       setTimeout(() => { try { modalWelcome.show(); } catch {} }, 0);
     }
 
-    fetchJSON(`${API_BASE}/api/warmup`, {}, { label: 'warmup', timeout: 15000, retries: 0 }).catch(()=>{});
+    fetchJSON(`${API_BASE}/warmup`, {}, { label: 'warmup', timeout: 15000, retries: 0 }).catch(()=>{});
 
     // pré-aquecer o backend (evita o 1º 502 na primeira ação do usuário)
     waitForService({ timeoutMs: 15000, pollMs: 1500 }).catch(()=>{});
@@ -996,7 +996,7 @@
       EMAIL_UG: $('#EMAIL_UG').value.trim()
     };
     if (digits(body.CNPJ_ENTE).length===14 || digits(body.CNPJ_UG).length===14){
-      fetchJSON(`${API_BASE}/api/upsert-cnpj`,
+      fetchJSON(`${API_BASE}/upsert-cnpj`,
         { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) },
         { timeout: 8000, retries: 0, label: 'upsert-cnpj' }
       ).catch(()=>{});
@@ -1032,7 +1032,7 @@
 
       let r;
       try {
-        const url = `${API_BASE}/api/consulta?cnpj=${cnpj}${forceNoCache ? '&nocache=1' : ''}`;
+        const url = `${API_BASE}/consulta?cnpj=${cnpj}${forceNoCache ? '&nocache=1' : ''}`;
         r = await fetchJSON(
           url,
           {},
@@ -1041,7 +1041,7 @@
       } catch (err1) {
         if (!forceNoCache) {
           r = await fetchJSON(
-            `${API_BASE}/api/consulta?cnpj=${cnpj}&nocache=1`,
+            `${API_BASE}/consulta?cnpj=${cnpj}&nocache=1`,
             {},
             { label: 'consulta-cnpj(retry-nocache)', timeout: 110000, retries: 0 }
           );
@@ -1176,7 +1176,7 @@
 
       let r;
       try {
-        const url = `${API_BASE}/api/rep-by-cpf?cpf=${cpfd}${forceNoCache ? '&nocache=1' : ''}`;
+        const url = `${API_BASE}/rep-by-cpf?cpf=${cpfd}${forceNoCache ? '&nocache=1' : ''}`;
         r = await fetchJSON(
           url,
           {},
@@ -1185,7 +1185,7 @@
       } catch (err1) {
         if (!forceNoCache) {
           r = await fetchJSON(
-            `${API_BASE}/api/rep-by-cpf?cpf=${cpfd}&nocache=1`,
+            `${API_BASE}/rep-by-cpf?cpf=${cpfd}&nocache=1`,
             {},
             { label: 'rep-by-cpf(retry-nocache)', timeout: 110000, retries: 0 }
           );
@@ -1258,7 +1258,7 @@
     ];
     for (const rep of reps){
       if (digits(rep.CPF).length===11 && rep.NOME){
-        fetchJSON(`${API_BASE}/api/upsert-rep`,
+        fetchJSON(`${API_BASE}/upsert-rep`,
           { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(rep) },
           { timeout: 8000, retries: 0, label: 'upsert-rep' }
         ).catch(()=>{});
@@ -1347,7 +1347,7 @@
     try {
       // 1ª tentativa com timeout/retry interno
       const blob = await fetchBinary(
-        `${API_BASE}/api/termo-pdf`,
+        `${API_BASE}/termo-pdf`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
         { label: 'termo-pdf', timeout: 60000, retries: 1 }
       );
@@ -1384,7 +1384,7 @@
         const ok = await waitForService({ timeoutMs: 60_000, pollMs: 2500 });
         if (ok) {
           const blob = await fetchBinary(
-            `${API_BASE}/api/termo-pdf`,
+            `${API_BASE}/termo-pdf`,
             { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
             { label: 'termo-pdf(retry-after-wait)', timeout: 60000, retries: 0 }
           );
@@ -1498,7 +1498,7 @@
     try {
       // 1ª tentativa
       await fetchJSON(
-        `${API_BASE}/api/gerar-termo`,
+        `${API_BASE}/gerar-termo`,
         {
           method: 'POST',
           headers: {
@@ -1549,7 +1549,7 @@
         if (ok) {
           try {
             await fetchJSON(
-              `${API_BASE}/api/gerar-termo`,
+              `${API_BASE}/gerar-termo`,
               {
                 method: 'POST',
                 headers: {

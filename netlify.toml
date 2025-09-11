@@ -1,6 +1,7 @@
 [build]
   base = "frontend"
   functions = "functions"
+  publish = "." 
 
 [[redirects]]
   from = "/_api/*"
@@ -8,8 +9,3 @@
   status = 200
   force  = true
 
-[[redirects]]
-  from = "/_api/api/*"
-  to   = "/.netlify/functions/api-proxy/:splat"
-  status = 200
-  force  = true
