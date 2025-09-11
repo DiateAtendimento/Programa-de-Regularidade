@@ -66,6 +66,20 @@ export async function handler(event) {
   pass['X-API-Key'] = API_KEY;
   pass['authorization'] = `Bearer ${API_KEY}`;
 
+  // DEBUG (remover depois): checa se a função enxerga a env
+  if (event.path.endsWith('/.netlify/functions/api-proxy/_diag')) {
+    const k = process.env.API_KEY || '';
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        hasApiKey: !!k,
+        apiKeyLen: k.length,
+        apiBase: (process.env.API_BASE || 'https://programa-de-regularidade.onrender.com').replace(/\/+$/,'')
+      })
+    };
+  }
+
   // Encaminha a requisição
   const res = await fetch(target, {
     method: event.httpMethod,
@@ -91,4 +105,7 @@ export async function handler(event) {
     body: isTextLike ? buf.toString('utf8') : buf.toString('base64'),
     isBase64Encoded: !isTextLike,
   };
+
+
+
 }
