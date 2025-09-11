@@ -26,7 +26,13 @@ body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-se
 .pdf-export .logos-wrap{ display:none !important }
 /* fundo branco e container “flat” */
 html.pdf-export, body.pdf-export{ background:#fff !important }
-.pdf-export.term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important }
+/* fundo branco e container “flat” no PDF */
+.pdf-export .term-wrap{
+  margin:0 !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
+}
+
 
 /* ===== Cabeçalho ===== */
 .page-head{

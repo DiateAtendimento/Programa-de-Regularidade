@@ -1503,19 +1503,15 @@ app.post('/api/termo-pdf', async (req, res) => {
 
         // aguarda o front sinalizar que terminou a hidratação/render
         await page.evaluate(() => {
-          // cria uma promise que resolve quando o front disser que está pronto
           if (!window.__TERMO_WAIT_PRINT__) {
             window.__TERMO_WAIT_PRINT__ = new Promise((resolve) => {
               const done = () => { window.__TERMO_READY = true; resolve(true); };
-              // front moderno dispara este evento quando finalizar o DOM
               document.addEventListener('TERMO_PRINT_READY', done, { once: true });
-              // segurança: se o front não emitir, ainda assim tenta imprimir após um pequeno atraso
-              setTimeout(done, 2000);
+              setTimeout(done, 2000); // fallback
             });
           }
           return window.__TERMO_WAIT_PRINT__;
         });
-
 
         function findFont(candidates){
           for (const rel of candidates){
@@ -1540,11 +1536,13 @@ app.post('/api/termo-pdf', async (req, res) => {
           .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
           .term-title { margin-top: 2mm !important; }
         `});
+        
+        // após page.goto(...), page.addStyleTag(...), page.addScriptTag(...)
         await page.evaluate(() => {
-          document.body.classList.add('pdf-export');
-          const root = document.getElementById('pdf-root');
-          if (root) root.classList.add('pdf-export');
+          document.documentElement.classList.add('pdf-export'); // <html>
+          document.body.classList.add('pdf-export');            // <body>
         });
+
 
         const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
         const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
