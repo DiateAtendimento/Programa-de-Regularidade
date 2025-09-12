@@ -285,29 +285,3 @@ body.pdf-export .term-title{
   margin-top: 2.2mm !important;     /* distância linha ↔ título */
 }
 
-/* ===== AJUSTE FINO DE ESPAÇAMENTO (PDF) =====
-   Deixe este bloco por ÚLTIMO no arquivo. */
-html.pdf-export .page-head,
-body.pdf-export .page-head{
-  margin-bottom: 0 !important;     /* elimina o gap do header */
-  padding-bottom: 3mm !important;  /* logos ↔ linha */
-}
-html.pdf-export .term-title,
-body.pdf-export .term-title{
-  margin-top: 2mm !important;      /* linha ↔ título (ajuste se quiser 1.8–2.4mm) */
-}
-html.pdf-export .term-meta,
-body.pdf-export .term-meta{
-  margin-top: 1.2mm !important;    /* título ↔ meta */
-  margin-bottom: 5mm !important;   /* meta ↔ item 1 */
-}
-
-/* Fallback para quando o gerador de PDF NÃO aplica .pdf-export */
-@media print{
-  .page-head{
-    margin-bottom: 0 !important;
-    padding-bottom: 3mm !important;
-  }
-  .term-title{ margin-top: 2mm !important; }
-  .term-meta{  margin-top: 1.2mm !important; margin-bottom: 5mm !important; }
-}
