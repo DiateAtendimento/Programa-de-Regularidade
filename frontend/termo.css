@@ -192,3 +192,41 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 
 /* 3) Ajuste do espaçamento abaixo do título */
 .term-meta{ margin-top:2mm !important; margin-bottom:5mm !important; }
+
+/* === ZERA QUALQUER LINHA ANTIGA (garantido) ========================== */
+.page-head,
+.page-head::before,
+.page-head::after,
+.term-title::before,
+.term-title::after,
+.page-head .rule,
+#pdf-root > .rule,
+.rule{
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  height:0 !important;
+}
+.page-head .rule,
+#pdf-root > .rule,
+.rule{ display:none !important; }
+.page-head::before,
+.term-title::before,
+.term-title::after{ content:none !important; }
+
+/* === DESENHA UMA ÚNICA LINHA no header =============================== */
+.page-head{ position:relative; padding-bottom:3.5mm !important; margin-bottom:5mm !important; }
+.page-head::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:1px;
+  background:var(--rule);
+}
+
+/* Espaçamento do título e meta para ficar no meio certinho */
+.term-title{ margin-top:2mm !important; }
+.term-meta{  margin-top:1.2mm !important; margin-bottom:5mm !important; }
+
+/* No PDF, um respiro um pouco menor */
+.pdf-export .page-head{ margin-bottom:4mm !important; }
