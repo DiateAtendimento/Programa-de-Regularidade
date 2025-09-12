@@ -3,20 +3,39 @@
 
   // ========= Helpers =========
   const digits = v => String(v || '').replace(/\D+/g, '');
+
   const fmtCPF  = v => {
     const d = digits(v).padStart(11, ''); if (d.length !== 11) return v || '';
     return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   };
+
   const fmtCNPJ = v => {
     const d = digits(v).padStart(14, ''); if (d.length !== 14) return v || '';
     return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
   };
+
+  // ISO → DD/MM/AAAA (com tolerância a "YYYY-MM-DDTHH:MM:SS")
+  const fmtDateBR = v => {
+    const s = String(v || '').trim();
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    const d = new Date(s);
+    if (!isNaN(d)) {
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yy = d.getFullYear();
+      return `${dd}/${mm}/${yy}`;
+    }
+    return s;
+  };
+
   const setTextAll = (k, v) => {
     document.querySelectorAll(`[data-k="${k}"]`).forEach(el => el.textContent = v || '');
   };
+
   const notInformed = '<em>Não informado.</em>';
 
-  // Mapeamento (mesmo do frontend) para detectar códigos 5.x a partir dos textos
+  // Mapas para compromissos 5.x
   const COMP_VALUE_TO_CODE = {
     'Manter regularidade nos repasses e nas parcelas (arts. 14 e 15 da Portaria MTP 1.467/2022)': '5.1',
     'Regularidade no encaminhamento de documentos (art. 241 da Portaria MTP 1.467/2022)': '5.2',
@@ -27,19 +46,15 @@
     'Promover o equilíbrio financeiro e atuarial do RPPS e a sustentabilidade do seu plano de custeio e de benefícios': '5.7'
   };
 
-  // Novidade: extrai os códigos 7.x a partir do texto enviado
+  // 7.x a partir de texto livre
   function extractCond7Codes(raw) {
     const t = String(raw || '');
     const seen = new Set();
-
     if (/\b7\.?1\b|art\.\s*3\b|requisitos.*anexo\s*xviii/i.test(t)) seen.add('7.1');
     if (/\b7\.?2\b|planos?\s*de\s*ação|art\.\s*4\b/i.test(t))        seen.add('7.2');
     if (/\b7\.?3\b|art\.\s*6\b|prazos|condiç|parcelament/i.test(t))  seen.add('7.3');
-    if (/\b7\.?4\b|n[aã]o\s+ingresso\s+com\s+a[cç][aã]o|a[cç][aã]o\s+judicial/i.test(t)) seen.add('7.4');
-
-    // fallback: se o texto contiver "7.1; 7.2" etc.
+    if (/\b7\.?4\b|n[aã]o\s+ingresso\s+com\s+a[cç][aã]o|judicial/i.test(t)) seen.add('7.4');
     ['7.1','7.2','7.3','7.4'].forEach(code => { if (new RegExp(code.replace('.','\\.')).test(t)) seen.add(code); });
-
     return ['7.1','7.2','7.3','7.4'].filter(c => seen.has(c));
   }
 
@@ -56,7 +71,7 @@
     });
     return ['5.1','5.2','5.3','5.4','5.5','5.6','5.7'].filter(c => seen.has(c));
   }
-  // ========= Render principal (usa somente 'payload') =========
+  // ========= Render principal =========
   function renderizarTermo(payload){
     // 1) Campos diretos
     setTextAll('uf',          payload.UF || '');
@@ -77,30 +92,57 @@
     setTextAll('cpf_rep_ug',   fmtCPF(payload.CPF_REP_UG || ''));
     setTextAll('email_rep_ug', payload.EMAIL_REP_UG || '');
 
-    setTextAll('venc_ult_crp',     payload.DATA_VENCIMENTO_ULTIMO_CRP || '');
-    setTextAll('tipo_emissao_crp', payload.TIPO_EMISSAO_ULTIMO_CRP || '');
-    setTextAll('manutencao_normas', payload.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '');
-    setTextAll('data_termo',        payload.DATA_TERMO_GERADO || '');
+    setTextAll('venc_ult_crp',     fmtDateBR(payload.DATA_VENCIMENTO_ULTIMO_CRP || ''));
+    setTextAll('data_termo',        fmtDateBR(payload.DATA_TERMO_GERADO || ''));
 
-    // 2) Esfera 1.1
-    (function renderEsfera(){
-      const esfera = String(payload.ESFERA || '').toLowerCase();
-      const li = document.getElementById('li-esfera');
-      if (li) {
-        if (esfera.includes('municip')) li.textContent = '1.1.1 RPPS Municipal';
-        else if (esfera.includes('estadual') || esfera.includes('distrital')) li.textContent = '1.1.2 Estadual/Distrital';
-        else li.innerHTML = notInformed;
+    // 1.1 – Esfera de Governo (1.1.1 / 1.1.2)
+    (function(){
+      const listId = 'opt-1-1';
+      const list = document.getElementById(listId);
+      if (!list) return;
+      const esfera = String(payload.ESFERA || payload.ESFERA_DE_GOVERNO || '').toLowerCase();
+      const codes = [];
+      if (/municip/.test(esfera)) codes.push('1.1.1');
+      if (/estadual|distrit/.test(esfera)) codes.push('1.1.2');
+
+      const items = [...list.querySelectorAll('li')];
+      if (!codes.length){
+        items.forEach(li => li.remove());
+        const li = document.createElement('li'); li.innerHTML = notInformed; list.appendChild(li);
+      } else {
+        items.forEach(li => { if (!codes.includes(li.getAttribute('data-code'))) li.remove(); });
       }
+
+      // legenda da assinatura (ente municipal x estadual/distrital)
       const sig = document.getElementById('sig-cap-ente');
       if (sig) {
-        sig.innerHTML = (esfera.includes('estadual') || esfera.includes('distrital'))
+        sig.innerHTML = (/estadual|distrit/.test(esfera))
           ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
           : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
       }
     })();
 
-    // 3) 3.3 Critérios irregulares
-    (function renderCriterios(){
+    // 3.2 – Tipo de emissão do último CRP (3.2.1 / 3.2.2)
+    (function(){
+      const listId = 'opt-3-2';
+      const list = document.getElementById(listId);
+      if (!list) return;
+      const raw = String(payload.TIPO_EMISSAO_ULTIMO_CRP || '');
+      const codes = [];
+      if (/admin/i.test(raw) || /3\.2\.1/.test(raw)) codes.push('3.2.1');
+      if (/judic/i.test(raw)  || /3\.2\.2/.test(raw)) codes.push('3.2.2');
+
+      const items = [...list.querySelectorAll('li')];
+      if (!codes.length){
+        items.forEach(li => li.remove());
+        const li = document.createElement('li'); li.innerHTML = notInformed; list.appendChild(li);
+      } else {
+        items.forEach(li => { if (!codes.includes(li.getAttribute('data-code'))) li.remove(); });
+      }
+    })();
+
+    // 3.3 – Critérios irregulares
+    (function(){
       const ul = document.getElementById('criterios-list'); if (!ul) return;
       ul.innerHTML = '';
       const arr = Array.isArray(payload.CRITERIOS_IRREGULARES) ? payload.CRITERIOS_IRREGULARES
@@ -112,8 +154,8 @@
       }
     })();
 
-    // 4) Finalidades (A/B)
-    (function renderFinalidades(){
+    // 4) A/B – Finalidades iniciais
+    (function(){
       const a = String(payload.CELEBRACAO_TERMO_PARCELA_DEBITOS || '').trim();
       const b = String(payload.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '').trim();
       const labels = [];
@@ -122,8 +164,7 @@
       const el = document.getElementById('finalidades-iniciais');
       if (el) el.innerHTML = labels.length ? labels.join(' e/ou ') : 'Não informado.';
     })();
-
-    // helper: filtra lista por códigos mantidos
+    // util para filtrar listas por códigos
     function filterBy(listId, codes){
       const list = document.getElementById(listId);
       if (!list) return;
@@ -167,6 +208,12 @@
       filterBy('opt-4-4', codes);
     })();
 
+    // 5.x (compromissos)
+    (function(){
+      const codes = extractCompCodesFromPayload(payload);
+      filterBy('opt-5', codes);
+    })();
+
     // 6.x
     (function(){
       const raw = String(payload.PROVIDENCIA_NECESS_ADESAO || '');
@@ -176,11 +223,6 @@
       filterBy('opt-6', codes);
     })();
 
-    // 5.x (compromissos)
-    (function(){
-      const codes = extractCompCodesFromPayload(payload);
-      filterBy('opt-5', codes);
-    })();
     // 7 – Condições (apenas marcadas)
     (function(){
       const raw = String(payload.CONDICAO_VIGENCIA || '');
@@ -188,7 +230,7 @@
       filterBy('opt-7', codes);
     })();
 
-    // Re-hidrata spans dentro das assinaturas que dependem de 'ente/uf'
+    // Re-hidrata spans de assinatura que dependem de 'ente/uf'
     setTextAll('ente', payload.ENTE || '');
     setTextAll('uf',   payload.UF   || '');
 
@@ -210,8 +252,7 @@
   window.addEventListener('message', (ev) => {
     try { if (ev.origin !== window.location.origin) return; } catch (_) {}
     if (!ev.data || ev.data.type !== 'TERMO_PREVIEW_DATA') return;
-    const payload = ev.data.payload || {};
-    renderizarTermo(payload);
+    renderizarTermo(ev.data.payload || {});
   }, false);
 
   // ========= Fluxo 2: PDF (Puppeteer) =========
@@ -221,29 +262,18 @@
 
   // ========= Fallback: querystring antiga =========
   document.addEventListener('DOMContentLoaded', () => {
-    if (window.__TERMO_DATA__) {
-      renderizarTermo(window.__TERMO_DATA__ || {});
-      return;
-    }
+    if (window.__TERMO_DATA__) { renderizarTermo(window.__TERMO_DATA__ || {}); return; }
     const p = new URLSearchParams(location.search);
     if (p.has('uf') || p.has('ente')) {
       const payload = {
-        UF: p.get('uf') || '',
-        ENTE: p.get('ente') || '',
-        CNPJ_ENTE: p.get('cnpj_ente') || '',
-        EMAIL_ENTE: p.get('email_ente') || '',
-        UG: p.get('ug') || '',
-        CNPJ_UG: p.get('cnpj_ug') || '',
-        EMAIL_UG: p.get('email_ug') || '',
+        UF: p.get('uf') || '', ENTE: p.get('ente') || '',
+        CNPJ_ENTE: p.get('cnpj_ente') || '', EMAIL_ENTE: p.get('email_ente') || '',
+        UG: p.get('ug') || '', CNPJ_UG: p.get('cnpj_ug') || '', EMAIL_UG: p.get('email_ug') || '',
         ESFERA: p.get('esfera') || '',
-        NOME_REP_ENTE: p.get('nome_rep_ente') || '',
-        CPF_REP_ENTE: p.get('cpf_rep_ente') || '',
-        CARGO_REP_ENTE: p.get('cargo_rep_ente') || '',
-        EMAIL_REP_ENTE: p.get('email_rep_ente') || '',
-        NOME_REP_UG: p.get('nome_rep_ug') || '',
-        CPF_REP_UG: p.get('cpf_rep_ug') || '',
-        CARGO_REP_UG: p.get('cargo_rep_ug') || '',
-        EMAIL_REP_UG: p.get('email_rep_ug') || '',
+        NOME_REP_ENTE: p.get('nome_rep_ente') || '', CPF_REP_ENTE: p.get('cpf_rep_ente') || '',
+        CARGO_REP_ENTE: p.get('cargo_rep_ente') || '', EMAIL_REP_ENTE: p.get('email_rep_ente') || '',
+        NOME_REP_UG: p.get('nome_rep_ug') || '', CPF_REP_UG: p.get('cpf_rep_ug') || '',
+        CARGO_REP_UG: p.get('cargo_rep_ug') || '', EMAIL_REP_UG: p.get('email_rep_ug') || '',
         DATA_VENCIMENTO_ULTIMO_CRP: p.get('venc_ult_crp') || '',
         TIPO_EMISSAO_ULTIMO_CRP: p.get('tipo_emissao_crp') || '',
         CELEBRACAO_TERMO_PARCELA_DEBITOS: p.get('celebracao') || '',

@@ -35,126 +35,106 @@
       <section class="term-section avoid-break">
         <h2>1. IDENTIFICAÇÃO DO ENTE FEDERADO E DA UNIDADE GESTORA</h2>
 
-        <div class="grid">
-          <div class="field">
-            <span class="label">Ente federado</span>
-            <span class="value" data-k="ente"></span>
-          </div>
-          <div class="field">
-            <span class="label">UF</span>
-            <span class="value" data-k="uf"></span>
-          </div>
+        <h3>1.1 Esfera de Governo</h3>
+        <ul id="opt-1-1">
+          <li data-code="1.1.1">1.1.1 RPPS Municipal</li>
+          <li data-code="1.1.2">1.1.2 Estadual/Distrital</li>
+        </ul>
 
-          <div class="field">
-            <span class="label">CNPJ do Ente</span>
-            <span class="value" data-k="cnpj_ente"></span>
-          </div>
-          <div class="field">
-            <span class="label">E-mail do Ente</span>
-            <span class="value" data-k="email_ente"></span>
-          </div>
+        <h3>1.2 Ente Federativo</h3>
+        <div class="grid grid-num">
+          <div class="field"><span class="label">1.2.1 Ente</span><span class="value" data-k="ente"></span></div>
+          <div class="field"><span class="label">1.2.2 CNPJ</span><span class="value" data-k="cnpj_ente"></span></div>
+          <div class="field"><span class="label">1.2.3 E-mail oficial para recebimento de comunicações do Programa</span><span class="value" data-k="email_ente"></span></div>
+        </div>
 
-          <div class="field">
-            <span class="label">Unidade Gestora (UG)</span>
-            <span class="value" data-k="ug"></span>
-          </div>
-          <div class="field">
-            <span class="label">CNPJ da UG</span>
-            <span class="value" data-k="cnpj_ug"></span>
-          </div>
-
-          <div class="field">
-            <span class="label">E-mail da UG</span>
-            <span class="value" data-k="email_ug"></span>
-          </div>
-          <div class="field">
-            <span class="label">Esfera sugerida</span>
-            <span class="value" data-k="esfera"></span>
-          </div>
+        <h3>1.3 Regime Próprio de Previdência Social (RPPS)</h3>
+        <div class="grid grid-num">
+          <div class="field"><span class="label">1.3.1 Unidade Gestora</span><span class="value" data-k="ug"></span></div>
+          <div class="field"><span class="label">1.3.2 CNPJ</span><span class="value" data-k="cnpj_ug"></span></div>
+          <div class="field"><span class="label">1.3.3 E-mail oficial para recebimento de comunicações do Programa</span><span class="value" data-k="email_ug"></span></div>
         </div>
       </section>
 
-      <!-- 2. REPRESENTANTES -->
+      <!-- 2. IDENTIFICAÇÃO DOS RESPONSÁVEIS -->
       <section class="term-section avoid-break">
-        <h2>2. REPRESENTANTES LEGAIS</h2>
+        <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
 
-        <h3>2.1 Do Ente Federado</h3>
-        <div class="grid">
-          <div class="field"><span class="label">Nome</span><span class="value" data-k="nome_rep_ente"></span></div>
-          <div class="field"><span class="label">CPF</span><span class="value" data-k="cpf_rep_ente"></span></div>
-          <div class="field"><span class="label">Cargo</span><span class="value" data-k="cargo_rep_ente"></span></div>
-          <div class="field"><span class="label">E-mail</span><span class="value" data-k="email_rep_ente"></span></div>
+        <h3>2.1 Representante legal do ente federativo</h3>
+        <div class="grid grid-num">
+          <div class="field"><span class="label">2.1.1 Nome</span><span class="value" data-k="nome_rep_ente"></span></div>
+          <div class="field"><span class="label">2.1.2 Cargo/Função</span><span class="value" data-k="cargo_rep_ente"></span></div>
+          <div class="field"><span class="label">2.1.3 CPF</span><span class="value" data-k="cpf_rep_ente"></span></div>
+          <div class="field"><span class="label">2.1.4 E-mail institucional para recebimento de comunicações do Programa</span><span class="value" data-k="email_rep_ente"></span></div>
         </div>
 
-        <h3>2.2 Da Unidade Gestora</h3>
-        <div class="grid">
-          <div class="field"><span class="label">Nome</span><span class="value" data-k="nome_rep_ug"></span></div>
-          <div class="field"><span class="label">CPF</span><span class="value" data-k="cpf_rep_ug"></span></div>
-          <div class="field"><span class="label">Cargo</span><span class="value" data-k="cargo_rep_ug"></span></div>
-          <div class="field"><span class="label">E-mail</span><span class="value" data-k="email_rep_ug"></span></div>
-        </div>
-      </section>
-
-      <!-- 3. INFORMAÇÕES DO ÚLTIMO CRP -->
-      <section class="term-section avoid-break">
-        <h2>3. INFORMAÇÕES DO ÚLTIMO CRP</h2>
-        <div class="grid">
-          <div class="field"><span class="label">Data de vencimento do último CRP</span><span class="value" data-k="venc_ult_crp"></span></div>
-          <div class="field"><span class="label">Tipo de emissão do último CRP</span><span class="value" data-k="tipo_emissao_crp"></span></div>
+        <h3>2.2 Representante legal do RPPS</h3>
+        <div class="grid grid-num">
+          <div class="field"><span class="label">2.2.1 Nome</span><span class="value" data-k="nome_rep_ug"></span></div>
+          <div class="field"><span class="label">2.2.2 Cargo/Função</span><span class="value" data-k="cargo_rep_ug"></span></div>
+          <div class="field"><span class="label">2.2.3 CPF</span><span class="value" data-k="cpf_rep_ug"></span></div>
+          <div class="field"><span class="label">2.2.4 E-mail institucional para recebimento de comunicações do Programa</span><span class="value" data-k="email_rep_ug"></span></div>
         </div>
       </section>
-
-      <!-- 4. CRITÉRIOS IRREGULARES (quando houver) -->
+      <!-- 3. IDENTIFICAÇÃO DA SITUAÇÃO RELATIVA AO CRP -->
       <section class="term-section avoid-break">
-        <h2>4. CRITÉRIOS IRREGULARES</h2>
-        <p class="note">Listagem dos critérios informados no formulário (campo <code>CRITERIOS_IRREGULARES</code>).</p>
+        <h2>3. IDENTIFICAÇÃO DA SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
+
+        <div class="grid grid-num">
+          <div class="field"><span class="label">3.1 Data de vencimento do último CRP obtido</span><span class="value" data-k="venc_ult_crp"></span></div>
+        </div>
+
+        <h3>3.2 Tipo de emissão do último CRP</h3>
+        <ul id="opt-3-2">
+          <li data-code="3.2.1">3.2.1 Administrativa</li>
+          <li data-code="3.2.2">3.2.2 Judicial</li>
+        </ul>
+
+        <h3>3.3 Critério(s) irregular(es) no extrato previdenciário</h3>
         <ul id="criterios-list"><!-- preenchido pelo front com window.__TERMO_DATA__.CRITERIOS_IRREGULARES --></ul>
       </section>
+
       <!-- 4. FINALIDADE(S) INICIAL(IS) DA ADESÃO AO PROGRAMA -->
       <section class="term-section avoid-break">
         <h2>4. FINALIDADE(S) INICIAL(IS) DA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
         <p id="finalidades-iniciais" class="mt small"><!-- preenchido pelo JS com A/B --></p>
 
-        <h3>4.1 Celebração de termos de parcelamento de débitos</h3>
+        <h3>4.1 Para celebração de termos de parcelamento de débitos</h3>
         <ul id="opt-4-1">
-          <li data-code="4.1.1">4.1.1 em até sessenta parcelas, com base nas regras previstas nos arts. 14 e 15 do ADCT, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025.</li>
+          <li data-code="4.1.1">4.1.1 em até sessenta parcelas, com base nas regras previstas nos arts. 14 e 15 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025.</li>
           <li data-code="4.1.2">4.1.2 em até trezentas parcelas, conforme legislação específica aplicável.</li>
         </ul>
 
-        <h3>4.2 Regularização de pendências para a emissão administrativa e regular do CRP</h3>
+        <h3>4.2 Para regularização de pendências para a emissão administrativa e regular do CRP</h3>
         <ul id="opt-4-2">
           <li data-code="4.2.1">4.2.1 para entes sem decisão judicial.</li>
           <li data-code="4.2.2">4.2.2 para entes com decisão judicial, tendo em vista o disposto no acórdão do STF no RE nº 1.007.271 (Tema 968).</li>
         </ul>
 
-        <h3>4.3 Equacionamento de déficit atuarial do RPPS</h3>
+        <h3>4.3 Para equacionamento de déficit atuarial do RPPS</h3>
         <ul id="opt-4-3">
           <li data-code="4.3.1">4.3.1 implementação de medidas visando ao equilíbrio financeiro e atuarial.</li>
           <li data-code="4.3.2">4.3.2 prazos adicionais para comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à sua adequação orçamentária, financeira e fiscal.</li>
           <li data-code="4.3.3">4.3.3 apresentação de alternativa de plano de equacionamento quando cabível.</li>
         </ul>
 
-        <h3>4.4 Organização do RPPS conforme os critérios estruturantes estabelecidos nas normas gerais</h3>
+        <h3>4.4 Para organização do RPPS conforme os critérios estruturantes estabelecidos nas normas gerais</h3>
         <ul id="opt-4-4">
           <li data-code="4.4.1">4.4.1 adequação da Unidade Gestora Única do RPPS ao disposto no art. 40, § 20, da Constituição Federal.</li>
           <li data-code="4.4.2">4.4.2 outros critérios estruturantes aplicáveis.</li>
         </ul>
 
-        <h3 class="mt">4.5 Manutenção da conformidade do RPPS às normas gerais</h3>
-<<<<<<< HEAD
+        <h3 class="mt">4.5 Para acesso à Fase de Manutenção da conformidade do RPPS às normas gerais</h3>
         <p class="small">
-          Certificação institucional no Pró-Gestão RPPS (nível II/III/IV, conforme porte ISP-RPPS).
-          <strong>Obs.:</strong> Acesso às fases específicas/Manutenção conforme requisitos do Anexo XVIII da Portaria MTP nº 1.467/2022,
-          certificação Pró-Gestão RPPS/ISP-RPPS e medidas dos arts. 67 a 69. Nesta fase, caso necessário, poderão ser
-          apresentados planos de ação para CRP emergenciais.
+          Por meio da demonstração de medidas de autorregularização, cooperação e reciprocidade do RPPS
+          com a Secretaria de Regimes Próprios e Complementar (art. 236, § 5º, da Portaria MTP nº 1.467/2022).
+          <br>Condições de acesso: comprovar manutenção da regularidade e o cumprimento dos requisitos das fases anteriores do Programa;
+          certificação institucional no Pró-Gestão RPPS (nível II/III/IV conforme porte no ISP-RPPS);
+          melhoria na situação financeira e atuarial (considerando, entre outros, indicadores do ISP-RPPS);
+          e adoção das medidas de acompanhamento atuarial previstas nos arts. 67 a 69 da Portaria MTP nº 1.467/2022.
+          <br>Nesta fase, caso necessário, poderão ser apresentados planos de ação para emissões de CRP emergenciais.
         </p>
       </section>
-=======
-        <p class="small">Certificação institucional no Pró-Gestão RPPS (nível II/III/IV, conforme porte ISP-RPPS). Obs.: acesso às fases específicas/Manutenção conforme requisitos do Anexo XVIII da Portaria MTP nº 1.467/2022, certificação Pró-Gestão RPPS/ISP-RPPS e medidas dos arts. 67 a 69. Nesta fase, caso necessário, poderão ser apresentados planos de ação para CRP emergenciais.</p>
-      </section>
-
->>>>>>> 35c37631a9a86a68527c085ebe607bfb8eccbcef
-
       <!-- 5. COMPROMISSOS -->
       <section class="term-section">
         <h2>5. COMPROMISSOS FIRMADOS NA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
@@ -177,24 +157,16 @@
           <li data-code="6.2">6.2 Declaração de inexistência de débitos (ou já regularizados) até a adesão.</li>
         </ul>
       </section>
+
       <!-- 7. CONDIÇÕES -->
       <section class="term-section">
         <h2>7. CONDIÇÕES PARA VIGÊNCIA DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
-<<<<<<< HEAD
-
         <!-- Apenas os itens marcados permanecerão (filtrados via JS) -->
         <ul id="opt-7">
           <li data-code="7.1">7.1 O atendimento aos requisitos do art. 3º do Anexo XVIII.</li>
           <li data-code="7.2">7.2 O cumprimento dos planos de ação do art. 4º do Anexo XVIII.</li>
           <li data-code="7.3">7.3 O cumprimento dos prazos e das condições previstos no art. 6º do Anexo XVII (para parcelamentos – EC xx/2025).</li>
           <li data-code="7.4">7.4 O não ingresso com ação judicial para obtenção de CRP ou para descumprimento do Programa.</li>
-=======
-        <ul>
-          <li>7.1 – atendimento aos requisitos do art. 3º do Anexo XVIII;</li>
-          <li>7.2 – cumprimento dos planos de ação do art. 4º do Anexo XVIII;</li>
-          <li>7.3 – observância de prazos/condições do art. 6º do Anexo XVII (para parcelamentos – EC xx/2025); e/ou</li>
-          <li>7.4 – não ingresso com ação judicial para obter CRP ou para descumprimento do Programa.</li>
->>>>>>> 35c37631a9a86a68527c085ebe607bfb8eccbcef
         </ul>
 
         <!-- Declaração final fixa, como no exemplo -->
