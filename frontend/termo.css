@@ -171,3 +171,24 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   html,body{ background:#fff }
   .term-wrap{ width:var(--content-w); margin:0; box-shadow:none !important }
 }
+
+/* === Forçar LINHA ÚNICA entre as logos e o título ======================= */
+/* 1) Garante que o header não desenhe linha nenhuma */
+.page-head{ border:0 !important; padding-bottom:0 !important; margin-bottom:8mm !important; }
+.page-head::after{ content:none !important; }
+.page-head .rule, .rule{ display:none !important; height:0 !important; border:0 !important; background:transparent !important; }
+
+/* 2) Desenha UMA linha “pertencente” ao H1 (logo acima dele) */
+.page-head + .term-title{ position:relative; margin-top:0 !important; }
+.page-head + .term-title::before{
+  content:"";
+  position:absolute;
+  left:0; right:0;
+  top:-6mm;                 /* distância visual entre logos e linha */
+  height:1px;
+  background:var(--rule);
+  display:block;
+}
+
+/* 3) Ajuste do espaçamento abaixo do título */
+.term-meta{ margin-top:2mm !important; margin-bottom:5mm !important; }
