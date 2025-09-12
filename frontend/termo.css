@@ -230,3 +230,22 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 
 /* No PDF, um respiro um pouco menor */
 .pdf-export .page-head{ margin-bottom:4mm !important; }
+
+/* ===== PDF: compactar espaço entre logos e o título ===== */
+html.pdf-export .page-head,
+body.pdf-export .page-head{
+  padding-bottom: 1.2mm !important;   /* antes estava ~3.5mm */
+  margin-bottom: 2.4mm !important;    /* antes estava 4–5mm */
+}
+
+html.pdf-export .term-title,
+body.pdf-export .term-title{
+  margin-top: 0.4mm !important;       /* antes estava 2mm */
+}
+
+/* (opcional) dar um respiro menor entre título e meta no PDF */
+html.pdf-export .term-meta,
+body.pdf-export .term-meta{
+  margin-top: 1mm !important;
+  margin-bottom: 4mm !important;
+}
