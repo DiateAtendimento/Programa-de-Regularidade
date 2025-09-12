@@ -27,6 +27,14 @@
       return `${dd}/${mm}/${yy}`;
     }
     return s;
+  }
+  
+  const fmtDataBR = v => {
+  const s = String(v || '').trim();
+    // aceita 'aaaa-mm-dd' e também 'aaaa-mm-ddTHH:MM:SS...'
+    const mISO = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);
+    if (mISO) return `${mISO[3]}/${mISO[2]}/${mISO[1]}`;
+    return s; // se já estiver em dd/mm/aaaa, mantém
   };
 
   const setTextAll = (k, v) => {
@@ -92,8 +100,9 @@
     setTextAll('cpf_rep_ug',   fmtCPF(payload.CPF_REP_UG || ''));
     setTextAll('email_rep_ug', payload.EMAIL_REP_UG || '');
 
-    setTextAll('venc_ult_crp',     fmtDateBR(payload.DATA_VENCIMENTO_ULTIMO_CRP || ''));
-    setTextAll('data_termo',        fmtDateBR(payload.DATA_TERMO_GERADO || ''));
+    setTextAll('venc_ult_crp', fmtDataBR(payload.DATA_VENCIMENTO_ULTIMO_CRP || ''));
+    setTextAll('data_termo',   fmtDataBR(payload.DATA_TERMO_GERADO || ''));
+
 
     // 1.1 – Esfera de Governo (1.1.1 / 1.1.2)
     (function(){

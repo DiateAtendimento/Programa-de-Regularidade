@@ -149,3 +149,19 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   html,body{ background:#fff }
   .term-wrap{ width:var(--content-w); margin:0; box-shadow:none !important }
 }
+
+/* ===== Linha única sob as logos (HTML e PDF) ===== */
+.page-head{ 
+  border-bottom:1px solid var(--rule);   /* desenha a linha aqui */
+  padding-bottom: 3.5mm;                 /* espaço antes do título */
+  margin-bottom: 5mm;                    /* espaço depois da linha */
+}
+.page-head .rule{ display:none !important; } /* mata o <div class="rule"> */
+
+/* Ajuste fino do título e meta para ficarem centralizados entre a linha e a Seção 1 */
+.term-title{ margin-top: 2mm !important; }
+.term-meta{ margin-top: 1.2mm !important; margin-bottom: 5mm !important; }
+
+/* No PDF, um respiro um pouco menor */
+.pdf-export .page-head{ margin-bottom: 4mm !important; }
+.pdf-export .term-title{ margin-top: 2mm !important; }
