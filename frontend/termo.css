@@ -30,16 +30,39 @@ body{
 }
 
 /* ========= Modo exportação (PDF) ========= */
-.pdf-export .logos-wrap{ display:none !important }     /* no PDF esconda as logos do HTML */
+.pdf-export .logos-wrap{ display:none !important }     /* opcional: esconder as logos no modo PDF se o backend já as inserir */
 html.pdf-export, body.pdf-export{ background:#fff !important }
 .pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important }
 
 /* ========= Cabeçalho ========= */
 .page-head{
+  position:relative;
   display:grid;
   grid-template-rows:auto;
-  margin-bottom:2.5mm;           /* espaço menor entre header e conteúdo */
+  /* não usar border aqui para evitar linha duplicada */
+  border:0 !important;
+  padding-bottom:3.5mm;          /* espaço antes do título */
+  margin-bottom:5mm;             /* espaço depois da linha */
 }
+/* desenha a ÚNICA linha sob as logos */
+.page-head::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:1px;
+  background:var(--rule);
+}
+
+/* qualquer “rule” solta fica desativada (garantia contra duplicidade) */
+.page-head .rule,
+#pdf-root > .rule,
+.rule{
+  display:none !important;
+  height:0 !important;
+  border:0 !important;
+  background:transparent !important;
+}
+
 .logos-wrap{
   display:flex; align-items:center; justify-content:center;
   flex-wrap:wrap; gap:1mm 6mm; width:100%; padding-top:0;
@@ -47,7 +70,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 
 /* Título + meta */
 .term-title{
-  margin: 1.6mm 0 0;             /* centralizado “entre linhas” do cabeçalho e do item 1 */
+  margin:2mm 0 0 !important;     /* centralizado entre a linha e a Seção 1 */
   place-self:center;
   text-align:center;
   font-weight:800;
@@ -57,15 +80,15 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   color:#0b2240;
 }
 .term-meta{
-  margin:1.2mm 0 5mm;
+  margin:1.2mm 0 5mm !important;
   text-align:center;
   font-size:12.8px;
   color:var(--muted);
 }
 
 /* Em modo PDF, respiro pequeno e uniforme */
-.pdf-export .term-title{ margin-top:2.2mm !important; }
-.pdf-export .page-head{ margin-bottom:3mm !important; }
+.pdf-export .term-title{ margin-top:2mm !important; }
+.pdf-export .page-head{ margin-bottom:4mm !important; }
 
 /* ========= Conteúdo ========= */
 .term-section + .term-section{ margin-top:8mm }
@@ -148,18 +171,3 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   html,body{ background:#fff }
   .term-wrap{ width:var(--content-w); margin:0; box-shadow:none !important }
 }
-
-/* ===== Linha única sob as logos (HTML e PDF) ===== */
-.page-head{ 
-  border-bottom:1px solid var(--rule);   /* desenha a linha aqui */
-  padding-bottom: 3.5mm;                 /* espaço antes do título */
-  margin-bottom: 5mm;                    /* espaço depois da linha */
-}
-
-/* Ajuste fino do título e meta para ficarem centralizados entre a linha e a Seção 1 */
-.term-title{ margin-top: 2mm !important; }
-.term-meta{ margin-top: 1.2mm !important; margin-bottom: 5mm !important; }
-
-/* No PDF, um respiro um pouco menor */
-.pdf-export .page-head{ margin-bottom: 4mm !important; }
-.pdf-export .term-title{ margin-top: 2mm !important; }
