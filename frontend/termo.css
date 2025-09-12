@@ -1,4 +1,4 @@
-/* ===================== termo.css ===================== */
+/* termo.css (atualizado) */
 :root{
   --page-w: 210mm;               /* A4 */
   --page-h: 297mm;
@@ -29,7 +29,8 @@ body{
   box-shadow:0 24px 50px rgba(2,22,58,.12), 0 8px 18px rgba(2,22,58,.07);
 }
 
-/* ========= Modo exportação (PDF) – aparência base ========= */
+/* ========= Modo exportação (PDF) ========= */
+.pdf-export .logos-wrap{ display:none !important }     /* opcional: esconder as logos no modo PDF se o backend já as inserir */
 html.pdf-export, body.pdf-export{ background:#fff !important }
 .pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important }
 
@@ -38,11 +39,12 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   position:relative;
   display:grid;
   grid-template-rows:auto;
-  border:0;                             /* nada de borda aqui */
-  padding-bottom:3.5mm;                 /* logos ↔ linha */
-  margin-bottom:5mm;                    /* linha ↔ título (ajuste fino no bloco do fim para PDF) */
+  /* não usar border aqui para evitar linha duplicada */
+  border:0 !important;
+  padding-bottom:3.5mm;          /* espaço antes do título */
+  margin-bottom:5mm;             /* espaço depois da linha */
 }
-/* Desenha a ÚNICA linha sob as logos */
+/* desenha a ÚNICA linha sob as logos */
 .page-head::after{
   content:"";
   position:absolute;
@@ -50,7 +52,8 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   height:1px;
   background:var(--rule);
 }
-/* Garante que nenhum .rule “solto” pinte outra linha */
+
+/* qualquer “rule” solta fica desativada (garantia contra duplicidade) */
 .page-head .rule,
 #pdf-root > .rule,
 .rule{
@@ -65,9 +68,9 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   flex-wrap:wrap; gap:1mm 6mm; width:100%; padding-top:0;
 }
 
-/* Título + meta (padrão tela) */
+/* Título + meta */
 .term-title{
-  margin:2mm 0 0;                      /* linha ↔ título */
+  margin:2mm 0 0 !important;     /* centralizado entre a linha e a Seção 1 */
   place-self:center;
   text-align:center;
   font-weight:800;
@@ -77,18 +80,22 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   color:#0b2240;
 }
 .term-meta{
-  margin:1.2mm 0 5mm;                  /* título ↔ meta ↔ Seção 1 */
+  margin:1.2mm 0 5mm !important;
   text-align:center;
   font-size:12.8px;
   color:var(--muted);
 }
+
+/* Em modo PDF, respiro pequeno e uniforme */
+.pdf-export .term-title{ margin-top:2mm !important; }
+.pdf-export .page-head{ margin-bottom:4mm !important; }
 
 /* ========= Conteúdo ========= */
 .term-section + .term-section{ margin-top:8mm }
 .term-section h2{
   font-size:15px; font-weight:800; color:var(--brand);
   margin-bottom:3mm; letter-spacing:.2px;
-  break-after:avoid-page; page-break-after:avoid;
+  break-after:avoid-page; page-break-after:avoid;   /* título não fica “grudado” no rodapé */
 }
 .term-section h3{
   font-size:13.6px; font-weight:700; color:var(--ink);
@@ -127,10 +134,12 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 [data-k="email_rep_ente"],
 [data-k="email_rep_ug"]{ white-space:nowrap }
 
-/* ========= Regras de quebra – evitar “buracos” ========= */
-.term-section{ break-inside:auto; page-break-inside:auto; }  /* deixa quebrar naturalmente */
-.avoid-break{ break-inside:auto; page-break-inside:auto; }    /* libera seções marcadas anteriormente */
-.keep-together{ break-inside:avoid-page; page-break-inside:avoid; } /* use apenas onde for crítico */
+/* ========= Regras de quebra – para evitar “buracos” ========= */
+/* deixar o conteúdo quebrar naturalmente */
+.term-section{ break-inside:auto; page-break-inside:auto; }
+.avoid-break{ break-inside:auto; page-break-inside:auto; }   /* libera seções marcadas anteriormente */
+/* manter junto só o que realmente precisa */
+.keep-together{ break-inside:avoid-page; page-break-inside:avoid; }
 .break-before{ break-before:page; page-break-before:always; } /* se precisar forçar nova página */
 
 /* ========= Rodapé (Assinaturas) ========= */
@@ -163,21 +172,134 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   .term-wrap{ width:var(--content-w); margin:0; box-shadow:none !important }
 }
 
+/* === Forçar LINHA ÚNICA entre as logos e o título ======================= */
+/* 1) Garante que o header não desenhe linha nenhuma */
+.page-head{ border:0 !important; padding-bottom:0 !important; margin-bottom:8mm !important; }
+.page-head::after{ content:none !important; }
+.page-head .rule, .rule{ display:none !important; height:0 !important; border:0 !important; background:transparent !important; }
+
+/* 2) Desenha UMA linha “pertencente” ao H1 (logo acima dele) */
+.page-head + .term-title{ position:relative; margin-top:0 !important; }
+.page-head + .term-title::before{
+  content:"";
+  position:absolute;
+  left:0; right:0;
+  top:-6mm;                 /* distância visual entre logos e linha */
+  height:1px;
+  background:var(--rule);
+  display:block;
+}
+
+/* 3) Ajuste do espaçamento abaixo do título */
+.term-meta{ margin-top:2mm !important; margin-bottom:5mm !important; }
+
+/* === ZERA QUALQUER LINHA ANTIGA (garantido) ========================== */
+.page-head,
+.page-head::before,
+.page-head::after,
+.term-title::before,
+.term-title::after,
+.page-head .rule,
+#pdf-root > .rule,
+.rule{
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  height:0 !important;
+}
+.page-head .rule,
+#pdf-root > .rule,
+.rule{ display:none !important; }
+.page-head::before,
+.term-title::before,
+.term-title::after{ content:none !important; }
+
+/* === DESENHA UMA ÚNICA LINHA no header =============================== */
+.page-head{ position:relative; padding-bottom:3.5mm !important; margin-bottom:5mm !important; }
+.page-head::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:1px;
+  background:var(--rule);
+}
+
+/* Espaçamento do título e meta para ficar no meio certinho */
+.term-title{ margin-top:2mm !important; }
+.term-meta{  margin-top:1.2mm !important; margin-bottom:5mm !important; }
+
+/* No PDF, um respiro um pouco menor */
+.pdf-export .page-head{ margin-bottom:4mm !important; }
+
+/* ===== PDF: compactar espaço entre logos e o título ===== */
+html.pdf-export .page-head,
+body.pdf-export .page-head{
+  padding-bottom: 1.2mm !important;   /* antes estava ~3.5mm */
+  margin-bottom: 2.4mm !important;    /* antes estava 4–5mm */
+}
+
+html.pdf-export .term-title,
+body.pdf-export .term-title{
+  margin-top: 0.4mm !important;       /* antes estava 2mm */
+}
+
+/* (opcional) dar um respiro menor entre título e meta no PDF */
+html.pdf-export .term-meta,
+body.pdf-export .term-meta{
+  margin-top: 1mm !important;
+  margin-bottom: 4mm !important;
+}
+
+/* ===== PDF: distância linha ↔ título igual ao print ===== */
+html.pdf-export .page-head,
+body.pdf-export .page-head{
+  /* espaço das logos até a linha */
+  padding-bottom: 3mm !important;
+
+  /* espaço da linha até o próximo bloco (H1) */
+  margin-bottom: 2.2mm !important;
+}
+
+html.pdf-export .term-title,
+body.pdf-export .term-title{
+  /* “sobe” o H1 em relação à linha */
+  margin-top: 0.8mm !important;
+}
+
+html.pdf-export .term-meta,
+body.pdf-export .term-meta{
+  /* respiro sob o H1 antes do subtítulo (Ente/UF/UG) */
+  margin-top: 1.2mm !important;
+  margin-bottom: 4.8mm !important;
+}
+
+/* PDF: encurtar o espaço entre a linha do header e o título */
+html.pdf-export .page-head,
+body.pdf-export .page-head{
+  margin-bottom: 0 !important;      /* elimina o colapso de margem */
+  padding-bottom: 3mm !important;   /* distância logos ↔ linha */
+}
+
+html.pdf-export .term-title,
+body.pdf-export .term-title{
+  margin-top: 2.2mm !important;     /* distância linha ↔ título */
+}
+
 /* ===== AJUSTE FINO DE ESPAÇAMENTO (PDF) =====
    Deixe este bloco por ÚLTIMO no arquivo. */
 html.pdf-export .page-head,
 body.pdf-export .page-head{
-  margin-bottom: 0 !important;     /* elimina o gap do header no PDF */
+  margin-bottom: 0 !important;     /* elimina o gap do header */
   padding-bottom: 3mm !important;  /* logos ↔ linha */
 }
 html.pdf-export .term-title,
 body.pdf-export .term-title{
-  margin-top: 2mm !important;      /* linha ↔ título */
+  margin-top: 2mm !important;      /* linha ↔ título (ajuste se quiser 1.8–2.4mm) */
 }
 html.pdf-export .term-meta,
 body.pdf-export .term-meta{
   margin-top: 1.2mm !important;    /* título ↔ meta */
-  margin-bottom: 5mm !important;   /* meta ↔ Seção 1 */
+  margin-bottom: 5mm !important;   /* meta ↔ item 1 */
 }
 
 /* Fallback para quando o gerador de PDF NÃO aplica .pdf-export */
@@ -189,4 +311,3 @@ body.pdf-export .term-meta{
   .term-title{ margin-top: 2mm !important; }
   .term-meta{  margin-top: 1.2mm !important; margin-bottom: 5mm !important; }
 }
-/* =================== fim do termo.css =================== */
