@@ -135,3 +135,15 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   html,body{background:#fff}
   .term-wrap{width:var(--content-w);margin:0;box-shadow:none!important}
 }
+/* --- manter só a linha sob as logos --- */
+#pdf-root > .rule{ display:none !important; }          /* caso exista alguma fora do header */
+.page-head .rule{ display:block !important; }          /* mantém a linha do header */
+
+/* --- reduzir o espaço e centralizar melhor o título --- */
+.page-head{ margin-bottom: 2.5mm !important; }
+.term-title{ margin-top: 1.6mm !important; }
+.term-meta{ margin-top: 1.2mm !important; margin-bottom: 5mm !important; }
+
+/* no PDF, um respiro pequeno e uniforme */
+.pdf-export .term-title{ margin-top: 2.2mm !important; }
+.pdf-export .page-head{ margin-bottom: 3mm !important; }
