@@ -272,3 +272,15 @@ body.pdf-export .term-meta{
   margin-top: 1.2mm !important;
   margin-bottom: 4.8mm !important;
 }
+
+/* PDF: encurtar o espaço entre a linha do header e o título */
+html.pdf-export .page-head,
+body.pdf-export .page-head{
+  margin-bottom: 0 !important;      /* elimina o colapso de margem */
+  padding-bottom: 3mm !important;   /* distância logos ↔ linha */
+}
+
+html.pdf-export .term-title,
+body.pdf-export .term-title{
+  margin-top: 2.2mm !important;     /* distância linha ↔ título */
+}
