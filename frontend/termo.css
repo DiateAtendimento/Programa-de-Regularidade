@@ -22,34 +22,18 @@ body{font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-se
 }
 
 /* ===== Modo exportação (PDF / html2pdf) ===== */
-/* No PDF: esconder só as LOGOS do HTML (título permanece) */
-.pdf-export .logos-wrap{ display:none !important }
-/* fundo branco e container “flat” */
+.pdf-export .logos-wrap{ display:none !important }     /* No PDF, esconde as logos do HTML */
 html.pdf-export, body.pdf-export{ background:#fff !important }
-/* fundo branco e container “flat” no PDF */
-.pdf-export .term-wrap{
-  margin:0 !important;
-  box-shadow:none !important;
-  border-radius:0 !important;
-}
-
+.pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important }
 
 /* ===== Cabeçalho ===== */
-.page-head{
-  display:grid;
-  grid-template-rows: auto;
-  margin-bottom:6mm;
-}
+.page-head{ display:grid; grid-template-rows:auto; margin-bottom:8mm; }
 .term-title{
-  margin: 0;                      /* remove margens que “puxam” o título */
-  place-self: center;             /* centro vertical + horizontal */
-  text-align: center;
-  font-weight: 800;
-  font-size: 16px;
-  letter-spacing: .2px;
-  line-height: 1.28;
-  color: #0b2240;
+  margin:0; place-self:center; text-align:center; font-weight:800;
+  font-size:16px; letter-spacing:.2px; line-height:1.28; color:#0b2240;
 }
+/* linha do cabeçalho */
+.rule{ width:100%; height:2px; background:var(--rule); margin-top:2mm; border-radius:2px }
 
 /* Em modo PDF dar um respiro após o header do PDF */
 .pdf-export .term-title{ margin-top:2mm; }
@@ -60,33 +44,48 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   display:flex; flex-direction:row; align-items:center; justify-content:center;
   flex-wrap:wrap; gap:1mm 6mm; width:100%; padding-top:0;
 }
-.logo-sec, .logo-mps{ flex:0 0 auto }
-.logo-sec{ width:62mm; max-width:100%; height:auto }
-.logo-mps{ width:36mm; max-width:100%; height:auto }
-.logo-rule{ flex:0 0 100%; width:100%; height:2px; background:var(--rule); margin-top:.5mm; border-radius:2px }
+
+/* ===== Meta ===== */
+.term-meta{
+  margin-top:2mm; margin-bottom:8mm; text-align:center;
+  font-size:12.8px; color:var(--muted);
+}
 
 /* ===== Conteúdo ===== */
-.term-section + .term-section{ margin-top:6mm }
+.term-section + .term-section{ margin-top:8mm }
 .term-section h2{
   font-size:15px; font-weight:800; color:var(--brand);
-  margin-bottom:2.2mm; letter-spacing:.2px;
+  margin-bottom:3mm; letter-spacing:.2px;
   break-after:avoid-page; page-break-after:avoid;
+}
+.term-section h3{
+  font-size:13.6px; font-weight:700; color:var(--ink);
+  margin-top:3.5mm; margin-bottom:1.2mm;
 }
 
 .term-section p,
 .term-section li{
-  font-size:13.2px;
-  line-height:1.42;
-  text-align:justify;
-  text-justify:inter-word;
-  hyphens:auto;
-  overflow-wrap:break-word;
-  orphans:2; widows:2;
+  font-size:13.2px; line-height:1.48; text-align:justify; text-justify:inter-word;
+  hyphens:auto; overflow-wrap:break-word; orphans:2; widows:2;
 }
+
+/* Notas e ênfase */
+.note{ font-size:12.6px; color:var(--muted) }
+.small{ font-size:12.2px; color:var(--muted) }
+.strong{ font-weight:700 }
+
+/* Grid de campos */
+.grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.4mm 8mm;
+}
+.field .label{ display:block; font-size:12.2px; color:var(--muted) }
+.field .value{ display:block; font-size:13.4px; margin-top:.6mm }
 
 /* Listas */
 .term-section ul{ list-style:none; margin:2mm 0 0 0; padding-left:0; }
-.term-section li{ margin:1.2mm 0; padding-left:6mm; text-indent:-6mm; }
+.term-section li{ margin:1.6mm 0; padding-left:6mm; text-indent:-6mm; }
 
 /* Valores sem negrito */
 [data-k], #finalidades-iniciais { font-weight:400 }
@@ -98,9 +97,9 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 [data-k="email_rep_ug"]{ white-space:nowrap }
 
 .mt{margin-top:3mm}
-.small{font-size:12px;color:var(--muted)}
 
 /* Blocos “não separar” */
+.avoid-break,
 .keep-together{ break-inside:avoid-page; page-break-inside:avoid }
 .break-before{ break-before:page; page-break-before:always }
 
@@ -111,19 +110,14 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 
 /* ===== Rodapé (Assinaturas) ===== */
 .term-footer{
-  margin-top: 14mm;
-  text-align: center;
-  break-inside: avoid; page-break-inside: avoid;
-  padding-top: 10mm;
+  margin-top: 14mm; text-align: center;
+  break-inside: avoid; page-break-inside: avoid; padding-top: 10mm;
 }
 .footer-force-break{ break-before: page; page-break-before: always; }
-
 .place-date{ margin: 10mm 0 6mm; font-size:13.2px; }
-
 .signature-block{ margin-top: 12mm; }
 .signature-line{
-  width:70%; height:0;
-  border-bottom:1.8px solid var(--brand);
+  width:70%; height:0; border-bottom:1.8px solid var(--brand);
   margin:0 auto 3mm;
 }
 .signature-caption{ font-size:13.2px; color:var(--muted); margin-bottom:0; }
@@ -131,8 +125,6 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 /* ===== Responsivo (preview) ===== */
 @media (max-width:980px){
   .term-wrap{width:100%;border-radius:10px}
-  .logo-sec{width:72mm}
-  .logo-mps{width:42mm}
 }
 @media (max-width:720px){
   .term-title{font-size:18px}

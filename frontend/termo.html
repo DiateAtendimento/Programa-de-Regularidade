@@ -12,15 +12,15 @@
         rel="stylesheet" media="screen">
 
   <!-- Estilos oficiais do termo (usa Rawline no PDF) -->
-  <link rel="stylesheet" href="/termo.css">
+  <link rel="stylesheet" href="./termo.css">
 </head>
 
 <body>
   <div id="pdf-root">
     <header class="page-head">
       <div class="logos-wrap">
-        <img src="/imagens/logo-secretaria-complementar.svg" alt="Secretaria" loading="eager" />
-        <img src="/imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
+        <img src="./imagens/logo-secretaria-complementar.svg" alt="Secretaria" loading="eager" />
+        <img src="./imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
       </div>
       <div class="rule"></div>
     </header>
@@ -34,18 +34,43 @@
       <!-- 1. IDENTIFICAÇÃO -->
       <section class="term-section avoid-break">
         <h2>1. IDENTIFICAÇÃO DO ENTE FEDERADO E DA UNIDADE GESTORA</h2>
+
         <div class="grid">
-          <div class="field"><span class="label">Ente federado</span><span class="value" data-k="ente"></span></div>
-          <div class="field"><span class="label">UF</span><span class="value" data-k="uf"></span></div>
+          <div class="field">
+            <span class="label">Ente federado</span>
+            <span class="value" data-k="ente"></span>
+          </div>
+          <div class="field">
+            <span class="label">UF</span>
+            <span class="value" data-k="uf"></span>
+          </div>
 
-          <div class="field"><span class="label">CNPJ do Ente</span><span class="value" data-k="cnpj_ente"></span></div>
-          <div class="field"><span class="label">E-mail do Ente</span><span class="value" data-k="email_ente"></span></div>
+          <div class="field">
+            <span class="label">CNPJ do Ente</span>
+            <span class="value" data-k="cnpj_ente"></span>
+          </div>
+          <div class="field">
+            <span class="label">E-mail do Ente</span>
+            <span class="value" data-k="email_ente"></span>
+          </div>
 
-          <div class="field"><span class="label">Unidade Gestora (UG)</span><span class="value" data-k="ug"></span></div>
-          <div class="field"><span class="label">CNPJ da UG</span><span class="value" data-k="cnpj_ug"></span></div>
+          <div class="field">
+            <span class="label">Unidade Gestora (UG)</span>
+            <span class="value" data-k="ug"></span>
+          </div>
+          <div class="field">
+            <span class="label">CNPJ da UG</span>
+            <span class="value" data-k="cnpj_ug"></span>
+          </div>
 
-          <div class="field"><span class="label">E-mail da UG</span><span class="value" data-k="email_ug"></span></div>
-          <div class="field"><span class="label">Esfera sugerida</span><span class="value" data-k="esfera"></span></div>
+          <div class="field">
+            <span class="label">E-mail da UG</span>
+            <span class="value" data-k="email_ug"></span>
+          </div>
+          <div class="field">
+            <span class="label">Esfera sugerida</span>
+            <span class="value" data-k="esfera"></span>
+          </div>
         </div>
       </section>
 
@@ -69,6 +94,7 @@
           <div class="field"><span class="label">E-mail</span><span class="value" data-k="email_rep_ug"></span></div>
         </div>
       </section>
+
       <!-- 3. INFORMAÇÕES DO ÚLTIMO CRP -->
       <section class="term-section avoid-break">
         <h2>3. INFORMAÇÕES DO ÚLTIMO CRP</h2>
@@ -84,6 +110,44 @@
         <p class="note">Listagem dos critérios informados no formulário (campo <code>CRITERIOS_IRREGULARES</code>).</p>
         <ul id="criterios-list"><!-- preenchido pelo front com window.__TERMO_DATA__.CRITERIOS_IRREGULARES --></ul>
       </section>
+      <!-- 4. FINALIDADE(S) INICIAL(IS) DA ADESÃO AO PROGRAMA -->
+      <section class="term-section avoid-break">
+        <h2>4. FINALIDADE(S) INICIAL(IS) DA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
+        <p id="finalidades-iniciais" class="mt small"><!-- preenchido pelo JS com A/B --></p>
+
+        <h3>4.1 Celebração de termos de parcelamento de débitos</h3>
+        <ul id="opt-4-1">
+          <li data-code="4.1.1">4.1.1 em até sessenta parcelas, com base nas regras previstas nos arts. 14 e 15 do ADCT, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025.</li>
+          <li data-code="4.1.2">4.1.2 em até trezentas parcelas, conforme legislação específica aplicável.</li>
+        </ul>
+
+        <h3>4.2 Regularização de pendências para a emissão administrativa e regular do CRP</h3>
+        <ul id="opt-4-2">
+          <li data-code="4.2.1">4.2.1 para entes sem decisão judicial.</li>
+          <li data-code="4.2.2">4.2.2 para entes com decisão judicial, tendo em vista o disposto no acórdão do STF no RE nº 1.007.271 (Tema 968).</li>
+        </ul>
+
+        <h3>4.3 Equacionamento de déficit atuarial do RPPS</h3>
+        <ul id="opt-4-3">
+          <li data-code="4.3.1">4.3.1 implementação de medidas visando ao equilíbrio financeiro e atuarial.</li>
+          <li data-code="4.3.2">4.3.2 prazos adicionais para comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à sua adequação orçamentária, financeira e fiscal.</li>
+          <li data-code="4.3.3">4.3.3 apresentação de alternativa de plano de equacionamento quando cabível.</li>
+        </ul>
+
+        <h3>4.4 Organização do RPPS conforme os critérios estruturantes estabelecidos nas normas gerais</h3>
+        <ul id="opt-4-4">
+          <li data-code="4.4.1">4.4.1 adequação da Unidade Gestora Única do RPPS ao disposto no art. 40, § 20, da Constituição Federal.</li>
+          <li data-code="4.4.2">4.4.2 outros critérios estruturantes aplicáveis.</li>
+        </ul>
+
+        <h3 class="mt">4.5 Manutenção da conformidade do RPPS às normas gerais</h3>
+        <p class="small">
+          Certificação institucional no Pró-Gestão RPPS (nível II/III/IV, conforme porte ISP-RPPS).
+          <strong>Obs.:</strong> Acesso às fases específicas/Manutenção conforme requisitos do Anexo XVIII da Portaria MTP nº 1.467/2022,
+          certificação Pró-Gestão RPPS/ISP-RPPS e medidas dos arts. 67 a 69. Nesta fase, caso necessário, poderão ser
+          apresentados planos de ação para CRP emergenciais.
+        </p>
+      </section>
 
       <!-- 5. COMPROMISSOS -->
       <section class="term-section">
@@ -98,6 +162,7 @@
           <li data-code="5.7">5.7 Promover o equilíbrio financeiro e atuarial do RPPS e a sustentabilidade do seu plano de custeio e de benefícios.</li>
         </ul>
       </section>
+
       <!-- 6. PROVIDÊNCIAS -->
       <section class="term-section">
         <h2>6. PROVIDÊNCIAS NECESSÁRIAS PARA ADESÃO AO PROGRAMA</h2>
@@ -106,18 +171,24 @@
           <li data-code="6.2">6.2 Declaração de inexistência de débitos (ou já regularizados) até a adesão.</li>
         </ul>
       </section>
-
       <!-- 7. CONDIÇÕES -->
       <section class="term-section">
         <h2>7. CONDIÇÕES PARA VIGÊNCIA DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
-        <ul>
-          <li>I – atendimento aos requisitos do art. 3º do Anexo XVIII;</li>
-          <li>II – cumprimento dos planos de ação do art. 4º do Anexo XVIII;</li>
-          <li>III – observância de prazos/condições do art. 6º do Anexo XVII (para parcelamentos – EC xx/2025); e/ou</li>
-          <li>IV – não ingresso com ação judicial para obter CRP ou para descumprimento do Programa.</li>
+
+        <!-- Apenas os itens marcados permanecerão (filtrados via JS) -->
+        <ul id="opt-7">
+          <li data-code="7.1">7.1 O atendimento aos requisitos do art. 3º do Anexo XVIII.</li>
+          <li data-code="7.2">7.2 O cumprimento dos planos de ação do art. 4º do Anexo XVIII.</li>
+          <li data-code="7.3">7.3 O cumprimento dos prazos e das condições previstos no art. 6º do Anexo XVII (para parcelamentos – EC xx/2025).</li>
+          <li data-code="7.4">7.4 O não ingresso com ação judicial para obtenção de CRP ou para descumprimento do Programa.</li>
         </ul>
-        <p class="mt"><strong>Declarações marcadas no formulário</strong></p>
-        <ul id="condicoes-list"></ul>
+
+        <!-- Declaração final fixa, como no exemplo -->
+        <p id="decl-ciencia" class="mt strong small">
+          Declaro ter ciência que a vigência do Programa de Regularidade Previdenciária e a emissão de
+          Certificados de Regularidade Previdenciária emergenciais, têm como condições, conforme
+          disposto no art. 6º do Anexo XVIII da Portaria MTP nº 1.467/2022.
+        </p>
       </section>
 
       <!-- Assinaturas -->
@@ -144,6 +215,6 @@
   </div>
 
   <!-- O front (termo.js) lê window.__TERMO_DATA__ OU a querystring e emite TERMO_PRINT_READY -->
-  <script src="/termo.js" defer></script>
+  <script src="./termo.js" defer></script>
 </body>
 </html>

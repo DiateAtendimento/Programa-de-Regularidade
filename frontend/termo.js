@@ -27,22 +27,35 @@
     'Promover o equilíbrio financeiro e atuarial do RPPS e a sustentabilidade do seu plano de custeio e de benefícios': '5.7'
   };
 
+  // Novidade: extrai os códigos 7.x a partir do texto enviado
+  function extractCond7Codes(raw) {
+    const t = String(raw || '');
+    const seen = new Set();
+
+    if (/\b7\.?1\b|art\.\s*3\b|requisitos.*anexo\s*xviii/i.test(t)) seen.add('7.1');
+    if (/\b7\.?2\b|planos?\s*de\s*ação|art\.\s*4\b/i.test(t))        seen.add('7.2');
+    if (/\b7\.?3\b|art\.\s*6\b|prazos|condiç|parcelament/i.test(t))  seen.add('7.3');
+    if (/\b7\.?4\b|n[aã]o\s+ingresso\s+com\s+a[cç][aã]o|a[cç][aã]o\s+judicial/i.test(t)) seen.add('7.4');
+
+    // fallback: se o texto contiver "7.1; 7.2" etc.
+    ['7.1','7.2','7.3','7.4'].forEach(code => { if (new RegExp(code.replace('.','\\.')).test(t)) seen.add(code); });
+
+    return ['7.1','7.2','7.3','7.4'].filter(c => seen.has(c));
+  }
+
   function extractCompCodesFromPayload(p){
     const seen = new Set();
     const agg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
-    // 1) Se o texto já tiver "5.x"
     ['5.1','5.2','5.3','5.4','5.5','5.6','5.7'].forEach(code => {
       const re = new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`);
       if (re.test(agg)) seen.add(code);
     });
-    // 2) Tenta mapear pelos rótulos selecionados
     agg.split(';').map(s=>s.trim()).forEach(label=>{
       const code = COMP_VALUE_TO_CODE[label];
       if (code) seen.add(code);
     });
     return ['5.1','5.2','5.3','5.4','5.5','5.6','5.7'].filter(c => seen.has(c));
   }
-
   // ========= Render principal (usa somente 'payload') =========
   function renderizarTermo(payload){
     // 1) Campos diretos
@@ -78,18 +91,15 @@
         else if (esfera.includes('estadual') || esfera.includes('distrital')) li.textContent = '1.1.2 Estadual/Distrital';
         else li.innerHTML = notInformed;
       }
-
-      // legenda da assinatura
       const sig = document.getElementById('sig-cap-ente');
       if (sig) {
-        if (esfera.includes('estadual') || esfera.includes('distrital')) {
-          sig.innerHTML = 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>';
-        } else {
-          sig.innerHTML = 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
-        }
+        sig.innerHTML = (esfera.includes('estadual') || esfera.includes('distrital'))
+          ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
+          : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
       }
     })();
-    // 3) 3.3 Critérios irregulares (padronizado para CRITERIOS_IRREGULARES, com fallback)
+
+    // 3) 3.3 Critérios irregulares
     (function renderCriterios(){
       const ul = document.getElementById('criterios-list'); if (!ul) return;
       ul.innerHTML = '';
@@ -102,7 +112,7 @@
       }
     })();
 
-    // 4) Finalidades (texto A/B)
+    // 4) Finalidades (A/B)
     (function renderFinalidades(){
       const a = String(payload.CELEBRACAO_TERMO_PARCELA_DEBITOS || '').trim();
       const b = String(payload.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '').trim();
@@ -113,7 +123,7 @@
       if (el) el.innerHTML = labels.length ? labels.join(' e/ou ') : 'Não informado.';
     })();
 
-    // 5) Seleções 4.x / 6.x / 5.x
+    // helper: filtra lista por códigos mantidos
     function filterBy(listId, codes){
       const list = document.getElementById(listId);
       if (!list) return;
@@ -126,7 +136,7 @@
       items.forEach(li => { if (!codes.includes(li.getAttribute('data-code'))) li.remove(); });
     }
 
-    // 4.1
+    // 4.1 / 4.2 / 4.3 / 4.4
     (function(){
       const raw = String(payload.CELEBRACAO_TERMO_PARCELA_DEBITOS || '');
       const codes = [];
@@ -134,8 +144,6 @@
       if (/4\.1\.2|trezent|300\b/i.test(raw)) codes.push('4.1.2');
       filterBy('opt-4-1', codes);
     })();
-
-    // 4.2
     (function(){
       const raw = String(payload.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '');
       const codes = [];
@@ -143,8 +151,6 @@
       if (/4\.2\.2|com\s+decis/i.test(raw)) codes.push('4.2.2');
       filterBy('opt-4-2', codes);
     })();
-
-    // 4.3
     (function(){
       const raw = String(payload.DEFICIT_ATUARIAL || '');
       const codes = [];
@@ -153,8 +159,6 @@
       if (/4\.3\.3|altern/i.test(raw))     codes.push('4.3.3');
       filterBy('opt-4-3', codes);
     })();
-
-    // 4.4
     (function(){
       const raw = String(payload.CRITERIOS_ESTRUT_ESTABELECIDOS || '');
       const codes = [];
@@ -175,29 +179,13 @@
     // 5.x (compromissos)
     (function(){
       const codes = extractCompCodesFromPayload(payload);
-      const list = document.getElementById('opt-5');
-      if (!list) return;
-      const items = [...list.querySelectorAll('li')];
-      if (!codes.length){
-        items.forEach(li => li.remove());
-        const li = document.createElement('li'); li.innerHTML = notInformed; list.appendChild(li);
-        return;
-      }
-      items.forEach(li => { if (!codes.includes(li.getAttribute('data-code'))) li.remove(); });
+      filterBy('opt-5', codes);
     })();
-
-    // 7 – Condições marcadas (texto livre)
+    // 7 – Condições (apenas marcadas)
     (function(){
-      const ul = document.getElementById('condicoes-list');
-      if (!ul) return;
-      ul.innerHTML = '';
       const raw = String(payload.CONDICAO_VIGENCIA || '');
-      const parts = raw.split(';').map(s => s.trim()).filter(Boolean);
-      if (!parts.length){
-        const li = document.createElement('li'); li.innerHTML = notInformed; ul.appendChild(li);
-      } else {
-        parts.forEach(txt => { const li = document.createElement('li'); li.textContent = txt; ul.appendChild(li); });
-      }
+      const codes = extractCond7Codes(raw);
+      filterBy('opt-7', codes);
     })();
 
     // Re-hidrata spans dentro das assinaturas que dependem de 'ente/uf'
@@ -206,11 +194,8 @@
 
     // 🔔 Sinaliza ao backend (Puppeteer) que terminou de renderizar
     try {
-      // evita disparos duplicados se a função for chamada mais de uma vez
       if (!window.__TERMO_READY_FIRED__) {
         window.__TERMO_READY_FIRED__ = true;
-
-        // aguarda fontes (se suportado) e aplica na próxima frame
         const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
         fontsReady.finally(() => {
           requestAnimationFrame(() => {
@@ -219,30 +204,27 @@
         });
       }
     } catch (_) {}
-
   }
-  // ========= Fluxo 1: Preview (janela aberta pelo frontend)
+
+  // ========= Fluxo 1: Preview (postMessage) =========
   window.addEventListener('message', (ev) => {
-    try {
-      if (ev.origin !== window.location.origin) return;
-    } catch (_) { /* ignore */ }
+    try { if (ev.origin !== window.location.origin) return; } catch (_) {}
     if (!ev.data || ev.data.type !== 'TERMO_PREVIEW_DATA') return;
     const payload = ev.data.payload || {};
     renderizarTermo(payload);
   }, false);
 
-  // ========= Fluxo 2: PDF (Puppeteer) — backend injeta e dispara evento
+  // ========= Fluxo 2: PDF (Puppeteer) =========
   document.addEventListener('TERMO_DATA_READY', () => {
     renderizarTermo(window.__TERMO_DATA__ || {});
   });
 
-  // ========= Fallback opcional: querystring antiga OU __TERMO_DATA__ já presente
+  // ========= Fallback: querystring antiga =========
   document.addEventListener('DOMContentLoaded', () => {
     if (window.__TERMO_DATA__) {
       renderizarTermo(window.__TERMO_DATA__ || {});
       return;
     }
-    // compat com versões antigas (se alguém abrir termo.html?uf=...&ente=...)
     const p = new URLSearchParams(location.search);
     if (p.has('uf') || p.has('ente')) {
       const payload = {
