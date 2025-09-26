@@ -147,6 +147,9 @@ app.use('/api/upsert-cnpj', rlWrite);
 app.use('/api/upsert-rep', rlWrite);
 app.use('/api/gerar-termo', rlWrite);
 app.use('/api/termo-pdf', rlPdf);
+app.use('/api/gescon/termo-enc', rlCommon);
+app.use('/api/termos-registrados', rlCommon);
+
 
 // Política de API key: exige em produção ou se REQUIRE_API_KEY=1
 const REQUIRE_API_KEY = (process.env.REQUIRE_API_KEY ?? (process.env.NODE_ENV === 'production' ? '1' : '0')) === '1';
@@ -916,6 +919,232 @@ app.get('/api/rep-by-cpf', async (req,res)=>{
   }
 });
 
+/** POST /api/gescon/termo-enc  { cnpj } */
+app.post('/api/gescon/termo-enc', async (req, res) => {
+  try {
+    const body = validateOr400(res, schemaGesconTermoEnc, req.body || {});
+    if (!body) return;
+
+    const cnpj = cnpj14(body.cnpj);
+    await authSheets();
+    const s = await getSheetStrict('TERMO_ENC_GESCON');
+
+    await s.loadHeaderRow();
+    const headers = s.headerValues || [];
+    const san = (s) => (s ?? '').toString().trim().toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+      .replace(/[^\p{L}\p{N}]+/gu,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+
+    const idxOf = name => headers.findIndex(h => san(h) === san(name));
+    const col = {
+      cnpj_ente: idxOf('CNPJ_ENTE'),
+      uf:        idxOf('UF'),
+      ente:      idxOf('ENTE'),
+      n_gescon:  idxOf('N_GESCON'),
+      data_enc:  idxOf('DATA_ENC_VIA_GESCON'),
+    };
+
+    if (col.cnpj_ente < 0) {
+      return res.status(500).json({ error: 'Aba TERMO_ENC_GESCON sem coluna CNPJ_ENTE.' });
+    }
+
+    const endRow = s.rowCount || 2000;
+    await safeLoadCells(s, {
+      startRowIndex: 1, startColumnIndex: col.cnpj_ente,
+      endRowIndex: endRow, endColumnIndex: col.cnpj_ente + 1
+    }, 'GESCON:scanCNPJ');
+
+    let rowHit = -1;
+    for (let r = 1; r < endRow; r++) {
+      const v = cnpj14(s.getCell(r, col.cnpj_ente)?.value || '');
+      if (v && v === cnpj) { rowHit = r; break; }
+    }
+    if (rowHit < 0) {
+      return res.json({}); // front interpreta como “não encontrado”
+    }
+
+    const endCol = headers.length || s.columnCount || 26;
+    await safeLoadCells(s, {
+      startRowIndex: rowHit, startColumnIndex: 0,
+      endRowIndex: rowHit + 1, endColumnIndex: endCol
+    }, 'GESCON:readRow');
+
+    const getCell = (c) => (c >= 0 ? (s.getCell(rowHit, c)?.value ?? '') : '');
+    const payload = {
+      cnpj: cnpj,
+      uf: (getCell(col.uf) ?? '').toString().trim(),
+      ente: (getCell(col.ente) ?? '').toString().trim(),
+      n_gescon: (getCell(col.n_gescon) ?? '').toString().trim(),
+      data_enc_via_gescon: (getCell(col.data_enc) ?? '').toString().trim(),
+    };
+
+    // se faltar algum essencial, retorna vazio
+    if (!payload.n_gescon || !payload.uf || !payload.ente || !payload.data_enc_via_gescon) {
+      return res.json({});
+    }
+
+    return res.json(payload);
+  } catch (e) {
+    console.error('❌ /api/gescon/termo-enc:', e);
+    const msg = String(e?.message || '').toLowerCase();
+    if (msg.includes('timeout:') || msg.includes('etimedout')) {
+      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
+    }
+    return res.status(500).json({ error: 'Falha ao consultar encaminhamento no Gescon.' });
+  }
+});
+
+
+/** POST /api/termos-registrados  { cnpj } */
+app.post('/api/termos-registrados', async (req, res) => {
+  try {
+    const body = validateOr400(res, schemaTermosRegistradosByCnpj, req.body || {});
+    if (!body) return;
+    const cnpj = cnpj14(body.cnpj);
+
+    await authSheets();
+
+    const sBase = await getSheetStrict('CNPJ_ENTE_UG');
+    const sTerm = await getSheetStrict('Termos_registrados');
+    const sCrp  = await getSheetStrict('CRP');
+
+    // 1) Base CNPJ_ENTE_UG
+    await sBase.loadHeaderRow();
+    const headersB = sBase.headerValues || [];
+    const san = (s) => (s ?? '').toString().trim().toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+      .replace(/[^\p{L}\p{N}]+/gu,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+    const idxB = {
+      UF: headersB.findIndex(h => san(h)==='uf'),
+      ENTE: headersB.findIndex(h => san(h)==='ente'),
+      UG: headersB.findIndex(h => san(h)==='ug'),
+      CNPJ_ENTE: headersB.findIndex(h => san(h)==='cnpj_ente'),
+      CNPJ_UG: headersB.findIndex(h => san(h)==='cnpj_ug'),
+      EMAIL_ENTE: headersB.findIndex(h => san(h)==='email_ente'),
+      EMAIL_UG: headersB.findIndex(h => san(h)==='email_ug'),
+    };
+
+    const endRowB = sBase.rowCount || 2000;
+    let baseRow = -1;
+
+    if (idxB.CNPJ_ENTE >= 0) {
+      await safeLoadCells(sBase, {
+        startRowIndex: 1, startColumnIndex: idxB.CNPJ_ENTE,
+        endRowIndex: endRowB, endColumnIndex: idxB.CNPJ_ENTE + 1
+      }, 'TR:scanCNPJ_ENTE');
+      for (let r = 1; r < endRowB; r++) {
+        const v = cnpj14(sBase.getCell(r, idxB.CNPJ_ENTE)?.value || '');
+        if (v && v === cnpj) { baseRow = r; break; }
+      }
+    }
+    if (baseRow < 0 && idxB.CNPJ_UG >= 0) {
+      await safeLoadCells(sBase, {
+        startRowIndex: 1, startColumnIndex: idxB.CNPJ_UG,
+        endRowIndex: endRowB, endColumnIndex: idxB.CNPJ_UG + 1
+      }, 'TR:scanCNPJ_UG');
+      for (let r = 1; r < endRowB; r++) {
+        const v = cnpj14(sBase.getCell(r, idxB.CNPJ_UG)?.value || '');
+        if (v && v === cnpj) { baseRow = r; break; }
+      }
+    }
+
+    let entePayload = { uf:'', nome:'', cnpj:'', ug:'', cnpj_ug:'', email:'', email_ug:'' };
+
+    if (baseRow >= 0) {
+      const endColB = headersB.length || sBase.columnCount || 26;
+      await safeLoadCells(sBase, {
+        startRowIndex: baseRow, startColumnIndex: 0,
+        endRowIndex: baseRow + 1, endColumnIndex: endColB
+      }, 'TR:readBaseRow');
+
+      const getB = (c) => (c >= 0 ? (sBase.getCell(baseRow, c)?.value ?? '') : '');
+      entePayload = {
+        uf:        (getB(idxB.UF) ?? '').toString().trim(),
+        nome:      (getB(idxB.ENTE) ?? '').toString().trim(),
+        cnpj:      cnpj14(getB(idxB.CNPJ_ENTE)) || cnpj,
+        ug:        (getB(idxB.UG) ?? '').toString().trim(),
+        cnpj_ug:   cnpj14(getB(idxB.CNPJ_UG)),
+        email:     (getB(idxB.EMAIL_ENTE) ?? '').toString().trim(),
+        email_ug:  (getB(idxB.EMAIL_UG) ?? '').toString().trim()
+      };
+    }
+
+    // 2) Último termo em Termos_registrados
+    await sTerm.loadHeaderRow();
+    const rowsT = await safeGetRows(sTerm, 'Termos_registrados:getRows');
+    const matches = rowsT.filter(r => {
+      const ce = cnpj14(getVal(r,'CNPJ_ENTE') || '');
+      const cu = cnpj14(getVal(r,'CNPJ_UG') || '');
+      return (ce && ce === cnpj) || (cu && cu === cnpj);
+    });
+
+    const last = matches[matches.length - 1] || {};
+
+    const responsaveisPayload = {
+      ente: {
+        nome:  (getVal(last,'NOME_REP_ENTE') || '').toString().trim(),
+        cpf:   digits(getVal(last,'CPF_REP_ENTE')),
+        cargo: (getVal(last,'CARGO_REP_ENTE') || '').toString().trim(),
+        email: (getVal(last,'EMAIL_REP_ENTE') || '').toString().trim(),
+        telefone: (getVal(last,'TEL_REP_ENTE') || '').toString().trim(),
+      },
+      ug: {
+        nome:  (getVal(last,'NOME_REP_UG') || '').toString().trim(),
+        cpf:   digits(getVal(last,'CPF_REP_UG')),
+        cargo: (getVal(last,'CARGO_REP_UG') || '').toString().trim(),
+        email: (getVal(last,'EMAIL_REP_UG') || '').toString().trim(),
+        telefone: (getVal(last,'TEL_REP_UG') || '').toString().trim(),
+      }
+    };
+
+    const criteriosStr = (getVal(last,'CRITERIOS_IRREGULARES') || '').toString().trim();
+    const criteriosArr = criteriosStr ? criteriosStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+    // 3) CRP (rápido)
+    const crpFast = await findCRPByCnpjFast(sCrp, cnpj) || {};
+    const tipo = (crpFast.DECISAO_JUDICIAL || '').toString().trim();
+    const crpPayload = {
+      data_venc: crpFast.DATA_VALIDADE_ISO || '',
+      tipo: /jud/i.test(tipo) ? 'Judicial' : (tipo ? 'Administrativa' : '')
+    };
+
+    // Completa ente com dados do último termo se base estiver vazia
+    if (!entePayload.uf && last) {
+      entePayload.uf = (getVal(last,'UF') || '').toString().trim();
+      entePayload.nome = (getVal(last,'ENTE') || '').toString().trim();
+      entePayload.cnpj = cnpj14(getVal(last,'CNPJ_ENTE') || cnpj);
+      entePayload.ug = (getVal(last,'UG') || '').toString().trim();
+      entePayload.cnpj_ug = cnpj14(getVal(last,'CNPJ_UG') || '');
+      entePayload.email = (getVal(last,'EMAIL_ENTE') || '').toString().trim();
+      entePayload.email_ug = (getVal(last,'EMAIL_UG') || '').toString().trim();
+    }
+
+    return res.json({
+      ente: entePayload,
+      responsaveis: responsaveisPayload,
+      crp: { ...crpPayload, irregulares: criteriosArr }
+    });
+  } catch (e) {
+    console.error('❌ /api/termos-registrados:', e);
+    const msg = String(e?.message || '').toLowerCase();
+    if (msg.includes('timeout:') || msg.includes('etimedout')) {
+      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
+    }
+    return res.status(500).json({ error: 'Falha ao montar dados dos Termos_registrados.' });
+  }
+});
+
+
+/* ===== Joi Schemas (novos) ===== */
+const schemaGesconTermoEnc = Joi.object({
+  cnpj: Joi.string().pattern(/^\D*\d{14}\D*$/).required()
+});
+
+const schemaTermosRegistradosByCnpj = Joi.object({
+  cnpj: Joi.string().pattern(/^\D*\d{14}\D*$/).required()
+});
+
+
 /* ===== Joi Schemas ===== */
 const schemaUpsertCnpj = Joi.object({
   UF: Joi.string().trim().min(1).required(),
@@ -1245,7 +1474,7 @@ async function logAlteracoesInline(p, snapshotRaw = {}) {
     UF: (p.UF || '').trim(),
     ENTE: (p.ENTE || '').trim(),
     'CAMPOS ALTERADOS': finalChanged.join(', '),
-    'QTD_CAMPOS ALTERADOS': finalChanged.length,
+    'QTD_CAMPOS_ALTERADOS': finalChanged.length,
     MES: t.MES, DATA: t.DATA, HORA: t.HORA
   }), 'Reg_alteracao:add');
 

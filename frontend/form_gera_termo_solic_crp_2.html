@@ -1,159 +1,677 @@
+<!-- form_gera_termo_solic_crp_2.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Página em construção — Solicitação de CRP</title>
+  <title>Formulário – Solicitação de CRP Emergencial (Programa de Regularidade RPPS)</title>
 
-  <!-- tipografia do projeto -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.cdnfonts.com/css/rawline" rel="stylesheet">
 
-  <style>
-    :root{
-      --brand:#1e3a8a;      /* 700 */
-      --brand-600:#2563eb;  /* 600 */
-      --fg:#111827;
-      --card:#ffffff;
-      --divider:#e5e7eb;
-      --shadow:0 10px 28px rgba(0,0,0,.10);
-    }
-    *,*::before,*::after{ box-sizing:border-box; }
-    html,body{
-      margin:0; padding:0; width:100%; min-height:100%;
-      overflow-x:hidden; -webkit-text-size-adjust:100%;
-      color:var(--fg);
-      font-family:'Rawline','Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  <!-- Favicon principal em SVG -->
+  <link rel="icon" href="imagens/favicon.svg" type="image/svg+xml" sizes="any">
+  <!-- Fallbacks -->
+  <link rel="icon" href="imagens/favicon.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="imagens/favicon.png" sizes="16x16" type="image/png">
 
-      /* mesmo fundo do projeto */
-      background-image:
-        linear-gradient(0deg, rgba(0,0,0,.18), rgba(0,0,0,.18)),
-        linear-gradient(90deg, rgba(2,22,58,.35) 0%, rgba(2,22,58,.15) 40%, rgba(2,22,58,0) 60%),
-        url('imagens/bg-home.svg');
-      background-position:center center, center center, center center;
-      background-repeat:no-repeat, no-repeat, no-repeat;
-      background-size:cover, cover, cover;
-      background-attachment:fixed, fixed, fixed;
-      background-color:#0b2240; /* fallback */
-    }
-    @media (max-width: 991.98px){
-      html,body{ background-attachment:scroll, scroll, scroll; }
-    }
-
-    /* layout: header fixo no topo e conteúdo centralizado */
-    .shell{ min-height:100dvh; display:flex; flex-direction:column; }
-    .mps-header{
-      text-align:center;
-      padding-top:1.25rem;   /* ~20px */
-      padding-bottom:.5rem;  /* ~8px */
-    }
-    .logo-mps-top{
-      height:56px; width:auto; display:block; margin:0 auto;
-    }
-
-    .page{
-      flex:1; /* ocupa o restante abaixo do header */
-      display:grid; place-items:center;
-      padding: max(16px, env(safe-area-inset-top))
-               max(16px, env(safe-area-inset-right))
-               max(24px, env(safe-area-inset-bottom))
-               max(16px, env(safe-area-inset-left));
-    }
-    .notice{
-      width:min(720px, 92vw);
-      background:rgba(255,255,255,.92);
-      border-radius:16px;
-      box-shadow:var(--shadow);
-      border:1px solid var(--divider);
-      padding: clamp(16px, 4vw, 28px);
-      text-align:center;
-      backdrop-filter: saturate(1.15) blur(2px);
-    }
-    h1{
-      margin:0 0 .25rem 0;
-      font-weight:800;
-      font-size: clamp(1.2rem, 2.2vw + .8rem, 1.8rem);
-      color:#0b2240;
-      letter-spacing:.2px;
-    }
-    .sub{
-      margin:0 auto clamp(14px, 2.5vw, 18px);
-      max-width:56ch;
-      color:#1f2937;
-      opacity:.95;
-      font-weight:600;
-    }
-    #lottieBuild{
-      width: clamp(180px, 28vw, 280px);
-      height: clamp(180px, 28vw, 280px);
-      margin: 0 auto clamp(12px, 2.2vw, 18px);
-    }
-    .btn{
-      appearance:none; border:0; cursor:pointer;
-      display:inline-flex; align-items:center; justify-content:center;
-      gap:.5rem; text-decoration:none; user-select:none;
-      font-weight:600;
-      padding:.9rem 1.1rem;
-      border-radius:999px;
-      transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
-    }
-    .btn-primary{
-      color:#fff; background:var(--brand);
-      box-shadow:0 10px 24px rgba(0,0,0,.12);
-    }
-    .btn-primary:hover{ background:var(--brand-600); transform:translateY(-1px); }
-    .btns{ display:flex; justify-content:center; gap:.5rem; flex-wrap:wrap; }
-    .chev{
-      width:1em; height:1em; display:inline-block;
-      border-inline-start:2px solid currentColor;
-      border-block-start:2px solid currentColor;
-      transform: rotate(-45deg);
-      margin-right:.1rem;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="shell">
-    <!-- LOGO NO TOPO (fora do card) -->
-    <header class="mps-header">
-      <img class="logo-mps-top" src="imagens/logo-mps.svg" alt="Ministério da Previdência Social">
+  <!-- BG decorativo -->
+  <div class="app-bg"></div>
+
+  <div class="container-xl py-4 position-relative">
+    <header class="mb-4 text-center">
+      <div class="brand mb-2">
+        <img src="imagens/logo-mps.svg" alt="MPS" height="56">
+      </div>
+      <h1 class="h3 fw-800 mb-2">
+        FORMULÁRIO PARA GERAÇÃO DO TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL – PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA
+      </h1>
     </header>
 
-    <main class="page">
-      <section class="notice" aria-labelledby="title">
-        <div id="lottieBuild" aria-hidden="true"></div>
+    <!-- Stepper -->
+    <div id="stepper" class="app-stepper mb-3">
+      <div class="step active">1</div><div class="divider"></div>
+      <div class="step">2</div><div class="divider"></div>
+      <div class="step">3</div><div class="divider"></div>
+      <div class="step">4</div><div class="divider"></div>
+      <div class="step">5</div><div class="divider"></div>
+      <div class="step">6</div>
+    </div>
 
-        <h1 id="title">Página em construção</h1>
-        <p class="sub">Estamos preparando esta funcionalidade. Em breve ela estará disponível para uso.</p>
+    <div class="card app-card glass">
+      <div class="card-body">
+        <form id="solicCrpForm" novalidate>
+          <!-- ETAPA 0: Pesquisa (CNPJ + gate TERMO_ENC_GESCON) -->
+          <section class="app-section" data-step="0">
+            <div class="section-head">
+              <h2 class="section-title">Pesquisa inicial</h2>
+              <p class="small text-muted mb-0">Informe o CNPJ do ente. Prosseguiremos apenas se existir registro na aba <em>TERMO_ENC_GESCON</em> com as colunas obrigatórias preenchidas.</p>
+            </div>
 
-        <div class="btns">
-          <a class="btn btn-primary" href="index.html"><span class="chev"></span>Voltar à página inicial</a>
-        </div>
+            <div class="row g-2 align-items-end" id="pesquisaRow">
+              <div class="col-12 col-md-6 col-lg-5">
+                <label for="CNPJ_ENTE_PESQ" class="form-label">CNPJ do Ente</label>
+                <input type="text" class="form-control" id="CNPJ_ENTE_PESQ" placeholder="00.000.000/0000-00" />
+              </div>
 
-        <noscript>
-          <p class="sub" style="margin-top:12px">Ative o JavaScript para visualizar a animação.</p>
-        </noscript>
-      </section>
-    </main>
+              <div class="col-auto">
+                <label class="d-none d-md-block">&nbsp;</label>
+                <button type="button" id="btnPesquisar" class="btn btn-primary px-4">Pesquisar</button>
+              </div>
+
+              <!-- SLOT para o mesmo #btnNext (somente na etapa 0) -->
+              <div class="col-auto" id="slotNextStep0">
+                <label class="d-none d-md-block">&nbsp;</label>
+                <!-- o botão #btnNext é movido via JS para cá quando step===0 -->
+              </div>
+            </div>
+
+            <div class="alert alert-info mt-3 d-none" id="gesconInfoBox">
+              <div class="small">Registro encontrado no Gescon-RPPS:</div>
+              <ul class="mb-0 small">
+                <li><strong>Nº da consulta (Gescon):</strong> <span id="N_GESCON"></span></li>
+                <li><strong>Data do encaminhamento:</strong> <span id="DATA_ENC_VIA_GESCON"></span></li>
+                <li><strong>UF:</strong> <span id="UF_GESCON"></span></li>
+                <li><strong>Ente:</strong> <span id="ENTE_GESCON"></span></li>
+              </ul>
+            </div>
+          </section>
+
+          <!-- ETAPA 1: Identificação do ente -->
+          <section class="app-section" data-step="1">
+            <div class="section-head">
+              <h2 class="section-title">1. Identificação do ente federativo</h2>
+              <p class="small text-muted mb-1">Os dados abaixo serão carregados da aba <em>Termos_registrados</em>. Você poderá ajustar se necessário.</p>
+              <p class="small text-muted mb-0"><strong>Data do encaminhamento (Gescon-RPPS):</strong> <span id="infoDataEncGescon" class="text-body" data-bind="DATA_ENC_VIA_GESCON">—</span></p>
+            </div>
+
+            <div class="mb-3" id="grpESFERA">
+              <div class="sub-title mb-2">1.1 Esfera de Governo</div>
+              <div class="d-flex flex-wrap gap-4">
+                <div class="form-check">
+                  <input class="form-check-input esf-only-one" type="checkbox" id="esf_mun" name="ESFERA_GOVERNO[]" value="RPPS Municipal">
+                  <label class="form-check-label" for="esf_mun">RPPS Municipal</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input esf-only-one" type="checkbox" id="esf_est" name="ESFERA_GOVERNO[]" value="Estadual/Distrital">
+                  <label class="form-check-label" for="esf_est">Estadual/Distrital</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-12"><div class="sub-title">1.2 Ente Federativo</div></div>
+
+              <div class="col-md-2">
+                <label class="form-label" for="UF">UF</label>
+                <select id="UF" class="form-select">
+                  <option value="">Selecione…</option>
+                  <option>AC</option><option>AL</option><option>AM</option><option>AP</option>
+                  <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+                  <option>GO</option><option>MA</option><option>MG</option><option>MS</option>
+                  <option>MT</option><option>PA</option><option>PB</option><option>PE</option>
+                  <option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+                  <option>RO</option><option>RR</option><option>RS</option><option>SC</option>
+                  <option>SE</option><option>SP</option><option>TO</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="ENTE">Ente</label>
+                <input type="text" id="ENTE" class="form-control" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="CNPJ_ENTE">CNPJ</label>
+                <input type="text" id="CNPJ_ENTE" class="form-control" placeholder="00.000.000/0000-00" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="EMAIL_ENTE">E-mail</label>
+                <input type="email" id="EMAIL_ENTE" class="form-control" placeholder="ente@exemplo.gov.br" />
+              </div>
+
+              <div class="col-12 mt-2"><div class="sub-title">1.3 Regime Próprio de Previdência Social (RPPS)</div></div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="UG">Unidade Gestora</label>
+                <input type="text" id="UG" class="form-control" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="CNPJ_UG">CNPJ</label>
+                <input type="text" id="CNPJ_UG" class="form-control" placeholder="00.000.000/0000-00" />
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="EMAIL_UG">E-mail</label>
+                <input type="email" id="EMAIL_UG" class="form-control" placeholder="ug@exemplo.gov.br" />
+              </div>
+            </div>
+          </section>
+
+          <!-- ETAPA 2: Responsáveis (auto a partir de Termos_registrados) -->
+          <section class="app-section" data-step="2">
+            <div class="section-head">
+              <h2 class="section-title">2. Identificação dos responsáveis</h2>
+              <p class="small text-muted mb-0">Os dados serão carregados da aba <em>Termos_registrados</em>. É possível pesquisar por CPF e sobrescrever.</p>
+            </div>
+
+            <div class="card-subblock mb-3">
+              <div class="sub-title">2.1 Representante legal do ente federativo</div>
+              <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="CPF_REP_ENTE">CPF</label>
+                  <input type="text" id="CPF_REP_ENTE" class="form-control" placeholder="000.000.000-00" />
+                </div>
+                <div class="col-auto">
+                  <label class="d-none d-md-block">&nbsp;</label>
+                  <button type="button" id="btnPesqRepEnte" class="btn btn-outline-primary">Pesquisar</button>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label" for="NOME_REP_ENTE">Nome</label>
+                  <input id="NOME_REP_ENTE" class="form-control" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="CARGO_REP_ENTE">Cargo/Função</label>
+                  <input id="CARGO_REP_ENTE" class="form-control" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="EMAIL_REP_ENTE">E-mail</label>
+                  <input type="email" id="EMAIL_REP_ENTE" class="form-control" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="TEL_REP_ENTE">Telefone</label>
+                  <input type="text" id="TEL_REP_ENTE" class="form-control" placeholder="(00) 00000-0000" />
+                </div>
+              </div>
+            </div>
+
+            <div class="card-subblock">
+              <div class="sub-title">2.2 Representante legal do RPPS</div>
+              <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="CPF_REP_UG">CPF</label>
+                  <input type="text" id="CPF_REP_UG" class="form-control" placeholder="000.000.000-00" />
+                </div>
+                <div class="col-auto">
+                  <label class="d-none d-md-block">&nbsp;</label>
+                  <button type="button" id="btnPesqRepUg" class="btn btn-outline-primary">Pesquisar</button>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label" for="NOME_REP_UG">Nome</label>
+                  <input id="NOME_REP_UG" class="form-control" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="CARGO_REP_UG">Cargo/Função</label>
+                  <input id="CARGO_REP_UG" class="form-control" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="EMAIL_REP_UG">E-mail</label>
+                  <input type="email" id="EMAIL_REP_UG" class="form-control" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="TEL_REP_UG">Telefone</label>
+                  <input type="text" id="TEL_REP_UG" class="form-control" placeholder="(00) 00000-0000" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ETAPA 3: Situação relativa ao CRP (de Termos_registrados/CRP) -->
+          <section class="app-section" data-step="3">
+            <div class="section-head">
+              <h2 class="section-title">3. Situação relativa ao CRP</h2>
+              <p class="small text-muted mb-0">Data e tipo obtidos a partir dos registros (CRP/Termos_registrados), podendo ser ajustados.</p>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label" for="DATA_VENCIMENTO_ULTIMO_CRP">3.1 Data de vencimento do último CRP</label>
+                <input type="date" id="DATA_VENCIMENTO_ULTIMO_CRP" class="form-control" />
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <div class="sub-title">3.2 Tipo de emissão do último CRP</div>
+              <div class="d-flex flex-column gap-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="TIPO_EMISSAO_ULTIMO_CRP" id="em_adm" value="Administrativa">
+                  <label class="form-check-label" for="em_adm">Administrativa</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="TIPO_EMISSAO_ULTIMO_CRP" id="em_jud" value="Judicial">
+                  <label class="form-check-label" for="em_jud">Judicial</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <div class="sub-title">3.3 Critério(s) irregular(es) no extrato previdenciário</div>
+              <div class="small text-muted mb-2">Selecione todos os itens apontados como irregulares no extrato.</div>
+              
+              <div class="d-flex flex-column gap-2" id="grpCRITERIOS">
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="1-Aplicações Financeiras Resolv. CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)"><span class="form-check-label">1 - Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="2-Atendimento à fiscalização"><span class="form-check-label">2 - Atendimento à fiscalização</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="3-Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar"><span class="form-check-label">3 - Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="4-Caráter contributivo – repasses (objeto de Processo Administrativo Previdenciário)"><span class="form-check-label">4 - Caráter contributivo – repasses (objeto de Processo Administrativo Previdenciário)</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="5-DPIN – Demonstrativo da Política de Investimentos – Consistência"><span class="form-check-label">5 - DPIN – Demonstrativo da Política de Investimentos – Consistência</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="6-DPIN – Demonstrativo da Política de Investimentos – Encaminhamento"><span class="form-check-label">6 - DPIN – Demonstrativo da Política de Investimentos – Encaminhamento</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="7-DAR – Demonstrativo de Aplicações e Investimentos dos Recursos – Consistência"><span class="form-check-label">7 - DAR – Demonstrativo de Aplicações e Investimentos dos Recursos – Consistência</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="8-DAR – Demonstrativo de Aplicações e Investimentos dos Recursos – Encaminhamento"><span class="form-check-label">8 - DAR – Demonstrativo de Aplicações e Investimentos dos Recursos – Encaminhamento</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="9-DIPR – Demonstrativo de Informações Previdenciárias e Repasses – Consistência e caráter contributivo"><span class="form-check-label">9 - DIPR – Demonstrativo de Informações Previdenciárias e Repasses – Consistência e caráter contributivo</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="10-DIPR – Demonstrativo de Informações Previdenciárias e Repasses – Encaminhamento"><span class="form-check-label">10 - DIPR – Demonstrativo de Informações Previdenciárias e Repasses – Encaminhamento</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="11-Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi"><span class="form-check-label">11 - Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="12-Equilíbrio Financeiro e Atuarial – encaminhamento da NTA, DRAA e resultados das análises"><span class="form-check-label">12 - Equilíbrio Financeiro e Atuarial – encaminhamento da NTA, DRAA e resultados das análises</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="13-Existência e funcionamento de unidade gestora única e de regime próprio únicos"><span class="form-check-label">13 - Existência e funcionamento de unidade gestora única e de regime próprio únicos</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="14-Filiação ao RPPS e regras de concessão, cálculo e reajuste de benefícios (art. 40 da CF)"><span class="form-check-label">14 - Filiação ao RPPS e regras de concessão, cálculo e reajuste de benefícios (art. 40 da CF)</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="15-Instituição do regime de previdência complementar – aprovação da lei"><span class="form-check-label">15 - Instituição do regime de previdência complementar – aprovação da lei</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="16-Observância dos limites de contribuição do ente"><span class="form-check-label">16 - Observância dos limites de contribuição do ente</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="17-Observância dos limites de contribuição dos segurados e beneficiários"><span class="form-check-label">17 - Observância dos limites de contribuição dos segurados e beneficiários</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="18-Operacionalização da compensação previdenciária – termo de adesão e contrato com a empresa de tecnologia"><span class="form-check-label">18 - Operacionalização da compensação previdenciária – termo de adesão e contrato com a empresa de tecnologia</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="19-Plano de benefícios integrado apenas por aposentadorias e pensões por morte"><span class="form-check-label">19 - Plano de benefícios integrado apenas por aposentadorias e pensões por morte</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="20-Requisitos para dirigentes, conselhos deliberativo e fiscal e comitê de investimentos do RPPS"><span class="form-check-label">20 - Requisitos para dirigentes, conselhos deliberativo e fiscal e comitê de investimentos do RPPS</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="21-Utilização dos recursos previdenciários (objeto de PAP)"><span class="form-check-label">21 - Utilização dos recursos previdenciários (objeto de PAP)</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="22-Instituição do regime de previdência complementar – Aprovação e operacionalização do convênio de adesão"> <span class="form-check-label">22 - Instituição do regime de previdência complementar – Aprovação e operacionalização do convênio de adesão</span></label>
+              </div>
+            </div>
+          </section>
+
+          <!-- ETAPA 4: Fase do Programa (dinâmica 4.1 a 4.6) -->
+          <section class="app-section" data-step="4">
+            <div class="section-head">
+              <h2 class="section-title">4. Identificação da Fase do Programa de Regularidade Previdenciária</h2>
+              <p class="small text-muted mb-0">Selecione a fase. Os subitens correspondentes aparecerão abaixo.</p>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_41" value="4.1">
+                <label class="form-check-label" for="fase_41">4.1 Fase Geral/Introdutória – 1º CRP Emergencial</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_42" value="4.2">
+                <label class="form-check-label" for="fase_42">4.2 Fase Geral/Introdutória – 2º CRP Emergencial</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_43" value="4.3">
+                <label class="form-check-label" for="fase_43">4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_44" value="4.4">
+                <label class="form-check-label" for="fase_44">4.4 Fase Específica/Focalizada – 4º CRP Emergencial</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_45" value="4.5">
+                <label class="form-check-label" for="fase_45">4.5 Fase Específica/Focalizada – 5º CRP Emergencial</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_46" value="4.6">
+                <label class="form-check-label" for="fase_46">4.6 Fase de Manutenção da Conformidade</label>
+              </div>
+            </div>
+
+            <!-- 4.1 -->
+            <div class="card-subblock mt-3 d-none" id="blk_41">
+              <div class="sub-title">4.1 Fase Geral/Introdutória – 1º CRP Emergencial</div>
+              <p class="small text-muted">Declaro ter cumprido as seguintes condições:</p>
+              <label class="form-check mb-2">
+                <input class="form-check-input me-2" type="radio" name="F41_OPCAO" value="Incluiu todos os débitos em termos de parcelamento/reparcelamento no Cadprev até a adesão ou até o envio" />
+                <span class="form-check-label">4.1.1 Foram incluídos em termos de acordo de parcelamento ou reparcelamento cadastrados no Cadprev todos os débitos do ente com o RPPS, relativos às competências até a data da adesão ao Programa e entre as datas da adesão e a do envio do presente requerimento.</span>
+              </label>
+              <label class="form-check">
+                <input class="form-check-input me-2" type="radio" name="F41_OPCAO" value="Não possui débitos ou já parcelados/regularizados" />
+                <span class="form-check-label">4.1.2 O ente federativo não possui débitos de contribuições ou de quaisquer outros valores devidos ao RPPS ou que já não tenham sido parcelados ou regularizados anteriormente.</span>
+              </label>
+              <p class="small text-muted mt-2 mb-0">Obs.: Os termos cadastrados no Cadprev devem conter todos os débitos do ente ou inexistirem débitos a parcelar.</p>
+            </div>
+
+            <!-- 4.2 -->
+            <div class="card-subblock mt-3 d-none" id="blk_42">
+              <div class="sub-title">4.2 Fase Geral/Introdutória – 2º CRP Emergencial</div>
+              <p class="small text-muted">Declaro ter cumprido as seguintes condições (marque as que se aplicam):</p>
+              <div class="d-flex flex-column gap-2" id="F42_LISTA">
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DIPR – Encaminhamento"><span class="form-check-label">a) DIPR – Encaminhamento</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DIPR – Consistência e Caráter Contributivo"><span class="form-check-label">b) DIPR – Consistência e Caráter Contributivo</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Caráter contributivo – Repasse (objeto de PAP)"><span class="form-check-label">c) Caráter contributivo – Repasse (objeto de PAP)</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Utilização dos recursos previdenciários (objeto de PAP)"><span class="form-check-label">d) Utilização dos recursos previdenciários (objeto de PAP)</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Aplicações Financeiras – Adequação DAIR e Política de Investimentos (objeto de PAP)"><span class="form-check-label">e) Aplicações Financeiras – Adequação DAIR e Política de Investimentos (após a adesão)</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DAIR – Encaminhamento"><span class="form-check-label">f) DAIR – Encaminhamento</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DAIR – Consistência (após a adesão)"><span class="form-check-label">g) DAIR – Consistência (após a adesão)</span></label>
+              </div>
+              <p class="small text-muted mt-2 mb-0">Obs.: Termos de parcelamento devem constar como “Aceitos” no Cadprev.</p>
+            </div>
+
+            <!-- 4.3 -->
+            <div class="card-subblock mt-3 d-none" id="blk_43">
+              <div class="sub-title">4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</div>
+              <p class="small text-muted">Marque o que estiver regular e informe justificativas quando necessário.</p>
+              <div class="d-flex flex-column gap-2" id="F43_LISTA"></div>
+              <div class="mt-3">
+                <label class="form-label" for="F43_JUST">4.3.10 Justificativas/Informações adicionais</label>
+                <textarea id="F43_JUST" class="form-control" rows="3" placeholder="Descreva justificativas ou informações relevantes…"></textarea>
+              </div>
+              <div class="mt-3">
+                <label class="form-label" for="F43_PLANO">4.3.11 Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</label>
+                <textarea id="F43_PLANO" class="form-control" rows="3" placeholder="Liste os critérios a incluir e respectivas justificativas/documentos…"></textarea>
+                <p class="small text-muted mt-1 mb-0">Obs.: Não se aplica a DIPR – Consistência/Caráter Contributivo; Caráter Contributivo – Repasse (PAP); Utilização dos recursos (PAP).</p>
+              </div>
+            </div>
+
+            <!-- 4.4 -->
+            <div class="card-subblock mt-3 d-none" id="blk_44">
+              <div class="sub-title">4.4 Fase Específica/Focalizada – 4º CRP Emergencial</div>
+              <div class="mb-2">
+                <label class="form-label">4.4.1 Critério(s) do extrato objeto do(s) Plano(s) de Ação</label>
+                <div id="F44_CRITERIOS" class="d-flex flex-column gap-2"></div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">4.4.2 Declarações</label>
+                <div class="d-flex flex-column gap-2">
+                  <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Manteve regularidade fases anteriores"><span class="form-check-label">a) Foi mantida a regularidade quanto aos critérios exigidos nas fases anteriores.</span></label>
+                  <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="RPC vigente e operacionalizado"><span class="form-check-label">b) O RPC encontra-se vigente (convênio autorizado pela Previc) e em efetiva operacionalização.</span></label>
+                  <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Demais critérios não objeto do plano estão regulares"><span class="form-check-label">c) Os demais critérios não objeto do Plano de Ação estão regulares.</span></label>
+                  <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Regras de benefícios adequadas"><span class="form-check-label">d) Foram adotadas regras de elegibilidade, cálculo e reajuste dos benefícios do RPPS conforme CF/88 e Portaria MTP nº 1.467/2022.</span></label>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">4.4.3 Finalidade do(s) Plano(s) de Ação</label>
+                <div class="d-flex flex-column gap-2" id="F44_FINALIDADES"></div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="F44_ANEXOS">4.4.4 Anexos</label>
+                <textarea id="F44_ANEXOS" class="form-control" rows="3" placeholder="Relacione os documentos anexados (um por linha)…"></textarea>
+              </div>
+            </div>
+
+            <!-- 4.5 -->
+            <div class="card-subblock mt-3 d-none" id="blk_45">
+              <div class="sub-title">4.5 Fase Específica/Focalizada – 5º CRP Emergencial</div>
+              <div class="d-flex flex-column gap-2">
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Manteve regularidade nas fases anteriores"><span class="form-check-label">4.5.1 Mantida a regularidade dos critérios exigidos nas fases anteriores.</span></label>
+              </div>
+              <div class="mt-2">
+                <label class="form-label" for="F45_DOCS">4.5.2/4.5.3 Documentos de comprovação do(s) Plano(s) de Ação</label>
+                <textarea id="F45_DOCS" class="form-control" rows="3" placeholder="Liste os documentos apresentados…"></textarea>
+              </div>
+              <div class="mt-2">
+                <label class="form-label" for="F45_JUST">4.5.4 Justificativas</label>
+                <textarea id="F45_JUST" class="form-control" rows="3" placeholder="Escreva justificativas sobre o cumprimento do(s) Plano(s) de Ação…"></textarea>
+              </div>
+            </div>
+
+            <!-- 4.6 -->
+            <div class="card-subblock mt-3 d-none" id="blk_46">
+              <div class="sub-title">4.6 Fase de Manutenção da Conformidade</div>
+              <div class="mb-2">
+                <label class="form-label">4.6.1 Critério(s) objeto do(s) Plano(s) de Ação</label>
+                <div id="F46_CRITERIOS" class="d-flex flex-column gap-2"></div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">4.6.2 Declarações</label>
+                <div class="d-flex flex-column gap-2">
+                  <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Demais critérios regulares"><span class="form-check-label">a) Os demais critérios não objeto do Plano de Ação estão regulares.</span></label>
+                  <div class="row g-2 align-items-center">
+                    <div class="col-md-6">
+                      <label class="form-label" for="F46_PROGESTAO">b) Nível de certificação no Pró-Gestão RPPS</label>
+                      <select id="F46_PROGESTAO" class="form-select">
+                        <option value="">Selecione…</option>
+                        <option value="II">Nível II</option>
+                        <option value="III">Nível III</option>
+                        <option value="IV">Nível IV</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="F46_PORTE">c) Grupo de Porte (ISP-RPPS)</label>
+                      <select id="F46_PORTE" class="form-select">
+                        <option value="">Selecione…</option>
+                        <option>Pequeno</option>
+                        <option>Médio</option>
+                        <option>Grande</option>
+                        <option>Porte Especial</option>
+                      </select>
+                    </div>
+                  </div>
+                  <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Melhora financeira/atuarial (ISP)"><span class="form-check-label">d) Houve melhora na situação financeira e atuarial do RPPS (indicadores do ISP-RPPS) – anexar comprovações.</span></label>
+                  <div>
+                    <label class="form-label" for="F46_JUST_D">Justificativas (item d)</label>
+                    <textarea id="F46_JUST_D" class="form-control" rows="2"></textarea>
+                  </div>
+                  <div>
+                    <label class="form-label" for="F46_DOCS_D">Documentos (item d)</label>
+                    <textarea id="F46_DOCS_D" class="form-control" rows="2"></textarea>
+                  </div>
+                  <label class="form-check mt-2"><input class="form-check-input me-2" type="checkbox" value="Acompanhamento atuarial arts. 67–69"><span class="form-check-label">e) Comprovo adoção das medidas de acompanhamento atuarial (arts. 67 a 69 da Portaria MTP nº 1.467/2022).</span></label>
+                  <div>
+                    <label class="form-label" for="F46_JUST_E">Justificativas (item e)</label>
+                    <textarea id="F46_JUST_E" class="form-control" rows="2"></textarea>
+                  </div>
+                  <div>
+                    <label class="form-label" for="F46_DOCS_E">Documentos (item e)</label>
+                    <textarea id="F46_DOCS_E" class="form-control" rows="2"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label">4.6.3 Finalidade do(s) Plano(s) de Ação</label>
+                <div class="d-flex flex-column gap-2" id="F46_FINALIDADES"></div>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label" for="F46_ANEXOS">4.6.4 Anexos</label>
+                <textarea id="F46_ANEXOS" class="form-control" rows="3" placeholder="Relacione os documentos anexados (um por linha)…"></textarea>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label" for="F46_JUST_PLANOS">4.6.5 Justificativas quanto ao(s) Plano(s) de Ação</label>
+                <textarea id="F46_JUST_PLANOS" class="form-control" rows="3"></textarea>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label" for="F46_COMP_CUMPR">4.6.6 Comprovação do cumprimento do(s) Plano(s) de Ação</label>
+                <textarea id="F46_COMP_CUMPR" class="form-control" rows="3" placeholder="Liste os documentos e descreva o cumprimento…"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <!-- ETAPA 5: Justificativas/Informações adicionais -->
+          <section class="app-section" data-step="5">
+            <div class="section-head">
+              <h2 class="section-title">5. Justificativas/Informações Adicionais</h2>
+              <p class="small text-muted mb-0">Campo livre para comentários pertinentes à solicitação.</p>
+            </div>
+            <textarea id="JUSTIFICATIVAS_GERAIS" class="form-control" rows="4" placeholder="Escreva aqui…"></textarea>
+          </section>
+
+          <!-- ETAPA 6: Importante / Ações finais (Assinatura como no modelo de Adesão) -->
+          <section class="app-section" data-step="6">
+            <div class="section-head">
+              <h2 class="section-title">6. <span class="highlight">Importante</span></h2>
+            </div>
+
+            <div class="mb-3 d-flex gap-2">
+              <button id="btnGerarForm" type="button" class="btn btn-outline-secondary">Gerar formulário</button>
+            </div>
+
+            <fieldset class="important-box mb-3">
+              <legend>IMPORTANTE</legend>
+              <ul class="mb-0">
+                <li>Utilize a opção <strong>Gerar formulário</strong> para abrir ou baixar o termo em modo de pré-visualização.</li>
+                <li>Realize a assinatura eletrônica do termo por meio da plataforma GOV.BR.</li>
+                <li>Após a assinatura, clique em <strong>Finalizar</strong> no rodapé para <u>registrar</u> e concluir a tarefa. Concluído o processo, efetue o envio do termo pelo sistema GESCON RPPS.</li>
+              </ul>
+            </fieldset>
+          </section>
+
+          <!-- Navegação -->
+          <div id="navFooter" class="d-flex align-items-center gap-2 mt-2">
+            <button type="button" id="btnPrev" class="btn btn-outline-secondary">Voltar</button>
+            <button type="button" id="btnNext" class="btn btn-primary">Próximo</button>
+            <button type="submit" id="btnSubmit" class="btn btn-success d-none">Salvar e Finalizar</button>
+          </div>
+
+          <!-- carimbos -->
+          <input type="hidden" id="MES" />
+          <input type="hidden" id="DATA_TERMO_GERADO" />
+          <input type="hidden" id="HORA_TERMO_GERADO" />
+          <input type="hidden" id="ANO_TERMO_GERADO" />
+
+          <!-- campos ocultos específicos do gate TERMO_ENC_GESCON -->
+          <input type="hidden" id="HAS_TERMO_ENC_GESCON" value="0" />
+        </form>
+      </div>
+    </div>
   </div>
 
-  <!-- Lottie -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
-  <script>
-    // Aponta para a pasta correta: frontend/animacao/em-construcao.json
-    const container = document.getElementById('lottieBuild');
-    const anim = lottie.loadAnimation({
-      container,
-      renderer: 'svg',
-      loop: true,
-      autoplay: true,
-      path: 'animacao/em-construcao.json'
-    });
+  <!-- Modal AVISO INICIAL (igual ao padrão) -->
+  <div class="modal fade" id="modalWelcome" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">FORMULÁRIO PARA GERAÇÃO DO TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="fw-semibold text-primary mb-2">Observações</p>
+          <p>
+            Este Termo de Solicitação de CRP Emergencial é utilizado na vigência do Programa de Regularidade Previdenciária e deverá ser encaminhado ao Ministério da Previdência Social por meio do Sistema Gescon-RPPS, após assinatura eletrônica.
+          </p>
+          <p class="fw-semibold mb-1">No Gescon, o ente deverá:</p>
+          <ol class="mb-3">
+            <li>Selecionar <strong>Consultas → Sobre RPPS</strong>;</li>
+            <li>Clicar em <strong>+ Incluir</strong>;</li>
+            <li>Assunto: <strong>Regularidade Previdenciária</strong>;</li>
+            <li>Assunto Específico: <strong>Encaminhar Termo de Solicitação de CRP Emergencial</strong>;</li>
+            <li>Preencher os campos solicitados e anexar o termo em PDF assinado (Gov.br);</li>
+            <li>Clicar em <strong>Confirmar</strong>.</li>
+          </ol>
+          <p class="mb-2">
+            Os dados exibidos nos campos deste formulário são provenientes do Cadprev e de registros internos. Em caso de necessidade, poderão ser atualizados diretamente nos respectivos campos.
+          </p>
+          <hr/>
+          <p class="small text-muted mb-1">Base normativa: Portaria MTP nº 1.467/2022 (Anexo XVIII), entre outras aplicáveis.</p>
+          <p class="small mb-0"><span class="bg-warning-subtle px-1 rounded-1"><strong>Dica:</strong> habilite a permissão de <em>pop-ups</em> no navegador para gerar o formulário e imprimir.</span></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    // Fallback discreto se o JSON falhar
-    anim.addEventListener('data_failed', () => {
-      container.innerHTML = '<div style="font-size:48px;line-height:1">👷‍♂️</div>';
-    });
-  </script>
+  <!-- Modal ATENÇÃO (lista à esquerda) -->
+  <div class="modal fade" id="modalAtencao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">Atenção</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex gap-3 align-items-start">
+            <div id="lottieAtencao" class="lottie-box"></div>
+            <ul id="modalAtencaoLista" class="mb-0 small flex-grow-1 ps-3 text-start"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ERRO (sistêmico) -->
+  <div class="modal fade" id="modalErro" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Erro</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex gap-3 align-items-start">
+            <div id="lottieError" class="lottie-box"></div>
+            <ul id="modalErroLista" class="mb-0 small flex-grow-1 ps-3 text-start"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Busca (registro não encontrado) -->
+  <div class="modal fade" id="modalBusca" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">Registro não encontrado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            Desculpe, mas não encontramos o registro da consulta do Termo de Adesão ao Programa de Regularidade encaminhada pelo sistema Gescon-RPPS. Caso tenha enviado a consulta, entre em contato com um de nossos analistas pelo telefone <strong>(61) 2021-5555</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Sucesso -->
+  <div class="modal fade" id="modalSucesso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">Formulário gerado</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body d-flex justify-content-center">
+          <div id="lottieSuccess" class="lottie-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: “Gerando PDF…” (bloqueia enquanto o PDF é gerado) -->
+  <div class="modal fade" id="modalGerandoPdf" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-brand text-white py-2">
+          <h5 class="modal-title">Gerando PDF…</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body d-flex flex-column align-items-center justify-content-center">
+          <div id="lottieGerandoPdf" class="lottie-loading"></div>
+          <div class="status-msg mt-2">Aguarde, preparando o arquivo…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Salvando -->
+  <div class="modal fade" id="modalSalvando" tabindex="-1" aria-labelledby="modalSalvandoTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center">
+        <div class="modal-header py-2 bg-brand">
+          <h6 class="modal-title mb-0" id="modalSalvandoTitle">Salvando…</h6>
+        </div>
+        <div class="modal-body py-4">
+          <div id="lottieSalvando" style="height: 120px;"></div>
+          <h5 class="mt-3 mb-1">Aguarde…</h5>
+          <p class="mb-0 text-muted">as informações estão sendo salvas</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+  <!-- Reutiliza o mesmo script principal para navegação/validação. A lógica específica desta página será identificada pelo ID do form. -->
+  <script src="/script.js?v=2025-09-25-1" defer></script>
+  <script src="/solic_crp.js?v=2025-09-26-1" defer></script>
+
 </body>
 </html>
