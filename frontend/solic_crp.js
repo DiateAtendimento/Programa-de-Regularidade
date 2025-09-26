@@ -397,9 +397,57 @@
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  // Fallback simples de stepper caso window.app não exista
+    function ensureStepperFallback() {
+    if (window.app?.stepperReady) return; // já existe um
+
+    const sections = Array.from(document.querySelectorAll('.app-section'));
+    const stepsDots = Array.from(document.querySelectorAll('#stepper .step'));
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const slotNextStep0 = document.getElementById('slotNextStep0');
+
+    if (!sections.length || !btnPrev || !btnNext) return;
+
+    let cur = 0;
+    function render() {
+        sections.forEach((sec, i) => sec.style.display = (i === cur ? '' : 'none'));
+        stepsDots.forEach((dot, i) => dot.classList.toggle('active', i === cur));
+        btnPrev.style.visibility = cur === 0 ? 'hidden' : 'visible';
+        btnNext.classList.toggle('d-none', cur === sections.length - 1);
+        btnSubmit.classList.toggle('d-none', !(cur === sections.length - 1));
+
+        // encaixa o Next no slot da etapa 0 (se existir)
+        if (slotNextStep0) {
+        if (cur === 0 && btnNext.parentElement !== slotNextStep0) {
+            slotNextStep0.appendChild(btnNext);
+        } else if (cur !== 0 && btnNext.parentElement === slotNextStep0) {
+            document.getElementById('navFooter').appendChild(btnNext);
+        }
+        }
+    }
+    function next() { if (cur < sections.length - 1) { cur++; render(); } }
+    function prev() { if (cur > 0) { cur--; render(); } }
+
+    btnNext.addEventListener('click', next);
+    btnPrev.addEventListener('click', prev);
+
+    // expõe flag para não recriar
+    window.app = Object.assign(window.app || {}, { stepperReady: true });
+    render();
+    }
+
+
+function boot() {
+  init();
+  ensureStepperFallback(); // sempre depois do init
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
 })();
