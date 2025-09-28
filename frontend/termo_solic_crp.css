@@ -1,9 +1,10 @@
-/* termo_solic_crp.css — mesmo padrão do termo.css */
+/* termo_solic_crp.css — padrão visual alinhado ao termo.css */
 :root{
   --page-w: 210mm;
   --page-h: 297mm;
   --pad: 15mm;
   --content-w: calc(var(--page-w) - 2 * var(--pad));
+
   --brand:#0b2240;
   --ink:#23272f;
   --muted:#475569;
@@ -18,6 +19,7 @@ body{
 }
 
 /* Container (preview) */
+#pdf-root{ width:var(--page-w); margin:0 auto; }
 .term-wrap{
   position:relative;
   width:var(--content-w);
@@ -44,23 +46,13 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 }
 .page-head::after{
   content:"";
-  position:absolute;
-  left:0; right:0; bottom:0;
-  height:1px;
-  background:var(--rule);
+  position:absolute; left:0; right:0; bottom:0;
+  height:1px; background:var(--rule);
 }
-.page-head .rule,
-#pdf-root > .rule,
-.rule{
-  display:none !important;
-  height:0 !important;
-  border:0 !important;
-  background:transparent !important;
+.page-head .rule, #pdf-root > .rule, .rule{
+  display:none !important; height:0 !important; border:0 !important; background:transparent !important;
 }
-.logos-wrap{
-  display:flex; align-items:center; justify-content:center;
-  flex-wrap:wrap; gap:1mm 6mm; width:100%; padding-top:0;
-}
+.logos-wrap{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:1mm 6mm; width:100%; padding-top:0; }
 
 /* Título + meta */
 .term-title{
@@ -80,6 +72,10 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   color:var(--muted);
 }
 
+/* PDF: respiros */
+.pdf-export .term-title{ margin-top:2mm !important; }
+.pdf-export .page-head{ margin-bottom:4mm !important; }
+
 /* Conteúdo */
 .term-section + .term-section{ margin-top:8mm }
 .term-section h2{
@@ -91,17 +87,17 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   font-size:13.6px; font-weight:700; color:var(--ink);
   margin-top:3.5mm; margin-bottom:1.2mm;
 }
-.term-section p,
-.term-section li{
+.term-section p, .term-section li{
   font-size:13.2px; line-height:1.48; text-align:justify; text-justify:inter-word;
   hyphens:auto; overflow-wrap:break-word; orphans:2; widows:2;
 }
 
+/* Notas e variações */
 .note{ font-size:12.6px; color:var(--muted) }
 .small{ font-size:12.2px; color:var(--muted) }
 .strong{ font-weight:700 }
 
-/* Grid */
+/* Grid de campos */
 .grid{
   display:grid;
   grid-template-columns: 1fr 1fr;
@@ -114,10 +110,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 .term-section ul{ list-style:none; margin:2mm 0 0 0; padding-left:0; }
 .term-section li{ margin:1.6mm 0; padding-left:6mm; text-indent:-6mm; }
 
-/* Valores sem negrito */
-[data-k], #finalidades-iniciais{ font-weight:400 }
-
-/* E-mails nowrap */
+/* E-mails não quebram no meio */
 [data-k="email_ente"],
 [data-k="email_ug"],
 [data-k="email_rep_ente"],
@@ -125,7 +118,6 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 
 /* Regras de quebra */
 .term-section{ break-inside:auto; page-break-inside:auto; }
-.avoid-break{ break-inside:auto; page-break-inside:auto; }
 .keep-together{ break-inside:avoid-page; page-break-inside:avoid; }
 .break-before{ break-before:page; page-break-before:always; }
 
@@ -135,7 +127,6 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   break-inside:avoid; page-break-inside:avoid;
   padding-top:10mm;
 }
-.footer-force-break{ break-before:page; page-break-before:always; }
 .place-date{ margin:10mm 0 6mm; font-size:13.2px; }
 .signature-block{ margin-top:12mm; }
 .signature-line{
@@ -146,99 +137,43 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 
 /* Responsivo (preview) */
 @media (max-width:980px){
+  #pdf-root{ width:100% }
   .term-wrap{ width:100%; border-radius:10px }
 }
 @media (max-width:720px){
   .term-title{ font-size:18px }
 }
 
-/* Impressão (preview navegador) */
+/* Impressão (preview direto) */
 @media print{
   @page{ size:A4 portrait; margin:0 }
   html,body{ background:#fff }
+  #pdf-root{ width:var(--page-w) }
   .term-wrap{ width:var(--content-w); margin:0; box-shadow:none !important }
 }
 
-/* ===== Garantias de LINHA ÚNICA e espaçamentos (igual ao termo.css) ===== */
-.page-head{ border:0 !important; padding-bottom:0 !important; margin-bottom:8mm !important; }
-.page-head::after{ content:none !important; }
-.page-head .rule, .rule{ display:none !important; height:0 !important; border:0 !important; background:transparent !important; }
-
-.page-head + .term-title{ position:relative; margin-top:0 !important; }
-.page-head + .term-title::before{
-  content:"";
-  position:absolute;
-  left:0; right:0;
-  top:-6mm;
-  height:1px;
-  background:var(--rule);
-  display:block;
-}
-
-.term-meta{ margin-top:2mm !important; margin-bottom:5mm !important; }
-
-.page-head,
-.page-head::before,
-.page-head::after,
-.term-title::before,
-.term-title::after,
-.page-head .rule,
-#pdf-root > .rule,
-.rule{
-  border:0 !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  height:0 !important;
-}
-.page-head .rule,
-#pdf-root > .rule,
-.rule{ display:none !important; }
-.page-head::before,
-.term-title::before,
-.term-title::after{ content:none !important; }
-
-.page-head{ position:relative; padding-bottom:3.5mm !important; margin-bottom:5mm !important; }
-.page-head::after{
-  content:"";
-  position:absolute;
-  left:0; right:0; bottom:0;
-  height:1px;
-  background:var(--rule);
-}
-
+/* Ajustes finos (mesmo padrão do termo.css) */
+.page-head{ border:0 !important; padding-bottom:3.5mm !important; margin-bottom:5mm !important; }
+.page-head::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--rule); }
 .term-title{ margin-top:2mm !important; }
 .term-meta{  margin-top:1.2mm !important; margin-bottom:5mm !important; }
 .pdf-export .page-head{ margin-bottom:4mm !important; }
 
-html.pdf-export .page-head,
-body.pdf-export .page-head{
-  padding-bottom: 1.2mm !important;
-  margin-bottom: 2.4mm !important;
-}
-html.pdf-export .term-title,
-body.pdf-export .term-title{ margin-top: 0.4mm !important; }
-html.pdf-export .term-meta,
-body.pdf-export .term-meta{
-  margin-top: 1mm !important;
-  margin-bottom: 4mm !important;
-}
-
-html.pdf-export .page-head,
-body.pdf-export .page-head{
+/* Compactação extra no PDF (igual ao termo.css) */
+html.pdf-export .page-head, body.pdf-export .page-head{
   padding-bottom: 3mm !important;
   margin-bottom: 2.2mm !important;
 }
-html.pdf-export .term-title,
-body.pdf-export .term-title{ margin-top: 0.8mm !important; }
-html.pdf-export .term-meta,
-body.pdf-export .term-meta{
+html.pdf-export .term-title, body.pdf-export .term-title{
+  margin-top: 0.8mm !important;
+}
+html.pdf-export .term-meta, body.pdf-export .term-meta{
   margin-top: 1.2mm !important;
   margin-bottom: 4.8mm !important;
 }
-html.pdf-export .page-head,
-body.pdf-export .page-head{
-  margin-bottom: 0 !important;
-  padding-bottom: 3mm !important;
+
+/* Linha única garantida */
+.page-head, .page-head::before, .page-head::after, .term-title::before, .term-title::after,
+.page-head .rule, #pdf-root > .rule, .rule{
+  border:0 !important; background:transparent !important; box-shadow:none !important; height:0 !important;
 }
-html.pdf-export .term-title,
-body.pdf-export .term-title{ margin-top: 2.2mm !important; }

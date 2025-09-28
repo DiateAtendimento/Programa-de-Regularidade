@@ -149,6 +149,11 @@ app.use('/api/gerar-termo', rlWrite);
 app.use('/api/termo-pdf', rlPdf);
 app.use('/api/gescon/termo-enc', rlCommon);
 app.use('/api/termos-registrados', rlCommon);
+app.use('/api/solic-crp-pdf', rlPdf);
+app.use('/api/gerar-solic-crp', rlWrite);
+app.use('/api/termo-solic-crp-pdf', rlPdf);
+
+
 
 
 // Política de API key: exige em produção ou se REQUIRE_API_KEY=1
@@ -1202,6 +1207,8 @@ const schemaGerarTermo = Joi.object({
   IDEMP_KEY: Joi.string().allow(''),
 }).unknown(true);
 
+
+
 const schemaTermoPdf = Joi.object({
   UF: Joi.string().allow(''),
   ENTE: Joi.string().allow(''),
@@ -1229,6 +1236,160 @@ const schemaTermoPdf = Joi.object({
   CONDICAO_VIGENCIA: Joi.string().allow(''),
   DATA_TERMO_GERADO: Joi.string().allow(''),
 }).unknown(true);
+
+/* === PDF: schema para Termo de Solicitação de CRP Emergencial === */
+const schemaTermoSolicPdf = Joi.object({
+  // Identificação do ente/UG
+  UF: Joi.string().allow(''),
+  ENTE: Joi.string().allow(''),
+  CNPJ_ENTE: Joi.string().allow(''),
+  EMAIL_ENTE: Joi.string().allow(''),
+  UG: Joi.string().allow(''),
+  CNPJ_UG: Joi.string().allow(''),
+  EMAIL_UG: Joi.string().allow(''),
+  ESFERA: Joi.string().allow(''),
+
+  // Representantes (ente)
+  NOME_REP_ENTE: Joi.string().allow(''),
+  CPF_REP_ENTE: Joi.string().allow(''),
+  CARGO_REP_ENTE: Joi.string().allow(''),
+  EMAIL_REP_ENTE: Joi.string().allow(''),
+  TEL_REP_ENTE: Joi.string().allow(''),
+
+  // Representantes (UG)
+  NOME_REP_UG: Joi.string().allow(''),
+  CPF_REP_UG: Joi.string().allow(''),
+  CARGO_REP_UG: Joi.string().allow(''),
+  EMAIL_REP_UG: Joi.string().allow(''),
+  TEL_REP_UG: Joi.string().allow(''),
+
+  // CRP
+  DATA_VENCIMENTO_ULTIMO_CRP: Joi.string().allow(''),
+  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().allow(''),
+  CRITERIOS_IRREGULARES: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string()).optional(),
+
+  // Fase 4 (seleção e dados por sub-bloco)
+  FASE_PROGRAMA: Joi.string().valid('4.1','4.2','4.3','4.4','4.5','4.6').allow(''),
+  F41_OPCAO: Joi.string().allow(''),
+
+  F42_LISTA: Joi.array().items(Joi.string()).optional(),
+
+  F43_LISTA: Joi.array().items(Joi.string()).optional(),
+  F43_JUST: Joi.string().allow(''),
+  F43_PLANO: Joi.string().allow(''),
+
+  F44_CRITERIOS: Joi.array().items(Joi.string()).optional(),
+  F44_DECLS: Joi.array().items(Joi.string()).optional(),
+  F44_FINALIDADES: Joi.array().items(Joi.string()).optional(),
+  F44_ANEXOS: Joi.string().allow(''),
+
+  F45_OK451: Joi.boolean().optional(),
+  F45_DOCS: Joi.string().allow(''),
+  F45_JUST: Joi.string().allow(''),
+
+  F46_CRITERIOS: Joi.array().items(Joi.string()).optional(),
+  F46_PROGESTAO: Joi.string().allow(''),
+  F46_PORTE: Joi.string().allow(''),
+  F46_JUST_D: Joi.string().allow(''),
+  F46_DOCS_D: Joi.string().allow(''),
+  F46_JUST_E: Joi.string().allow(''),
+  F46_DOCS_E: Joi.string().allow(''),
+  F46_FINALIDADES: Joi.array().items(Joi.string()).optional(),
+  F46_ANEXOS: Joi.string().allow(''),
+  F46_JUST_PLANOS: Joi.string().allow(''),
+  F46_COMP_CUMPR: Joi.string().allow(''),
+
+  // Justificativas gerais
+  JUSTIFICATIVAS_GERAIS: Joi.string().allow(''),
+
+  // Metadados Gescon exibidos no subtítulo
+  HAS_TERMO_ENC_GESCON: Joi.alternatives().try(Joi.string(), Joi.number()).optional(),
+  N_GESCON: Joi.string().allow(''),
+  DATA_ENC_VIA_GESCON: Joi.string().allow(''),
+
+  // Carimbos
+  DATA_SOLIC_GERADA: Joi.string().allow(''),
+  HORA_SOLIC_GERADA: Joi.string().allow(''),
+  DATA_TERMO_GERADO: Joi.string().allow(''),
+  HORA_TERMO_GERADO: Joi.string().allow(''),
+}).unknown(true);
+
+
+/* ===== CRP (Solicitação) — Joi Schemas ===== */
+const schemaSolicCrp = Joi.object({
+  // básicos (obrigatórios como no front)
+  ESFERA: Joi.string().allow(''),
+  UF: Joi.string().trim().min(1).required(),
+  ENTE: Joi.string().trim().min(1).required(),
+  CNPJ_ENTE: Joi.string().pattern(/^\D*\d{14}\D*$/).required(),
+  EMAIL_ENTE: Joi.string().email().allow(''),
+  UG: Joi.string().trim().min(1).required(),
+  CNPJ_UG: Joi.string().pattern(/^\D*\d{14}\D*$/).required(),
+  EMAIL_UG: Joi.string().email().allow(''),
+
+  // reps
+  CPF_REP_ENTE: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
+  NOME_REP_ENTE: Joi.string().trim().min(2).required(),
+  CARGO_REP_ENTE: Joi.string().trim().min(1).required(),
+  EMAIL_REP_ENTE: Joi.string().email().allow(''),
+  TEL_REP_ENTE: Joi.string().allow(''),
+
+  CPF_REP_UG: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
+  NOME_REP_UG: Joi.string().trim().min(2).required(),
+  CARGO_REP_UG: Joi.string().trim().min(1).required(),
+  EMAIL_REP_UG: Joi.string().email().allow(''),
+  TEL_REP_UG: Joi.string().allow(''),
+
+  // etapa 3
+  DATA_VENCIMENTO_ULTIMO_CRP: Joi.string().trim().min(4).required(),
+  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().valid('Administrativa','Judicial').required(),
+  CRITERIOS_IRREGULARES: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string().allow('')).optional(),
+
+  // etapa 4 (tudo opcional; front valida a combinação)
+  FASE_PROGRAMA: Joi.string().valid('4.1','4.2','4.3','4.4','4.5','4.6').allow(''),
+  F41_OPCAO: Joi.string().allow(''),
+  F42_LISTA: Joi.array().items(Joi.string()).optional(),
+  F43_LISTA: Joi.array().items(Joi.string()).optional(),
+  F43_JUST: Joi.string().allow(''),
+  F43_PLANO: Joi.string().allow(''),
+  F44_CRITERIOS: Joi.array().items(Joi.string()).optional(),
+  F44_DECLS: Joi.array().items(Joi.string()).optional(),
+  F44_FINALIDADES: Joi.array().items(Joi.string()).optional(),
+  F44_ANEXOS: Joi.string().allow(''),
+  F45_OK451: Joi.boolean().optional(),
+  F45_DOCS: Joi.string().allow(''),
+  F45_JUST: Joi.string().allow(''),
+  F46_CRITERIOS: Joi.array().items(Joi.string()).optional(),
+  F46_PROGESTAO: Joi.string().allow(''),
+  F46_PORTE: Joi.string().allow(''),
+  F46_JUST_D: Joi.string().allow(''),
+  F46_DOCS_D: Joi.string().allow(''),
+  F46_JUST_E: Joi.string().allow(''),
+  F46_DOCS_E: Joi.string().allow(''),
+  F46_FINALIDADES: Joi.array().items(Joi.string()).optional(),
+  F46_ANEXOS: Joi.string().allow(''),
+  F46_JUST_PLANOS: Joi.string().allow(''),
+  F46_COMP_CUMPR: Joi.string().allow(''),
+
+  // etapa 5
+  JUSTIFICATIVAS_GERAIS: Joi.string().allow(''),
+
+  // carimbos
+  MES: Joi.string().allow(''),
+  DATA_SOLIC_GERADA: Joi.string().allow(''),
+  HORA_SOLIC_GERADA: Joi.string().allow(''),
+  ANO_SOLIC_GERADA: Joi.string().allow(''),
+
+  // gescon (gate informativo)
+  HAS_TERMO_ENC_GESCON: Joi.boolean().optional(),
+  N_GESCON: Joi.string().allow(''),
+  DATA_ENC_VIA_GESCON: Joi.string().allow(''),
+
+  IDEMP_KEY: Joi.string().allow('')
+}).unknown(true);
+
+const schemaSolicCrpPdf = Joi.object().keys(schemaSolicCrp.describe().keys).unknown(true);
+
 
 function validateOr400(res, schema, obj) {
   const { error, value } = schema.validate(obj, { abortEarly: false, stripUnknown: false, convert: true });
@@ -1381,6 +1542,50 @@ function makeIdemKeyFromPayload(p) {
   const raw = JSON.stringify(keyObj);
   return 'fp_' + crypto.createHash('sha256').update(raw).digest('hex').slice(0, 24);
 }
+
+/* ===== Idempotência p/ Solic_CRPs ===== */
+function makeIdemKeyFromSolicCrp(p) {
+  const keyObj = {
+    UF: norm(p.UF), ENTE: norm(p.ENTE),
+    CNPJ_ENTE: cnpj14(p.CNPJ_ENTE),
+    CNPJ_UG: cnpj14(p.CNPJ_UG),
+    CPF_REP_ENTE: digits(p.CPF_REP_ENTE),
+    CPF_REP_UG: digits(p.CPF_REP_UG),
+    DATA_VENC: norm(p.DATA_VENCIMENTO_ULTIMO_CRP),
+    FASE: norm(p.FASE_PROGRAMA || ''),
+    DIA: norm(p.DATA_SOLIC_GERADA || '')
+  };
+  return 'sc_' + crypto.createHash('sha256').update(JSON.stringify(keyObj)).digest('hex').slice(0, 24);
+}
+async function findSolicByIdemKey(sheet, idemKey) {
+  await sheet.loadHeaderRow();
+  const headers = sheet.headerValues || [];
+  const idx = headers.findIndex(h => String(h).trim().toUpperCase() === 'IDEMP_KEY');
+  if (idx < 0) return null;
+  const endRow = sheet.rowCount || 2000;
+  await safeLoadCells(sheet, { startRowIndex: 1, startColumnIndex: idx, endRowIndex: endRow, endColumnIndex: idx+1 }, 'SolicCRP:scanIDEMP');
+  for (let r=1;r<endRow;r++){
+    const v = String(sheet.getCell(r, idx)?.value || '').trim();
+    if (v && v === idemKey) return r;
+  }
+  return null;
+}
+const SOLIC_HEADERS = [
+  'ESFERA','UF','ENTE','CNPJ_ENTE','EMAIL_ENTE',
+  'UG','CNPJ_UG','EMAIL_UG',
+  'NOME_REP_ENTE','CPF_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
+  'NOME_REP_UG','CPF_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
+  'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP','CRITERIOS_IRREGULARES',
+  'FASE_PROGRAMA','F41_OPCAO','F42_LISTA','F43_LISTA','F43_JUST','F43_PLANO',
+  'F44_CRITERIOS','F44_DECLS','F44_FINALIDADES','F44_ANEXOS',
+  'F45_OK451','F45_DOCS','F45_JUST',
+  'F46_CRITERIOS','F46_PROGESTAO','F46_PORTE','F46_JUST_D','F46_DOCS_D','F46_JUST_E','F46_DOCS_E','F46_FINALIDADES','F46_ANEXOS','F46_JUST_PLANOS','F46_COMP_CUMPR',
+  'JUSTIFICATIVAS_GERAIS',
+  'HAS_TERMO_ENC_GESCON','N_GESCON','DATA_ENC_VIA_GESCON',
+  'MES','DATA_SOLIC_GERADA','HORA_SOLIC_GERADA','ANO_SOLIC_GERADA',
+  'IDEMP_KEY'
+];
+
 async function findTermoByIdemKey(sTermos, idemKey) {
   await sTermos.loadHeaderRow();
   const headers = sTermos.headerValues || [];
@@ -1593,6 +1798,74 @@ app.post('/api/gerar-termo', async (req, res) => {
     return res.status(500).json({ error: 'Falha ao registrar o termo.' });
   }
 });
+
+/** POST /api/gerar-solic-crp  — IDEMPOTENTE (Solicitação CRP) */
+app.post('/api/gerar-solic-crp', async (req, res) => {
+  try {
+    const p = validateOr400(res, schemaSolicCrp, req.body || {});
+    if (!p) return;
+
+    await authSheets();
+    const s = await getOrCreateSheet('Solic_CRPs', SOLIC_HEADERS);
+    await s.loadHeaderRow();
+    await ensureSheetHasColumns(s, ['IDEMP_KEY']);
+
+    const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
+    const idemBody   = String(p.IDEMP_KEY || '').trim();
+    const idemKey    = idemHeader || idemBody || makeIdemKeyFromSolicCrp(p);
+
+    const existing = await findSolicByIdemKey(s, idemKey);
+    if (existing !== null) {
+      return res.json({ ok:true, dedup:true, idempotency_key: idemKey });
+    }
+
+    const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
+      ? p.CRITERIOS_IRREGULARES : String(p.CRITERIOS_IRREGULARES||'').split(',').map(v=>v.trim()).filter(Boolean);
+
+    // arrays em CSV
+    const asCSV = (a) => Array.isArray(a) ? a.join(', ') : String(a||'');
+
+    await safeAddRow(s, sheetSanObject({
+      ESFERA: p.ESFERA || '',
+      UF: p.UF, ENTE: p.ENTE, CNPJ_ENTE: digits(p.CNPJ_ENTE), EMAIL_ENTE: norm(p.EMAIL_ENTE),
+      UG: p.UG, CNPJ_UG: digits(p.CNPJ_UG), EMAIL_UG: norm(p.EMAIL_UG),
+      NOME_REP_ENTE: p.NOME_REP_ENTE, CPF_REP_ENTE: digits(p.CPF_REP_ENTE), CARGO_REP_ENTE: p.CARGO_REP_ENTE, EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE), TEL_REP_ENTE: norm(p.TEL_REP_ENTE),
+      NOME_REP_UG: p.NOME_REP_UG, CPF_REP_UG: digits(p.CPF_REP_UG), CARGO_REP_UG: p.CARGO_REP_UG, EMAIL_REP_UG: norm(p.EMAIL_REP_UG), TEL_REP_UG: norm(p.TEL_REP_UG),
+      DATA_VENCIMENTO_ULTIMO_CRP: norm(p.DATA_VENCIMENTO_ULTIMO_CRP), TIPO_EMISSAO_ULTIMO_CRP: norm(p.TIPO_EMISSAO_ULTIMO_CRP),
+      CRITERIOS_IRREGULARES: criterios.join(', '),
+
+      FASE_PROGRAMA: p.FASE_PROGRAMA || '',
+      F41_OPCAO: p.F41_OPCAO || '',
+      F42_LISTA: asCSV(p.F42_LISTA),
+      F43_LISTA: asCSV(p.F43_LISTA), F43_JUST: p.F43_JUST || '', F43_PLANO: p.F43_PLANO || '',
+      F44_CRITERIOS: asCSV(p.F44_CRITERIOS), F44_DECLS: asCSV(p.F44_DECLS), F44_FINALIDADES: asCSV(p.F44_FINALIDADES), F44_ANEXOS: p.F44_ANEXOS || '',
+      F45_OK451: p.F45_OK451 ? '1' : '', F45_DOCS: p.F45_DOCS || '', F45_JUST: p.F45_JUST || '',
+      F46_CRITERIOS: asCSV(p.F46_CRITERIOS), F46_PROGESTAO: p.F46_PROGESTAO || '', F46_PORTE: p.F46_PORTE || '',
+      F46_JUST_D: p.F46_JUST_D || '', F46_DOCS_D: p.F46_DOCS_D || '', F46_JUST_E: p.F46_JUST_E || '', F46_DOCS_E: p.F46_DOCS_E || '',
+      F46_FINALIDADES: asCSV(p.F46_FINALIDADES), F46_ANEXOS: p.F46_ANEXOS || '', F46_JUST_PLANOS: p.F46_JUST_PLANOS || '', F46_COMP_CUMPR: p.F46_COMP_CUMPR || '',
+
+      JUSTIFICATIVAS_GERAIS: p.JUSTIFICATIVAS_GERAIS || '',
+
+      HAS_TERMO_ENC_GESCON: p.HAS_TERMO_ENC_GESCON ? '1' : '',
+      N_GESCON: p.N_GESCON || '', DATA_ENC_VIA_GESCON: p.DATA_ENC_VIA_GESCON || '',
+
+      MES: p.MES || '', DATA_SOLIC_GERADA: p.DATA_SOLIC_GERADA || '', HORA_SOLIC_GERADA: p.HORA_SOLIC_GERADA || '', ANO_SOLIC_GERADA: p.ANO_SOLIC_GERADA || '',
+      IDEMP_KEY: idemKey
+    }), 'SolicCRP:add');
+
+    try { await upsertEmailsInBase(p); } catch (_) {}
+
+    return res.json({ ok:true, idempotency_key: idemKey });
+  } catch (err) {
+    console.error('❌ /api/gerar-solic-crp:', err);
+    const msg = String(err?.message || '').toLowerCase();
+    if (msg.includes('timeout:') || msg.includes('etimedout')) {
+      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
+    }
+    return res.status(500).json({ error:'Falha ao registrar a solicitação de CRP.' });
+  }
+});
+
 /* ========= PDF (Puppeteer) ========= */
 const PDF_CONCURRENCY = Number(process.env.PDF_CONCURRENCY || 1);
 const _pdfQ = []; let _pdfActive = 0;
@@ -1817,6 +2090,300 @@ app.post('/api/termo-pdf', async (req, res) => {
     if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
   }
 });
+
+/** POST /api/termo-solic-crp-pdf — gera PDF do termo_solic_crp.html */
+app.post('/api/termo-solic-crp-pdf', async (req, res) => {
+  try {
+    const p = validateOr400(res, schemaTermoSolicPdf, req.body || {});
+    if (!p) return;
+
+    await withPdfLimiter(async () => {
+      let page; let browser; let triedRestart = false;
+      try {
+        // Bases internas: loopback e (opcional) PUBLIC_URL estática do .env
+        const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
+        const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
+
+        try { browser = await getBrowser(); page = await browser.newPage(); }
+        catch (e) {
+          const msg = String(e?.message || '');
+          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
+            triedRestart = true;
+            try { await browser?.close().catch(()=>{}); } catch(_){}
+            _browserPromise = null; browser = await getBrowser(); page = await browser.newPage();
+          } else { throw e; }
+        }
+
+        await page.setCacheEnabled(false);
+        await page.setRequestInterception(true);
+        page.on('request', (reqObj) => {
+          const u = reqObj.url();
+          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
+          const allowed =
+            (u.startsWith(LOOPBACK_BASE)) ||
+            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
+          return allowed ? reqObj.continue() : reqObj.abort();
+        });
+
+        page.setDefaultNavigationTimeout(90_000);
+        page.setDefaultTimeout(90_000);
+        await page.emulateMediaType('screen');
+
+        // 1) Carrega a página SEM querystring
+        const urlsToTry = [
+          `${LOOPBACK_BASE}/termo_solic_crp.html`
+        ];
+        if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/termo_solic_crp.html`);
+
+        let loaded = false; let lastErr = null;
+        for (const u of urlsToTry) {
+          try { await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 }); loaded = true; break; }
+          catch (e) { lastErr = e; }
+        }
+        if (!loaded) throw lastErr || new Error('Falha ao carregar termo_solic_crp.html');
+
+        // 2) Injeta os dados na página
+        const payloadForClient = {
+          ...p,
+          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
+            ? p.CRITERIOS_IRREGULARES
+            : String(p.CRITERIOS_IRREGULARES || '')
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean)
+        };
+
+        await page.evaluate((payload) => {
+          window.__TERMO_DATA__ = payload;
+          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+        }, payloadForClient);
+
+        // 3) Aguarda sinalização de pronto para impressão
+        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
+        await page.evaluate(() => new Promise((ok) => {
+          if (window.__TERMO_PRINT_READY__ === true) return ok();
+          document.addEventListener('TERMO_PRINT_READY', () => ok(), { once: true });
+          setTimeout(ok, 1500);
+        }));
+
+        // 4) Embute fontes iguais ao outro termo
+        function findFont(candidates){
+          const path = require('path'); const fs = require('fs');
+          for (const rel of candidates){
+            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
+            if (fs.existsSync(abs)) return (function inlineFont(relPath) {
+              try{
+                const pth = path.join(__dirname, '../frontend', relPath.replace(/^\/+/, ''));
+                const buf = fs.readFileSync(pth);
+                const b64 = buf.toString('base64');
+                const ext = require('path').extname(pth).toLowerCase();
+                const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : ext === '.ttf' ? 'font/ttf' : 'application/octet-stream';
+                const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
+                return `url(data:${mime};base64,${b64}) format('${fmt}')`;
+              }catch{ return null; }
+            })(rel);
+          }
+          return null;
+        }
+        const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf']);
+        const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf']);
+        let fontCSS = '';
+        if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
+        if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
+        fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
+
+        await page.addStyleTag({ content: `
+          ${fontCSS}
+          html, body, #pdf-root { background:#ffffff !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .page-head .logos-wrap { display: none !important; }
+          .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
+          .term-title { margin-top: 2mm !important; }
+        `});
+
+        // 5) Header/footer (mesmo padrão visual do /api/termo-pdf)
+        const path = require('path'); const fs = require('fs');
+        function inlineSvg(relPath) {
+          try {
+            const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
+            const raw = fs.readFileSync(abs, 'utf8');
+            return raw.replace(/<\?xml[^>]*>/g, '').replace(/<!DOCTYPE[^>]*>/g, '')
+              .replace(/\r?\n|\t/g, ' ').replace(/>\s+</g, '><').trim();
+          } catch { return ''; }
+        }
+        const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
+        const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
+        const headerTemplate = `
+          <style>
+            .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6mm 12mm 4mm; }
+            .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
+            .pdf-header .logo-sec svg { height: 19mm; width:auto; }
+            .pdf-header .logo-mps svg { height: 20mm; width:auto; }
+            .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
+            .date, .title, .url, .pageNumber, .totalPages { display:none; }
+          </style>
+          <div class="pdf-header">
+            <div class="logos">
+              <div class="logo-sec">${svgSec}</div>
+              <div class="logo-mps">${svgMps}</div>
+            </div>
+            <div class="rule"></div>
+          </div>`;
+        const footerTemplate = `<div></div>`;
+
+        // 6) Gera o PDF
+        const pdf = await page.pdf({
+          printBackground: true,
+          preferCSSPageSize: true,
+          displayHeaderFooter: true,
+          headerTemplate,
+          footerTemplate,
+          margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
+        });
+        await page.close();
+
+        const filenameSafe = (p.ENTE || 'termo-solic-crp')
+          .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="termo-solic-${filenameSafe}.pdf"`);
+        res.setHeader('Cache-Control', 'no-store, max-age=0');
+        res.send(pdf);
+      } catch (e) {
+        console.error('❌ /api/termo-solic-crp-pdf:', e);
+        try { if (page) await page.close(); } catch(_) {}
+        res.status(500).json({ error: 'Falha ao gerar PDF' });
+      }
+    });
+  } catch (e) {
+    console.error('❌ (outer) /api/termo-solic-crp-pdf:', e);
+    if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
+  }
+});
+
+
+/** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */
+app.post('/api/solic-crp-pdf', async (req, res) => {
+  try {
+    const p = validateOr400(res, schemaSolicCrpPdf, req.body || {});
+    if (!p) return;
+
+    await withPdfLimiter(async () => {
+      let page; let browser; let triedRestart = false;
+      try {
+        // base loopback (mesma proteção do /api/termo-pdf)
+        const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
+        const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
+
+        try { browser = await getBrowser(); page = await browser.newPage(); }
+        catch (e) {
+          const msg = String(e?.message || '');
+          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
+            triedRestart = true;
+            try { await browser?.close().catch(()=>{}); } catch(_){}
+            _browserPromise = null; browser = await getBrowser(); page = await browser.newPage();
+          } else { throw e; }
+        }
+
+        await page.setCacheEnabled(false);
+        await page.setRequestInterception(true);
+        page.on('request', (reqObj) => {
+          const u = reqObj.url();
+          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
+          const allowed = (u.startsWith(LOOPBACK_BASE)) || (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
+          return allowed ? reqObj.continue() : reqObj.abort();
+        });
+        page.setDefaultNavigationTimeout(90_000);
+        page.setDefaultTimeout(90_000);
+        await page.emulateMediaType('screen');
+
+        // tenta /solic_crp.html, cai para /termo.html se não existir
+        const urlsToTry = [`${LOOPBACK_BASE}/solic_crp.html`];
+        if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/solic_crp.html`);
+        urlsToTry.push(`${LOOPBACK_BASE}/termo.html`);
+        if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/termo.html`);
+
+        let loaded = false; let lastErr = null;
+        for (const u of urlsToTry) {
+          try { await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 }); loaded = true; break; }
+          catch (e) { lastErr = e; }
+        }
+        if (!loaded) throw lastErr || new Error('Falha ao carregar o HTML de impressão (solic_crp.html / termo.html)');
+
+        // injeta payload
+        await page.evaluate((payload) => {
+          window.__TERMO_DATA__ = payload; // front deve ouvir TERMO_DATA_READY
+          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+        }, {
+          ...p,
+          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [],
+          COMP_CODES: [] // não usamos aqui
+        });
+
+        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
+        await page.evaluate(() => new Promise((ok) => {
+          if (window.__TERMO_PRINT_READY__ === true) return ok();
+          document.addEventListener('TERMO_PRINT_READY', () => ok(), { once:true });
+          setTimeout(ok, 1500);
+        }));
+
+        // fontes iguais às do outro PDF
+        function findFont(candidates){
+          for (const rel of candidates){
+            const abs = require('path').join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
+            if (require('fs').existsSync(abs)) {
+              const buf = require('fs').readFileSync(abs);
+              const b64 = buf.toString('base64');
+              const ext = require('path').extname(abs).toLowerCase();
+              const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : ext === '.ttf' ? 'font/ttf' : 'application/octet-stream';
+              const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
+              return `url(data:${mime};base64,${b64}) format('${fmt}')`;
+            }
+          }
+          return null;
+        }
+        const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf']);
+        const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf']);
+        let fontCSS = '';
+        if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
+        if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
+        fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
+
+        await page.addStyleTag({ content: `${fontCSS} html, body, #pdf-root{background:#fff!important}` });
+
+        const headerTemplate = `<div></div>`;
+        const footerTemplate = `<div></div>`;
+
+        const pdf = await page.pdf({
+          printBackground: true, preferCSSPageSize: true, displayHeaderFooter: true,
+          headerTemplate, footerTemplate, margin: { top: '10mm', right: '0mm', bottom: '10mm', left: '0mm' }
+        });
+        await page.close();
+
+        const filenameSafe = (p.ENTE || 'solic-crp')
+          .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="solic-crp-${filenameSafe}.pdf"`);
+        res.setHeader('Cache-Control', 'no-store, max-age=0');
+        res.send(pdf);
+      } catch (e) {
+        console.error('❌ /api/solic-crp-pdf:', e);
+        try { if (page) await page.close(); } catch(_){}
+        res.status(500).json({ error: 'Falha ao gerar PDF da solicitação de CRP' });
+      }
+    });
+  } catch (e) {
+    console.error('❌ (outer) /api/solic-crp-pdf:', e);
+    if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF da solicitação de CRP' });
+  }
+});
+
+/* ===== Aliases compatíveis com o front novo ===== */
+app.post('/_api/gescon-termo-enc', (req, res) => res.redirect(307, '/api/gescon/termo-enc'));
+app.post('/_api/termos-registrados', (req, res) => res.redirect(307, '/api/termos-registrados'));
+app.post('/_api/solic-crp-pdf', (req, res) => res.redirect(307, '/api/solic-crp-pdf'));
+app.post('/_api/gerar-solic-crp', (req, res) => res.redirect(307, '/api/gerar-solic-crp'));
 
 
 /* ───────────── Start ───────────── */
