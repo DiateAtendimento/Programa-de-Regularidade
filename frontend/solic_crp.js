@@ -31,6 +31,30 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
   }
   function clearIdemKey(){ try{ localStorage.removeItem(IDEM_STORE_KEY); }catch{} }
 
+  // --- Normalização de data vinda da planilha/API (número serial/ISO/string) -> dd/mm/aaaa
+  function toDateBR(v){
+    if(!v) return '';
+    // Número serial (Google Sheets/Excel)
+    if(typeof v === 'number' && isFinite(v)){
+      // Sheets costuma usar base 1899-12-30
+      const base = new Date(1899, 11, 30);
+      const d = new Date(base.getTime() + v * 86400000);
+      return fmtBR(d);
+    }
+    // ISO
+    const iso = String(v).trim();
+    const mIso = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(mIso) return `${mIso[3]}/${mIso[2]}/${mIso[1]}`;
+    // Já em PT-BR ou outro texto: mantém
+    return iso;
+  }
+
+  // --- Validação do nº Gescon: S|L + 6 dígitos + "/" + ano
+  function isGesconNumber(x){
+    return /^[SL]\d{6}\/\d{4}$/.test(String(x).trim());
+  }
+
+
   /* ========= Robust fetch (timeout + retries) ========= */
   const FETCH_TIMEOUT_MS = 120000;
   const FETCH_RETRIES    = 1;
@@ -333,16 +357,22 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
 
   /* ========= Stepper fallback ========= */
   let curStep = 0;
+
   function ensureStepperFallback(){
     if(!el.sections.length || !el.btnNext || !el.btnPrev) return;
+
+    // se já inicializado, só re-renderiza e sai
+    if (ensureStepperFallback._inited) { window.__renderStepper?.(); return; }
+    ensureStepperFallback._inited = true;
+
     function render(){
       el.sections.forEach((sec,i)=> sec.style.display = (i===curStep ? '' : 'none'));
       el.dots.forEach((d,i)=> d.classList.toggle('active', i===curStep));
       el.btnPrev.style.visibility = (curStep===0 ? 'hidden' : 'visible');
       el.btnNext.classList.toggle('d-none', curStep === el.sections.length-1);
       el.btnSubmit.classList.toggle('d-none', !(curStep === el.sections.length-1));
+      if (el.btnNext) el.btnNext.disabled = (curStep === 0 && el.hasGescon?.value !== '1');
 
-      // encaixa Next no slot da etapa 0
       const slot = el.slotNextStep0;
       if(slot){
         if(curStep===0 && el.btnNext.parentElement!==slot) slot.appendChild(el.btnNext);
@@ -350,9 +380,10 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
       }
       saveState();
     }
+    window.__renderStepper = render;
+
     function next(){
       if(curStep === 0 && el.hasGescon?.value!=='1'){ showModal('modalBusca'); return; }
-      // valida fase visível quando estiver na etapa 4
       if(curStep === 4){
         const vf = validarFaseSelecionada();
         if(!vf.ok){ showAtencao([vf.motivo]); return; }
@@ -364,11 +395,12 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
     el.btnNext.addEventListener('click', next);
     el.btnPrev.addEventListener('click', prev);
 
-    // restaura estado
     const st = loadState();
     curStep = Number.isFinite(st?.step) ? Math.max(0, Math.min(el.sections.length-1, Number(st.step))) : 0;
     render();
   }
+
+
 
   /* ========= Modais (Atenção/Erro) ========= */
   function showAtencao(msgs){
@@ -420,25 +452,47 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
 
     try{
       const data = await consultarGesconByCnpj(cnpj);
-      const ok = data && data.n_gescon && data.uf && data.ente && data.data_enc_via_gescon;
+
+      // precisa ter todos os campos
+      let ok = data && data.n_gescon && data.uf && data.ente && data.data_enc_via_gescon;
+
+      // regra do nº da consulta: S|L + 6 dígitos + /AAAA
+      if(ok && !isGesconNumber(data.n_gescon)) ok = false;
+
       if(!ok){
         el.hasGescon.value = '0';
+        // trava o Próximo enquanto não houver registro válido
+        if(el.btnNext) el.btnNext.disabled = true;
         showModal('modalBusca');
         return;
       }
+
+      // normaliza data p/ exibição
+      const dataEncBR = toDateBR(data.data_enc_via_gescon);
+
       // info box
       el.hasGescon.value = '1';
-      el.spanNGescon.textContent  = data.n_gescon || '';
-      el.spanDataEnc.textContent  = data.data_enc_via_gescon || '';
-      el.spanUfGescon.textContent = data.uf || '';
-      el.spanEnteGescon.textContent = data.ente || '';
+      if(el.btnNext) el.btnNext.disabled = false;
+
+      el.spanNGescon.textContent     = data.n_gescon || '';
+      el.spanDataEnc.textContent     = dataEncBR || '';
+      el.spanUfGescon.textContent    = data.uf || '';
+      el.spanEnteGescon.textContent  = data.ente || '';
       el.boxGescon?.classList.remove('d-none');
-      el.infoDataEncGescon && (el.infoDataEncGescon.textContent = data.data_enc_via_gescon || '—');
+
+      // também mostra na etapa 1 (linha abaixo do título)
+      el.infoDataEncGescon && (el.infoDataEncGescon.textContent = dataEncBR || '—');
 
       // hidrata 1–3
       await hidratarTermosRegistrados(cnpj);
+
       // avança para etapa 1 (se estivermos no 0)
-      if(curStep===0){ curStep=1; ensureStepperFallback(); }
+      if (curStep === 0) { 
+        curStep = 1; 
+        window.__renderStepper?.();   // em vez de chamar ensureStepperFallback() de novo
+      }
+
+
     }catch(err){
       console.error(err);
       showErro(friendlyErrorMessages(err, 'Falha ao consultar informações.'));
@@ -815,6 +869,8 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
     bindMasks();
     el.btnPesquisar?.addEventListener('click', onPesquisar, false);
     setupFase4Toggles();
+    const faseSel = document.querySelector('input[name="FASE_PROGRAMA"]:checked');
+    if (faseSel) faseSel.dispatchEvent(new Event('change'));
     popularListasFaseComBaseNosCritérios();
     initWelcome();
 
@@ -829,6 +885,9 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
     // salvar alterou
     form?.addEventListener('input', ()=> setTimeout(saveState, 300));
     form?.addEventListener('change', ()=> setTimeout(saveState, 300));
+
+    // Step 0: começa desabilitado até achar Gescon
+    if(el.btnNext) el.btnNext.disabled = true;
 
     // restore & stepper
     ensureStepperFallback();

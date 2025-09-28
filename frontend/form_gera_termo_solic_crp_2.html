@@ -17,6 +17,8 @@
   <link rel="icon" href="imagens/favicon.png" sizes="16x16" type="image/png">
 
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="termo_solic_crp.css" />
+
 </head>
 <body>
   <!-- BG decorativo -->
@@ -64,7 +66,7 @@
               </div>
 
               <!-- SLOT para o mesmo #btnNext (somente na etapa 0) -->
-              <div class="col-auto" id="slotNextStep0">
+              <div class="col-auto ms-auto" id="slotNextStep0">
                 <label class="d-none d-md-block">&nbsp;</label>
                 <!-- o botão #btnNext é movido via JS para cá quando step===0 -->
               </div>
@@ -85,8 +87,12 @@
           <section class="app-section" data-step="1">
             <div class="section-head">
               <h2 class="section-title">1. Identificação do ente federativo</h2>
-              <p class="small text-muted mb-1">Os dados abaixo serão carregados da aba <em>Termos_registrados</em>. Você poderá ajustar se necessário.</p>
-              <p class="small text-muted mb-0"><strong>Data do encaminhamento (Gescon-RPPS):</strong> <span id="infoDataEncGescon" class="text-body" data-bind="DATA_ENC_VIA_GESCON">—</span></p>
+              <div class="gescon-breadcrumb small">
+                <span><strong>Consulta Gescon:</strong> <span id="infoNumGescon" class="text-body" data-bind="N_GESCON">—</span></span>
+                <span class="sep">•</span>
+                <span><strong>Data do encaminhamento:</strong> <span id="infoDataEncGescon" class="text-body" data-bind="DATA_ENC_VIA_GESCON">—</span></span>
+              </div>
+              <p class="small text-muted mb-0">Os dados abaixo serão carregados da aba <em>Termos_registrados</em>. Você poderá ajustar se necessário.</p>
             </div>
 
             <div class="mb-3" id="grpESFERA">
@@ -513,7 +519,7 @@
           <!-- Navegação -->
           <div id="navFooter" class="d-flex align-items-center gap-2 mt-2">
             <button type="button" id="btnPrev" class="btn btn-outline-secondary">Voltar</button>
-            <button type="button" id="btnNext" class="btn btn-primary">Próximo</button>
+            <button type="button" id="btnNext" class="btn btn-primary" disabled>Próximo</button>
             <button type="submit" id="btnSubmit" class="btn btn-success d-none">Salvar e Finalizar</button>
           </div>
           <!-- carimbos -->

@@ -1,4 +1,9 @@
-/* termo_solic_crp.css — padrão visual alinhado ao termo.css */
+/* ======================================================================
+   termo_solic_crp.css — padrão visual alinhado ao termo.css
+   + ajustes específicos para o formulário "form_gera_termo_solic_crp_2"
+   ====================================================================== */
+
+/* -------------------- Bases compartilhadas (layout A4 / termo) -------------------- */
 :root{
   --page-w: 210mm;
   --page-h: 297mm;
@@ -18,7 +23,7 @@ body{
   color:var(--ink);
 }
 
-/* Container (preview) */
+/* Container (preview PDF) */
 #pdf-root{ width:var(--page-w); margin:0 auto; }
 .term-wrap{
   position:relative;
@@ -35,7 +40,7 @@ body{
 html.pdf-export, body.pdf-export{ background:#fff !important }
 .pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important }
 
-/* Cabeçalho */
+/* Cabeçalho do termo */
 .page-head{
   position:relative;
   display:grid;
@@ -54,7 +59,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 }
 .logos-wrap{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:1mm 6mm; width:100%; padding-top:0; }
 
-/* Título + meta */
+/* Título + meta (termo) */
 .term-title{
   margin:2mm 0 0 !important;
   place-self:center;
@@ -76,7 +81,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 .pdf-export .term-title{ margin-top:2mm !important; }
 .pdf-export .page-head{ margin-bottom:4mm !important; }
 
-/* Conteúdo */
+/* Conteúdo do termo */
 .term-section + .term-section{ margin-top:8mm }
 .term-section h2{
   font-size:15px; font-weight:800; color:var(--brand);
@@ -97,7 +102,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 .small{ font-size:12.2px; color:var(--muted) }
 .strong{ font-weight:700 }
 
-/* Grid de campos */
+/* Grid de campos (termo) */
 .grid{
   display:grid;
   grid-template-columns: 1fr 1fr;
@@ -121,7 +126,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 .keep-together{ break-inside:avoid-page; page-break-inside:avoid; }
 .break-before{ break-before:page; page-break-before:always; }
 
-/* Rodapé (Assinaturas) */
+/* Rodapé (Assinaturas) no termo */
 .term-footer{
   margin-top:14mm; text-align:center;
   break-inside:avoid; page-break-inside:avoid;
@@ -177,3 +182,38 @@ html.pdf-export .term-meta, body.pdf-export .term-meta{
 .page-head .rule, #pdf-root > .rule, .rule{
   border:0 !important; background:transparent !important; box-shadow:none !important; height:0 !important;
 }
+
+/* -------------------- Ajustes ESPECÍFICOS do FORMULÁRIO -------------------- */
+
+/* Step 0: alinhar "Próximo" na mesma linha da pesquisa, à direita */
+#pesquisaRow{
+  align-items: end;
+}
+#slotNextStep0{
+  margin-left: auto;                /* empurra para a direita */
+  display: flex;
+  align-items: end;
+}
+
+/* Resumo/alerta Gescon após a pesquisa */
+#gesconInfoBox{
+  border-left: 4px solid #29a3ff;
+}
+
+/* Breadcrumb com Nº Gescon + Data no topo da etapa 1 */
+.gescon-breadcrumb{
+  margin-top: .25rem;
+  margin-bottom: .25rem;
+  color: #64748b;
+}
+.gescon-breadcrumb .sep{ margin: 0 .5rem; color:#c0c8d2; }
+
+/* Botão Próximo desabilitado (feedback de bloqueio até validar Gescon) */
+#btnNext:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+/* Tamanhos padrão das lotties nos modais deste form */
+.lottie-box{ width: 140px; height: 140px; }
+.lottie-loading{ width: 120px; height:120px; }
