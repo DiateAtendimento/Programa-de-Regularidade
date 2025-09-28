@@ -2,7 +2,12 @@
 
 (() => {
   /* ========= Config ========= */
-  const API_BASE = `${location.origin}/_api`;           // padrão do projeto
+  const API_BASE =
+  (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) ||
+  (location.hostname.endsWith('netlify.app') ? '/_api' : '/api');
+
+const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
+
   const FORM_STORAGE_KEY = 'solic-crp-form-v1';
   const IDEM_STORE_KEY   = 'rpps-idem-submit:solic-crp';
   const FORM_TTL_MS      = 30 * 60 * 1000;              // 30 min
@@ -390,14 +395,15 @@
   let searching = false;
 
   async function consultarGesconByCnpj(cnpj){
-    // esperado backend: { ok:true, n_gescon, uf, ente, data_enc_via_gescon }
-    return fetchJSON(`${API_BASE}/gescon-termo-enc`, {
+    // servidor expõe: POST /api/gescon/termo-enc
+    return fetchJSON(api('/gescon/termo-enc'), {
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ cnpj })
-    }, { label:'gescon-termo-enc', retries: 0 });
+    }, { label:'gescon/termo-enc', retries: 0 });
   }
+
   async function consultarTermosRegistrados(cnpj){
     // esperado backend: { ok:true, ente:{uf,nome,cnpj,ug,cnpj_ug,email,email_ug}, responsaveis:{ente:{...},ug:{...}}, crp:{data_venc,tipo,irregulares:[]}}
-    return fetchJSON(`${API_BASE}/termos-registrados`, {
+    return fetchJSON(api('/termos-registrados'), {
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ cnpj })
     }, { label:'termos-registrados', retries: 0 });
   }
@@ -711,9 +717,9 @@
   /* ========= Gerar & baixar PDF ========= */
   async function gerarBaixarPDF(payload){
     const blob = await fetchBinary(
-      `${API_BASE}/solic-crp-pdf`,
+      api('/termo-pdf'),
       { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) },
-      { label:'solic-crp-pdf', timeout:60000, retries:1 }
+      { label:'termo-pdf', timeout:60000, retries:1 }
     );
 
     const url = URL.createObjectURL(blob);
@@ -769,11 +775,12 @@
     let t = setTimeout(()=> bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).show(), 3000);
 
     try{
-      await fetchJSON(`${API_BASE}/gerar-solic-crp`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-Idempotency-Key':idem},
-        body: JSON.stringify(payload)
-      }, { label:'gerar-solic-crp', timeout:30000, retries:1 });
+      await fetchJSON(api('/gerar-termo'), {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Idempotency-Key':idem},
+      body: JSON.stringify(payload)
+      }, { label:'gerar-termo', timeout:30000, retries:1 });
+
 
       clearTimeout(t);
       try{ bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); }catch{}
