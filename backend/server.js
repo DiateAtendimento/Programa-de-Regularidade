@@ -477,6 +477,13 @@ function parseDMYorYMD(s) {
   const d = new Date(v);
   return isNaN(d) ? new Date(0) : d;
 }
+// helper simples para ler célula (valor formatado > valor bruto) como string
+function cellStr(sheet, rowIdx, colIdx) {
+  if (colIdx < 0) return '';
+  const cell = sheet.getCell(rowIdx, colIdx);
+  const v = (cell?.formattedValue ?? cell?.value ?? '');
+  return String(v).trim();
+}
 
 // ── coloque após parseDMYorYMD / format helpers ──
 function normalizeSheetDateAny(cell) {
@@ -1005,21 +1012,21 @@ app.post('/api/gescon/termo-enc', async (req, res) => {
       endRowIndex: rowHit + 1, endColumnIndex: endCol
     }, 'GESCON:readRow');
 
-
     const dataEncCell = (col.data_enc >= 0) ? s.getCell(rowHit, col.data_enc) : null;
     const normDataEnc = normalizeSheetDateAny(dataEncCell);
 
     const payload = {
       cnpj,
-      uf: (getCell(col.uf) ?? '').toString().trim(),
-      ente: (getCell(col.ente) ?? '').toString().trim(),
-      n_gescon: (getCell(col.n_gescon) ?? '').toString().trim(),
-      // mantém compatibilidade:
+      uf:        cellStr(s, rowHit, col.uf),
+      ente:      cellStr(s, rowHit, col.ente),
+      n_gescon:  cellStr(s, rowHit, col.n_gescon),
+      // mantém compat p/ o front atual
       data_enc_via_gescon: normDataEnc.dmy || normDataEnc.raw || '',
-      // novos campos "amigáveis" pro front:
+      // extras (se quiser usar depois)
       data_enc_via_gescon_iso: normDataEnc.iso,
       data_enc_via_gescon_dmy: normDataEnc.dmy
     };
+
 
 
     // se faltar algum essencial, retorna vazio
