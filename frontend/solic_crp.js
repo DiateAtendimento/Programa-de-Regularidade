@@ -185,6 +185,8 @@
     uf: $('#UF'), ente: $('#ENTE'), cnpjEnte: $('#CNPJ_ENTE'), emailEnte: $('#EMAIL_ENTE'),
     ug: $('#UG'), cnpjUg: $('#CNPJ_UG'), emailUg: $('#EMAIL_UG'),
     esfMun: $('#esf_mun'), esfEst: $('#esf_est'),
+    infoNumGescon: $('#infoNumGescon'),
+
 
     // etapa 2
     cpfRepEnte: $('#CPF_REP_ENTE'), nomeRepEnte: $('#NOME_REP_ENTE'),
@@ -198,7 +200,7 @@
     grpCrit: $('#grpCRITERIOS'),
 
     // etapa 4
-    faseRadios: $$('input[name="FASE_PROGRAMA"]'),
+    faseChecks: $$('.fase-check'),
     blk41: $('#blk_41'), blk42: $('#blk_42'), blk43: $('#blk_43'),
     blk44: $('#blk_44'), blk45: $('#blk_45'), blk46: $('#blk_46'),
     f42Lista: $('#F42_LISTA'), f43Lista: $('#F43_LISTA'),
@@ -288,6 +290,7 @@
     data.values['esf_mun'] = !!el.esfMun?.checked;
     data.values['esf_est'] = !!el.esfEst?.checked;
     data.values['TIPO_EMISSAO_ULT'] = el.tipoAdm?.checked ? 'Administrativa' : (el.tipoJud?.checked ? 'Judicial' : '');
+    data.values['FASES_MARCADAS[]'] = $$('.fase-check:checked').map(i => i.value);
 
     // 3.3 critérios
     data.values['CRITERIOS_IRREGULARES[]'] = $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i=>i.value);
@@ -305,6 +308,8 @@
     data.values['F43_LISTA[]'] = $$(`#F43_LISTA input[type="checkbox"]:checked`).map(i=>i.value);
     data.values['F43_JUST']    = $('#F43_JUST')?.value || '';
     data.values['F43_PLANO']   = $('#F43_PLANO')?.value || '';
+    data.values['F43_INCLUIR[]'] = $$('#F43_INCLUIR input[type="checkbox"]:checked').map(i=>i.value);
+
 
     // 4.4
     data.values['F44_CRITERIOS[]']   = $$(`#F44_CRITERIOS input[type="checkbox"]:checked`).map(i=>i.value);
@@ -486,6 +491,8 @@
 
       // também mostra na etapa 1 (linha abaixo do título)
       el.infoDataEncGescon && (el.infoDataEncGescon.textContent = dataEncBR || '—');
+      const infoNum = document.getElementById('infoNumGescon');
+      if (infoNum) infoNum.textContent = data.n_gescon || '—';
 
       // hidrata 1–3
       await hidratarTermosRegistrados(cnpj);
@@ -564,53 +571,59 @@
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
   function setupFase4Toggles(){
     const map = { '4.1': el.blk41, '4.2': el.blk42, '4.3': el.blk43, '4.4': el.blk44, '4.5': el.blk45, '4.6': el.blk46 };
-    function showBlock(val){
-      Object.values(map).forEach(b=> b&&b.classList.add('d-none'));
-      const t = map[val]; if(t){ t.classList.remove('d-none'); t.scrollIntoView({behavior:'smooth',block:'start'}); }
+
+    function applyVisibility(){
+      // mostra bloco somente das fases marcadas; oculta as demais
+      Object.entries(map).forEach(([val,blk])=>{
+        if(!blk) return;
+        const checked = !!document.querySelector(`.fase-check[value="${val}"]`)?.checked;
+        blk.classList.toggle('d-none', !checked);
+      });
     }
-    el.faseRadios.forEach(r => r.addEventListener('change', e => { showBlock(e.target.value); saveState(); }));
+
+    el.faseChecks.forEach(chk=>{
+      chk.addEventListener('change', ()=>{ applyVisibility(); saveState(); });
+    });
+
+    applyVisibility();
   }
 
-  function validarFaseSelecionada(){
-    const fase = $('input[name="FASE_PROGRAMA"]:checked');
-    if(!fase) return { ok:false, motivo:'Selecione uma fase (4.1 a 4.6).' };
 
-    switch(fase.value){
-      case '4.1': {
+  function validarFaseSelecionada(){
+    const fases = $$('.fase-check:checked').map(i=>i.value);
+    if(!fases.length) return { ok:false, motivo:'Selecione ao menos uma fase (4.1 a 4.6).' };
+
+    // valida cada fase marcada
+    for(const f of fases){
+      if(f==='4.1'){
         const opt = $('input[name="F41_OPCAO"]:checked', el.blk41);
         if(!opt) return { ok:false, motivo:'Na fase 4.1, selecione 4.1.1 ou 4.1.2.' };
-        return { ok:true };
       }
-      case '4.2': {
+      if(f==='4.2'){
         const marc = $$('input[type="checkbox"]:checked', el.f42Lista);
         if(!marc.length) return { ok:false, motivo:'Na fase 4.2, marque ao menos um item (a–g).' };
-        return { ok:true };
       }
-      case '4.3': {
+      if(f==='4.3'){
         const marc = $$('input[type="checkbox"]:checked', el.f43Lista);
         const just = ($('#F43_JUST')?.value||'').trim();
         if(!marc.length && !just) return { ok:false, motivo:'Na fase 4.3, marque ao menos um critério ou preencha as justificativas.' };
-        return { ok:true };
       }
-      case '4.4': {
+      if(f==='4.4'){
         const crits = $$('input[type="checkbox"]:checked', el.f44Crits);
         if(!crits.length) return { ok:false, motivo:'Na fase 4.4, selecione ao menos um critério (4.4.1).' };
-        return { ok:true };
       }
-      case '4.5': {
+      if(f==='4.5'){
         const ok451 = $('#blk_45 input[type="checkbox"]:checked');
         const docs = ($('#F45_DOCS')?.value||'').trim();
         const jus  = ($('#F45_JUST')?.value||'').trim();
         if(!ok451 && !docs && !jus) return { ok:false, motivo:'Na fase 4.5, marque 4.5.1 ou preencha documentos/justificativas.' };
-        return { ok:true };
       }
-      case '4.6': {
+      if(f==='4.6'){
         const crits = $$('input[type="checkbox"]:checked', el.f46Crits);
         const nivel = $('#F46_PROGESTAO')?.value || '';
         const porte = $('#F46_PORTE')?.value || '';
         if(!crits.length) return { ok:false, motivo:'Na fase 4.6, selecione ao menos um critério em 4.6.1.' };
         if(!nivel || !porte) return { ok:false, motivo:'Informe nível Pró-Gestão e Porte ISP-RPPS em 4.6.2.' };
-        return { ok:true };
       }
     }
     return { ok:true };
@@ -623,11 +636,21 @@
       label: inp.nextElementSibling ? inp.nextElementSibling.textContent : inp.value
     }));
 
-    if(el.f43Lista && !el.f43Lista.children.length){
+    // 4.3.11(a) – incluir no Plano da Fase Específica
+    const f43Incl = document.getElementById('F43_INCLUIR');
+    if (f43Incl && !f43Incl.children.length){
+      f43Incl.innerHTML = itens.map(it => (
+        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
+      )).join('');
+    }
+
+    // 4.3 – lista dos critérios regulares na fase intermediária
+    if (el.f43Lista && !el.f43Lista.children.length){
       el.f43Lista.innerHTML = itens.map(it => (
         `<label class="form-check"><input class="form-check-input me-2" type="checkbox" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
       )).join('');
     }
+
     if(el.f44Crits && !el.f44Crits.children.length){
       el.f44Crits.innerHTML = itens.map(it => (
         `<label class="form-check"><input class="form-check-input me-2" type="checkbox" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
@@ -654,6 +677,7 @@
       el.f46Final.innerHTML = el.f44Final.innerHTML;
     }
   }
+
 
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
@@ -705,7 +729,8 @@
       (el.esfEst?.checked ? 'Estadual/Distrital' : ''));
 
     // fase selecionada (4.1–4.6)
-    const faseSel = $('input[name="FASE_PROGRAMA"]:checked')?.value || '';
+    const marcadas = $$('.fase-check:checked').map(i => i.value);
+    const faseCompat = (marcadas.length ? marcadas.slice().sort().slice(-1)[0] : '') || '';
 
     return {
       // Gate Gescon (informativo)
@@ -744,7 +769,9 @@
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i => i.value),
 
       // 4) Fase do programa (nomes oficiais usados no backend)
-      FASE_PROGRAMA: faseSel,
+      FASES_MARCADAS: marcadas,
+      FASE_PROGRAMA: faseCompat,
+
 
       // 4.1
       F41_OPCAO: $('input[name="F41_OPCAO"]:checked')?.value || '',
@@ -756,6 +783,8 @@
       F43_LISTA: $(`#F43_LISTA input[type="checkbox"]:checked`).map(i => i.value),
       F43_JUST:  $('#F43_JUST')?.value || '',
       F43_PLANO: $('#F43_PLANO')?.value || '',
+      F43_INCLUIR: $$('#F43_INCLUIR input[type="checkbox"]:checked').map(i => i.value),
+
 
       // 4.4
       F44_CRITERIOS:   $(`#F44_CRITERIOS input[type="checkbox"]:checked`).map(i => i.value),
