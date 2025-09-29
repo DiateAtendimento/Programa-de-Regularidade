@@ -5,8 +5,11 @@
   const API_BASE =
   (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) ||
   (location.hostname.endsWith('netlify.app') ? '/_api' : '/api');
-
-const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
+  
+  const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
+  // (opcional) chave para o backend
+  const API_KEY = window.__API_KEY || '';
+  const withKey = (h = {}) => (API_KEY ? { ...h, 'X-API-Key': API_KEY } : h)
 
   const FORM_STORAGE_KEY = 'solic-crp-form-v1';
   const IDEM_STORE_KEY   = 'rpps-idem-submit:solic-crp';
@@ -33,21 +36,22 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
 
   // --- Normalização de data vinda da planilha/API (número serial/ISO/string) -> dd/mm/aaaa
   function toDateBR(v){
-    if(!v) return '';
-    // Número serial (Google Sheets/Excel)
-    if(typeof v === 'number' && isFinite(v)){
-      // Sheets costuma usar base 1899-12-30
-      const base = new Date(1899, 11, 30);
-      const d = new Date(base.getTime() + v * 86400000);
+    if (v == null || v === '') return '';
+    // Número serial (Google Sheets/Excel) — pode vir como number OU string "45927"
+    if ((typeof v === 'number' && isFinite(v)) || (/^\d{4,6}$/.test(String(v).trim()))) {
+      const n = Number(v);
+      const base = new Date(1899, 11, 30); // Sheets base
+      const d = new Date(base.getTime() + n * 86400000);
       return fmtBR(d);
     }
-    // ISO
+    // ISO (yyyy-mm-dd...)
     const iso = String(v).trim();
     const mIso = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if(mIso) return `${mIso[3]}/${mIso[2]}/${mIso[1]}`;
+    if (mIso) return `${mIso[3]}/${mIso[2]}/${mIso[1]}`;
     // Já em PT-BR ou outro texto: mantém
     return iso;
   }
+
 
   // --- Validação do nº Gescon: S|L + 6 dígitos + "/" + ano
   function isGesconNumber(x){
@@ -429,16 +433,16 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
   async function consultarGesconByCnpj(cnpj){
     // servidor expõe: POST /api/gescon/termo-enc
     return fetchJSON(api('/gescon/termo-enc'), {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ cnpj })
-    }, { label:'gescon/termo-enc', retries: 0 });
-  }
+      method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify({ cnpj })
+     }, { label:'gescon/termo-enc', retries: 0 });
+   }
 
   async function consultarTermosRegistrados(cnpj){
     // esperado backend: { ok:true, ente:{uf,nome,cnpj,ug,cnpj_ug,email,email_ug}, responsaveis:{ente:{...},ug:{...}}, crp:{data_venc,tipo,irregulares:[]}}
     return fetchJSON(api('/termos-registrados'), {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ cnpj })
-    }, { label:'termos-registrados', retries: 0 });
-  }
+      method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify({ cnpj })
+     }, { label:'termos-registrados', retries: 0 });
+   }
 
   async function onPesquisar(ev){
     if(searching) return;
@@ -534,6 +538,13 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
       if (crp.data_venc) el.dataUltCrp.value = crp.data_venc;
       if (crp.tipo === 'Administrativa') el.tipoAdm.checked = true;
       if (crp.tipo === 'Judicial')       el.tipoJud.checked = true;
+
+      // Esfera: prioriza data.esfera ou ente.esfera ("RPPS Municipal" | "Estadual/Distrital")
+      const esfera = (data?.esfera || ente?.esfera || '').trim();
+      if (esfera) {
+        if (/municipal/i.test(esfera)) { el.esfMun && (el.esfMun.checked = true); el.esfEst && (el.esfEst.checked = false); }
+        else if (/estadual|distrital/i.test(esfera)) { el.esfEst && (el.esfEst.checked = true); el.esfMun && (el.esfMun.checked = false); }
+      }
 
       if (Array.isArray(crp.irregulares)){
         crp.irregulares.forEach(v=>{
@@ -686,31 +697,34 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
     el.anoSol.value = String(now.getFullYear());
   }
 
-  /* ========= Payload ========= */
+
+  /* ========= Payload (alinhado ao schemaSolicCrp) ========= */
   function buildPayload(){
-    const esfera =
+    const ESFERA =
       (el.esfMun?.checked ? 'RPPS Municipal' :
       (el.esfEst?.checked ? 'Estadual/Distrital' : ''));
 
+    // fase selecionada (4.1–4.6)
     const faseSel = $('input[name="FASE_PROGRAMA"]:checked')?.value || '';
 
     return {
-      // gate Gescon
+      // Gate Gescon (informativo)
       HAS_TERMO_ENC_GESCON: el.hasGescon?.value === '1',
       N_GESCON: el.spanNGescon?.textContent || '',
       DATA_ENC_VIA_GESCON: el.spanDataEnc?.textContent || '',
 
-      // seção 1
-      ESFERA: esfera,
+      // 1) Identificação do ente / UG
+      ESFERA,
       UF: el.uf.value.trim(),
       ENTE: el.ente.value.trim(),
       CNPJ_ENTE: digits(el.cnpjEnte.value),
       EMAIL_ENTE: el.emailEnte.value.trim(),
+
       UG: el.ug.value.trim(),
       CNPJ_UG: digits(el.cnpjUg.value),
       EMAIL_UG: el.emailUg.value.trim(),
 
-      // seção 2
+      // 2) Representantes
       CPF_REP_ENTE: digits(el.cpfRepEnte.value),
       NOME_REP_ENTE: el.nomeRepEnte.value.trim(),
       CARGO_REP_ENTE: el.cargoRepEnte.value.trim(),
@@ -723,58 +737,72 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
       EMAIL_REP_UG: el.emailRepUg.value.trim(),
       TEL_REP_UG: el.telRepUg.value.trim(),
 
-      // seção 3
+      // 3) CRP anterior
       DATA_VENCIMENTO_ULTIMO_CRP: el.dataUltCrp.value || '',
       TIPO_EMISSAO_ULTIMO_CRP: (el.tipoAdm.checked && 'Administrativa') || (el.tipoJud.checked && 'Judicial') || '',
-      CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i=>i.value),
+      // envie array (o back aceita array ou string, mas array é melhor)
+      CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i => i.value),
 
-      // seção 4 (fase + subitens)
+      // 4) Fase do programa (nomes oficiais usados no backend)
       FASE_PROGRAMA: faseSel,
+
+      // 4.1
       F41_OPCAO: $('input[name="F41_OPCAO"]:checked')?.value || '',
-      F42_LISTA: $$(`#F42_LISTA input[type="checkbox"]:checked`).map(i=>i.value),
-      F43_LISTA: $$(`#F43_LISTA input[type="checkbox"]:checked`).map(i=>i.value),
+
+      // 4.2
+      F42_LISTA: $(`#F42_LISTA input[type="checkbox"]:checked`).map(i => i.value),
+
+      // 4.3
+      F43_LISTA: $(`#F43_LISTA input[type="checkbox"]:checked`).map(i => i.value),
       F43_JUST:  $('#F43_JUST')?.value || '',
       F43_PLANO: $('#F43_PLANO')?.value || '',
-      F44_CRITERIOS:   $$(`#F44_CRITERIOS input[type="checkbox"]:checked`).map(i=>i.value),
-      F44_DECLS:       $$(`#blk_44 .d-flex input[type="checkbox"]:checked`).map(i=>i.value),
-      F44_FINALIDADES: $$(`#F44_FINALIDADES input[type="checkbox"]:checked`).map(i=>i.value),
+
+      // 4.4
+      F44_CRITERIOS:   $(`#F44_CRITERIOS input[type="checkbox"]:checked`).map(i => i.value),
+      F44_DECLS:       $(`#blk_44 .d-flex input[type="checkbox"]:checked`).map(i => i.value),
+      F44_FINALIDADES: $(`#F44_FINALIDADES input[type="checkbox"]:checked`).map(i => i.value),
       F44_ANEXOS:      $('#F44_ANEXOS')?.value || '',
-      F45_OK451: !!$('#blk_45 input[type="checkbox"]:checked'),
+
+      // 4.5
+      F45_OK451: !!$('#blk_45 input[type="checkbox"][value="4.5.1"]:checked'),
       F45_DOCS:  $('#F45_DOCS')?.value || '',
       F45_JUST:  $('#F45_JUST')?.value || '',
-      F46_CRITERIOS:   $$(`#F46_CRITERIOS input[type="checkbox"]:checked`).map(i=>i.value),
+
+      // 4.6
+      F46_CRITERIOS:   $(`#F46_CRITERIOS input[type="checkbox"]:checked`).map(i => i.value),
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
       F46_PORTE:       $('#F46_PORTE')?.value || '',
       F46_JUST_D:      $('#F46_JUST_D')?.value || '',
       F46_DOCS_D:      $('#F46_DOCS_D')?.value || '',
       F46_JUST_E:      $('#F46_JUST_E')?.value || '',
       F46_DOCS_E:      $('#F46_DOCS_E')?.value || '',
-      F46_FINALIDADES: $$(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i=>i.value),
+      F46_FINALIDADES: $(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i => i.value),
       F46_ANEXOS:      $('#F46_ANEXOS')?.value || '',
       F46_JUST_PLANOS: $('#F46_JUST_PLANOS')?.value || '',
       F46_COMP_CUMPR:  $('#F46_COMP_CUMPR')?.value || '',
 
-      // seção 5
+      // 5) Justificativas gerais
       JUSTIFICATIVAS_GERAIS: el.justGerais?.value || '',
 
-      // carimbos
+      // Carimbos
       MES: el.mes.value,
       DATA_SOLIC_GERADA: el.dataSol.value,
       HORA_SOLIC_GERADA: el.horaSol.value,
       ANO_SOLIC_GERADA: el.anoSol.value,
 
-      // idempotência
+      // Idempotência
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
 
+
   /* ========= Gerar & baixar PDF ========= */
   async function gerarBaixarPDF(payload){
     const blob = await fetchBinary(
-      api('/termo-pdf'),
-      { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) },
-      { label:'termo-pdf', timeout:60000, retries:1 }
-    );
+       api('/termo-solic-crp-pdf'),
+       { method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify(payload) },
+       { label:'termo-solic-crp-pdf', timeout:60000, retries:1 }
+     );
 
     const url = URL.createObjectURL(blob);
     const a   = document.createElement('a');
@@ -829,25 +857,44 @@ const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
     let t = setTimeout(()=> bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).show(), 3000);
 
     try{
-      await fetchJSON(api('/gerar-termo'), {
+      await fetchJSON(api('/gerar-solic-crp'), {
       method:'POST',
-      headers:{'Content-Type':'application/json','X-Idempotency-Key':idem},
+      headers: withKey({'Content-Type':'application/json','X-Idempotency-Key':idem}),
       body: JSON.stringify(payload)
-      }, { label:'gerar-termo', timeout:30000, retries:1 });
+      }, { label:'gerar-solic-crp', timeout:30000, retries:1 });
 
 
       clearTimeout(t);
       try{ bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); }catch{}
       clearIdemKey();
       btn.innerHTML = 'Finalizado ✓';
-
+      
       // limpar formulário e estado
       setTimeout(()=>{
         try{ form.reset(); }catch{}
         clearAllState();
+
+        // Zera gate do Gescon e limpa visual
+        el.hasGescon && (el.hasGescon.value = '0');
+        el.cnpjInput && (el.cnpjInput.value = '');
+        el.boxGescon && el.boxGescon.classList.add('d-none');
+        if (el.spanNGescon) el.spanNGescon.textContent = '';
+        if (el.spanDataEnc) el.spanDataEnc.textContent = '';
+        if (el.spanUfGescon) el.spanUfGescon.textContent = '';
+        if (el.spanEnteGescon) el.spanEnteGescon.textContent = '';
+        if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
+
+        // Bloqueia novamente o "Próximo" até nova pesquisa válida
+        if (el.btnNext) el.btnNext.disabled = true;
+
         btn.disabled=false; btn.innerHTML=old;
-        curStep=0; ensureStepperFallback();
+
+        // Volta para o passo 0 e re-renderiza
+        curStep = 0;
+        window.__renderStepper?.();
+
       }, 800);
+
     }catch(err){
       clearTimeout(t);
       try{ bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); }catch{}

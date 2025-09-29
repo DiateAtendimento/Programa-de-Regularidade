@@ -46,7 +46,7 @@
 
     <div class="card app-card glass">
       <div class="card-body">
-        <form id="solicCrpForm" novalidate>
+        <form id="solicCrpForm" novalidate autocomplete="off">
           <!-- ETAPA 0: Pesquisa (CNPJ + gate TERMO_ENC_GESCON) -->
           <section class="app-section" data-step="0">
             <div class="section-head">
@@ -75,10 +75,11 @@
             <div class="alert alert-info mt-3 d-none" id="gesconInfoBox">
               <div class="small">Registro encontrado no Gescon-RPPS:</div>
               <ul class="mb-0 small">
-                <li><strong>Nº da consulta (Gescon):</strong> <span id="N_GESCON"></span></li>
-                <li><strong>Data do encaminhamento:</strong> <span id="DATA_ENC_VIA_GESCON"></span></li>
-                <li><strong>UF:</strong> <span id="UF_GESCON"></span></li>
-                <li><strong>Ente:</strong> <span id="ENTE_GESCON"></span></li>
+                <!-- em #gesconInfoBox, deixe os spans com “—” (só visual) -->
+                <li><strong>Nº da consulta (Gescon):</strong> <span id="N_GESCON">—</span></li>
+                <li><strong>Data do encaminhamento:</strong> <span id="DATA_ENC_VIA_GESCON">—</span></li>
+                <li><strong>UF:</strong> <span id="UF_GESCON">—</span></li>
+                <li><strong>Ente:</strong> <span id="ENTE_GESCON">—</span></li>
               </ul>
             </div>
           </section>

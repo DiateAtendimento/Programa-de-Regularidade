@@ -477,6 +477,35 @@ function parseDMYorYMD(s) {
   const d = new Date(v);
   return isNaN(d) ? new Date(0) : d;
 }
+
+// ── coloque após parseDMYorYMD / format helpers ──
+function normalizeSheetDateAny(cell) {
+  // tenta formattedValue primeiro (caso "dd/mm/aaaa")
+  const fv = cell?.formattedValue;
+  if (fv && /^\d{2}\/\d{2}\/\d{4}$/.test(String(fv))) {
+    const d = parseDMYorYMD(fv);
+    return { iso: formatDateISO(d), dmy: formatDateDMY(d), raw: fv };
+  }
+  // Date nativo
+  if (cell?.value instanceof Date) {
+    const d = cell.value;
+    return { iso: formatDateISO(d), dmy: formatDateDMY(d), raw: String(fv || d.toISOString()) };
+  }
+  // Número (serial Sheets/Excel)
+  if (typeof cell?.value === 'number') {
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    const d = new Date(epoch.getTime() + cell.value * 86400000);
+    return { iso: formatDateISO(d), dmy: formatDateDMY(d), raw: String(cell.value) };
+  }
+  // String livre
+  const s = String(cell?.value || '').trim();
+  if (s) {
+    const d = parseDMYorYMD(s);
+    return { iso: formatDateISO(d), dmy: formatDateDMY(d), raw: s };
+  }
+  return { iso: '', dmy: '', raw: '' };
+}
+
 const formatDateDMY = d => {
   const dd = String(d.getDate()).padStart(2,'0');
   const mm = String(d.getMonth()+1).padStart(2,'0');
@@ -489,6 +518,8 @@ const formatDateISO = d => {
   const yy = d.getFullYear();
   return `${yy}-${mm}-${dd}`;
 };
+
+
 
 /* === CRP FAST LOOKUP === */
 async function findCRPByCnpjFast(sheet, cnpjDigits) {
@@ -974,14 +1005,22 @@ app.post('/api/gescon/termo-enc', async (req, res) => {
       endRowIndex: rowHit + 1, endColumnIndex: endCol
     }, 'GESCON:readRow');
 
-    const getCell = (c) => (c >= 0 ? (s.getCell(rowHit, c)?.value ?? '') : '');
+
+    const dataEncCell = (col.data_enc >= 0) ? s.getCell(rowHit, col.data_enc) : null;
+    const normDataEnc = normalizeSheetDateAny(dataEncCell);
+
     const payload = {
-      cnpj: cnpj,
+      cnpj,
       uf: (getCell(col.uf) ?? '').toString().trim(),
       ente: (getCell(col.ente) ?? '').toString().trim(),
       n_gescon: (getCell(col.n_gescon) ?? '').toString().trim(),
-      data_enc_via_gescon: (getCell(col.data_enc) ?? '').toString().trim(),
+      // mantém compatibilidade:
+      data_enc_via_gescon: normDataEnc.dmy || normDataEnc.raw || '',
+      // novos campos "amigáveis" pro front:
+      data_enc_via_gescon_iso: normDataEnc.iso,
+      data_enc_via_gescon_dmy: normDataEnc.dmy
     };
+
 
     // se faltar algum essencial, retorna vazio
     if (!payload.n_gescon || !payload.uf || !payload.ente || !payload.data_enc_via_gescon) {
@@ -1124,11 +1163,15 @@ app.post('/api/termos-registrados', async (req, res) => {
       entePayload.email_ug = (getVal(last,'EMAIL_UG') || '').toString().trim();
     }
 
+    const esfera = esferaFromEnte(entePayload.nome || getVal(last,'ENTE') || '');
+
+    // e no objeto de resposta final, inclua "esfera"
     return res.json({
-      ente: entePayload,
+      ente: { ...entePayload, esfera },
       responsaveis: responsaveisPayload,
       crp: { ...crpPayload, irregulares: criteriosArr }
     });
+
   } catch (e) {
     console.error('❌ /api/termos-registrados:', e);
     const msg = String(e?.message || '').toLowerCase();
