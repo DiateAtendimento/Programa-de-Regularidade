@@ -728,9 +728,9 @@
       (el.esfMun?.checked ? 'RPPS Municipal' :
       (el.esfEst?.checked ? 'Estadual/Distrital' : ''));
 
-    // fase selecionada (4.1–4.6)
-    const marcadas = $$('.fase-check:checked').map(i => i.value);
-    const faseCompat = (marcadas.length ? marcadas.slice().sort().slice(-1)[0] : '') || '';
+    // fases marcadas e fase “mais alta” (compatível com backend antigo)
+    const marcadas   = $$('.fase-check:checked').map(i=>i.value);
+    const faseCompat = marcadas.sort().slice(-1)[0] || '';
 
     return {
       // Gate Gescon (informativo)
@@ -765,47 +765,44 @@
       // 3) CRP anterior
       DATA_VENCIMENTO_ULTIMO_CRP: el.dataUltCrp.value || '',
       TIPO_EMISSAO_ULTIMO_CRP: (el.tipoAdm.checked && 'Administrativa') || (el.tipoJud.checked && 'Judicial') || '',
-      // envie array (o back aceita array ou string, mas array é melhor)
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i => i.value),
 
-      // 4) Fase do programa (nomes oficiais usados no backend)
+      // 4) Fase do programa
       FASES_MARCADAS: marcadas,
       FASE_PROGRAMA: faseCompat,
-
 
       // 4.1
       F41_OPCAO: $('input[name="F41_OPCAO"]:checked')?.value || '',
 
       // 4.2
-      F42_LISTA: $(`#F42_LISTA input[type="checkbox"]:checked`).map(i => i.value),
+      F42_LISTA: $$(`#F42_LISTA input[type="checkbox"]:checked`).map(i => i.value),
 
       // 4.3
-      F43_LISTA: $(`#F43_LISTA input[type="checkbox"]:checked`).map(i => i.value),
+      F43_LISTA: $$(`#F43_LISTA input[type="checkbox"]:checked`).map(i => i.value),
       F43_JUST:  $('#F43_JUST')?.value || '',
       F43_PLANO: $('#F43_PLANO')?.value || '',
       F43_INCLUIR: $$('#F43_INCLUIR input[type="checkbox"]:checked').map(i => i.value),
 
-
       // 4.4
-      F44_CRITERIOS:   $(`#F44_CRITERIOS input[type="checkbox"]:checked`).map(i => i.value),
-      F44_DECLS:       $(`#blk_44 .d-flex input[type="checkbox"]:checked`).map(i => i.value),
-      F44_FINALIDADES: $(`#F44_FINALIDADES input[type="checkbox"]:checked`).map(i => i.value),
+      F44_CRITERIOS:   $$(`#F44_CRITERIOS input[type="checkbox"]:checked`).map(i => i.value),
+      F44_DECLS:       $$(`#blk_44 .d-flex input[type="checkbox"]:checked`).map(i => i.value),
+      F44_FINALIDADES: $$(`#F44_FINALIDADES input[type="checkbox"]:checked`).map(i => i.value),
       F44_ANEXOS:      $('#F44_ANEXOS')?.value || '',
 
       // 4.5
-      F45_OK451: !!$('#blk_45 input[type="checkbox"][value="4.5.1"]:checked'),
+      F45_OK451: !!$('#blk_45 input[type="checkbox"]:checked'),
       F45_DOCS:  $('#F45_DOCS')?.value || '',
       F45_JUST:  $('#F45_JUST')?.value || '',
 
       // 4.6
-      F46_CRITERIOS:   $(`#F46_CRITERIOS input[type="checkbox"]:checked`).map(i => i.value),
+      F46_CRITERIOS:   $$(`#F46_CRITERIOS input[type="checkbox"]:checked`).map(i => i.value),
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
       F46_PORTE:       $('#F46_PORTE')?.value || '',
       F46_JUST_D:      $('#F46_JUST_D')?.value || '',
       F46_DOCS_D:      $('#F46_DOCS_D')?.value || '',
       F46_JUST_E:      $('#F46_JUST_E')?.value || '',
       F46_DOCS_E:      $('#F46_DOCS_E')?.value || '',
-      F46_FINALIDADES: $(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i => i.value),
+      F46_FINALIDADES: $$(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i => i.value),
       F46_ANEXOS:      $('#F46_ANEXOS')?.value || '',
       F46_JUST_PLANOS: $('#F46_JUST_PLANOS')?.value || '',
       F46_COMP_CUMPR:  $('#F46_COMP_CUMPR')?.value || '',
@@ -823,6 +820,7 @@
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
+
 
 
   /* ========= Gerar & baixar PDF ========= */
