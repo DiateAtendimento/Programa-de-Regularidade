@@ -212,24 +212,18 @@
     const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
 
     function fillText(key, val){ const el = document.querySelector('[data-k="'+key+'"]'); if (el) el.textContent = val || ''; }
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
     function liList(ulSel, items){
       const ul = $(ulSel); if (!ul) return;
       ul.innerHTML = (items||[]).filter(Boolean).map(t=>'<li>'+escapeHtml(t)+'</li>').join('');
     }
-    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-
     function selectByCode(listSel, code){
       if(!code) return;
       const ul = $(listSel); if(!ul) return;
       const node = ul.querySelector('[data-code="'+code+'"]');
-      if (node) {
-        // deixa em negrito e com marcador
-        node.innerHTML = '<strong>'+node.textContent+'</strong>';
-      }
+      if (node) node.innerHTML = '<strong>'+node.textContent+'</strong>';
     }
-
     function show(id, v){ const el = $('#'+id); if (el) el.hidden = !v; }
-
     function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
 
     function run(payload){
@@ -264,20 +258,23 @@
       fillText('tipo_emissao_crp', tipo);
       selectByCode('#opt-3-2', /jud/i.test(tipo) ? '3.2.2' : (tipo ? '3.2.1' : null));
 
-      const criterios = Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [];
+      const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
+        ? p.CRITERIOS_IRREGULARES
+        : String(p.CRITERIOS_IRREGULARES || '').split(',').map(s=>s.trim()).filter(Boolean);
       liList('#criterios-list', criterios);
 
       // 4) Fase do Programa
       const fase = p.FASE_PROGRAMA || p.fase_programa || '';
       fillText('fase_programa', fase || '—');
 
-      // 4.1
+      // 4.1 — robusto p/ valores "4.1.1"/"4.1.2" ou textos longos
       if (fase==='4.1'){
         show('fase-41', true);
         const it = [];
-        if (p.F41_OPCAO === 'Incluiu todos os débitos em termos de parcelamento/reparcelamento no Cadprev até a adesão ou até o envio') {
+        const op = (p.F41_OPCAO || '').toString().toLowerCase();
+        if (/^4\.1\.1/.test(p.F41_OPCAO) || /incluiu/.test(op)) {
           it.push('4.1.1 Incluiu todos os débitos (Cadprev).');
-        } else if (p.F41_OPCAO === 'Não possui débitos ou já parcelados/regularizados') {
+        } else if (/^4\.1\.2/.test(p.F41_OPCAO) || /não possui|nao possui|regularizad/.test(op)) {
           it.push('4.1.2 Não possui débitos ou já regularizados.');
         }
         liList('#f41-itens', it);
@@ -286,14 +283,19 @@
       // 4.2
       if (fase==='4.2'){
         show('fase-42', true);
-        const arr = Array.isArray(p.F42_LISTA) ? p.F42_LISTA : [];
+        const arr = Array.isArray(p.F42_LISTA)
+          ? p.F42_LISTA
+          : String(p.F42_LISTA || '').split(',').map(s=>s.trim()).filter(Boolean);
         liList('#f42-itens', arr);
       }
 
       // 4.3
       if (fase==='4.3'){
         show('fase-43', true);
-        liList('#f43-itens', Array.isArray(p.F43_LISTA) ? p.F43_LISTA : []);
+        const arr = Array.isArray(p.F43_LISTA)
+          ? p.F43_LISTA
+          : String(p.F43_LISTA || '').split(',').map(s=>s.trim()).filter(Boolean);
+        liList('#f43-itens', arr);
         fillText('f43_just', p.F43_JUST || '');
         fillText('f43_plano', p.F43_PLANO || '');
       }
@@ -301,17 +303,19 @@
       // 4.4
       if (fase==='4.4'){
         show('fase-44', true);
-        liList('#f44-criterios', Array.isArray(p.F44_CRITERIOS) ? p.F44_CRITERIOS : []);
-        liList('#f44-decls', Array.isArray(p.F44_DECLS) ? p.F44_DECLS : []);
-        liList('#f44-finalidades', Array.isArray(p.F44_FINALIDADES) ? p.F44_FINALIDADES : []);
+        const asArr = v => Array.isArray(v) ? v : String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
+        liList('#f44-criterios', asArr(p.F44_CRITERIOS));
+        liList('#f44-decls',     asArr(p.F44_DECLS));
+        liList('#f44-finalidades', asArr(p.F44_FINALIDADES));
         const ax = splitLines(p.F44_ANEXOS || '');
         $('#f44-anexos').innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
       }
 
-      // 4.5
+      // 4.5 — usa F45_OK451 (boolean) vindo do backend
       if (fase==='4.5'){
         show('fase-45', true);
-        liList('#f45-decls', Array.isArray(p.F45_DECLS) ? p.F45_DECLS : (p['4_5_1'] ? ['4.5.1 Mantida a regularidade das fases anteriores.'] : []));
+        const decls = p.F45_OK451 ? ['4.5.1 Mantida a regularidade das fases anteriores.'] : [];
+        liList('#f45-decls', decls);
         const d = splitLines(p.F45_DOCS || '');
         $('#f45-docs').innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
         const j = splitLines(p.F45_JUST || '');
@@ -321,28 +325,31 @@
       // 4.6
       if (fase==='4.6'){
         show('fase-46', true);
-        liList('#f46-criterios', Array.isArray(p.F46_CRITERIOS) ? p.F46_CRITERIOS : []);
+        const asArr = v => Array.isArray(v) ? v : String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
+        liList('#f46-criterios', asArr(p.F46_CRITERIOS));
+
         const decls = [];
+        // p.F46_DECLS pode vir vazio — mantemos se vier
         if (Array.isArray(p.F46_DECLS)) decls.push(...p.F46_DECLS);
         if (p.F46_PROGESTAO) decls.push('Nível Pró-Gestão RPPS: ' + p.F46_PROGESTAO);
-        if (p.F46_PORTE) decls.push('Grupo de Porte (ISP-RPPS): ' + p.F46_PORTE);
-        if (p.F46_JUST_D) decls.push('(d) Justificativas: ' + p.F46_JUST_D);
-        if (p.F46_DOCS_D) decls.push('(d) Documentos: ' + p.F46_DOCS_D);
-        if (p.F46_JUST_E) decls.push('(e) Justificativas: ' + p.F46_JUST_E);
-        if (p.F46_DOCS_E) decls.push('(e) Documentos: ' + p.F46_DOCS_E);
+        if (p.F46_PORTE)     decls.push('Grupo de Porte (ISP-RPPS): ' + p.F46_PORTE);
+        if (p.F46_JUST_D)    decls.push('(d) Justificativas: ' + p.F46_JUST_D);
+        if (p.F46_DOCS_D)    decls.push('(d) Documentos: ' + p.F46_DOCS_D);
+        if (p.F46_JUST_E)    decls.push('(e) Justificativas: ' + p.F46_JUST_E);
+        if (p.F46_DOCS_E)    decls.push('(e) Documentos: ' + p.F46_DOCS_E);
         liList('#f46-decls', decls);
 
-        liList('#f46-finalidades', Array.isArray(p.F46_FINALIDADES) ? p.F46_FINALIDADES : []);
+        liList('#f46-finalidades', asArr(p.F46_FINALIDADES));
         const ax = splitLines(p.F46_ANEXOS || '');
         $('#f46-anexos').innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
         $('#f46-just-planos').textContent = p.F46_JUST_PLANOS || '—';
-        $('#f46-comp-cumpr').textContent = p.F46_COMP_CUMPR || '—';
+        $('#f46-comp-cumpr').textContent  = p.F46_COMP_CUMPR || '—';
       }
 
       // 5) Justificativas gerais
       fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
 
-      // 6) Assinaturas
+      // 6) Assinaturas (data)
       const hoje = p.DATA_TERMO_GERADO || p.DATA || '';
       fillText('data_termo', hoje);
 
@@ -362,5 +369,6 @@
 
   })();
   </script>
+
 </body>
 </html>

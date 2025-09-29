@@ -654,6 +654,31 @@ async function authSheets() {
     })
   );
 }
+
+// garante que a aba tenha header; cria header se a aba existir sem cabeçalho
+async function ensureHeaderRow(sheet, headerValues = []) {
+  try {
+    await sheet.loadHeaderRow();
+    const has = Array.isArray(sheet.headerValues) && sheet.headerValues.length > 0;
+    if (!has && headerValues.length) {
+      await withLimiter(`${sheet.title}:setHeaderRow`, () =>
+        withTimeoutAndRetry(`${sheet.title}:setHeaderRow`, () => sheet.setHeaderRow(headerValues))
+      );
+    }
+  } catch (e) {
+    // caso clássico: "No values in the header row"
+    if (String(e?.message || '').toLowerCase().includes('no values in the header row')) {
+      if (headerValues.length) {
+        await withLimiter(`${sheet.title}:setHeaderRow`, () =>
+          withTimeoutAndRetry(`${sheet.title}:setHeaderRow`, () => sheet.setHeaderRow(headerValues))
+        );
+      }
+    } else {
+      throw e;
+    }
+  }
+}
+
 app.get('/api/health', (_req,res)=> res.json({ ok:true }));
 app.get('/api/healthz', (_req,res)=> res.json({ ok:true, uptime: process.uptime(), ts: Date.now() }));
 app.get('/api/warmup', async (_req, res) => {
@@ -1857,8 +1882,9 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
 
     await authSheets();
     const s = await getOrCreateSheet('Solic_CRPs', SOLIC_HEADERS);
-    await s.loadHeaderRow();
+    await ensureHeaderRow(s, SOLIC_HEADERS);           // <— evita erro quando a aba VAZIA não tem header
     await ensureSheetHasColumns(s, ['IDEMP_KEY']);
+
 
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
     const idemBody   = String(p.IDEMP_KEY || '').trim();
@@ -2348,10 +2374,16 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
         await page.emulateMediaType('screen');
 
         // tenta /solic_crp.html, cai para /termo.html se não existir
-        const urlsToTry = [`${LOOPBACK_BASE}/solic_crp.html`];
-        if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/solic_crp.html`);
-        urlsToTry.push(`${LOOPBACK_BASE}/termo.html`);
-        if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/termo.html`);
+         const urlsToTry = [
+           `${LOOPBACK_BASE}/solic_crp.html`,
+           `${LOOPBACK_BASE}/termo_solic_crp.html`, // ✅ cobre o seu arquivo atual
+         ];
+         if (PUBLIC_BASE) {
+           urlsToTry.push(`${PUBLIC_BASE}/solic_crp.html`);
+           urlsToTry.push(`${PUBLIC_BASE}/termo_solic_crp.html`); // ✅ idem
+         }
+         urlsToTry.push(`${LOOPBACK_BASE}/termo.html`);
+         if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/termo.html`);
 
         let loaded = false; let lastErr = null;
         for (const u of urlsToTry) {
