@@ -1,16 +1,34 @@
 [build]
-  base = "frontend"
-  functions = "functions"
+  publish   = "frontend"
+  functions = "netlify/functions"
 
+# Redireciona os endpoints do frontend (/ _api/...) para as funções
+[[redirects]]
+  from = "/_api/termo-solic-crp-pdf"
+  to   = "/.netlify/functions/termo-solic-crp-pdf"
+  status = 200
 
 [[redirects]]
-  from = "/_api/*"
-  to   = "/.netlify/functions/api-proxy/:splat"
+  from = "/_api/gerar-solic-crp"
+  to   = "/.netlify/functions/gerar-solic-crp"
   status = 200
-  force  = true
+
+[[redirects]]
+  from = "/_api/gescon/termo-enc"
+  to   = "/.netlify/functions/gescon-termo-enc"
+  status = 200
+
+[[redirects]]
+  from = "/_api/termos-registrados"
+  to   = "/.netlify/functions/termos-registrados"
+  status = 200
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["@sparticuz/chromium","puppeteer-core","zod"]
+  external_node_modules = ["@sparticuz/chromium", "puppeteer-core", "zod"]
   timeout = 120
-  memory = 1024
+  memory  = 1024
+
+# Garante Node 20 no build/runtime da Netlify
+[build.environment]
+  NODE_VERSION = "20"

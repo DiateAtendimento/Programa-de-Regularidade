@@ -2,19 +2,15 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "API RPPS – server",
-  "main": "server.js",
   "type": "commonjs",
   "engines": {
-    "node": "20.x"
+    "node": ">=18 <23"
   },
   "scripts": {
-    "start": "node server.js",
-    "postinstall": "puppeteer browsers install chrome"
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
+    "@sparticuz/chromium": "^140.0.0",
     "cors": "^2.8.5",
     "docxtemplater": "^3.65.2",
     "dotenv": "^17.2.1",
@@ -23,10 +19,9 @@
     "google-spreadsheet": "^3.3.0",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
-    "pizzip": "^3.2.0",
-    "puppeteer": "^24.15.0",
     "joi": "^17.13.3",
-    "@sparticuz/chromium": "^124.0.0",
-    "zod": "^3.23.8"
+    "pizzip": "^3.2.0",
+    "puppeteer-core": "^24.22.3",
+    "zod": "^3.25.76"
   }
 }
