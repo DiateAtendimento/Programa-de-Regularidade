@@ -1,6 +1,6 @@
 [build]
-  publish   = "frontend"            # pasta com seus arquivos estáticos (index.html etc.)
-  functions = "netlify/functions"   # pasta das funções (na raiz do repo)
+  publish   = "."
+  functions = "netlify/functions"
 
 [[redirects]]
   from = "/_api/termo-solic-crp-pdf"
@@ -24,7 +24,7 @@
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["@sparticuz/chromium", "puppeteer-core", "zod"]
+  external_node_modules = ["@sparticuz/chromium","puppeteer-core","zod"]
 
 [functions."termo-solic-crp-pdf"]
   timeout = 26
