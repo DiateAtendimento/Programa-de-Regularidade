@@ -571,23 +571,31 @@
 
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
   function setupFase4Toggles(){
-    const map = { '4.1': el.blk41, '4.2': el.blk42, '4.3': el.blk43, '4.4': el.blk44, '4.5': el.blk45, '4.6': el.blk46 };
+    // mapa: valor do checkbox da fase -> id do modal correspondente
+    const modalByFase = {
+      '4.1': 'modalF41',
+      '4.2': 'modalF42',
+      '4.3': 'modalF43',
+      '4.4': 'modalF44',
+      '4.5': 'modalF45',
+      '4.6': 'modalF46'
+    };
 
-    function applyVisibility(){
-      // mostra bloco somente das fases marcadas; oculta as demais
-      Object.entries(map).forEach(([val,blk])=>{
-        if(!blk) return;
-        const checked = !!document.querySelector(`.fase-check[value="${val}"]`)?.checked;
-        blk.classList.toggle('d-none', !checked);
-      });
-    }
-
+    // Ao marcar uma fase, abre o modal (não limpa nada ao fechar)
     el.faseChecks.forEach(chk=>{
-      chk.addEventListener('change', ()=>{ applyVisibility(); saveState(); });
+      chk.addEventListener('change', ()=>{
+        const target = modalByFase[chk.value];
+        if (chk.checked && target) {
+          const m = document.getElementById(target);
+          if (m) bootstrap.Modal.getOrCreateInstance(m).show();
+        }
+        saveState();
+      });
     });
 
-    applyVisibility();
+    // Nada de mostrar/ocultar blocos na página — ficam só dentro dos modais
   }
+
 
 
   function validarFaseSelecionada(){
