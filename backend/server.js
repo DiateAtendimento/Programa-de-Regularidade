@@ -325,22 +325,53 @@ async function getSheetStrict(title){
 async function getOrCreateSheet(title, headerValues){
   let s = doc.sheetsByTitle[title];
   if (s) return s;
+
   console.warn(`⚠️  Aba '${title}' não encontrada. Criando…`);
-  s = await doc.addSheet({ title, headerValues });
+  const minCols = Math.max(Array.isArray(headerValues) ? headerValues.length : 0, 26);
+
+  s = await doc.addSheet({
+    title,
+    headerValues,
+    gridProperties: { rowCount: 1000, columnCount: minCols } // 👈 já nasce com espaço
+  });
   return s;
 }
+
 async function ensureSheetHasColumns(sheet, requiredHeaders = []) {
   await sheet.loadHeaderRow();
   const current = sheet.headerValues || [];
   const have = new Set(current.map(s => String(s ?? '').trim().toUpperCase()));
   const missing = requiredHeaders.filter(h => !have.has(String(h).toUpperCase()));
   if (!missing.length) return false;
+
   const next = [...current, ...missing];
+
+  // 🔧 garante colunas suficientes para TODOS os cabeçalhos
+  await ensureMinColumns(sheet, next.length);
+
   await withLimiter(`${sheet.title}:setHeaderRow`, () =>
     withTimeoutAndRetry(`${sheet.title}:setHeaderRow`, () => sheet.setHeaderRow(next))
   );
   return true;
 }
+
+
+// Garante que a planilha tenha ao menos N colunas (evita "Sheet is not large enough...")
+async function ensureMinColumns(sheet, minCols) {
+  const currentCols = Number(sheet.columnCount || 0);
+  if (currentCols >= minCols) return false;
+
+  // Mantém a quantidade de linhas atual (ou 1000, se ausente)
+  const nextRows = Number(sheet.rowCount || 1000);
+
+  await withLimiter(`${sheet.title}:resize`, () =>
+    withTimeoutAndRetry(`${sheet.title}:resize`, () =>
+      sheet.resize({ rowCount: nextRows, columnCount: minCols })
+    )
+  );
+  return true;
+}
+
 
 /* ===== Concorrência + Timeout/Retry (Sheets) ===== */
 const _q = [];
@@ -655,29 +686,33 @@ async function authSheets() {
   );
 }
 
-// garante que a aba tenha header; cria header se a aba existir sem cabeçalho
+// garante que a aba tenha header; cria e redimensiona colunas se necessário
 async function ensureHeaderRow(sheet, headerValues = []) {
   try {
     await sheet.loadHeaderRow();
-    const has = Array.isArray(sheet.headerValues) && sheet.headerValues.length > 0;
-    if (!has && headerValues.length) {
+    const hasHeader = Array.isArray(sheet.headerValues) && sheet.headerValues.length > 0;
+
+    // Se a aba não tem header e recebemos um, garanta colunas suficientes
+    if (!hasHeader && headerValues.length) {
+      await ensureMinColumns(sheet, headerValues.length);
       await withLimiter(`${sheet.title}:setHeaderRow`, () =>
         withTimeoutAndRetry(`${sheet.title}:setHeaderRow`, () => sheet.setHeaderRow(headerValues))
       );
     }
   } catch (e) {
-    // caso clássico: "No values in the header row"
-    if (String(e?.message || '').toLowerCase().includes('no values in the header row')) {
-      if (headerValues.length) {
-        await withLimiter(`${sheet.title}:setHeaderRow`, () =>
-          withTimeoutAndRetry(`${sheet.title}:setHeaderRow`, () => sheet.setHeaderRow(headerValues))
-        );
-      }
+    const msg = String(e?.message || '').toLowerCase();
+    // caso clássico: "no values in the header row"
+    if (msg.includes('no values in the header row') && headerValues.length) {
+      await ensureMinColumns(sheet, headerValues.length);
+      await withLimiter(`${sheet.title}:setHeaderRow`, () =>
+        withTimeoutAndRetry(`${sheet.title}:setHeaderRow`, () => sheet.setHeaderRow(headerValues))
+      );
     } else {
       throw e;
     }
   }
 }
+
 
 app.get('/api/health', (_req,res)=> res.json({ ok:true }));
 app.get('/api/healthz', (_req,res)=> res.json({ ok:true, uptime: process.uptime(), ts: Date.now() }));
@@ -1718,7 +1753,7 @@ async function logAlteracoesInline(p, snapshotRaw = {}) {
     'UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA'
   ]);
   await sLog.loadHeaderRow();
-  await ensureSheetHasColumns(sLog, ['UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS ALTERADOS','MES','DATA','HORA']);
+  await ensureSheetHasColumns(sLog, ['UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA']);
   const snap = snapshotRaw || {};
   const WATCH = [
     'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE',
@@ -1882,8 +1917,10 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
 
     await authSheets();
     const s = await getOrCreateSheet('Solic_CRPs', SOLIC_HEADERS);
-    await ensureHeaderRow(s, SOLIC_HEADERS);           // <— evita erro quando a aba VAZIA não tem header
+    await ensureMinColumns(s, SOLIC_HEADERS.length);
+    await ensureHeaderRow(s, SOLIC_HEADERS);
     await ensureSheetHasColumns(s, ['IDEMP_KEY']);
+
 
 
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
