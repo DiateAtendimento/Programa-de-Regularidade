@@ -570,6 +570,7 @@
   }
 
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
+ 
   function setupFase4Toggles(){
     // mapa: valor do checkbox da fase -> id do modal correspondente
     const modalByFase = {
