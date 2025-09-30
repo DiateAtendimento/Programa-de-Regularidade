@@ -2249,10 +2249,16 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         await page.emulateMediaType('screen');
 
         // 1) Carrega a página SEM querystring
-        const urlsToTry = [
-          `${LOOPBACK_BASE}/termo_solic_crp.html`
-        ];
-        if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/termo_solic_crp.html`);
+         const CANDIDATES = [
+           'form_gera_termo_solic_crp_2.html',
+           'form_gera_termo_solic_crp.html',
+           'termo_solic_crp.html',
+           'solic_crp.html'
+         ];
+         const urlsToTry = [
+           ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
+           ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
+         ];
 
         let loaded = false; let lastErr = null;
         for (const u of urlsToTry) {
@@ -2417,16 +2423,17 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
         await page.emulateMediaType('screen');
 
         // tenta /solic_crp.html, cai para /termo.html se não existir
-         const urlsToTry = [
-           `${LOOPBACK_BASE}/solic_crp.html`,
-           `${LOOPBACK_BASE}/termo_solic_crp.html`, // ✅ cobre o seu arquivo atual
+         const CANDS = [
+           'form_gera_termo_solic_crp_2.html',
+           'form_gera_termo_solic_crp.html',
+           'solic_crp.html',
+           'termo_solic_crp.html',
+           'termo.html'
          ];
-         if (PUBLIC_BASE) {
-           urlsToTry.push(`${PUBLIC_BASE}/solic_crp.html`);
-           urlsToTry.push(`${PUBLIC_BASE}/termo_solic_crp.html`); // ✅ idem
-         }
-         urlsToTry.push(`${LOOPBACK_BASE}/termo.html`);
-         if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/termo.html`);
+         const urlsToTry = [
+           ...CANDS.map(n => `${LOOPBACK_BASE}/${n}`),
+           ...(PUBLIC_BASE ? CANDS.map(n => `${PUBLIC_BASE}/${n}`) : [])
+         ];
 
         let loaded = false; let lastErr = null;
         for (const u of urlsToTry) {
