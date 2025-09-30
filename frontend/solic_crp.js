@@ -841,18 +841,15 @@
     );
 
     const url = URL.createObjectURL(blob);
-    const a   = document.createElement('a');
+    const a = document.createElement('a');
     const enteSlug = String(payload.ENTE||'solic-crp')
       .normalize('NFD').replace(/\p{Diacritic}/gu,'')
       .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
-
-    a.href = url;
-    a.download = `solic-crp-${enteSlug}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    a.href = url; a.download = `solic-crp-${enteSlug}.pdf`;
+    document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
+
 
 
   /* ========= Ações: Gerar & Submit ========= */

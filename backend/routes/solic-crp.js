@@ -2,6 +2,7 @@ import { Router } from "express";
 import { schemaSolicCrp } from "../schemas/schemaSolicCrp.js";
 import { buscarGescon, buscarTermosRegistrados, salvarSolicCrp } from "../services/solicCrp.js";
 import { pdfFromSolicCrp } from "../services/pdf/solicCrp.js";
+import { schemaTermoSolicPdf } from "../schemas/schemaTermoSolicPdf.js";
 
 const r = Router();
 const apiKey = process.env.API_KEY;
@@ -32,7 +33,7 @@ r.post("/gerar-solic-crp", requireKey, async (req,res,next)=>{
 
 r.post("/termo-solic-crp-pdf", requireKey, async (req,res,next)=>{
   try{
-    const payload = schemaSolicCrp.parse(req.body);
+    const payload = schemaTermoSolicPdf.parse(req.body);
     const pdf = await pdfFromSolicCrp(payload);
     res.setHeader("Content-Type","application/pdf");
     res.setHeader("Content-Disposition",'attachment; filename="solic-crp.pdf"');
