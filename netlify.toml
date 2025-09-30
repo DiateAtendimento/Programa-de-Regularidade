@@ -1,8 +1,7 @@
 [build]
-  publish   = "frontend"            # sua pasta com os arquivos estáticos
-  functions = "netlify/functions"   # onde ficarão os handlers das funções
+  publish   = "frontend"            # pasta com seus arquivos estáticos (index.html etc.)
+  functions = "netlify/functions"   # pasta das funções (na raiz do repo)
 
-# Endpoints do app -> funções
 [[redirects]]
   from = "/_api/termo-solic-crp-pdf"
   to   = "/.netlify/functions/termo-solic-crp-pdf"
@@ -27,9 +26,8 @@
   node_bundler = "esbuild"
   external_node_modules = ["@sparticuz/chromium", "puppeteer-core", "zod"]
 
-# Defina timeout/memory por função (PDF geralmente precisa do máximo)
 [functions."termo-solic-crp-pdf"]
-  timeout = 26     # limite típico da Netlify Functions
+  timeout = 26
   memory  = 1536
 
 [functions."gerar-solic-crp"]
@@ -44,6 +42,5 @@
   timeout = 10
   memory  = 512
 
-# Força Node 20 no build/runtime da Netlify (ok para puppeteer-core + sparticuz)
 [build.environment]
   NODE_VERSION = "20"
