@@ -422,3 +422,36 @@ html, body, .container, .row{ overflow-x: clip; }
 
 /* trava o scroll quando o modal abre (Bootstrap já adiciona a classe) */
 body.modal-open{ overflow: hidden; }
+
+
+/* === BOOTSTRAP MODAL RESCUE ============================================ */
+/* Garante que nada do seu CSS derrube o posicionamento/z-index do modal */
+.modal {
+  position: fixed !important;
+  inset: 0 !important;              /* top/right/bottom/left: 0 */
+  z-index: 1055 !important;
+}
+.modal-dialog {
+  margin: .5rem auto !important;    /* centralização padrão */
+}
+.modal.show {
+  display: block !important;
+}
+.modal-backdrop {
+  position: fixed !important;
+  z-index: 1050 !important;
+}
+/* Se algum container estiver criando stacking context (transform/filtro), 
+   não deixe o modal ficar "atrás" */
+.app-card, .glass, .container, .container-xl, .app-bg {
+  transform: none !important;
+  filter: none !important;
+  perspective: none !important;
+  backface-visibility: visible !important;
+  isolation: auto !important;
+}
+/* Evita que algum reset tenha desabilitado o scroll quando o modal abre */
+body.modal-open {
+  overflow: hidden !important;
+  padding-right: var(--bs-scrollbar-width, 0) !important;
+}

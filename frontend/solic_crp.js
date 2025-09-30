@@ -171,7 +171,7 @@
     btnNext: $('#btnNext'),
     btnPrev: $('#btnPrev'),
     btnSubmit: $('#btnSubmit'),
-    btnGerar: $('#btnGerarForm'),
+    btnGerar: $('#btnGerarFormulario'),
     hasGescon: $('#HAS_TERMO_ENC_GESCON'),
 
     // info Gescon
@@ -832,31 +832,28 @@
   }
 
 
-
-  /* ========= Gerar & baixar PDF ========= */
+  //Gerar formulário/ Baixar
   async function gerarBaixarPDF(payload){
     const blob = await fetchBinary(
-       api('/termo-solic-crp-pdf'),
-       { method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify(payload) },
-       { label:'termo-solic-crp-pdf', timeout:60000, retries:1 }
-     );
+      api('/termo-solic-crp-pdf'),
+      { method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify(payload) },
+      { label:'termo-solic-crp-pdf', timeout:60000, retries:1 }
+    );
 
     const url = URL.createObjectURL(blob);
     const a   = document.createElement('a');
     const enteSlug = String(payload.ENTE||'solic-crp')
       .normalize('NFD').replace(/\p{Diacritic}/gu,'')
       .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
-    a.href = url; a.download = `solic-crp-${enteSlug}.pdf`;
-    document.body.appendChild(a); a.click(); a.remove();
+
+    a.href = url;
+    a.download = `solic-crp-${enteSlug}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     URL.revokeObjectURL(url);
-
-    if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    const msg = err?.error || (Array.isArray(err?.details) ? err.details.join('\n') : `HTTP ${resp.status}`);
-    throw new Error(msg);
-}
-
   }
+
 
   /* ========= Ações: Gerar & Submit ========= */
   let gerarBusy=false;
