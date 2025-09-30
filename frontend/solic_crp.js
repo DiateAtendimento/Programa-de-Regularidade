@@ -149,6 +149,7 @@
     }
   }
 
+
   function friendlyErrorMessages(err, fallback='Falha ao comunicar com o servidor.'){
     const status = err?.status;
     const msg = String(err?.message||'').toLowerCase();
@@ -839,6 +840,13 @@
     a.href = url; a.download = `solic-crp-${enteSlug}.pdf`;
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
+
+    if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    const msg = err?.error || (Array.isArray(err?.details) ? err.details.join('\n') : `HTTP ${resp.status}`);
+    throw new Error(msg);
+}
+
   }
 
   /* ========= Ações: Gerar & Submit ========= */

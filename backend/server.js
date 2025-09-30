@@ -283,15 +283,21 @@ function esc(s) {
     .replace(/'/g,'&#39;');
 }
 
-/** Mitiga CSV/Planilha injection (prefixa ' quando começa com = + - @ ou tab) */
 function sanitizeForSheet(v) {
   const s = String(v ?? '');
   if (!s) return '';
   if (s.startsWith("'")) return s;
-  if (/^[=\+\-@]/.test(s)) return `'${s}`;
-  if (/^\t/.test(s)) return `'${s}`;
+
+  // protege contra CSV/Planilha injection
+  if (/^[=\+\-@]/.test(s) || /^\t/.test(s)) return `'${s}`;
+
+  // ⚠️ NOVO: para números puros (ex.: CPF/CNPJ) preserva zeros à esquerda
+  // regra: só dígitos e comprimento >= 11 (CPF) — cobre CNPJ (14) também
+  if (/^\d{11,}$/.test(s)) return `'${s}`;
+
   return s;
 }
+
 
 /** Aplica sanitize em objeto plano (somente campos string) */
 function sheetSanObject(obj) {
@@ -2503,6 +2509,7 @@ app.post('/_api/gescon-termo-enc', (req, res) => res.redirect(307, '/api/gescon/
 app.post('/_api/termos-registrados', (req, res) => res.redirect(307, '/api/termos-registrados'));
 app.post('/_api/solic-crp-pdf', (req, res) => res.redirect(307, '/api/solic-crp-pdf'));
 app.post('/_api/gerar-solic-crp', (req, res) => res.redirect(307, '/api/gerar-solic-crp'));
+app.post('/_api/termo-solic-crp-pdf', (req, res) => res.redirect(307, '/api/termo-solic-crp-pdf'));
 
 
 /* ───────────── Start ───────────── */
