@@ -9,3 +9,8 @@
   status = 200
   force  = true
 
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["@sparticuz/chromium","puppeteer-core","zod"]
+  timeout = 120
+  memory = 1024
