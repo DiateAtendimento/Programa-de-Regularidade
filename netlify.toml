@@ -1,63 +1,47 @@
+# netlify.toml — rotas específicas antes do curinga
+
 [build]
-publish = "."
-functions = "netlify/functions"
+  publish   = "."
+  functions = "netlify/functions"
 
-# 🔧 Proxy universal para TODAS as rotas /_api/**
-# (precisa vir ANTES dos demais redirects)
+# === Functions locais (PDF + registrar) ===
 [[redirects]]
-from = "/_api/*"
-to = "/.netlify/functions/api-proxy/:splat"
-status = 200
-
-# (mantidos para eventual chamada direta a funções específicas)
-[[redirects]]
-from = "/_api/termo-solic-crp-pdf"
-to = "/.netlify/functions/termo-solic-crp-pdf"
-status = 200
+  from = "/_api/termo-solic-crp-pdf-v2"
+  to   = "/.netlify/functions/termo-solic-crp-pdf-v2"
+  status = 200
 
 [[redirects]]
-from = "/_api/termo-solic-crp-pdf-v2"
-to = "/.netlify/functions/termo-solic-crp-pdf-v2"
-status = 200
+  from = "/_api/termo-solic-crp-pdf"
+  to   = "/.netlify/functions/termo-solic-crp-pdf"
+  status = 200
 
 [[redirects]]
-from = "/_api/gerar-solic-crp"
-to = "/.netlify/functions/gerar-solic-crp"
-status = 200
+  from = "/_api/gerar-solic-crp"
+  to   = "/.netlify/functions/gerar-solic-crp"
+  status = 200
 
+# === Proxy para o backend (tudo mais) ===
 [[redirects]]
-from = "/_api/gescon/termo-enc"
-to = "/.netlify/functions/gescon-termo-enc"
-status = 200
-
-[[redirects]]
-from = "/_api/termos-registrados"
-to = "/.netlify/functions/termos-registrados"
-status = 200
+  from = "/_api/*"
+  to   = "/.netlify/functions/api-proxy/:splat"
+  status = 200
 
 [functions]
-node_bundler = "esbuild"
-external_node_modules = [
-  "@sparticuz/chromium",
-  "puppeteer-core",
-  "zod"
-]
+  node_bundler = "esbuild"
+  external_node_modules = ["@sparticuz/chromium","puppeteer-core","zod"]
 
+# timeouts/memória dos PDFs
 [functions."termo-solic-crp-pdf"]
-timeout = 26
-memory = 1536
+  timeout = 26
+  memory  = 1536
+
+[functions."termo-solic-crp-pdf-v2"]
+  timeout = 26
+  memory  = 1536
 
 [functions."gerar-solic-crp"]
-timeout = 20
-memory = 1024
-
-[functions."gescon-termo-enc"]
-timeout = 10
-memory = 512
-
-[functions."termos-registrados"]
-timeout = 10
-memory = 512
+  timeout = 20
+  memory  = 1024
 
 [build.environment]
-NODE_VERSION = "20"
+  NODE_VERSION = "20"
