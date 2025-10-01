@@ -1,8 +1,9 @@
-/* ===== termo_solic_crp.css ==============================================
-   Estilos do Termo de Solicitação de CRP Emergencial (A4)
-   — alinhado visualmente ao termo.css e com pdf-export padronizado
-======================================================================= */
+/* ======================================================================
+   termo_solic_crp.css — padrão visual alinhado ao termo.css
+   + ajustes específicos para o formulário "form_gera_termo_solic_crp_2"
+   ====================================================================== */
 
+/* -------------------- Bases compartilhadas (layout A4 / termo) -------------------- */
 :root{
   --page-w: 210mm;
   --page-h: 297mm;
@@ -20,6 +21,18 @@ html,body{ height:100%; background:#eef3f9 }
 body{
   font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* === PRINT base (usada pelo Puppeteer) === */
+@page{
+  size: A4;
+  margin: 18mm 12mm;
+}
+html, body{
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 /* Container (preview PDF) */
@@ -76,6 +89,10 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   color:var(--muted);
 }
 
+/* PDF: respiros */
+.pdf-export .term-title{ margin-top:2mm !important; }
+.pdf-export .page-head{ margin-bottom:4mm !important; }
+
 /* Conteúdo do termo */
 .term-section + .term-section{ margin-top:8mm }
 .term-section h2{
@@ -103,6 +120,10 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   grid-template-columns: 1fr 1fr;
   gap: 2.4mm 8mm;
 }
+/* grids “numéricos” (1.2 e 1.3) em 3 colunas — seu HTML usa class="grid grid-num" */
+.grid-num{
+  grid-template-columns: 1fr 1fr 1fr;
+}
 .field .label{ display:block; font-size:12.2px; color:var(--muted) }
 .field .value{ display:block; font-size:13.4px; margin-top:.6mm }
 
@@ -119,6 +140,8 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 /* Regras de quebra */
 .term-section{ break-inside:auto; page-break-inside:auto; }
 .keep-together{ break-inside:avoid-page; page-break-inside:avoid; }
+/* usada no HTML do template */
+.avoid-break{ break-inside:avoid; page-break-inside:avoid; }
 .break-before{ break-before:page; page-break-before:always; }
 
 /* Rodapé (Assinaturas) no termo */
@@ -144,21 +167,17 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   .term-title{ font-size:18px }
 }
 
-/* Impressão (preview direto) */
-@media print{
-  @page{ size:A4 portrait; margin:0 }
-  html,body{ background:#fff }
-  #pdf-root{ width:var(--page-w) }
-  .term-wrap{ width:var(--content-w); margin:0; box-shadow:none !important }
-}
+/* ---- Removido o @media print com margin:0 (brigava com @page) ---- */
+/* Mantemos somente os ajustes gerais de preview acima. */
 
 /* Ajustes finos (mesmo padrão do termo.css) */
 .page-head{ border:0 !important; padding-bottom:3.5mm !important; margin-bottom:5mm !important; }
 .page-head::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--rule); }
 .term-title{ margin-top:2mm !important; }
 .term-meta{  margin-top:1.2mm !important; margin-bottom:5mm !important; }
+.pdf-export .page-head{ margin-bottom:4mm !important; }
 
-/* ====== pdf-export: BLOCO CANÔNICO ÚNICO ====== */
+/* Compactação extra no PDF (igual ao termo.css) */
 html.pdf-export .page-head, body.pdf-export .page-head{
   padding-bottom: 3mm !important;
   margin-bottom: 2.2mm !important;
@@ -171,12 +190,18 @@ html.pdf-export .term-meta, body.pdf-export .term-meta{
   margin-bottom: 4.8mm !important;
 }
 
+/* Linha única garantida */
+.page-head, .page-head::before, .page-head::after, .term-title::before, .term-title::after,
+.page-head .rule, #pdf-root > .rule, .rule{
+  border:0 !important; background:transparent !important; box-shadow:none !important; height:0 !important;
+}
+
 /* -------------------- Ajustes ESPECÍFICOS do FORMULÁRIO -------------------- */
 
 /* Step 0: alinhar "Próximo" na mesma linha da pesquisa, à direita */
 #pesquisaRow{ align-items: end; }
 #slotNextStep0{
-  margin-left: auto;
+  margin-left: auto;                /* empurra para a direita */
   display: flex;
   align-items: end;
 }
