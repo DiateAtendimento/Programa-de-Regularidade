@@ -4,7 +4,7 @@
 (() => {
   /* ========= Config ========= */
   // antes: const API_BASE = 'https://programa-de-regularidade.onrender.com';
-  const API_BASE = `${location.origin}/_api`;
+  const API_BASE = "/.netlify/functions/api-proxy";
 
 
   // Limpeza automática de rascunhos não finalizados ao abrir a página
