@@ -1,0 +1,10 @@
+{
+  "name": "programa-de-regularidade",
+  "private": true,
+  "type": "commonjs",
+  "engines": { "node": "20.x" },
+  "dependencies": {
+    "@sparticuz/chromium": "^131.0.0",
+    "puppeteer-core": "^24.2.0"
+  }
+}

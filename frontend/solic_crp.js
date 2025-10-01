@@ -3,8 +3,8 @@
 (() => {
   /* ========= Config ========= */
   const API_BASE =
-  (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) ||
-  (location.hostname.endsWith('netlify.app') ? '/.netlify/functions' : '/api');
+    (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) ||
+    '/_api';
   
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
   // (opcional) chave para o backend

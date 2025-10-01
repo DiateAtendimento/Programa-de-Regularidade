@@ -11,7 +11,7 @@ exports.handler = async (event) => {
 
     // Valida com seu schema (ESM)
     try {
-      const mod = await import('../../schemaSolicCrp.js');
+      const mod = await import('../../backend/schemas/schemaSolicCrp.js');
       if (mod && mod.schemaSolicCrp) {
         const res = mod.schemaSolicCrp.safeParse(data);
         if (!res.success) {
