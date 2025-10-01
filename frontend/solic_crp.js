@@ -815,11 +815,13 @@
 
   /* ========= Fluxo ÚNICO de PDF ========= */
   async function gerarBaixarPDF(payload){
-    const body = JSON.stringify({ data: payload }); // padrão da function
+    const templateUrl = `${location.origin}/termo_solic_crp.html`; // aponte para o template CERTO (pode ser outro domínio se preferir)
+    const body = JSON.stringify({ data: payload, templateUrl });
+
     const blob = await fetchBinary(
-      api('/termo-solic-crp-pdf'),
+      api('/termo-solic-crp-pdf-v2'),  // chama a nova função v2
       { method:'POST', headers: withKey({'Content-Type':'application/json'}), body },
-      { label:'termo-solic-crp-pdf', timeout:60000, retries:1 }
+      { label:'termo-solic-crp-pdf-v2', timeout:60000, retries:1 }
     );
 
     const url = URL.createObjectURL(blob);
@@ -831,6 +833,7 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
+
 
   /* ========= Ações: Gerar & Submit ========= */
   let gerarBusy=false;
