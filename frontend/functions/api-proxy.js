@@ -25,7 +25,7 @@ export async function handler(event) {
   // --- Normaliza subpath (aceita /_api/... e /.netlify/functions/api-proxy/...) ---
   const url = new URL(event.rawUrl);
   let subpath = url.pathname;
-  for (const base of ['/.netlify/functions/api-proxy', '/_api']) {
+  for (const base of ['/.netlify/functions/api-prox', '/.netlify/functions/api-proxy', '/_api']) {
     if (subpath.startsWith(base)) { subpath = subpath.slice(base.length); break; }
   }
   if (!subpath.startsWith('/')) subpath = '/' + subpath;

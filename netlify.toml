@@ -1,7 +1,10 @@
+# netlify.toml — atualizado
+
 [build]
   publish   = "."
   functions = "netlify/functions"
 
+# ---- Rotas específicas do formulário de SOLICITAÇÃO de CRP (já existentes) ----
 [[redirects]]
   from = "/_api/termo-solic-crp-pdf"
   to   = "/.netlify/functions/termo-solic-crp-pdf"
@@ -20,6 +23,12 @@
 [[redirects]]
   from = "/_api/termos-registrados"
   to   = "/.netlify/functions/termos-registrados"
+  status = 200
+
+# ---- Catch-all para a API do formulário 1 (Adesão) via proxy ----
+[[redirects]]
+  from = "/_api/*"
+  to   = "/.netlify/functions/api-prox/:splat"
   status = 200
 
 [functions]
@@ -42,5 +51,13 @@
   timeout = 10
   memory  = 512
 
+# Config da função proxy do formulário 1
+[functions."api-prox"]
+  timeout = 20
+  memory  = 512
+
 [build.environment]
   NODE_VERSION = "20"
+  # Defina no painel da Netlify:
+  # API_BASE = "https://programa-de-regularidade.onrender.com"
+  # API_KEY  = "fprpps_***************"
