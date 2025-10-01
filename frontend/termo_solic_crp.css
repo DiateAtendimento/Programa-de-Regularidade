@@ -1,9 +1,8 @@
-/* ======================================================================
-   termo_solic_crp.css — padrão visual alinhado ao termo.css
-   + ajustes específicos para o formulário "form_gera_termo_solic_crp_2"
-   ====================================================================== */
+/* ===== termo_solic_crp.css ==============================================
+   Estilos do Termo de Solicitação de CRP Emergencial (A4)
+   — alinhado visualmente ao termo.css e com pdf-export padronizado
+======================================================================= */
 
-/* -------------------- Bases compartilhadas (layout A4 / termo) -------------------- */
 :root{
   --page-w: 210mm;
   --page-h: 297mm;
@@ -76,10 +75,6 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   font-size:12.8px;
   color:var(--muted);
 }
-
-/* PDF: respiros */
-.pdf-export .term-title{ margin-top:2mm !important; }
-.pdf-export .page-head{ margin-bottom:4mm !important; }
 
 /* Conteúdo do termo */
 .term-section + .term-section{ margin-top:8mm }
@@ -162,9 +157,8 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 .page-head::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--rule); }
 .term-title{ margin-top:2mm !important; }
 .term-meta{  margin-top:1.2mm !important; margin-bottom:5mm !important; }
-.pdf-export .page-head{ margin-bottom:4mm !important; }
 
-/* Compactação extra no PDF (igual ao termo.css) */
+/* ====== pdf-export: BLOCO CANÔNICO ÚNICO ====== */
 html.pdf-export .page-head, body.pdf-export .page-head{
   padding-bottom: 3mm !important;
   margin-bottom: 2.2mm !important;
@@ -177,28 +171,18 @@ html.pdf-export .term-meta, body.pdf-export .term-meta{
   margin-bottom: 4.8mm !important;
 }
 
-/* Linha única garantida */
-.page-head, .page-head::before, .page-head::after, .term-title::before, .term-title::after,
-.page-head .rule, #pdf-root > .rule, .rule{
-  border:0 !important; background:transparent !important; box-shadow:none !important; height:0 !important;
-}
-
 /* -------------------- Ajustes ESPECÍFICOS do FORMULÁRIO -------------------- */
 
 /* Step 0: alinhar "Próximo" na mesma linha da pesquisa, à direita */
-#pesquisaRow{
-  align-items: end;
-}
+#pesquisaRow{ align-items: end; }
 #slotNextStep0{
-  margin-left: auto;                /* empurra para a direita */
+  margin-left: auto;
   display: flex;
   align-items: end;
 }
 
 /* Resumo/alerta Gescon após a pesquisa */
-#gesconInfoBox{
-  border-left: 4px solid #29a3ff;
-}
+#gesconInfoBox{ border-left: 4px solid #29a3ff; }
 
 /* Breadcrumb com Nº Gescon + Data no topo da etapa 1 */
 .gescon-breadcrumb{
@@ -209,10 +193,7 @@ html.pdf-export .term-meta, body.pdf-export .term-meta{
 .gescon-breadcrumb .sep{ margin: 0 .5rem; color:#c0c8d2; }
 
 /* Botão Próximo desabilitado (feedback de bloqueio até validar Gescon) */
-#btnNext:disabled{
-  opacity:.6;
-  cursor:not-allowed;
-}
+#btnNext:disabled{ opacity:.6; cursor:not-allowed; }
 
 /* Tamanhos padrão das lotties nos modais deste form */
 .lottie-box{ width: 140px; height: 140px; }

@@ -93,39 +93,36 @@
       } catch {}
     });
   });
-
   /* ========= Baixar PDF (Google Drive → download direto) ========= */
-  // Cole aqui o link de compartilhamento do Google Drive
-  const SHARE_URL = "https://drive.google.com/file/d/1uDR5iMRGuHmNapNUkrxKxyKUCA5IlzcR/view?usp=drive_link";
+  // Procura o botão e/ou qualquer elemento com data-gdrive-share dentro do herói
+  var btnPDF  = document.getElementById('btnBaixarPDF') ||
+                document.querySelector('.leg-hero .btn-hero');
 
-  // Converte o link de "view" do Drive para a URL de download direto
+  var hostEl  = document.getElementById('btnBaixarPDF') ||
+                document.querySelector('.leg-hero [data-gdrive-share]');
+
+  var SHARE_URL = hostEl ? hostEl.getAttribute('data-gdrive-share') : '';
+
   function driveDirectDownload(url) {
-    const m = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/);
-    const id = m ? m[1] : null;
-    return id ? `https://drive.google.com/uc?export=download&id=${id}` : url;
+    var m = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/);
+    var id = m ? m[1] : null;
+    return id ? ('https://drive.google.com/uc?export=download&id=' + id) : url;
   }
 
-  const direct = driveDirectDownload(SHARE_URL);
-
-  // Preferencialmente um elemento com id="btnBaixarPDF".
-  // Se não houver, pega o primeiro .btn-hero dentro do .leg-hero.
-  const btnPDF =
-    $('#btnBaixarPDF') ||
-    $('.leg-hero .btn-hero');
+  var direct = SHARE_URL ? driveDirectDownload(SHARE_URL) : '';
 
   if (btnPDF && direct) {
     btnPDF.setAttribute('href', direct);
-    btnPDF.setAttribute('target', '_blank');   // abre em nova aba
-    btnPDF.setAttribute('rel', 'noopener');    // segurança
-    btnPDF.setAttribute('download', 'Programa-Regularidade.pdf'); // sugestão de nome
+    btnPDF.setAttribute('target', '_blank');
+    btnPDF.setAttribute('rel', 'noopener');
+    btnPDF.setAttribute('download', 'Programa-Regularidade.pdf');
 
-    // Fallback: se algum navegador bloquear o "download" cross-origin
-    btnPDF.addEventListener('click', (e) => {
-      // Se o href não estiver aplicável, força a abertura
+    btnPDF.addEventListener('click', function(e){
       if (!btnPDF.href || btnPDF.href === '#') {
         e.preventDefault();
         window.open(direct, '_blank', 'noopener');
       }
     });
   }
+
 })();

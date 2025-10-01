@@ -357,6 +357,21 @@
       const esfera = p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || '';
       selectByCode('#opt-1-1', /estadual|distrital/i.test(esfera) ? '1.1.2' : '1.1.1');
 
+      // Atualiza o rótulo da assinatura do ente conforme a esfera (Municipal x Estadual/Distrital)
+      const sig = document.getElementById('sig-cap-ente');
+      if (sig) {
+        const ehEstadual = /estadual|distrital/i.test(esfera);
+        sig.innerHTML = ehEstadual
+          ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
+          : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
+
+        // Repreenche os spans recém-inseridos (para não ficarem vazios após trocar o innerHTML)
+        const sigEnte = sig.querySelector('[data-k="ente"]');
+        const sigUf   = sig.querySelector('[data-k="uf"]');
+        if (sigEnte) sigEnte.textContent = p.ENTE || p.ente || '';
+        if (sigUf)   sigUf.textContent   = p.UF   || p.uf   || '';
+      }
+
       // Sinaliza pronto para o servidor (Puppeteer)
       window.__TERMO_PRINT_READY__ = true;
       document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY'));

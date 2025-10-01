@@ -14,24 +14,9 @@
     return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
   };
 
-  // ISO → DD/MM/AAAA (com tolerância a "YYYY-MM-DDTHH:MM:SS")
-  const fmtDateBR = v => {
-    const s = String(v || '').trim();
-    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
-    const d = new Date(s);
-    if (!isNaN(d)) {
-      const dd = String(d.getDate()).padStart(2,'0');
-      const mm = String(d.getMonth()+1).padStart(2,'0');
-      const yy = d.getFullYear();
-      return `${dd}/${mm}/${yy}`;
-    }
-    return s;
-  }
-  
+  // ÚNICA função de data: aceita 'aaaa-mm-dd' e 'aaaa-mm-ddTHH:MM:SS...' e mantém dd/mm/aaaa
   const fmtDataBR = v => {
-  const s = String(v || '').trim();
-    // aceita 'aaaa-mm-dd' e também 'aaaa-mm-ddTHH:MM:SS...'
+    const s = String(v || '').trim();
     const mISO = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);
     if (mISO) return `${mISO[3]}/${mISO[2]}/${mISO[1]}`;
     return s; // se já estiver em dd/mm/aaaa, mantém
@@ -79,6 +64,7 @@
     });
     return ['5.1','5.2','5.3','5.4','5.5','5.6','5.7'].filter(c => seen.has(c));
   }
+
   // ========= Render principal =========
   function renderizarTermo(payload){
     // 1) Campos diretos
@@ -171,7 +157,7 @@
       if (a) labels.push('A - Parcelamento de débitos.');
       if (b) labels.push('B - Regularização de pendências para emissão administrativa e regular do CRP. Detalhamento da(s) finalidade(s)');
       const el = document.getElementById('finalidades-iniciais');
-      if (el) el.innerHTML = labels.length ? labels.join(' e/ou ') : 'Não informado.';
+      if (el) el.innerHTML = labels.length ? labels.join(' e/ou ') : notInformed;
     })();
     // util para filtrar listas por códigos
     function filterBy(listId, codes){

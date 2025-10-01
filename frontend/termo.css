@@ -1,4 +1,7 @@
-/* termo_solic_crp.css — mesmo padrão do termo.css */
+/* ===== termo.css =========================================================
+   Estilos do Termo de Adesão (A4) — visual unificado e ajustes para pdf-export
+======================================================================== */
+
 :root{
   --page-w: 210mm;
   --page-h: 297mm;
@@ -159,7 +162,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   .term-wrap{ width:var(--content-w); margin:0; box-shadow:none !important }
 }
 
-/* ===== Garantias de LINHA ÚNICA e espaçamentos (igual ao termo.css) ===== */
+/* ===== Garantias de LINHA ÚNICA e espaçamentos ===== */
 .page-head{ border:0 !important; padding-bottom:0 !important; margin-bottom:8mm !important; }
 .page-head::after{ content:none !important; }
 .page-head .rule, .rule{ display:none !important; height:0 !important; border:0 !important; background:transparent !important; }
@@ -174,7 +177,6 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   background:var(--rule);
   display:block;
 }
-
 .term-meta{ margin-top:2mm !important; margin-bottom:5mm !important; }
 
 .page-head,
@@ -205,24 +207,10 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   height:1px;
   background:var(--rule);
 }
-
 .term-title{ margin-top:2mm !important; }
 .term-meta{  margin-top:1.2mm !important; margin-bottom:5mm !important; }
-.pdf-export .page-head{ margin-bottom:4mm !important; }
 
-html.pdf-export .page-head,
-body.pdf-export .page-head{
-  padding-bottom: 1.2mm !important;
-  margin-bottom: 2.4mm !important;
-}
-html.pdf-export .term-title,
-body.pdf-export .term-title{ margin-top: 0.4mm !important; }
-html.pdf-export .term-meta,
-body.pdf-export .term-meta{
-  margin-top: 1mm !important;
-  margin-bottom: 4mm !important;
-}
-
+/* ====== pdf-export: BLOCO CANÔNICO ÚNICO ====== */
 html.pdf-export .page-head,
 body.pdf-export .page-head{
   padding-bottom: 3mm !important;
@@ -235,10 +223,3 @@ body.pdf-export .term-meta{
   margin-top: 1.2mm !important;
   margin-bottom: 4.8mm !important;
 }
-html.pdf-export .page-head,
-body.pdf-export .page-head{
-  margin-bottom: 0 !important;
-  padding-bottom: 3mm !important;
-}
-html.pdf-export .term-title,
-body.pdf-export .term-title{ margin-top: 2.2mm !important; }

@@ -52,12 +52,10 @@
     return iso;
   }
 
-
   // --- Validação do nº Gescon: S|L + 6 dígitos + "/" + ano
   function isGesconNumber(x){
     return /^[SL]\d{6}\/\d{4}$/.test(String(x).trim());
   }
-
 
   /* ========= Robust fetch (timeout + retries) ========= */
   const FETCH_TIMEOUT_MS = 120000;
@@ -149,7 +147,6 @@
     }
   }
 
-
   function friendlyErrorMessages(err, fallback='Falha ao comunicar com o servidor.'){
     const status = err?.status;
     const msg = String(err?.message||'').toLowerCase();
@@ -187,7 +184,6 @@
     ug: $('#UG'), cnpjUg: $('#CNPJ_UG'), emailUg: $('#EMAIL_UG'),
     esfMun: $('#esf_mun'), esfEst: $('#esf_est'),
     infoNumGescon: $('#infoNumGescon'),
-
 
     // etapa 2
     cpfRepEnte: $('#CPF_REP_ENTE'), nomeRepEnte: $('#NOME_REP_ENTE'),
@@ -311,7 +307,6 @@
     data.values['F43_PLANO']   = $('#F43_PLANO')?.value || '';
     data.values['F43_INCLUIR[]'] = $$('#F43_INCLUIR input[type="checkbox"]:checked').map(i=>i.value);
 
-
     // 4.4
     data.values['F44_CRITERIOS[]']   = $$(`#F44_CRITERIOS input[type="checkbox"]:checked`).map(i=>i.value);
     data.values['F44_DECLS[]']       = $$(`#blk_44 .d-flex input[type="checkbox"]:checked`).map(i=>i.value);
@@ -409,18 +404,12 @@
     curStep = Number.isFinite(st?.step) ? Math.max(0, Math.min(el.sections.length-1, Number(st.step))) : 0;
     render();
   }
-
-
-
   /* ========= Modais (Atenção/Erro) ========= */
   function showAtencao(msgs){
     const list = $('#modalAtencaoLista'); if(list){ list.innerHTML = msgs.map(m=>`<li>${m}</li>`).join(''); }
     showModal('modalAtencao');
   }
-  function showErro(msgs){
-    const list = $('#modalErroLista'); if(list){ list.innerHTML = msgs.map(m=>`<li>${m}</li>`).join(''); }
-    showModal('modalErro');
-  }
+  // (mantemos APENAS a versão de showErro declarada mais abaixo)
 
   /* ========= Lottie nos modais desta página ========= */
   const lotties = {};
@@ -504,7 +493,6 @@
         window.__renderStepper?.();   // em vez de chamar ensureStepperFallback() de novo
       }
 
-
     }catch(err){
       console.error(err);
       showErro(friendlyErrorMessages(err, 'Falha ao consultar informações.'));
@@ -570,7 +558,6 @@
   }
 
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
- 
   function setupFase4Toggles(){
     // mapa: valor do checkbox da fase -> id do modal correspondente
     const modalByFase = {
@@ -596,8 +583,6 @@
 
     // Nada de mostrar/ocultar blocos na página — ficam só dentro dos modais
   }
-
-
 
   function validarFaseSelecionada(){
     const fases = $$('.fase-check:checked').map(i=>i.value);
@@ -688,7 +673,6 @@
     }
   }
 
-
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
     const msgs=[];
@@ -730,8 +714,6 @@
     el.horaSol.value= fmtHR(now);
     el.anoSol.value = String(now.getFullYear());
   }
-
-
   /* ========= Payload (alinhado ao schemaSolicCrp) ========= */
   function buildPayload(){
     const ESFERA =
@@ -831,177 +813,7 @@
     };
   }
 
-  // Retorna o caminho correto do endpoint para gerar PDF.
-  function getPdfApiPath() {
-    const host = (location.host || '').toLowerCase();
-    const isNetlify = host.includes('netlify.app') || host.includes('netlify');
-    // Netlify Functions ficam em /.netlify/functions/<nome>
-    if (isNetlify) return '/.netlify/functions/termo-solic-crp-pdf';
-    // Vercel / Node / Express costuma expor em /api/<nome>
-    return '/api/termo-solic-crp-pdf';
-  }
-
-  // Abre um Blob PDF em nova aba ou força download quando popup é bloqueado
-  async function openPdfBlob(blob, filename = 'termo-solicitacao-crp.pdf') {
-    try {
-      const url = URL.createObjectURL(blob);
-      // tenta abrir nova aba
-      const w = window.open(url, '_blank', 'noopener,noreferrer');
-      if (!w) {
-        // se bloqueado, faz download
-        const a = document.createElement('a');
-        a.href = url; a.download = filename; a.style.display = 'none';
-        document.body.appendChild(a); a.click(); a.remove();
-      }
-      // libera URL quando fechar
-      setTimeout(() => URL.revokeObjectURL(url), 30_000);
-    } catch (e) {
-      console.error(e);
-      showErro(['Não foi possível abrir o PDF gerado.']);
-    }
-  }
-
-  // Exibe/oculta o modal "Gerando PDF…"
-  function toggleGerandoPdf(on) {
-    const el = document.getElementById('modalGerandoPdf');
-    if (!el || !window.bootstrap) return;
-    const inst = bootstrap.Modal.getOrCreateInstance(el, {backdrop: 'static', keyboard: false});
-    on ? inst.show() : inst.hide();
-  }
-
-  // Mostra o modal de erro com mensagens (reaproveite se já existir no seu JS)
-  function showErro(msgs) {
-    try {
-      const ul = document.getElementById('modalErroLista');
-      if (ul) {
-        ul.innerHTML = (Array.isArray(msgs) ? msgs : [String(msgs||'Ocorreu um erro.')])
-          .map(m => `<li>${m}</li>`).join('');
-      }
-      const el = document.getElementById('modalErro');
-      if (el && window.bootstrap) bootstrap.Modal.getOrCreateInstance(el).show();
-    } catch {}
-  }
-  // ==== FIM: util de API base ====
-
-  // ==== INÍCIO: geração e chamada ao serviço de PDF ====
-  async function coletarDadosDoFormulario() {
-    // > Ajuste aqui caso já exista função similar. Abaixo um exemplo genérico:
-    const get = id => document.getElementById(id)?.value?.trim() || '';
-
-    // 1) Identificação
-    const ESFERA_GOVERNO = Array.from(document.querySelectorAll('.esf-only-one:checked')).map(i=>i.value)[0] || '';
-    const payload = {
-      ESFERA_GOVERNO: ESFERA_GOVERNO,
-      UF: get('UF'),
-      ENTE: get('ENTE'),
-      CNPJ_ENTE: get('CNPJ_ENTE'),
-      EMAIL_ENTE: get('EMAIL_ENTE'),
-      UG: get('UG'),
-      CNPJ_UG: get('CNPJ_UG'),
-      EMAIL_UG: get('EMAIL_UG'),
-
-      // 2) Responsáveis
-      CPF_REP_ENTE: get('CPF_REP_ENTE'),
-      NOME_REP_ENTE: get('NOME_REP_ENTE'),
-      CARGO_REP_ENTE: get('CARGO_REP_ENTE'),
-      EMAIL_REP_ENTE: get('EMAIL_REP_ENTE'),
-      TEL_REP_ENTE: get('TEL_REP_ENTE'),
-
-      CPF_REP_UG: get('CPF_REP_UG'),
-      NOME_REP_UG: get('NOME_REP_UG'),
-      CARGO_REP_UG: get('CARGO_REP_UG'),
-      EMAIL_REP_UG: get('EMAIL_REP_UG'),
-      TEL_REP_UG: get('TEL_REP_UG'),
-
-      // 3) CRP
-      DATA_VENCIMENTO_ULTIMO_CRP: get('DATA_VENCIMENTO_ULTIMO_CRP'),
-      TIPO_EMISSAO_ULTIMO_CRP: (document.querySelector('input[name="TIPO_EMISSAO_ULTIMO_CRP"]:checked')?.value) || '',
-      CRITERIOS_IRREGULARES: Array.from(document.querySelectorAll('#grpCRITERIOS input[type="checkbox"]:checked')).map(i=>i.value),
-
-      // 4) Fase do programa
-      FASE_PROGRAMA: (document.querySelector('.fase-check:checked')?.value) || '',
-      F41_OPCAO: (document.querySelector('input[name="F41_OPCAO"]:checked')?.value) || '',
-      F42_LISTA: Array.from(document.querySelectorAll('#F42_LISTA input[type="checkbox"]:checked')).map(i=>i.value),
-      F43_LISTA: Array.from(document.querySelectorAll('#F43_LISTA input[type="checkbox"]:checked')).map(i=>i.value),
-      F43_JUST: document.getElementById('F43_JUST')?.value || '',
-      F43_PLANO: document.getElementById('F43_PLANO')?.value || '',
-      F44_CRITERIOS: Array.from(document.querySelectorAll('#F44_CRITERIOS input[type="checkbox"]:checked')).map(i=>i.value),
-      F44_DECLS: Array.from(document.querySelectorAll('#blk_44 input[type="checkbox"]:checked')).map(i=>i.value),
-      F44_FINALIDADES: Array.from(document.querySelectorAll('#F44_FINALIDADES input[type="checkbox"]:checked')).map(i=>i.value),
-      F44_ANEXOS: document.getElementById('F44_ANEXOS')?.value || '',
-      F45_OK451: !!document.querySelector('#blk_45 input[type="checkbox"]:checked'),
-      F45_DOCS: document.getElementById('F45_DOCS')?.value || '',
-      F45_JUST: document.getElementById('F45_JUST')?.value || '',
-      F46_CRITERIOS: Array.from(document.querySelectorAll('#F46_CRITERIOS input[type="checkbox"]:checked')).map(i=>i.value),
-      F46_DECLS: Array.from(document.querySelectorAll('#blk_46 input[type="checkbox"]:checked')).map(i=>i.value),
-      F46_PROGESTAO: document.getElementById('F46_PROGESTAO')?.value || '',
-      F46_PORTE: document.getElementById('F46_PORTE')?.value || '',
-      F46_JUST_D: document.getElementById('F46_JUST_D')?.value || '',
-      F46_DOCS_D: document.getElementById('F46_DOCS_D')?.value || '',
-      F46_JUST_E: document.getElementById('F46_JUST_E')?.value || '',
-      F46_DOCS_E: document.getElementById('F46_DOCS_E')?.value || '',
-      F46_FINALIDADES: Array.from(document.querySelectorAll('#F46_FINALIDADES input[type="checkbox"]:checked')).map(i=>i.value),
-      F46_ANEXOS: document.getElementById('F46_ANEXOS')?.value || '',
-      F46_JUST_PLANOS: document.getElementById('F46_JUST_PLANOS')?.value || '',
-      F46_COMP_CUMPR: document.getElementById('F46_COMP_CUMPR')?.value || '',
-
-      // 5) Justificativas gerais
-      JUSTIFICATIVAS_GERAIS: document.getElementById('JUSTIFICATIVAS_GERAIS')?.value || '',
-
-      // Meta para o template
-      DATA_TERMO_GERADO: (function(){
-        try {
-          const d = new Date();
-          return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
-        } catch { return ''; }
-      })()
-    };
-
-    return payload;
-  }
-
-  async function gerarPdfTermo() {
-    const payload = await coletarDadosDoFormulario();
-    const apiPath = getPdfApiPath();
-
-    toggleGerandoPdf(true);
-    try {
-      const resp = await fetch(apiPath, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // O backend descobre a URL do template a partir do Host/Protocolo do request
-        body: JSON.stringify({ data: payload })
-      });
-
-      if (!resp.ok) {
-        const txt = await resp.text().catch(()=> '');
-        throw new Error(`Erro ${resp.status} ao gerar PDF. ${txt || ''}`.trim());
-      }
-
-      const ct = resp.headers.get('content-type') || '';
-      if (!ct.includes('application/pdf')) {
-        const txt = await resp.text().catch(()=> '');
-        throw new Error(`Resposta inesperada do serviço de PDF. ${txt || ''}`.trim());
-      }
-
-      const blob = await resp.blob();
-      await openPdfBlob(blob);
-    } catch (err) {
-      console.error(err);
-      showErro(['Não foi possível gerar o PDF.', String(err && err.message || err) ]);
-    } finally {
-      toggleGerandoPdf(false);
-    }
-  }
-  // ==== FIM: geração e chamada ao serviço de PDF ====
-
-  // ==== INÍCIO: ligação do botão "Gerar formulário" ====
-  document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('btnGerarFormulario');
-    if (btn) btn.addEventListener('click', gerarPdfTermo);
-  });
-  // ==== FIM: ligação do botão ====
-
+  /* ========= Fluxo ÚNICO de PDF ========= */
   async function gerarBaixarPDF(payload){
     const body = JSON.stringify({ data: payload }); // padrão da function
     const blob = await fetchBinary(
@@ -1019,9 +831,6 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
-
-
-
 
   /* ========= Ações: Gerar & Submit ========= */
   let gerarBusy=false;
@@ -1072,7 +881,6 @@
       body: JSON.stringify(payload)
       }, { label:'gerar-solic-crp', timeout:30000, retries:1 });
 
-
       clearTimeout(t);
       try{ bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); }catch{}
       clearIdemKey();
@@ -1112,12 +920,24 @@
       btn.disabled=false; btn.innerHTML=old;
     }
   });
-
   /* ========= UI helpers ========= */
   function showModal(id){ const mEl=document.getElementById(id); if(!mEl) return; bootstrap.Modal.getOrCreateInstance(mEl).show(); }
   function initWelcome(){
     const mw = $('#modalWelcome');
     if(mw){ setTimeout(()=> bootstrap.Modal.getOrCreateInstance(mw).show(), 150); }
+  }
+
+  // Versão única de showErro (mantida)
+  function showErro(msgs) {
+    try {
+      const ul = document.getElementById('modalErroLista');
+      if (ul) {
+        ul.innerHTML = (Array.isArray(msgs) ? msgs : [String(msgs||'Ocorreu um erro.')])
+          .map(m => `<li>${m}</li>`).join('');
+      }
+      const el = document.getElementById('modalErro');
+      if (el && window.bootstrap) bootstrap.Modal.getOrCreateInstance(el).show();
+    } catch {}
   }
 
   /* ========= Boot ========= */
@@ -1139,6 +959,7 @@
     });
 
     // salvar alterou
+    const form = $('#solicCrpForm');
     form?.addEventListener('input', ()=> setTimeout(saveState, 300));
     form?.addEventListener('change', ()=> setTimeout(saveState, 300));
 
