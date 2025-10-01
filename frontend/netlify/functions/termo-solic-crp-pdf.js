@@ -2,12 +2,9 @@
 const chromium = require('@sparticuz/chromium');
 const puppeteer = require('puppeteer-core');
 
-// Origem publicada do site (Netlify)
 function resolveOrigin(event) {
-  // Preferir env do Netlify (produção / preview)
   const envUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || process.env.DEPLOY_URL;
   if (envUrl) return envUrl.replace(/\/+$/, '');
-  // Fallback via headers
   const h = event.headers || {};
   const proto = h['x-forwarded-proto'] || h['x-nf-client-connection-proto'] || 'https';
   const host  = h['x-forwarded-host'] || h.host;
@@ -23,6 +20,11 @@ exports.handler = async (event) => {
   try { payload = JSON.parse(event.body || '{}'); }
   catch { return { statusCode: 400, body: 'Invalid JSON' }; }
 
+  // aceita tanto { data: {...} } quanto o objeto plano
+  const dataForTemplate = (payload && typeof payload === 'object' && payload.data)
+    ? payload.data
+    : payload;
+
   let browser;
   try {
     browser = await puppeteer.launch({
@@ -35,40 +37,50 @@ exports.handler = async (event) => {
     const page = await browser.newPage();
     await page.setJavaScriptEnabled(true);
 
+    // 1) Abre o TEMPLATE de impressão (não o formulário)
     const origin = resolveOrigin(event);
     const templateUrl = `${origin}/termo_solic_crp.html?v=${Date.now()}`;
-
-    // 1) Navega para o TEMPLATE DE IMPRESSÃO
     await page.goto(templateUrl, { waitUntil: 'networkidle0', timeout: 60000 });
 
-    // 2) Garante modo de exportação (seus CSS já têm seletores .pdf-export)
+    // 2) Marca modo PDF pelo CSS
     await page.evaluate(() => {
       document.documentElement.classList.add('pdf-export');
       document.body.classList.add('pdf-export');
     });
 
-    // 3) Injeta dados + dispara o evento que o template escuta
+    // 3) Verificações de sanidade: título + ausência de controles de form
+    await page.waitForSelector('h1.term-title', { timeout: 15000 });
+    const sanity = await page.evaluate(() => {
+      const h1 = (document.querySelector('h1.term-title')?.textContent || '').trim();
+      const hasFormControls = !!document.querySelector(
+        'form, select, textarea, input[type=checkbox], input[type=radio], input[type=text], input[type=date], input[type=email]'
+      );
+      return {
+        h1,
+        okTitle: /TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL/i.test(h1),
+        hasFormControls
+      };
+    });
+
+    if (!sanity.okTitle || sanity.hasFormControls) {
+      throw new Error(
+        `Template incorreto para impressão. h1="${sanity.h1}" ` +
+        `(okTitle=${sanity.okTitle}) hasFormControls=${sanity.hasFormControls}. ` +
+        `Verifique se /termo_solic_crp.html está sendo servido (e não o form).`
+      );
+    }
+
+    // 4) Injeta dados e sinaliza o template
     await page.evaluate((data) => {
       window.__TERMO_DATA__ = data;
       document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-    }, payload);
+    }, dataForTemplate);
 
-    // 4) Emula mídia print e espera sinal de pronto
+    // 5) Emula mídia print e aguarda o "ready" do template
     await page.emulateMediaType('print');
-
-    // Opcional: espere também o H1 do template correto aparecer
-    await page.waitForSelector('h1.term-title', { timeout: 15000 });
-
-    // Verificação de sanidade — impedir gerar do form por engano
-    const h1 = (await page.$eval('h1.term-title', el => el.textContent || '')).trim();
-    if (!/SOLICITAÇÃO DE CRP EMERGENCIAL/i.test(h1)) {
-      throw new Error('Página errada: esperado termo_solic_crp.html (print), mas o conteúdo não bate com o template.');
-    }
-
-    // Espera o hook do template (setado pelo seu script)
     await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 30000 });
 
-    // 5) Gera PDF (A4)
+    // 6) Gera PDF A4
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -93,7 +105,7 @@ exports.handler = async (event) => {
     try { if (browser) await browser.close(); } catch {}
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'PDF error', message: String(err && err.message || err) }),
+      body: JSON.stringify({ error: 'PDF error', message: String((err && err.message) || err) }),
     };
   }
 };
