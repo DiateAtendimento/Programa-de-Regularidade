@@ -52,14 +52,14 @@ html, body{
 html.pdf-export, body.pdf-export{ background:#fff !important }
 .pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important }
 
-/* Cabeçalho do termo */
+/* Cabeçalho do termo (ajustado para evitar sobreposição) */
 .page-head{
   position:relative;
-  display:grid;
-  grid-template-rows:auto;
+  display:block;                 /* evita colapso com imagens */
   border:0 !important;
-  padding-bottom:3.5mm;
-  margin-bottom:5mm;
+  padding-top:2mm;
+  padding-bottom:6mm !important; /* mais respiro */
+  margin-bottom:6mm !important;  /* mais respiro */
 }
 .page-head::after{
   content:"";
@@ -69,11 +69,20 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 .page-head .rule, #pdf-root > .rule, .rule{
   display:none !important; height:0 !important; border:0 !important; background:transparent !important;
 }
-.logos-wrap{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:1mm 6mm; width:100%; padding-top:0; }
+
+/* Logos (tamanho travado para não invadir o título) */
+.logos-wrap{
+  display:flex; align-items:center; justify-content:center;
+  flex-wrap:wrap; gap:6mm; width:100%; padding-top:0;
+}
+.logos-wrap img{
+  max-height:14mm;               /* ajuste fino: 12–16mm conforme preferência */
+  height:auto; width:auto; display:block;
+}
 
 /* Título + meta (termo) */
 .term-title{
-  margin:2mm 0 0 !important;
+  margin:6mm 0 0 !important;     /* respiro maior após as logos */
   place-self:center;
   text-align:center;
   font-weight:800;
@@ -90,8 +99,8 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 }
 
 /* PDF: respiros */
-.pdf-export .term-title{ margin-top:2mm !important; }
-.pdf-export .page-head{ margin-bottom:4mm !important; }
+.pdf-export .term-title{ margin-top:4mm !important; }
+.pdf-export .page-head{ margin-bottom:6mm !important; padding-bottom:6mm !important; }
 
 /* Conteúdo do termo */
 .term-section + .term-section{ margin-top:8mm }
@@ -170,27 +179,14 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 /* ---- Removido o @media print com margin:0 (brigava com @page) ---- */
 /* Mantemos somente os ajustes gerais de preview acima. */
 
-/* Ajustes finos (mesmo padrão do termo.css) */
-.page-head{ border:0 !important; padding-bottom:3.5mm !important; margin-bottom:5mm !important; }
-.page-head::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--rule); }
-.term-title{ margin-top:2mm !important; }
-.term-meta{  margin-top:1.2mm !important; margin-bottom:5mm !important; }
-.pdf-export .page-head{ margin-bottom:4mm !important; }
-
-/* Compactação extra no PDF (igual ao termo.css) */
-html.pdf-export .page-head, body.pdf-export .page-head{
-  padding-bottom: 3mm !important;
-  margin-bottom: 2.2mm !important;
-}
-html.pdf-export .term-title, body.pdf-export .term-title{
-  margin-top: 0.8mm !important;
-}
-html.pdf-export .term-meta, body.pdf-export .term-meta{
+/* Ajustes finos adicionais (mantendo o padrão do termo.css) */
+html.pdf-export .term-meta,
+body.pdf-export .term-meta{
   margin-top: 1.2mm !important;
   margin-bottom: 4.8mm !important;
 }
 
-/* Linha única garantida */
+/* Linha única garantida (sanitização) */
 .page-head, .page-head::before, .page-head::after, .term-title::before, .term-title::after,
 .page-head .rule, #pdf-root > .rule, .rule{
   border:0 !important; background:transparent !important; box-shadow:none !important; height:0 !important;
