@@ -1,8 +1,17 @@
+# netlify.toml — ajustado
+
 [build]
   publish   = "."
   functions = "netlify/functions"
 
-# === Funções específicas que você já usa (mantidas e vêm ANTES do catch-all) ===
+# 🔧 Proxy universal para TODAS as rotas /_api/**
+# (precisa vir ANTES dos demais redirects)
+[[redirects]]
+  from = "/_api/*"
+  to   = "/.netlify/functions/api-proxy/:splat"
+  status = 200
+
+# (mantidos para eventual chamada direta a funções específicas)
 [[redirects]]
   from = "/_api/termo-solic-crp-pdf"
   to   = "/.netlify/functions/termo-solic-crp-pdf"
@@ -22,14 +31,6 @@
   from = "/_api/termos-registrados"
   to   = "/.netlify/functions/termos-registrados"
   status = 200
-
-# === PROXY GENÉRICO: redireciona TODO o resto de /_api/* para a função api-proxy ===
-# (Isso cobre /_api/health, /_api/warmup, /_api/consulta, /_api/rep-by-cpf, /_api/termo-pdf, etc.)
-[[redirects]]
-  from = "/_api/*"
-  to   = "/.netlify/functions/api-proxy/:splat"
-  status = 200
-  force  = true
 
 [functions]
   node_bundler = "esbuild"
