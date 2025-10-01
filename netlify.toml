@@ -1,55 +1,63 @@
-# netlify.toml — configuração ajustada
-
 [build]
-  publish   = "."
-  # >>> IMPORTANTE: diretório real das funções no seu projeto
-  functions = "frontend/netlify/functions"
+publish = "."
+functions = "netlify/functions"
 
-# ========== Redirects ==========
-# 1) Rotas ESPECÍFICAS (que têm função)
+# 🔧 Proxy universal para TODAS as rotas /_api/**
+# (precisa vir ANTES dos demais redirects)
 [[redirects]]
-  from = "/_api/termo-solic-crp-pdf-v2"
-  to   = "/.netlify/functions/termo-solic-crp-pdf-v2"
-  status = 200
+from = "/_api/*"
+to = "/.netlify/functions/api-proxy/:splat"
+status = 200
+
+# (mantidos para eventual chamada direta a funções específicas)
+[[redirects]]
+from = "/_api/termo-solic-crp-pdf"
+to = "/.netlify/functions/termo-solic-crp-pdf"
+status = 200
 
 [[redirects]]
-  from = "/_api/termo-solic-crp-pdf"
-  to   = "/.netlify/functions/termo-solic-crp-pdf"
-  status = 200
+from = "/_api/termo-solic-crp-pdf-v2"
+to = "/.netlify/functions/termo-solic-crp-pdf-v2"
+status = 200
 
 [[redirects]]
-  from = "/_api/gerar-solic-crp"
-  to   = "/.netlify/functions/gerar-solic-crp"
-  status = 200
+from = "/_api/gerar-solic-crp"
+to = "/.netlify/functions/gerar-solic-crp"
+status = 200
 
-# 2) Curinga — tudo que não tiver rota específica acima cai no api-proxy
 [[redirects]]
-  from = "/_api/*"
-  to   = "/.netlify/functions/api-proxy/:splat"
-  status = 200
+from = "/_api/gescon/termo-enc"
+to = "/.netlify/functions/gescon-termo-enc"
+status = 200
 
-# ========== Funções ==========
+[[redirects]]
+from = "/_api/termos-registrados"
+to = "/.netlify/functions/termos-registrados"
+status = 200
+
 [functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["@sparticuz/chromium","puppeteer-core","zod"]
-
-# Ajustes finos por função (tempo/memória)
-[functions."termo-solic-crp-pdf-v2"]
-  timeout = 26
-  memory  = 1536
+node_bundler = "esbuild"
+external_node_modules = [
+  "@sparticuz/chromium",
+  "puppeteer-core",
+  "zod"
+]
 
 [functions."termo-solic-crp-pdf"]
-  timeout = 26
-  memory  = 1536
+timeout = 26
+memory = 1536
 
 [functions."gerar-solic-crp"]
-  timeout = 20
-  memory  = 1024
+timeout = 20
+memory = 1024
 
-[functions."api-proxy"]
-  timeout = 20
-  memory  = 512
+[functions."gescon-termo-enc"]
+timeout = 10
+memory = 512
 
-# ========== Ambiente ==========
+[functions."termos-registrados"]
+timeout = 10
+memory = 512
+
 [build.environment]
-  NODE_VERSION = "20"
+NODE_VERSION = "20"
