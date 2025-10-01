@@ -1,10 +1,12 @@
-# netlify.toml — ordem corrigida
+# netlify.toml — configuração ajustada
 
 [build]
   publish   = "."
-  functions = "netlify/functions"
+  # >>> IMPORTANTE: diretório real das funções no seu projeto
+  functions = "frontend/netlify/functions"
 
-# 1) Rotas ESPECÍFICAS primeiro
+# ========== Redirects ==========
+# 1) Rotas ESPECÍFICAS (que têm função)
 [[redirects]]
   from = "/_api/termo-solic-crp-pdf-v2"
   to   = "/.netlify/functions/termo-solic-crp-pdf-v2"
@@ -20,25 +22,21 @@
   to   = "/.netlify/functions/gerar-solic-crp"
   status = 200
 
-[[redirects]]
-  from = "/_api/gescon/termo-enc"
-  to   = "/.netlify/functions/gescon-termo-enc"
-  status = 200
-
-[[redirects]]
-  from = "/_api/termos-registrados"
-  to   = "/.netlify/functions/termos-registrados"
-  status = 200
-
-# 2) SÓ depois, o curinga (se você realmente precisar dele)
+# 2) Curinga — tudo que não tiver rota específica acima cai no api-proxy
 [[redirects]]
   from = "/_api/*"
   to   = "/.netlify/functions/api-proxy/:splat"
   status = 200
 
+# ========== Funções ==========
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["@sparticuz/chromium","puppeteer-core","zod"]
+
+# Ajustes finos por função (tempo/memória)
+[functions."termo-solic-crp-pdf-v2"]
+  timeout = 26
+  memory  = 1536
 
 [functions."termo-solic-crp-pdf"]
   timeout = 26
@@ -48,13 +46,10 @@
   timeout = 20
   memory  = 1024
 
-[functions."gescon-termo-enc"]
-  timeout = 10
+[functions."api-proxy"]
+  timeout = 20
   memory  = 512
 
-[functions."termos-registrados"]
-  timeout = 10
-  memory  = 512
-
+# ========== Ambiente ==========
 [build.environment]
   NODE_VERSION = "20"
