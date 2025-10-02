@@ -2,9 +2,12 @@
 
 (() => {
   /* ========= Config ========= */
-  const API_BASE =
-    (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) ||
-    '/_api';
+  const API_BASE = (function(){
+    const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
+    if (override) return override;
+    return location.host.endsWith('netlify.app') ? '/.netlify/functions' : '/api';
+  })();
+
   
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
   // (opcional) chave para o backend
@@ -427,7 +430,7 @@
 
   async function consultarGesconByCnpj(cnpj){
     // servidor expõe: POST /api/gescon/termo-enc
-    return fetchJSON(api('/gescon/termo-enc'), {
+    return fetchJSON(api('/gescon-termo-enc'), {
       method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify({ cnpj })
      }, { label:'gescon/termo-enc', retries: 0 });
    }
@@ -827,9 +830,9 @@
     const body = JSON.stringify({ data: payload, templateUrl });
 
     const blob = await fetchBinary(
-      api('/termo-solic-crp-pdf-v2'),  // chama a nova função v2
+      api('/termo-solic-crp-pdf'),  // chama a nova função v2
       { method:'POST', headers: withKey({'Content-Type':'application/json'}), body },
-      { label:'termo-solic-crp-pdf-v2', timeout:60000, retries:1 }
+      { label:'termo-solic-crp-pdf', timeout:60000, retries:1 }
     );
 
     const url = URL.createObjectURL(blob);
