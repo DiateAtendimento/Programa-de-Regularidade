@@ -5,7 +5,6 @@
   const API_BASE = (function(){
     const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
     if (override) return override;
-    return location.host.endsWith('netlify.app') ? '/.netlify/functions' : '/api';
   })();
 
   
@@ -501,7 +500,7 @@
       console.error('gescon/termo-enc falhou:', err);
 
       // (opcional) mensagem específica para 404
-      if (err && err.status === 404) {
+      if (err && err.status === 404 && /cnpj|não localizado|not.?found/i.test(String(err.message||''))) {
         showAtencao(['CNPJ não localizado no Gescon. Confirme o número (14 dígitos) e tente novamente.']);
       } else {
         showErro(friendlyErrorMessages(err, 'Falha ao consultar informações.'));

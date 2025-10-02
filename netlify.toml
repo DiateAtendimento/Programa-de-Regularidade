@@ -6,10 +6,6 @@
 
 
 # 🔹 ESPECÍFICOS primeiro (vão direto para as Functions)
-[[redirects]]
-  from = "/_api/termo-solic-crp-pdf-v2"
-  to   = "/.netlify/functions/termo-solic-crp-pdf-v2"
-  status = 200
 
 [[redirects]]
   from = "/_api/termo-solic-crp-pdf"
@@ -36,10 +32,6 @@
   ]
 
 [functions."termo-solic-crp-pdf"]
-  timeout = 26
-  memory  = 1536
-
-[functions."termo-solic-crp-pdf-v2"]
   timeout = 26
   memory  = 1536
 
