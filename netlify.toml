@@ -2,7 +2,8 @@
 
 [build]
   publish   = "."
-  functions = "netlify/functions"
+  functions = "frontend/netlify/functions"
+
 
 # 🔹 ESPECÍFICOS primeiro (vão direto para as Functions)
 [[redirects]]
