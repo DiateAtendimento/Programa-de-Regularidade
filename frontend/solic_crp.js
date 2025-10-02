@@ -5,6 +5,8 @@
   const API_BASE = (function(){
     const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
     if (override) return override;
+    // fallback padrão (Netlify + dev) via proxy
+    return '/_api';
   })();
 
   
@@ -429,7 +431,7 @@
 
   async function consultarGesconByCnpj(cnpj){
     // servidor expõe: POST /api/gescon/termo-enc
-    return fetchJSON(api('/gescon-termo-enc'), {
+    return fetchJSON(api('/gescon/termo-enc'), {
       method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify({ cnpj })
      }, { label:'gescon/termo-enc', retries: 0 });
    }
