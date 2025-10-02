@@ -1,20 +1,45 @@
 // netlify/functions/api-proxy.js
+
+// Base do upstream (seu server Express). Ex.: https://programa-de-regularidade.onrender.com
 const UPSTREAM_BASE = (process.env.API_BASE || 'https://programa-de-regularidade.onrender.com').replace(/\/+$/, '');
 const API_KEY = process.env.API_KEY || '';
 
-// 👇 aceita CORS_ALLOWLIST OU CORS_ORIGIN_LIST
+// 👇 aceita CORS_ALLOWLIST OU CORS_ORIGIN_LIST (lista separada por vírgulas)
 const _allow = process.env.CORS_ALLOWLIST || process.env.CORS_ORIGIN_LIST || '';
 const ORIGIN_ALLOWLIST = _allow.split(',').map(s => s.trim()).filter(Boolean);
 
+// Timeout do proxy (ms) — pode ajustar via variável de ambiente
+const PROXY_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS || 25000);
+
+/**
+ * Allowlist de paths (SEM o prefixo /api do upstream).
+ * Chame pelo browser como /_api/<rota>, que o proxy redireciona para <UPSTREAM_BASE>/api/<rota>.
+ */
 const PATH_ALLOWLIST = [
+  // —— Formulário 1 (Adesão) — rotas do server.js ——
+  /^\/consulta$/i,
+  /^\/rep-by-cpf$/i,
+  /^\/upsert-cnpj$/i,
+  /^\/upsert-rep$/i,
+  /^\/gerar-termo$/i,
+  /^\/termo-pdf$/i,
+
+  // —— Utilitários/health do backend ——
+  /^\/health$/i,
+  /^\/healthz$/i,
+  /^\/warmup$/i,
+
+  // —— Formulário 2 (Solicitação CRP) — rotas do server.js ——
   /^\/gescon\/termo-enc$/i,
   /^\/termos-registrados$/i,
   /^\/gerar-solic-crp$/i,
+  /^\/solic-crp-pdf$/i,
   /^\/termo-solic-crp-pdf$/i,
   /^\/termo-solic-crp-pdf-v2$/i,
-  /^\/health$/i,
+
+  // —— Ferramentas de diagnóstico do próprio proxy ——
   /^\/_diag$/i,
-  /^\/_probe$/i,         // 👈 utilitário de diagnóstico
+  /^\/_probe$/i,
 ];
 
 export async function handler(event) {
@@ -39,17 +64,26 @@ export async function handler(event) {
 
   const url = new URL(event.rawUrl);
   let subpath = url.pathname;
+
+  // aceita chamadas via /.netlify/functions/api-proxy/* ou /_api/*
   for (const base of ['/.netlify/functions/api-proxy', '/_api']) {
     if (subpath.startsWith(base)) { subpath = subpath.slice(base.length); break; }
   }
   if (!subpath.startsWith('/')) subpath = '/' + subpath;
 
-  if (subpath === '/health') return json(200, { ok: true }, corsOrigin);
-  if (subpath === '/_diag')  return json(200, {
-    ok: true, hasApiKey: !!API_KEY, apiKeyLen: API_KEY.length, apiBase: UPSTREAM_BASE,
-    originAllowed, origin: requestOrigin || null,
-    corsAllowlist: ORIGIN_ALLOWLIST,
-  }, corsOrigin);
+  // health simples do próprio proxy
+  if (subpath === '/health') {
+    return json(200, { ok: true }, corsOrigin);
+  }
+
+  if (subpath === '/_diag')  {
+    return json(200, {
+      ok: true, hasApiKey: !!API_KEY, apiKeyLen: API_KEY.length, apiBase: UPSTREAM_BASE,
+      originAllowed, origin: requestOrigin || null,
+      corsAllowlist: ORIGIN_ALLOWLIST,
+      proxyTimeoutMs: PROXY_TIMEOUT_MS,
+    }, corsOrigin);
+  }
 
   // 👇 Utilitário para testar upstream rapidamente
   if (subpath === '/_probe') {
@@ -73,6 +107,7 @@ export async function handler(event) {
     }, corsOrigin);
   }
 
+  // valida rota
   if (!PATH_ALLOWLIST.some(rx => rx.test(subpath))) {
     return json(403, { error: 'Rota não permitida no proxy.', subpath }, corsOrigin);
   }
@@ -94,7 +129,7 @@ export async function handler(event) {
   }
 
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort('proxy-timeout'), 25000);
+  const t = setTimeout(() => ctrl.abort('proxy-timeout'), PROXY_TIMEOUT_MS);
 
   let res;
   try {
@@ -115,8 +150,28 @@ export async function handler(event) {
     const v = res.headers.get(k); if (v) outHeaders[k] = v;
   });
 
-  return { statusCode: res.status, headers: outHeaders, body: isText ? buf.toString('utf8') : buf.toString('base64'), isBase64Encoded: !isText };
+  return {
+    statusCode: res.status,
+    headers: outHeaders,
+    body: isText ? buf.toString('utf8') : buf.toString('base64'),
+    isBase64Encoded: !isText
+  };
 }
 
-function json(status, obj, origin='*'){ return { statusCode: status, headers: { 'Content-Type':'application/json; charset=utf-8', 'Access-Control-Allow-Origin': origin, Vary:'Origin' }, body: JSON.stringify(obj) }; }
-function isOriginAllowed(origin){ if(!origin) return true; if(!ORIGIN_ALLOWLIST.length) return true; return ORIGIN_ALLOWLIST.includes(origin); }
+function json(status, obj, origin='*'){
+  return {
+    statusCode: status,
+    headers: {
+      'Content-Type':'application/json; charset=utf-8',
+      'Access-Control-Allow-Origin': origin,
+      Vary:'Origin'
+    },
+    body: JSON.stringify(obj)
+  };
+}
+
+function isOriginAllowed(origin){
+  if(!origin) return true;
+  if(!ORIGIN_ALLOWLIST.length) return true;
+  return ORIGIN_ALLOWLIST.includes(origin);
+}

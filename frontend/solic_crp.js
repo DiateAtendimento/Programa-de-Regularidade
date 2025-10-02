@@ -831,9 +831,9 @@
     const body = JSON.stringify({ data: payload, templateUrl });
 
     const blob = await fetchBinary(
-      api('/termo-solic-crp-pdf'),  // chama a nova função v2
+      api('/termo-solic-crp-pdf-v2'),  // chama a nova função v2
       { method:'POST', headers: withKey({'Content-Type':'application/json'}), body },
-      { label:'termo-solic-crp-pdf', timeout:60000, retries:1 }
+      { label:'termo-solic-crp-pdf-v2', timeout:60000, retries:1 }
     );
 
     const url = URL.createObjectURL(blob);

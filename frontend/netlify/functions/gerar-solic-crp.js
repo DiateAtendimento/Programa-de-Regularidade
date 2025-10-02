@@ -1,42 +1,43 @@
-// netlify/functions/gerar-solic-crp.js
+// frontend/netlify/functions/gerar-solic-crp.js
+const fetch = require('node-fetch');
+
+// Ex.: https://programa-de-regularidade.onrender.com  (defina em Netlify)
+// Fallback para API_BASE, se você já usa esse nome.
+const TARGET = process.env.TARGET_API_BASE || process.env.API_BASE;
+
 exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
+  if (!TARGET) {
+    return { statusCode: 500, body: JSON.stringify({ ok:false, error: 'TARGET_API_BASE não configurado' }) };
+  }
+
   try {
-    if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: 'Method Not Allowed' };
-    }
+    const url = `${TARGET.replace(/\/+$/, '')}/gerar-solic-crp`; // <- CASA COM O SEU backend/routes
+    const headers = { 'Content-Type': 'application/json' };
 
-    let body = {};
-    try { body = JSON.parse(event.body || '{}'); } catch {}
-    let data = body?.data ?? body ?? {};
+    // Propaga X-API-Key e X-Idempotency-Key
+    const apiKey = event.headers['x-api-key'] || event.headers['X-API-Key'];
+    if (apiKey) headers['X-API-Key'] = apiKey;
 
-    // Valida com seu schema (ESM)
-    try {
-      const mod = await import('../../backend/schemas/schemaSolicCrp.js');
-      if (mod && mod.schemaSolicCrp) {
-        const res = mod.schemaSolicCrp.safeParse(data);
-        if (!res.success) {
-          return {
-            statusCode: 422,
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ ok:false, errors: res.error.flatten() })
-          };
-        }
-        data = res.data;
-      }
-    } catch { /* sem schema, segue */ }
+    const idem = event.headers['x-idempotency-key'] || event.headers['X-Idempotency-Key'];
+    if (idem) headers['X-Idempotency-Key'] = idem;
 
-    // Aqui você pode salvar em planilha, banco etc.
-    console.log('Solicitação CRP recebida:', {
-      ENTE: data.ENTE, UF: data.UF, FASE: data.FASE_PROGRAMA, IDEMP_KEY: data.IDEMP_KEY
+    const upstream = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: event.body || '{}'
     });
 
+    const body = await upstream.text();
     return {
-      statusCode: 200,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ok: true })
+      statusCode: upstream.status,
+      headers: { 'Content-Type': upstream.headers.get('content-type') || 'application/json' },
+      body
     };
   } catch (e) {
-    console.error(e);
-    return { statusCode: 500, body: 'Erro ao registrar solicitação' };
+    console.error('[gerar-solic-crp] upstream error:', e);
+    return { statusCode: 502, body: JSON.stringify({ ok:false, error: 'Upstream unavailable' }) };
   }
 };
