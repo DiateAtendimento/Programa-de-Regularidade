@@ -4,26 +4,26 @@
   publish   = "."
   functions = "netlify/functions"
 
-# Proxy universal para TODAS as rotas /_api/**
-[[redirects]]
-  from = "/_api/*"
-  to   = "/.netlify/functions/api-proxy/:splat"
-  status = 200
-
-# (opcionais) atalhos diretos para funções que existem
-[[redirects]]
-  from = "/_api/termo-solic-crp-pdf"
-  to   = "/.netlify/functions/termo-solic-crp-pdf"
-  status = 200
-
+# 🔹 ESPECÍFICOS primeiro (vão direto para as Functions)
 [[redirects]]
   from = "/_api/termo-solic-crp-pdf-v2"
   to   = "/.netlify/functions/termo-solic-crp-pdf-v2"
   status = 200
 
 [[redirects]]
+  from = "/_api/termo-solic-crp-pdf"
+  to   = "/.netlify/functions/termo-solic-crp-pdf"
+  status = 200
+
+[[redirects]]
   from = "/_api/gerar-solic-crp"
   to   = "/.netlify/functions/gerar-solic-crp"
+  status = 200
+
+# 🔚 CATCH-ALL por último (tudo que sobrar vai para o proxy)
+[[redirects]]
+  from = "/_api/*"
+  to   = "/.netlify/functions/api-proxy/:splat"
   status = 200
 
 [functions]
