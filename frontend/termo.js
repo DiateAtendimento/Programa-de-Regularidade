@@ -236,6 +236,8 @@
         const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
         fontsReady.finally(() => {
           requestAnimationFrame(() => {
+            //garante que o backend detecta “ready” mesmo se perder o evento
+            window.__TERMO_PRINT_READY__ = true;
             document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY'));
           });
         });
@@ -245,19 +247,14 @@
 
   // ========= Fluxo 1: Preview (postMessage) =========
   window.addEventListener('message', (ev) => {
-    try {
-      // Aceita mesma origin OU, se for about:blank (popup inicial), aceita mesmo assim.
-      const sameOrigin = ev.origin === window.location.origin;
-      const isAboutBlank = !ev.origin || ev.origin === 'null';
-      if (!sameOrigin && !isAboutBlank) return;
-    } catch (_) {}
-
-    if (!ev.data || ev.data.type !== 'TERMO_PREVIEW_DATA') return;
-    try {
-      renderizarTermo(ev.data.payload || {});
-    } catch (e) {
-      console.error('[TERMO_PREVIEW_DATA] render error:', e);
-    }
+    // Aceita mensagens de qualquer origin, mas exige o “tipo” esperado
+    const msg = ev && ev.data;
+    if (!msg || msg.type !== 'TERMO_PREVIEW_DATA') return;
+    // (opcional) pequena validação de estrutura:
+    const p = msg.payload || {};
+    if (!p || (typeof p !== 'object')) return;
+    try { renderizarTermo(p); }
+    catch (e) { console.error('[TERMO_PREVIEW_DATA] render error:', e); }
   }, false);
 
 

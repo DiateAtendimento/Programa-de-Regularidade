@@ -4,21 +4,6 @@
   publish = "."
   functions = "netlify/functions"
 
-# Rotas das Functions
-[[redirects]]
-  from = "/_api/termo-solic-crp-pdf"
-  to = "/.netlify/functions/termo-solic-crp-pdf"
-  status = 200
-
-[[redirects]]
-  from = "/_api/termo-solic-crp-pdf-v2"
-  to = "/.netlify/functions/termo-solic-crp-pdf-v2"
-  status = 200
-
-[[redirects]]
-  from = "/_api/gerar-solic-crp"
-  to = "/.netlify/functions/gerar-solic-crp"
-  status = 200
 
 # Health/Diag
 [[redirects]]
