@@ -1,15 +1,20 @@
 # netlify.toml
 
 [build]
-  publish   = "."
+  # Publicar a pasta do frontend (onde está index.html e os formulários)
+  publish   = "frontend"
+  # Pasta das serverless functions
   functions = "frontend/netlify/functions"
 
-
-# 🔹 ESPECÍFICOS primeiro (vão direto para as Functions)
-
+# --- Endpoints que vão direto para as Functions específicas ---
 [[redirects]]
   from = "/_api/termo-solic-crp-pdf"
   to   = "/.netlify/functions/termo-solic-crp-pdf"
+  status = 200
+
+[[redirects]]
+  from = "/_api/termo-solic-crp-pdf-v2"
+  to   = "/.netlify/functions/termo-solic-crp-pdf-v2"
   status = 200
 
 [[redirects]]
@@ -17,20 +22,40 @@
   to   = "/.netlify/functions/gerar-solic-crp"
   status = 200
 
-# 🔚 CATCH-ALL por último (tudo que sobrar vai para o proxy)
+# --- Health/diag úteis para teste rápido no navegador ---
+[[redirects]]
+  from = "/_api/health"
+  to   = "/.netlify/functions/api-proxy/health"
+  status = 200
+
+[[redirects]]
+  from = "/_api/_diag"
+  to   = "/.netlify/functions/api-proxy/_diag"
+  status = 200
+
+# --- Catch-all do proxy (todo o resto do /_api vai para api-proxy) ---
 [[redirects]]
   from = "/_api/*"
   to   = "/.netlify/functions/api-proxy/:splat"
   status = 200
 
-[functions]
-  node_bundler = "esbuild"
-  external_node_modules = [
-    "@sparticuz/chromium",
-    "puppeteer-core",
-    "zod"
-  ]
+# (Opcional) facilitar rotas "sem .html"
+[[redirects]]
+  from = "/form_gera_termo_adesao_1"
+  to   = "/form_gera_termo_adesao_1.html"
+  status = 200
+[[redirects]]
+  from = "/form_gera_termo_solic_crp_2"
+  to   = "/form_gera_termo_solic_crp_2.html"
+  status = 200
 
+# SPA fallback (se tiver outras rotas)
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200
+
+# Ajustes de função (tempo/memória)
 [functions."termo-solic-crp-pdf"]
   timeout = 26
   memory  = 1536
