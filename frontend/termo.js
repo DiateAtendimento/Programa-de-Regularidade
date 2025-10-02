@@ -245,10 +245,21 @@
 
   // ========= Fluxo 1: Preview (postMessage) =========
   window.addEventListener('message', (ev) => {
-    try { if (ev.origin !== window.location.origin) return; } catch (_) {}
+    try {
+      // Aceita mesma origin OU, se for about:blank (popup inicial), aceita mesmo assim.
+      const sameOrigin = ev.origin === window.location.origin;
+      const isAboutBlank = !ev.origin || ev.origin === 'null';
+      if (!sameOrigin && !isAboutBlank) return;
+    } catch (_) {}
+
     if (!ev.data || ev.data.type !== 'TERMO_PREVIEW_DATA') return;
-    renderizarTermo(ev.data.payload || {});
+    try {
+      renderizarTermo(ev.data.payload || {});
+    } catch (e) {
+      console.error('[TERMO_PREVIEW_DATA] render error:', e);
+    }
   }, false);
+
 
   // ========= Fluxo 2: PDF (Puppeteer) =========
   document.addEventListener('TERMO_DATA_READY', () => {
