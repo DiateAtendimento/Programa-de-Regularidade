@@ -494,12 +494,20 @@
       }
 
     }catch(err){
-      console.error(err);
-      showErro(friendlyErrorMessages(err, 'Falha ao consultar informações.'));
+      // 🔎 Log detalhado no console para depuração
+      console.error('gescon/termo-enc falhou:', err);
+
+      // (opcional) mensagem específica para 404
+      if (err && err.status === 404) {
+        showAtencao(['CNPJ não localizado no Gescon. Confirme o número (14 dígitos) e tente novamente.']);
+      } else {
+        showErro(friendlyErrorMessages(err, 'Falha ao consultar informações.'));
+      }
     }finally{
       btn && (btn.disabled=false, btn.innerHTML=old||'Pesquisar');
       searching = false;
     }
+
   }
 
   async function hidratarTermosRegistrados(cnpj){
