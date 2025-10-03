@@ -2363,8 +2363,6 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
 
         // 1) Carrega a página SEM querystring
          const CANDIDATES = [
-           'form_gera_termo_solic_crp_2.html',
-           'form_gera_termo_solic_crp.html',
            'termo_solic_crp.html',
            'solic_crp.html'
          ];
@@ -2381,6 +2379,36 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           try { await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 }); loaded = true; break; }
           catch (e) { lastErr = e; }
         }
+
+        // Sanidade forte: confirma que carregamos o template "limpo"
+        await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
+
+        const sanity = await page.evaluate(() => {
+          const href = location.href;
+          const title = document.title || '';
+          const h1 = (document.querySelector('h1.term-title')?.textContent || '').trim();
+
+          const okTitle =
+            /TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL/i.test(h1) ||
+            /SOLICITAÇÃO DE CRP/i.test(h1);
+
+          const hasPdfRoot = !!document.querySelector('#pdf-root .term-wrap');
+
+          // Se tiver qualquer controle de formulário, é o wizard (página errada)
+          const hasFormControls = !!document.querySelector(
+            'form, select, textarea, input[type=checkbox], input[type=radio], input[type=text], input[type=date], input[type=email]'
+          );
+
+          return { href, title, h1, okTitle, hasPdfRoot, hasFormControls };
+        });
+
+        if (!sanity.hasPdfRoot || sanity.hasFormControls || !sanity.okTitle) {
+          throw new Error(
+            `Template inválido p/ impressão | loaded=${sanity.href} | title="${sanity.title}" | ` +
+            `h1="${sanity.h1}" okTitle=${sanity.okTitle} hasForm=${sanity.hasFormControls} hasPdfRoot=${sanity.hasPdfRoot}`
+          );
+        }
+
         if (!loaded) throw lastErr || new Error('Falha ao carregar termo_solic_crp.html');
 
         // 2) Injeta os dados na página
@@ -2399,13 +2427,24 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
         }, payloadForClient);
 
-        // 3) Aguarda sinalização de pronto para impressão
-        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
-        await page.evaluate(() => new Promise((ok) => {
-          if (window.__TERMO_PRINT_READY__ === true) return ok();
-          document.addEventListener('TERMO_PRINT_READY', () => ok(), { once: true });
-          setTimeout(ok, 1500);
-        }));
+
+        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(() => {});
+
+        // aguarda evento do template OU estado já sinalizado
+        await page.waitForFunction(
+          'window.__TERMO_PRINT_READY__ === true',
+          { timeout: 30_000 }
+        ).catch(() => {}); // se o template já disparou, esta condição será verdadeira
+
+        // garante fontes e layout estabilizados
+        await page.evaluate(async () => {
+          try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch {}
+          await new Promise(r => requestAnimationFrame(() => setTimeout(r, 150)));
+        });
+
+        // modo print (usa @page)
+        await page.emulateMediaType('print');
+
 
         // 4) Embute fontes iguais ao outro termo
         function findFont(candidates){
