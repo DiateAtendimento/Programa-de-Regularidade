@@ -806,6 +806,56 @@ app.get('/api/consulta', async (req, res) => {
       return res.json({ ok: true, data: out, missing: true });
     }
 
+    // --- Helper para ler valores de linhas/objetos, com normalização de cabeçalhos ---
+    const _sanKey = (s) => (s ?? '')
+      .toString()
+      .trim()
+      .toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+      .replace(/[^\p{L}\p{N}]+/gu, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    /**
+     * Lê um campo de um objeto/linha do google-spreadsheet:
+     * - tenta acesso direto (obj[key])
+     * - tenta Row.get(key)
+     * - compara chaves normalizadas (case-insensitive, sem acentos)
+     * - fallback por _rawData + headerValues
+     */
+    function getVal(rowOrObj, key) {
+      if (!rowOrObj || !key) return '';
+
+      // 1) Acesso direto
+      if (Object.prototype.hasOwnProperty.call(rowOrObj, key)) {
+        return rowOrObj[key] ?? '';
+      }
+
+      // 2) API do google-spreadsheet: row.get('Cabeçalho')
+      if (typeof rowOrObj.get === 'function') {
+        try {
+          const v = rowOrObj.get(key);
+          if (v != null) return v;
+        } catch (_) {}
+      }
+
+      // 3) Match por chave normalizada
+      const want = _sanKey(key);
+      for (const [k, v] of Object.entries(rowOrObj)) {
+        if (_sanKey(k) === want) return v ?? '';
+      }
+
+      // 4) Fallback: _rawData + headerValues do sheet
+      const raw = rowOrObj._rawData;
+      const headers = rowOrObj._sheet?.headerValues;
+      if (Array.isArray(raw) && Array.isArray(headers) && headers.length === raw.length) {
+        const idx = headers.findIndex(h => _sanKey(h) === want);
+        if (idx >= 0) return raw[idx] ?? '';
+      }
+
+      return '';
+    }
+
     const UF          = norm(getVal(base, 'UF'));
     const ENTE        = norm(getVal(base, 'ENTE'));
     const UG          = norm(getVal(base, 'UG'));
