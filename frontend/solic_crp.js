@@ -579,69 +579,83 @@
 
   async function hidratarTermosRegistrados(cnpj){
     dbg('[hidratarTermosRegistrados] start →', cnpj);
-    const data = await consultarTermosRegistrados(cnpj);
+    try{
+      const data = await consultarTermosRegistrados(cnpj);
 
-    // Shape check
-    if (!data || typeof data !== 'object') throw new Error('payload vazio/inesperado');
-    const ente = data?.ente || {};
-    const resp = data?.responsaveis || {};
-    const crp  = data?.crp || {};
-    dbg('[hidratarTermosRegistrados] payload (normalizado):', { ente, resp, crp, esfera: data?.esfera });
+      if (!data || typeof data !== 'object') throw new Error('payload vazio/inesperado');
+      const ente = data?.ente || {};
+      const resp = data?.responsaveis || {};
+      const crp  = data?.crp || {};
 
-    // 1) Ente + UG
-    if (ente.uf)   { el.uf.value = ente.uf; dbg('UF ←', ente.uf); }
-    if (ente.nome) { el.ente.value = ente.nome; dbg('ENTE ←', ente.nome); }
-    if (el.cnpjEnte) { el.cnpjEnte.value = maskCNPJ(ente.cnpj || cnpj); dbg('CNPJ_ENTE ←', el.cnpjEnte.value); }
-    if (ente.email) { el.emailEnte.value = ente.email; dbg('EMAIL_ENTE ←', ente.email); }
+      // 1) Ente + UG
+      if (ente.uf)   { el.uf.value = ente.uf; }
+      if (ente.nome) { el.ente.value = ente.nome; }
+      if (el.cnpjEnte) el.cnpjEnte.value = maskCNPJ(ente.cnpj || cnpj);
+      if (ente.email) el.emailEnte.value = ente.email;
 
-    if (ente.ug)      { el.ug.value = ente.ug; dbg('UG ←', ente.ug); }
-    if (ente.cnpj_ug) { el.cnpjUg.value = maskCNPJ(ente.cnpj_ug); dbg('CNPJ_UG ←', el.cnpjUg.value); }
-    if (ente.email_ug){ el.emailUg.value = ente.email_ug; dbg('EMAIL_UG ←', ente.email_ug); }
+      if (ente.ug)      el.ug.value      = ente.ug;
+      if (ente.cnpj_ug) el.cnpjUg.value  = maskCNPJ(ente.cnpj_ug);
+      if (ente.email_ug)el.emailUg.value = ente.email_ug;
 
-    // 2) Responsáveis
-    if (resp.ente){
-      el.cpfRepEnte.value   = resp.ente.cpf || '';
-      el.nomeRepEnte.value  = resp.ente.nome || '';
-      el.cargoRepEnte.value = resp.ente.cargo || '';
-      el.emailRepEnte.value = resp.ente.email || '';
-      el.telRepEnte.value   = resp.ente.telefone || '';
-      dbg('RESP_ENTE ←', resp.ente);
+      // 2) Responsáveis
+      if (resp.ente){
+        el.cpfRepEnte.value   = resp.ente.cpf || '';
+        el.nomeRepEnte.value  = resp.ente.nome || '';
+        el.cargoRepEnte.value = resp.ente.cargo || '';
+        el.emailRepEnte.value = resp.ente.email || '';
+        el.telRepEnte.value   = resp.ente.telefone || '';
+      }
+      if (resp.ug){
+        el.cpfRepUg.value   = resp.ug.cpf || '';
+        el.nomeRepUg.value  = resp.ug.nome || '';
+        el.cargoRepUg.value = resp.ug.cargo || '';
+        el.emailRepUg.value = resp.ug.email || '';
+        el.telRepUg.value   = resp.ug.telefone || '';
+      }
+
+      // 3) CRP
+      if (crp.data_venc) el.dataUltCrp.value = crp.data_venc;
+      if (crp.tipo === 'Administrativa') el.tipoAdm.checked = true;
+      if (crp.tipo === 'Judicial')       el.tipoJud.checked = true;
+
+      // 3.3 Irregulares
+      if (Array.isArray(crp.irregulares)){
+        crp.irregulares.forEach(v=>{
+          const inp = $(`input[name="CRITERIOS_IRREGULARES[]"][value="${CSS.escape(v)}"]`, el.grpCrit);
+          if (inp) inp.checked = true;
+        });
+      }
+
+      // Esfera
+      const esfera = (data?.esfera || ente?.esfera || '').trim();
+      if (esfera) {
+        if (/municipal/i.test(esfera)) { el.esfMun && (el.esfMun.checked = true); el.esfEst && (el.esfEst.checked = false); }
+        else if (/estadual|distrital/i.test(esfera)) { el.esfEst && (el.esfEst.checked = true); el.esfMun && (el.esfMun.checked = false); }
+      }
+
+      popularListasFaseComBaseNosCritérios();
+      saveState();
+      dbg('[hidratarTermosRegistrados] done ✓');
+    }catch(err){
+      // <<< Fallback quando a API quebra (500)
+      dbe('[hidratarTermosRegistrados] API falhou, aplicando fallback com dados do Formulário 1.', { status: err?.status, message: err?.message });
+
+      // 1) Use dados que já estão visíveis no passo 1 (mantém o que o usuário preencheu)
+      //    e complete com o que veio do Gescon (UF/Ente) via spans informativos.
+      if (!el.uf.value && el.spanUfGescon?.textContent) {
+        el.uf.value = el.spanUfGescon.textContent.trim();
+      }
+      if (!el.ente.value && el.spanEnteGescon?.textContent) {
+        el.ente.value = el.spanEnteGescon.textContent.trim();
+      }
+      if (!el.cnpjEnte.value) el.cnpjEnte.value = maskCNPJ(cnpj);
+
+      // 2) Garantir listas da fase 4
+      popularListasFaseComBaseNosCritérios();
+      saveState();
     }
-    if (resp.ug){
-      el.cpfRepUg.value   = resp.ug.cpf || '';
-      el.nomeRepUg.value  = resp.ug.nome || '';
-      el.cargoRepUg.value = resp.ug.cargo || '';
-      el.emailRepUg.value = resp.ug.email || '';
-      el.telRepUg.value   = resp.ug.telefone || '';
-      dbg('RESP_UG ←', resp.ug);
-    }
-
-    // 3) CRP
-    if (crp.data_venc) { el.dataUltCrp.value = crp.data_venc; dbg('DATA_VENC_ULT_CRP ←', crp.data_venc); }
-    if (crp.tipo === 'Administrativa') { el.tipoAdm.checked = true; dbg('TIPO ← Administrativa'); }
-    if (crp.tipo === 'Judicial')       { el.tipoJud.checked = true; dbg('TIPO ← Judicial'); }
-
-    // 3.3 Irregulares
-    if (Array.isArray(crp.irregulares)){
-      crp.irregulares.forEach(v=>{
-        const inp = $(`input[name="CRITERIOS_IRREGULARES[]"][value="${CSS.escape(v)}"]`, el.grpCrit);
-        if (inp) inp.checked = true;
-      });
-      dbg('IRREGULARES marcados ←', crp.irregulares);
-    }
-
-    // Esfera
-    const esfera = (data?.esfera || ente?.esfera || '').trim();
-    if (esfera) {
-      if (/municipal/i.test(esfera)) { el.esfMun && (el.esfMun.checked = true); el.esfEst && (el.esfEst.checked = false); }
-      else if (/estadual|distrital/i.test(esfera)) { el.esfEst && (el.esfEst.checked = true); el.esfMun && (el.esfMun.checked = false); }
-      dbg('ESFERA ←', esfera);
-    }
-
-    popularListasFaseComBaseNosCritérios();
-    saveState();
-    dbg('[hidratarTermosRegistrados] done ✓');
   }
+
 
 
 
