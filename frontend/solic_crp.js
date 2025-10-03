@@ -917,12 +917,18 @@
 
   /* ========= Fluxo ÚNICO de PDF ========= */
   async function gerarBaixarPDF(payload){
-    // Envie o payload "flat" diretamente
+    // 👇 converte apenas para o endpoint de PDF
+    const payloadForPdf = {
+      ...payload,
+      HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : ''
+    };
+
     const blob = await fetchBinary(
-      api('/termo-solic-crp-pdf'),     // rota existente no server
-      { method: 'POST',
+      api('/termo-solic-crp-pdf'), // rota existente no server (via /_api/)
+      {
+        method: 'POST',
         headers: withKey({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(payload)  // <<< nada de { data, templateUrl }
+        body: JSON.stringify(payloadForPdf) // << usa o payload convertido
       },
       { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 1 }
     );
@@ -937,6 +943,7 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
+
 
 
 
