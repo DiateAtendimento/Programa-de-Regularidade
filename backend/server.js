@@ -561,9 +561,6 @@ const formatDateISO = d => {
   const yy = d.getFullYear();
   return `${yy}-${mm}-${dd}`;
 };
-
-
-
 /* === CRP FAST LOOKUP === */
 async function findCRPByCnpjFast(sheet, cnpjDigits) {
   const colCNPJ = 1, colVal = 5, colDec = 6; // 0-based: B, F, G
@@ -1304,8 +1301,6 @@ const schemaGesconTermoEnc = Joi.object({
 const schemaTermosRegistradosByCnpj = Joi.object({
   cnpj: Joi.string().pattern(/^\D*\d{14}\D*$/).required()
 });
-
-
 /* ===== Joi Schemas ===== */
 const schemaUpsertCnpj = Joi.object({
   UF: Joi.string().trim().min(1).required(),
@@ -1683,7 +1678,6 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
   }
   return { updated: false };
 }
-
 /* ===== util de idempotência ===== */
 function makeIdemKeyFromPayload(p) {
   const keyObj = {
