@@ -1,57 +1,81 @@
-// netlify/functions/termo-pdf.js  (Formulário 1)
-import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium';
+// backend/termo-pdf.js
+const path = require('path');
+const express = require('express');
+const router = express.Router();
 
-export const handler = async (event) => {
-  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
+/**
+ * Gera PDF do termo de ADESÃO.
+ * Espera um JSON no body com os campos usados pelo template /termo.html.
+ */
+router.post('/pdf/termo', async (req, res) => {
+  const t0 = Date.now();
+  const log = (m, obj) => console.log(`[termo-pdf] ${m}`, obj ?? '');
+  const errlog = (m, obj) => console.error(`[termo-pdf][ERROR] ${m}`, obj ?? '');
 
-  const { data } = JSON.parse(event.body || '{}') || {};
-  if (!data) return { statusCode: 400, body: 'payload ausente' };
+  const { browser } = req.app.locals; // puppeteer compartilhado pelo server
+  const PUBLIC_URL = process.env.PUBLIC_URL || 'http://localhost:8888';
+  const url = `${PUBLIC_URL}/termo.html`;
 
-  const origin = process.env.PUBLIC_ORIGIN || `https://${event.headers.host}`;
-  const templateUrl = `${origin}/termo.html?v=${Date.now()}`; // <- TEMPLATE do Form 1
-
-  const browser = await puppeteer.launch({
-    args: chromium.args, defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(), headless: chromium.headless
-  });
+  let page;
   try {
-    const page = await browser.newPage();
-    await page.goto(templateUrl, { waitUntil: ['load','domcontentloaded','networkidle0'], timeout: 60000 });
+    page = await browser.newPage();
 
-    // injeta classes de exportação e mídia de impressão
-    await page.emulateMediaType('print');
-    await page.evaluate(() => {
-      document.documentElement.classList.add('pdf-export');
-      document.body.classList.add('pdf-export');
+    // 1) Ver console do template
+    page.on('console', msg => {
+      const type = msg.type();
+      const txt = msg.text();
+      if (type === 'error') errlog(`console(${type}): ${txt}`);
+      else log(`console(${type}): ${txt}`);
     });
 
-    // injeta os dados e sinaliza para o front renderizar
-    await page.evaluate((_data) => {
-      window.__TERMO_DATA__ = _data;
-      document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-    }, data);
+    // 2) Injeta payload ANTES do carregamento do template
+    const payload = req.body || {};
+    await page.evaluateOnNewDocument((data) => {
+      // entregue no escopo global
+      window.__TERMO_DATA__ = data || {};
+      // liga o modo de exportação para CSS
+      document.documentElement.classList.add('pdf-export');
+      document.body?.classList?.add('pdf-export');
+    }, payload);
 
-    // sanity checks (evita PDF em branco)
-    await page.waitForSelector('#pdf-root .term-wrap', { timeout: 15000 });
-    await page.waitForFunction(() => !!window.__TERMO_PRINT_READY__ === true, { timeout: 30000 });
+    // 3) Abre o HTML do termo
+    log('Abrindo template', { url });
+    const resp = await page.goto(url, { waitUntil: ['load', 'domcontentloaded', 'networkidle0'], timeout: 60000 });
+    log('Status navegação', { status: resp?.status?.() });
 
+    // 4) Garante mídia e fonte
+    await page.emulateMediaType('screen');
+
+    // 5) Verifica se realmente renderizou conteúdo
+    const bodySize = await page.evaluate(() => {
+      const b = document.body;
+      return { w: b?.scrollWidth || 0, h: b?.scrollHeight || 0, html: !!document.querySelector('#pdf-root') };
+    });
+    log('Body size', bodySize);
+    if (!bodySize.html || bodySize.h < 100) {
+      throw new Error(`Conteúdo não renderizado (#pdf-root? ${bodySize.html}) altura=${bodySize.h}`);
+    }
+
+    // 6) Gera PDF
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: 0, right: 0, bottom: 0, left: 0 }
+      preferCSSPageSize: true,
+      margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' }
     });
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename="termo-adesao.pdf"'
-      },
-      body: Buffer.from(pdf).toString('base64'),
-      isBase64Encoded: true
-    };
+    const dt = Date.now() - t0;
+    log('PDF gerado com sucesso', { ms: dt, kb: Math.round(pdf.length / 1024) });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="termo-adesao.pdf"');
+    return res.status(200).send(pdf);
+  } catch (e) {
+    errlog('Falha ao gerar PDF', e?.message || e);
+    return res.status(500).json({ ok: false, error: String(e?.message || e) });
   } finally {
-    await browser.close();
+    try { await page?.close(); } catch {}
   }
-};
+});
+
+module.exports = router;

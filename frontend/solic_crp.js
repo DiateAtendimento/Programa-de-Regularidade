@@ -443,76 +443,105 @@
     }, { label:'termos-registrados', retries: 0 });
   }
 
+  // === substituir a função onPesquisar inteira por esta versão ===
   async function onPesquisar(ev){
-    if(searching) return;
-    const cnpj = digits(el.cnpjInput?.value||'');
-    if(cnpj.length!==14){ showAtencao(['Informe um CNPJ válido (14 dígitos).']); return; }
+    if (searching) return;
+
+    const raw = el.cnpjInput?.value || '';
+    const cnpj = digits(raw);   // normaliza: só dígitos
+    console.group('[solic_crp] Pesquisa CNPJ');
+    console.log('Entrada (raw):', raw);
+    console.log('Normalizado (digits):', cnpj);
+
+    if (cnpj.length !== 14) {
+      console.warn('CNPJ inválido (esperado 14 dígitos).');
+      console.groupEnd();
+      showAtencao(['Informe um CNPJ válido (14 dígitos).']);
+      return;
+    }
 
     searching = true;
     const btn = el.btnPesquisar;
     const old = btn?.innerHTML;
     btn && (btn.disabled = true, btn.innerHTML = 'Pesquisando…');
 
-    try{
-      const data = await consultarGesconByCnpj(cnpj);
+    try {
+      console.time('[solic_crp] gescon/termo-enc');
+      const data = await consultarGesconByCnpj(cnpj);   // usa o proxy via api('/...') já definido
+      console.timeEnd('[solic_crp] gescon/termo-enc');
+      console.log('Resposta gescon/termo-enc:', data);
 
-      // precisa ter todos os campos
-      let ok = data && data.n_gescon && data.uf && data.ente && data.data_enc_via_gescon;
+      // precisa ter todos os campos + nº Gescon válido
+      let ok = !!(data && data.n_gescon && data.uf && data.ente && data.data_enc_via_gescon);
+      if (ok && !isGesconNumber(data.n_gescon)) {
+        console.warn('Número Gescon com formato inválido:', data.n_gescon);
+        ok = false;
+      }
 
-      // regra do nº da consulta: S|L + 6 dígitos + /AAAA
-      if(ok && !isGesconNumber(data.n_gescon)) ok = false;
+      if (!ok) {
+        // 🔓 desbloqueia o fluxo mesmo sem registro válido
+        console.info('Sem registro válido no Gescon. Fluxo será desbloqueado.');
+        el.hasGescon && (el.hasGescon.value = '0');
+        if (el.btnNext) el.btnNext.disabled = false;
+        el.boxGescon && el.boxGescon.classList.add('d-none');
+        if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
+        const infoNum = document.getElementById('infoNumGescon');
+        if (infoNum) infoNum.textContent = '—';
 
-      if(!ok){
-        el.hasGescon.value = '0';
-        // trava o Próximo enquanto não houver registro válido
-        if(el.btnNext) el.btnNext.disabled = true;
-        showModal('modalBusca');
+        // tenta hidratar dados básicos (não bloqueia em caso de erro)
+        try { await hidratarTermosRegistrados(cnpj); } catch (e) {
+          console.warn('hidratarTermosRegistrados falhou (sem bloqueio):', e);
+        }
+
+        if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
+        console.groupEnd();
         return;
       }
 
-      // normaliza data p/ exibição
+      // ✅ registro encontrado → habilita Próximo e exibe box
       const dataEncBR = toDateBR(data.data_enc_via_gescon);
+      el.hasGescon && (el.hasGescon.value = '1');
+      if (el.btnNext) el.btnNext.disabled = false;
 
-      // info box
-      el.hasGescon.value = '1';
-      if(el.btnNext) el.btnNext.disabled = false;
-
-      el.spanNGescon.textContent     = data.n_gescon || '';
-      el.spanDataEnc.textContent     = dataEncBR || '';
-      el.spanUfGescon.textContent    = data.uf || '';
-      el.spanEnteGescon.textContent  = data.ente || '';
+      el.spanNGescon && (el.spanNGescon.textContent = data.n_gescon || '');
+      el.spanDataEnc && (el.spanDataEnc.textContent = dataEncBR || '');
+      el.spanUfGescon && (el.spanUfGescon.textContent = data.uf || '');
+      el.spanEnteGescon && (el.spanEnteGescon.textContent = data.ente || '');
       el.boxGescon?.classList.remove('d-none');
 
-      // também mostra na etapa 1 (linha abaixo do título)
       el.infoDataEncGescon && (el.infoDataEncGescon.textContent = dataEncBR || '—');
       const infoNum = document.getElementById('infoNumGescon');
       if (infoNum) infoNum.textContent = data.n_gescon || '—';
 
-      // hidrata 1–3
       await hidratarTermosRegistrados(cnpj);
 
-      // avança para etapa 1 (se estivermos no 0)
-      if (curStep === 0) { 
-        curStep = 1; 
-        window.__renderStepper?.();   // em vez de chamar ensureStepperFallback() de novo
-      }
+      if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
+      console.groupEnd();
 
-    }catch(err){
-      // 🔎 Log detalhado no console para depuração
-      console.error('gescon/termo-enc falhou:', err);
+    } catch (err) {
+      console.error('Erro na pesquisa do CNPJ:', err);
 
-      // (opcional) mensagem específica para 404
-      if (err && err.status === 404 && /cnpj|não localizado|not.?found/i.test(String(err.message||''))) {
-        showAtencao(['CNPJ não localizado no Gescon. Confirme o número (14 dígitos) e tente novamente.']);
+      // 🔓 404 também desbloqueia o fluxo
+      if (err && err.status === 404) {
+        console.info('CNPJ não localizado no Gescon. Fluxo será desbloqueado.');
+        el.hasGescon && (el.hasGescon.value = '0');
+        if (el.btnNext) el.btnNext.disabled = false;
+        el.boxGescon && el.boxGescon.classList.add('d-none');
+        if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
+        const infoNum = document.getElementById('infoNumGescon');
+        if (infoNum) infoNum.textContent = '—';
+
+        try { await hidratarTermosRegistrados(cnpj); } catch (e) {}
+        if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
       } else {
         showErro(friendlyErrorMessages(err, 'Falha ao consultar informações.'));
       }
-    }finally{
-      btn && (btn.disabled=false, btn.innerHTML=old||'Pesquisar');
+    } finally {
+      btn && (btn.disabled = false, btn.innerHTML = old || 'Pesquisar');
       searching = false;
     }
-
   }
+
 
   async function hidratarTermosRegistrados(cnpj){
     try{

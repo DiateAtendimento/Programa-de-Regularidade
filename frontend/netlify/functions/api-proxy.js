@@ -131,23 +131,47 @@ export async function handler(event) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort('proxy-timeout'), PROXY_TIMEOUT_MS);
 
+  const started = Date.now();
   let res;
   try {
     res = await fetch(target, { method: event.httpMethod, headers: h, body, signal: ctrl.signal });
   } catch (err) {
     clearTimeout(t);
     const msg = String(err?.message || err || '');
+    // 1) Logar falhas também
+    console.error('[api-proxy][error]', {
+      method: event.httpMethod,
+      path: subpath,
+      target,
+      detail: msg,
+      origin: requestOrigin || null,
+    });
     return json(msg.includes('timeout') ? 504 : 502, { error: 'Upstream error', detail: msg, target }, corsOrigin);
   }
   clearTimeout(t);
+  // 2) Medir latência
+  const ms = Date.now() - started;
 
   const upstreamCT = res.headers.get('content-type') || 'application/octet-stream';
-  const isText = /^text\/|application\/(json|javascript|pdf)/i.test(upstreamCT) && !/^application\/octet-stream$/i.test(upstreamCT);
+  const isText =
+    (/^text\//i.test(upstreamCT) || /application\/(json|javascript)/i.test(upstreamCT)) &&
+    !/^application\/octet-stream$/i.test(upstreamCT);
+
   const buf = Buffer.from(await res.arrayBuffer());
 
   const outHeaders = { 'Content-Type': upstreamCT, 'Access-Control-Allow-Origin': corsOrigin, Vary: 'Origin' };
   ['Content-Disposition','Cache-Control','ETag','Last-Modified'].forEach(k => {
     const v = res.headers.get(k); if (v) outHeaders[k] = v;
+  });
+
+  // Log de sucesso com latência
+  console.log('[api-proxy]', {
+    method: event.httpMethod,
+    path: subpath,
+    status: res.status,
+    ct: upstreamCT,
+    ms,
+    origin: requestOrigin || null,
   });
 
   return {
