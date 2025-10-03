@@ -152,7 +152,7 @@ app.use('/api/termos-registrados', rlCommon);
 app.use('/api/solic-crp-pdf', rlPdf);
 app.use('/api/gerar-solic-crp', rlWrite);
 app.use('/api/termo-solic-crp-pdf', rlPdf);
-app.use(express.json({ limit: '2mb' }));
+
 
 
 
