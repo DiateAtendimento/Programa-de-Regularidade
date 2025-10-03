@@ -27,19 +27,23 @@ const toISO = (s) => {
 };
 
 // === GESCON / Termos registrados ===
-r.post("/gescon/termo-enc", requireKey, async (req, res, next) => {
-  try {
-    const { cnpj } = req.body || {};
-    return res.json(await buscarGescon(cnpj));
-  } catch (e) { next(e); }
-});
+ r.post("/gescon/termo-enc", requireKey, async (req, res, next) => {
+   try {
+     const b = req.body || {};
+     const c = digits(b.cnpj || b.cnpj_ente);
+     if (c.length !== 14) return res.status(422).json({ error: 'VALIDATION', field: 'cnpj' });
+     return res.json(await buscarGescon(c));
+   } catch (e) { next(e); }
+ });
 
-r.post("/termos-registrados", requireKey, async (req, res, next) => {
-  try {
-    const { cnpj } = req.body || {};
-    return res.json(await buscarTermosRegistrados(cnpj));
-  } catch (e) { next(e); }
-});
+ r.post("/termos-registrados", requireKey, async (req, res, next) => {
+   try {
+     const b = req.body || {};
+     const c = digits(b.cnpj || b.cnpj_ente);
+     if (c.length !== 14) return res.status(422).json({ error: 'VALIDATION', field: 'cnpj' });
+     return res.json(await buscarTermosRegistrados(c));
+   } catch (e) { next(e); }
+ });
 
 // === Registrar Solicitação CRP ===
 r.post("/gerar-solic-crp", requireKey, async (req, res, next) => {
