@@ -1190,7 +1190,6 @@ app.post('/api/gescon/termo-enc', async (req, res) => {
     };
 
 
-
     // se faltar algum essencial, retorna vazio
     if (!payload.n_gescon || !payload.uf || !payload.ente || !payload.data_enc_via_gescon) {
       return res.json({});
@@ -1510,7 +1509,7 @@ const schemaTermoSolicPdf = Joi.object({
   JUSTIFICATIVAS_GERAIS: Joi.string().allow(''),
 
   // Metadados Gescon exibidos no subtítulo
-  HAS_TERMO_ENC_GESCON: Joi.alternatives().try(Joi.string(), Joi.number()).optional(),
+  HAS_TERMO_ENC_GESCON: Joi.alternatives().try(Joi.string(), Joi.number(), Joi.boolean()).optional(),
   N_GESCON: Joi.string().allow(''),
   DATA_ENC_VIA_GESCON: Joi.string().allow(''),
 
