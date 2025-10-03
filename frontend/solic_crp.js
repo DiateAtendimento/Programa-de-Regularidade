@@ -430,18 +430,26 @@
   let searching = false;
 
   async function consultarGesconByCnpj(cnpj){
-    const body = { cnpj, cnpj_ente: cnpj }; // <- alguns backends esperam cnpj_ente
+    // Enviar apenas { cnpj } para passar na validação do backend
+    const body = { cnpj };
     return fetchJSON(api('/gescon/termo-enc'), {
-      method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify(body)
+      method:'POST',
+      headers: withKey({'Content-Type':'application/json'}),
+      body: JSON.stringify(body)
     }, { label:'gescon/termo-enc', retries: 0 });
   }
 
+
   async function consultarTermosRegistrados(cnpj){
-    const body = { cnpj, cnpj_ente: cnpj }; // <- idem
+    // Enviar apenas { cnpj } para passar na validação do backend
+    const body = { cnpj };
     return fetchJSON(api('/termos-registrados'), {
-      method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify(body)
+      method:'POST',
+      headers: withKey({'Content-Type':'application/json'}),
+      body: JSON.stringify(body)
     }, { label:'termos-registrados', retries: 0 });
   }
+
 
   // === substituir a função onPesquisar inteira por esta versão ===
   async function onPesquisar(ev){
