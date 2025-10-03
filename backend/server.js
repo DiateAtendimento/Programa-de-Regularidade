@@ -2209,25 +2209,21 @@ app.post('/api/termo-pdf', async (req, res) => {
 
         if (DEBUG_PDF) console.log('📤 dados injetados no template');
       
-        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
-
-        // Aguarda o front sinalizar que terminou de preencher (ou timeout curto)
-        await page.evaluate(() => new Promise((ok) => {
-          if (window.__TERMO_PRINT_READY__ === true) return ok();
-          document.addEventListener('TERMO_PRINT_READY', () => ok(), { once: true });
-          setTimeout(ok, 1500); // fallback p/ não travar se o evento não vier
+        // 1) espera o container do PDF existir
+        await page.waitForSelector('#pdf-root', { timeout: 20000 }).catch(()=>{});
+        // 2) espera o evento do template + as fontes carregarem (sem fallback curto)
+        await page.evaluate(() => new Promise((resolve) => {
+          const finish = async () => {
+            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_) {}
+            setTimeout(resolve, 150); // pequeno idle para o layout estabilizar
+          };
+          if (window.__TERMO_PRINT_READY__ === true) return void finish();
+          document.addEventListener('TERMO_PRINT_READY', () => finish(), { once: true });
         }));
-
-        // aguarda o front sinalizar que terminou a hidratação/render
+        // (opcional) marcar classes de export — idempotente
         await page.evaluate(() => {
-          if (!window.__TERMO_WAIT_PRINT__) {
-            window.__TERMO_WAIT_PRINT__ = new Promise((resolve) => {
-              const done = () => { window.__TERMO_READY = true; resolve(true); };
-              document.addEventListener('TERMO_PRINT_READY', done, { once: true });
-              setTimeout(done, 2000); // fallback
-            });
-          }
-          return window.__TERMO_WAIT_PRINT__;
+          document.documentElement.classList.add('pdf-export');
+          document.body.classList.add('pdf-export');
         });
 
         function findFont(candidates){
