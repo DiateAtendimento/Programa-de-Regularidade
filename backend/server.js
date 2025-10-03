@@ -237,6 +237,48 @@ const digits = v => norm(v).replace(/\D+/g,'');
 const cnpj14 = v => digits(v).padStart(14, '0').slice(-14);
 const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm(v));
 
+const _hdrKey = (s) => (s ?? '')
+  .toString()
+  .trim()
+  .toLowerCase()
+  .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+  .replace(/[^\p{L}\p{N}]+/gu, '_')
+  .replace(/_+/g, '_')
+  .replace(/^_+|_+$/g, '');
+
+function getVal(rowOrObj, key) {
+  if (!rowOrObj || !key) return '';
+
+  // 1) acesso direto
+  if (Object.prototype.hasOwnProperty.call(rowOrObj, key)) {
+    return rowOrObj[key] ?? '';
+  }
+
+  // 2) Row.get('Cabeçalho') do google-spreadsheet
+  if (typeof rowOrObj.get === 'function') {
+    try {
+      const v = rowOrObj.get(key);
+      if (v != null) return v;
+    } catch (_) {}
+  }
+
+  // 3) match por chave normalizada
+  const want = _hdrKey(key);
+  for (const [k, v] of Object.entries(rowOrObj)) {
+    if (_hdrKey(k) === want) return v ?? '';
+  }
+
+  // 4) fallback: _rawData + headerValues
+  const raw = rowOrObj._rawData;
+  const headers = rowOrObj._sheet?.headerValues;
+  if (Array.isArray(raw) && Array.isArray(headers) && headers.length === raw.length) {
+    const idx = headers.findIndex(h => _hdrKey(h) === want);
+    if (idx >= 0) return raw[idx] ?? '';
+  }
+  return '';
+}
+
+
 /* ───────────── Segurança extra: compare seguro, escape HTML e planilha-safe ───────────── */
 function safeEqual(a, b) {
   try {
