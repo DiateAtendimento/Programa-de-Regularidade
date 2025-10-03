@@ -1,6 +1,12 @@
 // solic_crp.js — fluxo completo da Solicitação de CRP Emergencial (isolado da Adesão)
 
 (() => {
+
+  // === DEBUG global (ligue/desligue quando quiser) ===
+  window.__DEBUG_SOLIC_CRP__ = true;
+  function dbg(...args){ if (window.__DEBUG_SOLIC_CRP__) console.log(...args); }
+  function dbe(...args){ if (window.__DEBUG_SOLIC_CRP__) console.error(...args); }
+
   /* ========= Config ========= */
   const API_BASE = (function(){
     const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
@@ -79,21 +85,48 @@
       attempt++;
       const ctrl = new AbortController();
       const to   = setTimeout(()=>ctrl.abort(`timeout:${label}`), timeout);
+
+      if (window.__DEBUG_SOLIC_CRP__) {
+        const safeHeaders = { ...headers };
+        if (safeHeaders['X-API-Key']) safeHeaders['X-API-Key'] = '***';
+        dbg(`[fetchJSON] → ${label}`, { finalURL, method, headers: safeHeaders, body });
+      }
+
       try{
+        const start = performance.now();
         const res = await fetch(finalURL, {
           method, headers, body, signal: ctrl.signal,
           cache:'no-store', credentials:'same-origin', redirect:'follow', mode:'cors'
         });
+        const dur = Math.round(performance.now() - start);
         clearTimeout(to);
-        if(!res.ok){
-          // tentar extrair erro JSON quando houver
-          const isJson = (res.headers.get('content-type')||'').includes('application/json');
-          const data   = isJson ? (await res.json().catch(()=>null)) : null;
-          const err    = new Error((data && (data.error||data.message)) || `HTTP ${res.status}`);
-          err.status = res.status; throw err;
-        }
+
         const ct = res.headers.get('content-type') || '';
-        return ct.includes('application/json') ? res.json() : res.text();
+        const isJson = ct.includes('application/json');
+        const txt = await res.text(); // lemos uma vez
+        const data = isJson ? (JSON.parse(txt || 'null')) : txt;
+
+        if (window.__DEBUG_SOLIC_CRP__) {
+          dbg(`[fetchJSON] ← ${label} (${dur}ms)`, {
+            status: res.status,
+            ok: res.ok,
+            headers: {
+              'content-type': ct,
+              'x-cache': res.headers.get('x-cache') || undefined
+            },
+            preview: isJson ? data : (String(txt).slice(0,300) + (txt.length>300?'…':'')),
+          });
+        }
+
+        if(!res.ok){
+          const err = new Error((isJson && (data?.error || data?.message)) || `HTTP ${res.status}`);
+          err.status = res.status;
+          err.response = data;
+          throw err;
+        }
+
+        return isJson ? data : txt;
+
       }catch(e){
         clearTimeout(to);
         const m = String(e?.message||'').toLowerCase();
@@ -104,6 +137,8 @@
           m.includes('econnreset') || m.includes('socket hang up') || m.includes('eai_again') ||
           m.includes('failed to fetch') || (!navigator.onLine);
 
+        dbe(`[fetchJSON][erro] ${label}`, { attempt, message: e?.message, status: e?.status, response: e?.response });
+
         if(retriable && attempt <= (retries+1)){
           const backoff = Math.min(4000, 300 * Math.pow(2, attempt-1));
           await new Promise(r=>setTimeout(r, backoff)); continue;
@@ -112,6 +147,7 @@
       }
     }
   }
+
 
   async function fetchBinary(
     url,
@@ -430,36 +466,38 @@
   let searching = false;
 
   async function consultarGesconByCnpj(cnpj){
-    // Enviar apenas { cnpj } para passar na validação do backend
     const body = { cnpj };
-    return fetchJSON(api('/gescon/termo-enc'), {
+    dbg('[consultarGesconByCnpj] >> body:', body);
+    const out = await fetchJSON(api('/gescon/termo-enc'), {
       method:'POST',
       headers: withKey({'Content-Type':'application/json'}),
       body: JSON.stringify(body)
     }, { label:'gescon/termo-enc', retries: 0 });
+    dbg('[consultarGesconByCnpj] <<', out);
+    return out;
   }
 
-
   async function consultarTermosRegistrados(cnpj){
-    // Enviar apenas { cnpj } para passar na validação do backend
     const body = { cnpj };
-    return fetchJSON(api('/termos-registrados'), {
+    dbg('[consultarTermosRegistrados] >> body:', body);
+    const out = await fetchJSON(api('/termos-registrados'), {
       method:'POST',
       headers: withKey({'Content-Type':'application/json'}),
       body: JSON.stringify(body)
     }, { label:'termos-registrados', retries: 0 });
+    dbg('[consultarTermosRegistrados] <<', out);
+    return out;
   }
 
 
-  // === substituir a função onPesquisar inteira por esta versão ===
   async function onPesquisar(ev){
     if (searching) return;
 
     const raw = el.cnpjInput?.value || '';
-    const cnpj = digits(raw);   // normaliza: só dígitos
+    const cnpj = digits(raw);
     console.group('[solic_crp] Pesquisa CNPJ');
-    console.log('Entrada (raw):', raw);
-    console.log('Normalizado (digits):', cnpj);
+    dbg('Entrada (raw):', raw);
+    dbg('Normalizado (digits):', cnpj);
 
     if (cnpj.length !== 14) {
       console.warn('CNPJ inválido (esperado 14 dígitos).');
@@ -475,11 +513,10 @@
 
     try {
       console.time('[solic_crp] gescon/termo-enc');
-      const data = await consultarGesconByCnpj(cnpj);   // usa o proxy via api('/...') já definido
+      const data = await consultarGesconByCnpj(cnpj);
       console.timeEnd('[solic_crp] gescon/termo-enc');
-      console.log('Resposta gescon/termo-enc:', data);
+      dbg('Resposta gescon/termo-enc:', data);
 
-      // precisa ter todos os campos + nº Gescon válido
       let ok = !!(data && data.n_gescon && data.uf && data.ente && data.data_enc_via_gescon);
       if (ok && !isGesconNumber(data.n_gescon)) {
         console.warn('Número Gescon com formato inválido:', data.n_gescon);
@@ -487,26 +524,19 @@
       }
 
       if (!ok) {
-        // 🔓 desbloqueia o fluxo mesmo sem registro válido
-        console.info('Sem registro válido no Gescon. Fluxo será desbloqueado.');
+        dbg('Sem registro válido Gescon → desbloqueando fluxo e tentando hidratar termos…');
         el.hasGescon && (el.hasGescon.value = '0');
         if (el.btnNext) el.btnNext.disabled = false;
         el.boxGescon && el.boxGescon.classList.add('d-none');
         if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
-        const infoNum = document.getElementById('infoNumGescon');
-        if (infoNum) infoNum.textContent = '—';
-
-        // tenta hidratar dados básicos (não bloqueia em caso de erro)
-        try { await hidratarTermosRegistrados(cnpj); } catch (e) {
-          console.warn('hidratarTermosRegistrados falhou (sem bloqueio):', e);
-        }
-
+        const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = '—';
+        try { await hidratarTermosRegistrados(cnpj); } catch (e) { dbe('hidratarTermosRegistrados falhou (sem bloqueio):', e); }
         if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
         console.groupEnd();
         return;
       }
 
-      // ✅ registro encontrado → habilita Próximo e exibe box
+      // ✅ registro encontrado
       const dataEncBR = toDateBR(data.data_enc_via_gescon);
       el.hasGescon && (el.hasGescon.value = '1');
       if (el.btnNext) el.btnNext.disabled = false;
@@ -518,27 +548,24 @@
       el.boxGescon?.classList.remove('d-none');
 
       el.infoDataEncGescon && (el.infoDataEncGescon.textContent = dataEncBR || '—');
-      const infoNum = document.getElementById('infoNumGescon');
-      if (infoNum) infoNum.textContent = data.n_gescon || '—';
+      const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = data.n_gescon || '—';
 
+      dbg('Chamando hidratarTermosRegistrados…');
       await hidratarTermosRegistrados(cnpj);
+      dbg('hidratarTermosRegistrados → OK');
 
       if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
       console.groupEnd();
 
     } catch (err) {
-      console.error('Erro na pesquisa do CNPJ:', err);
-
-      // 🔓 404 também desbloqueia o fluxo
+      dbe('Erro na pesquisa do CNPJ:', { status: err?.status, message: err?.message, response: err?.response });
       if (err && err.status === 404) {
-        console.info('CNPJ não localizado no Gescon. Fluxo será desbloqueado.');
+        dbg('CNPJ não localizado no Gescon → desbloqueando fluxo e tentando hidratar…');
         el.hasGescon && (el.hasGescon.value = '0');
         if (el.btnNext) el.btnNext.disabled = false;
         el.boxGescon && el.boxGescon.classList.add('d-none');
         if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
-        const infoNum = document.getElementById('infoNumGescon');
-        if (infoNum) infoNum.textContent = '—';
-
+        const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = '—';
         try { await hidratarTermosRegistrados(cnpj); } catch (e) {}
         if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
       } else {
@@ -550,61 +577,73 @@
     }
   }
 
-
   async function hidratarTermosRegistrados(cnpj){
-    try{
-      const data = await consultarTermosRegistrados(cnpj);
-      const ente = data?.ente||{}, resp = data?.responsaveis||{}, crp=data?.crp||{};
+    dbg('[hidratarTermosRegistrados] start →', cnpj);
+    const data = await consultarTermosRegistrados(cnpj);
 
-      if (ente.uf)   el.uf.value = ente.uf;
-      if (ente.nome) el.ente.value = ente.nome;
-      if (el.cnpjEnte) el.cnpjEnte.value = maskCNPJ(ente.cnpj || cnpj);
-      if (ente.email) el.emailEnte.value = ente.email;
+    // Shape check
+    if (!data || typeof data !== 'object') throw new Error('payload vazio/inesperado');
+    const ente = data?.ente || {};
+    const resp = data?.responsaveis || {};
+    const crp  = data?.crp || {};
+    dbg('[hidratarTermosRegistrados] payload (normalizado):', { ente, resp, crp, esfera: data?.esfera });
 
-      if (ente.ug) el.ug.value = ente.ug;
-      if (ente.cnpj_ug) el.cnpjUg.value = maskCNPJ(ente.cnpj_ug);
-      if (ente.email_ug) el.emailUg.value = ente.email_ug;
+    // 1) Ente + UG
+    if (ente.uf)   { el.uf.value = ente.uf; dbg('UF ←', ente.uf); }
+    if (ente.nome) { el.ente.value = ente.nome; dbg('ENTE ←', ente.nome); }
+    if (el.cnpjEnte) { el.cnpjEnte.value = maskCNPJ(ente.cnpj || cnpj); dbg('CNPJ_ENTE ←', el.cnpjEnte.value); }
+    if (ente.email) { el.emailEnte.value = ente.email; dbg('EMAIL_ENTE ←', ente.email); }
 
-      if (resp.ente){
-        el.cpfRepEnte.value   = resp.ente.cpf || '';
-        el.nomeRepEnte.value  = resp.ente.nome || '';
-        el.cargoRepEnte.value = resp.ente.cargo || '';
-        el.emailRepEnte.value = resp.ente.email || '';
-        el.telRepEnte.value   = resp.ente.telefone || '';
-      }
-      if (resp.ug){
-        el.cpfRepUg.value   = resp.ug.cpf || '';
-        el.nomeRepUg.value  = resp.ug.nome || '';
-        el.cargoRepUg.value = resp.ug.cargo || '';
-        el.emailRepUg.value = resp.ug.email || '';
-        el.telRepUg.value   = resp.ug.telefone || '';
-      }
+    if (ente.ug)      { el.ug.value = ente.ug; dbg('UG ←', ente.ug); }
+    if (ente.cnpj_ug) { el.cnpjUg.value = maskCNPJ(ente.cnpj_ug); dbg('CNPJ_UG ←', el.cnpjUg.value); }
+    if (ente.email_ug){ el.emailUg.value = ente.email_ug; dbg('EMAIL_UG ←', ente.email_ug); }
 
-      if (crp.data_venc) el.dataUltCrp.value = crp.data_venc;
-      if (crp.tipo === 'Administrativa') el.tipoAdm.checked = true;
-      if (crp.tipo === 'Judicial')       el.tipoJud.checked = true;
-
-      // Esfera: prioriza data.esfera ou ente.esfera ("RPPS Municipal" | "Estadual/Distrital")
-      const esfera = (data?.esfera || ente?.esfera || '').trim();
-      if (esfera) {
-        if (/municipal/i.test(esfera)) { el.esfMun && (el.esfMun.checked = true); el.esfEst && (el.esfEst.checked = false); }
-        else if (/estadual|distrital/i.test(esfera)) { el.esfEst && (el.esfEst.checked = true); el.esfMun && (el.esfMun.checked = false); }
-      }
-
-      if (Array.isArray(crp.irregulares)){
-        crp.irregulares.forEach(v=>{
-          const inp = $(`input[name="CRITERIOS_IRREGULARES[]"][value="${CSS.escape(v)}"]`, el.grpCrit);
-          if (inp) inp.checked = true;
-        });
-      }
-
-      // popular listas fase com base nos critérios
-      popularListasFaseComBaseNosCritérios();
-      saveState();
-    }catch(e){
-      console.warn('Não foi possível hidratar Termos_registrados:', e);
+    // 2) Responsáveis
+    if (resp.ente){
+      el.cpfRepEnte.value   = resp.ente.cpf || '';
+      el.nomeRepEnte.value  = resp.ente.nome || '';
+      el.cargoRepEnte.value = resp.ente.cargo || '';
+      el.emailRepEnte.value = resp.ente.email || '';
+      el.telRepEnte.value   = resp.ente.telefone || '';
+      dbg('RESP_ENTE ←', resp.ente);
     }
+    if (resp.ug){
+      el.cpfRepUg.value   = resp.ug.cpf || '';
+      el.nomeRepUg.value  = resp.ug.nome || '';
+      el.cargoRepUg.value = resp.ug.cargo || '';
+      el.emailRepUg.value = resp.ug.email || '';
+      el.telRepUg.value   = resp.ug.telefone || '';
+      dbg('RESP_UG ←', resp.ug);
+    }
+
+    // 3) CRP
+    if (crp.data_venc) { el.dataUltCrp.value = crp.data_venc; dbg('DATA_VENC_ULT_CRP ←', crp.data_venc); }
+    if (crp.tipo === 'Administrativa') { el.tipoAdm.checked = true; dbg('TIPO ← Administrativa'); }
+    if (crp.tipo === 'Judicial')       { el.tipoJud.checked = true; dbg('TIPO ← Judicial'); }
+
+    // 3.3 Irregulares
+    if (Array.isArray(crp.irregulares)){
+      crp.irregulares.forEach(v=>{
+        const inp = $(`input[name="CRITERIOS_IRREGULARES[]"][value="${CSS.escape(v)}"]`, el.grpCrit);
+        if (inp) inp.checked = true;
+      });
+      dbg('IRREGULARES marcados ←', crp.irregulares);
+    }
+
+    // Esfera
+    const esfera = (data?.esfera || ente?.esfera || '').trim();
+    if (esfera) {
+      if (/municipal/i.test(esfera)) { el.esfMun && (el.esfMun.checked = true); el.esfEst && (el.esfEst.checked = false); }
+      else if (/estadual|distrital/i.test(esfera)) { el.esfEst && (el.esfEst.checked = true); el.esfMun && (el.esfMun.checked = false); }
+      dbg('ESFERA ←', esfera);
+    }
+
+    popularListasFaseComBaseNosCritérios();
+    saveState();
+    dbg('[hidratarTermosRegistrados] done ✓');
   }
+
+
 
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
   function setupFase4Toggles(){
