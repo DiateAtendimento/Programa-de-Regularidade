@@ -1,3 +1,5 @@
+//server.js
+
 // server.js — API RPPS (multi-etapas) c/ idempotência em /api/gerar-termo
 // Hardened: CORS allowlist obrigatório, API key em prod, sanitização p/ Sheets,
 // Puppeteer same-origin only, Helmet extra (Referrer, COOP, HSTS), rate-limit fallback,
@@ -25,6 +27,7 @@ const app = express();
 
 /* ───────────── Níveis de log / debug ───────────── */
 const LOG_LEVEL = (process.env.LOG_LEVEL || 'warn').toLowerCase();
+const DEBUG_PDF = (process.env.DEBUG_PDF || '0') === '1';
 const DEBUG_CORS = process.env.DEBUG_CORS === '1';
 
 /* ───────────── Conexões/robustez ───────────── */
@@ -154,8 +157,23 @@ app.use('/api/gerar-solic-crp', rlWrite);
 app.use('/api/termo-solic-crp-pdf', rlPdf);
 
 
-
-
+app.use(
+  ['/api/termo-solic-crp-pdf','/api/solic-crp-pdf','/api/termo-pdf'],
+  (req,res,next)=>{
+    if (!DEBUG_PDF) return next();
+    const { method, path: p } = req;
+    const h = { ...req.headers }; if (h['x-api-key']) h['x-api-key'] = '***';
+    console.log(`🧭 ${method} ${p} q=${JSON.stringify(req.query||{})} h=${JSON.stringify(h)}`);
+    try {
+      const kind = typeof req.body;
+      const keys = (kind==='object' && req.body) ? Object.keys(req.body) : kind;
+      console.log('🧭 body keys:', keys);
+    } catch {}
+    const t0 = Date.now();
+    res.on('finish', ()=> console.log(`🧭 ${method} ${p} → ${res.statusCode} (${Date.now()-t0}ms)`));
+    next();
+  }
+);
 // Política de API key: exige em produção ou se REQUIRE_API_KEY=1
 const REQUIRE_API_KEY = (process.env.REQUIRE_API_KEY ?? (process.env.NODE_ENV === 'production' ? '1' : '0')) === '1';
 
@@ -277,8 +295,6 @@ function getVal(rowOrObj, key) {
   }
   return '';
 }
-
-
 /* ───────────── Segurança extra: compare seguro, escape HTML e planilha-safe ───────────── */
 function safeEqual(a, b) {
   try {
@@ -711,7 +727,6 @@ async function getBrowser() {
   }
   return _browserPromise;
 }
-
 /* ─────────────── ROTAS BÁSICAS ─────────────── */
 async function authSheets() {
   return withLimiter('authSheets', async () =>
@@ -1364,7 +1379,6 @@ const schemaUpsertRep = Joi.object({
   TELEFONE: Joi.string().allow(''),
   CARGO: Joi.string().trim().allow(''),
 }).unknown(true);
-
 const schemaGerarTermo = Joi.object({
   UF: Joi.string().trim().min(1).required(),
   ENTE: Joi.string().trim().min(1).required(),
@@ -1591,11 +1605,14 @@ const schemaSolicCrpPdf = schemaSolicCrp.fork(
 function validateOr400(res, schema, obj) {
   const { error, value } = schema.validate(obj, { abortEarly: false, stripUnknown: false, convert: true });
   if (error) {
-    res.status(400).json({ error: 'VALIDATION', details: error.details.map(d => d.message) });
+    const details = error.details.map(d => d.message);
+    console.warn('⚠️ Joi validation fail:', details);
+    res.status(400).json({ error: 'VALIDATION', details });
     return null;
   }
   return value;
 }
+
 
 /* util: upsert representante */
 async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
@@ -1875,7 +1892,7 @@ async function logAlteracoesInline(p, snapshotRaw = {}) {
     UF: (p.UF || '').trim(),
     ENTE: (p.ENTE || '').trim(),
     'CAMPOS ALTERADOS': finalChanged.join(', '),
-    'QTD_CAMPOS_ALTERADOS': finalChanged.length,
+    'QTD_CAMPOS ALTERADOS': finalChanged.length,
     MES: t.MES, DATA: t.DATA, HORA: t.HORA
   }), 'Reg_alteracao:add');
 
@@ -2191,7 +2208,8 @@ app.post('/api/termo-pdf', async (req, res) => {
           document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
         }, payloadForClient);
 
-              
+        if (DEBUG_PDF) console.log('📤 dados injetados no template');
+      
         await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
 
         // Aguarda o front sinalizar que terminou de preencher (ou timeout curto)
@@ -2263,12 +2281,16 @@ app.post('/api/termo-pdf', async (req, res) => {
             <div class="rule"></div>
           </div>`;
         const footerTemplate = `<div></div>`;
+        
+        if (DEBUG_PDF) console.log('🖨️ gerando PDF…');
 
         const pdf = await page.pdf({
           printBackground: true, preferCSSPageSize: true, displayHeaderFooter: true,
           headerTemplate, footerTemplate, margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
         });
         await page.close();
+        
+        if (DEBUG_PDF) console.log('📄 PDF gerado, bytes =', pdf?.length);
 
         const filenameSafe = (p.ENTE || 'termo-adesao')
           .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
@@ -2292,17 +2314,34 @@ app.post('/api/termo-pdf', async (req, res) => {
 /** POST /api/termo-solic-crp-pdf — gera PDF do termo_solic_crp.html */
 app.post('/api/termo-solic-crp-pdf', async (req, res) => {
   try {
+
+    if (DEBUG_PDF) {
+      console.log('📥 /termo-solic-crp-pdf: body keys =', Object.keys(req.body||{}));
+    }
+
     const p = validateOr400(res, schemaTermoSolicPdf, req.body || {});
     if (!p) return;
 
     await withPdfLimiter(async () => {
       let page; let browser; let triedRestart = false;
       try {
+
+        if (DEBUG_PDF) {
+          console.log('🧩 campos essenciais:', {
+            UF:p.UF, ENTE:p.ENTE,
+            CNPJ_ENTE: String(p.CNPJ_ENTE||'').slice(0,4)+'…',
+            CNPJ_UG: String(p.CNPJ_UG||'').slice(0,4)+'…',
+            DATA_VENC: p.DATA_VENCIMENTO_ULTIMO_CRP,
+            TIPO: p.TIPO_EMISSAO_ULTIMO_CRP
+          });
+        }
+
         // Bases internas: loopback e (opcional) PUBLIC_URL estática do .env
         const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
         const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
 
         try { browser = await getBrowser(); page = await browser.newPage(); }
+        
         catch (e) {
           const msg = String(e?.message || '');
           if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
@@ -2338,6 +2377,9 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
            ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
            ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
          ];
+
+         if (DEBUG_PDF) console.log('🚦 tentando carregar templates:', urlsToTry);
+
 
         let loaded = false; let lastErr = null;
         for (const u of urlsToTry) {
@@ -2390,6 +2432,197 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           return null;
         }
         const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf']);
+        const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf']);
+        let fontCSS = '';
+        if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
+        if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
+        fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
+
+        await page.addStyleTag({ content: `
+          ${fontCSS}
+          html, body, #pdf-root { background:#ffffff !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .page-head .logos-wrap { display: none !important; }
+          .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
+          .term-title { margin-top: 2mm !important; }
+        `});
+
+        // 5) Header/footer (mesmo padrão visual do /api/termo-pdf)
+        const path = require('path'); const fs = require('fs');
+        function inlineSvg(relPath) {
+          try {
+            const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
+            const raw = fs.readFileSync(abs, 'utf8');
+            return raw.replace(/<\?xml[^>]*>/g, '').replace(/<!DOCTYPE[^>]*>/g, '')
+              .replace(/\r?\n|\t/g, ' ').replace(/>\s+</g, '><').trim();
+          } catch { return ''; }
+        }
+        const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
+        const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
+        const headerTemplate = `
+          <style>
+            .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6mm 12mm 4mm; }
+            .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
+            .pdf-header .logo-sec svg { height: 19mm; width:auto; }
+            .pdf-header .logo-mps svg { height: 20mm; width:auto; }
+            .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
+            .date, .title, .url, .pageNumber, .totalPages { display:none; }
+          </style>
+          <div class="pdf-header">
+            <div class="logos">
+              <div class="logo-sec">${svgSec}</div>
+              <div class="logo-mps">${svgMps}</div>
+            </div>
+            <div class="rule"></div>
+          </div>`;
+        const footerTemplate = `<div></div>`;
+
+        // 6) Gera o PDF
+        const pdf = await page.pdf({
+          printBackground: true,
+          preferCSSPageSize: true,
+          displayHeaderFooter: true,
+          headerTemplate,
+          footerTemplate,
+          margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
+        });
+        await page.close();
+
+        const filenameSafe = (p.ENTE || 'termo-solic-crp')
+          .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="termo-solic-${filenameSafe}.pdf"`);
+        res.setHeader('Cache-Control', 'no-store, max-age=0');
+        res.send(pdf);
+      } catch (e) {
+        console.error('❌ /api/termo-solic-crp-pdf:', e);
+        try { if (page) await page.close(); } catch(_) {}
+        res.status(500).json({ error: 'Falha ao gerar PDF' });
+      }
+    });
+  } catch (e) {
+    console.error('❌ (outer) /api/termo-solic-crp-pdf:', e);
+    if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
+  }
+});
+
+
+/** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */
+app.post('/api/solic-crp-pdf', async (req, res) => {
+  try {
+    const p = validateOr400(res, schemaSolicCrpPdf, req.body || {});
+    if (!p) return;
+
+    await withPdfLimiter(async () => {
+      let page; let browser; let triedRestart = false;
+      try {
+        // base loopback (mesma proteção do /api/termo-pdf)
+        const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
+        const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
+
+        try { browser = await getBrowser(); page = await browser.newPage();
+          if (DEBUG_PDF) {
+            page.on('console', msg => console.log('🖥️ [page]', msg.type(), msg.text()));
+            page.on('request', reqObj => console.log('🌐 req →', reqObj.method(), reqObj.url()));
+            page.on('requestfinished', reqObj => console.log('✅ req ✓', reqObj.url()));
+            page.on('requestfailed', reqObj => console.warn('❌ req ✗', reqObj.url(), reqObj.failure()?.errorText));
+            page.on('pageerror', err => console.error('💥 pageerror:', err?.message || err));
+          }
+        }
+        catch (e) {
+          const msg = String(e?.message || '');
+          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
+            triedRestart = true;
+            try { await browser?.close().catch(()=>{}); } catch(_){}
+            _browserPromise = null; browser = await getBrowser(); page = await browser.newPage();
+          } else { throw e; }
+        }
+
+        await page.setCacheEnabled(false);
+        await page.setRequestInterception(true);
+        page.on('request', (reqObj) => {
+          const u = reqObj.url();
+          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
+          const allowed =
+            (u.startsWith(LOOPBACK_BASE)) ||
+            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
+          return allowed ? reqObj.continue() : reqObj.abort();
+        });
+
+        page.setDefaultNavigationTimeout(90_000);
+        page.setDefaultTimeout(90_000);
+        await page.emulateMediaType('screen');
+
+        // 1) Carrega a página SEM querystring para evitar PII em logs
+        const CANDIDATES = [
+          'solic_crp.html',
+          'termo_solic_crp.html',
+          'form_gera_termo_solic_crp_2.html',
+          'form_gera_termo_solic_crp.html'
+        ];
+        const urlsToTry = [
+          ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
+          ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
+        ];
+
+        let loaded = false; let lastErr = null;
+        for (const u of urlsToTry) {
+          try {
+            await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+            loaded = true;
+            break;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        if (!loaded) throw lastErr || new Error('Falha ao carregar solic_crp.html');
+
+        // 2) Injeta os dados esperados pelo front
+        const payloadForClient = {
+          ...p,
+          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
+            ? p.CRITERIOS_IRREGULARES
+            : String(p.CRITERIOS_IRREGULARES || '')
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean)
+        };
+
+        await page.evaluate((payload) => {
+          window.__TERMO_DATA__ = payload;
+          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+        }, payloadForClient);
+
+        
+
+        // 3) Sinalização de pronto para impressão
+        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(() => {});
+        await page.evaluate(() => new Promise((ok) => {
+          if (window.__TERMO_PRINT_READY__ === true) return ok();
+          document.addEventListener('TERMO_PRINT_READY', () => ok(), { once: true });
+          setTimeout(ok, 1500);
+        }));
+
+        // 4) Embute fontes (mesma família dos outros PDFs)
+        function findFont(candidates){
+          const path = require('path'); const fs = require('fs');
+          for (const rel of candidates){
+            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
+            if (fs.existsSync(abs)) {
+              try{
+                const buf = fs.readFileSync(abs);
+                const b64 = buf.toString('base64');
+                const ext = path.extname(abs).toLowerCase();
+                const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : ext === '.ttf' ? 'font/ttf' : 'application/octet-stream';
+                const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
+                return `url(data:${mime};base64,${b64}) format('${fmt}')`;
+              }catch{ return null; }
+            }
+          }
+          return null;
+        }
+const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf']);
         const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf']);
         let fontCSS = '';
         if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;

@@ -917,24 +917,27 @@
 
   /* ========= Fluxo ÚNICO de PDF ========= */
   async function gerarBaixarPDF(payload){
-    const templateUrl = `${location.origin}/termo_solic_crp.html`; // aponte para o template CERTO (pode ser outro domínio se preferir)
-    const body = JSON.stringify({ data: payload, templateUrl });
-
+    // Envie o payload "flat" diretamente
     const blob = await fetchBinary(
-      api('/termo-solic-crp-pdf-v2'),  // chama a nova função v2
-      { method:'POST', headers: withKey({'Content-Type':'application/json'}), body },
-      { label:'termo-solic-crp-pdf-v2', timeout:60000, retries:1 }
+      api('/termo-solic-crp-pdf'),     // rota existente no server
+      { method: 'POST',
+        headers: withKey({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload)  // <<< nada de { data, templateUrl }
+      },
+      { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 1 }
     );
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const enteSlug = String(payload.ENTE||'solic-crp')
+    const enteSlug = String(payload.ENTE || 'solic-crp')
       .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-      .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
+      .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'')
+      .toLowerCase();
     a.href = url; a.download = `solic-crp-${enteSlug}.pdf`;
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
+
 
 
   /* ========= Ações: Gerar & Submit ========= */
