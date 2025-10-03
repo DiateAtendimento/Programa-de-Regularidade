@@ -58,7 +58,7 @@
 
   // --- Validação do nº Gescon: S|L + 6 dígitos + "/" + ano
   function isGesconNumber(x){
-    return /^[SL]\d{6}\/\d{4}$/.test(String(x).trim());
+    return /^[SL]\d{6}\/\d{4}$/i.test(String(x).trim());
   }
 
   /* ========= Robust fetch (timeout + retries) ========= */
@@ -430,18 +430,18 @@
   let searching = false;
 
   async function consultarGesconByCnpj(cnpj){
-    // servidor expõe: POST /api/gescon/termo-enc
+    const body = { cnpj, cnpj_ente: cnpj }; // <- alguns backends esperam cnpj_ente
     return fetchJSON(api('/gescon/termo-enc'), {
-      method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify({ cnpj })
-     }, { label:'gescon/termo-enc', retries: 0 });
-   }
+      method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify(body)
+    }, { label:'gescon/termo-enc', retries: 0 });
+  }
 
   async function consultarTermosRegistrados(cnpj){
-    // esperado backend: { ok:true, ente:{uf,nome,cnpj,ug,cnpj_ug,email,email_ug}, responsaveis:{ente:{...},ug:{...}}, crp:{data_venc,tipo,irregulares:[]}}
+    const body = { cnpj, cnpj_ente: cnpj }; // <- idem
     return fetchJSON(api('/termos-registrados'), {
-      method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify({ cnpj })
-     }, { label:'termos-registrados', retries: 0 });
-   }
+      method:'POST', headers: withKey({'Content-Type':'application/json'}), body: JSON.stringify(body)
+    }, { label:'termos-registrados', retries: 0 });
+  }
 
   async function onPesquisar(ev){
     if(searching) return;

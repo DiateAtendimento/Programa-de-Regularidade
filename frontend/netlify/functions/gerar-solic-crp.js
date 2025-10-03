@@ -14,7 +14,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const url = `${TARGET.replace(/\/+$/, '')}/gerar-solic-crp`; // <- CASA COM O SEU backend/routes
+    const url = `${TARGET.replace(/\/+$/, '')}/api/gerar-solic-crp`;
     const headers = { 'Content-Type': 'application/json' };
 
     // Propaga X-API-Key e X-Idempotency-Key
