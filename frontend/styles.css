@@ -65,6 +65,8 @@ body{
   margin-inline:auto;
 }
 
+.title-black{ color:#000 !important; }
+
 /* =========================================
    HOME (index.html)
    ========================================= */
