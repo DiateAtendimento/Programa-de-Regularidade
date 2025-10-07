@@ -86,9 +86,7 @@
     setTextAll('cpf_rep_ug',   fmtCPF(payload.CPF_REP_UG || ''));
     setTextAll('email_rep_ug', payload.EMAIL_REP_UG || '');
 
-    setTextAll('venc_ult_crp', fmtDataBR(payload.DATA_VENCIMENTO_ULTIMO_CRP || ''));
     setTextAll('data_termo',   fmtDataBR(payload.DATA_TERMO_GERADO || ''));
-
 
     // 1.1 – Esfera de Governo (1.1.1 / 1.1.2)
     (function(){
@@ -117,48 +115,80 @@
       }
     })();
 
-    // 3.2 – Tipo de emissão do último CRP (3.2.1 / 3.2.2)
+    // ===== Seção 3 – Nova lógica =====
+
+    // 3.1 – Critérios irregulares (lista “opt-3-1” ou fallback “list-3-1”)
     (function(){
-      const listId = 'opt-3-2';
-      const list = document.getElementById(listId);
+      const list = document.getElementById('opt-3-1') || document.getElementById('list-3-1');
       if (!list) return;
-      const raw = String(payload.TIPO_EMISSAO_ULTIMO_CRP || '');
-      const codes = [];
-      if (/admin/i.test(raw) || /3\.2\.1/.test(raw)) codes.push('3.2.1');
-      if (/judic/i.test(raw)  || /3\.2\.2/.test(raw)) codes.push('3.2.2');
 
-      const items = [...list.querySelectorAll('li')];
-      if (!codes.length){
-        items.forEach(li => li.remove());
-        const li = document.createElement('li'); li.innerHTML = notInformed; list.appendChild(li);
-      } else {
-        items.forEach(li => { if (!codes.includes(li.getAttribute('data-code'))) li.remove(); });
-      }
-    })();
+      // aceita array ou string separada por ';'
+      const arr = Array.isArray(payload.CRITERIOS_IRREGULARES)
+        ? payload.CRITERIOS_IRREGULARES
+        : String(payload.CRITERIOS_IRREGULARES || '')
+            .split(';')
+            .map(s => s.trim())
+            .filter(Boolean);
 
-    // 3.3 – Critérios irregulares
-    (function(){
-      const ul = document.getElementById('criterios-list'); if (!ul) return;
-      ul.innerHTML = '';
-      const arr = Array.isArray(payload.CRITERIOS_IRREGULARES) ? payload.CRITERIOS_IRREGULARES
-                : Array.isArray(payload.CRIERIOS_IRREGULARES) ? payload.CRIERIOS_IRREGULARES : [];
+      const templatedItems = list.querySelectorAll('li[data-value]');
       if (!arr.length){
-        const li = document.createElement('li'); li.innerHTML = notInformed; ul.appendChild(li);
+        // sem irregularidade marcada — mostra “Não informado”
+        if (templatedItems.length) templatedItems.forEach(li => li.remove());
+        list.innerHTML = `<li>${notInformed}</li>`;
+        return;
+      }
+
+      if (templatedItems.length){
+        // se o template já tem <li data-value="...">, remove os que não foram marcados
+        templatedItems.forEach(li => {
+          const v = li.getAttribute('data-value') || '';
+          if (!arr.includes(v)) li.remove();
+        });
       } else {
-        arr.forEach(txt => { const li = document.createElement('li'); li.textContent = String(txt || ''); ul.appendChild(li); });
+        // senão, renderiza itens dinamicamente
+        list.innerHTML = arr.map(v => `<li>${v}</li>`).join('');
       }
     })();
 
-    // 4) A/B – Finalidades iniciais
+    // 3.2 – Adesão sem irregularidades (bloco “blk-3-2-adesao” com <ul> interno)
     (function(){
-      const a = String(payload.CELEBRACAO_TERMO_PARCELA_DEBITOS || '').trim();
-      const b = String(payload.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '').trim();
-      const labels = [];
-      if (a) labels.push('A - Parcelamento de débitos.');
-      if (b) labels.push('B - Regularização de pendências para emissão administrativa e regular do CRP. Detalhamento da(s) finalidade(s)');
-      const el = document.getElementById('finalidades-iniciais');
-      if (el) el.innerHTML = labels.length ? labels.join(' e/ou ') : notInformed;
+      const box = document.getElementById('blk-3-2-adesao');
+      if (!box) return;
+
+      const flag = String(payload.ADESAO_SEM_IRREGULARIDADES || '').trim().toUpperCase();
+      const isYes = (flag === 'SIM' || flag === 'TRUE' || flag === '1' || flag === 'ON' || flag === 'X');
+
+      if (!isYes){
+        // se não for o caso, remove o bloco para não aparecer no PDF
+        box.remove();
+        return;
+      }
+
+      // Monta bullets com base nas finalidades informadas
+      const reasons = [];
+      if (String(payload.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '').trim()){
+        reasons.push('Manutenção da conformidade.');
+      }
+      if (String(payload.DEFICIT_ATUARIAL || '').trim()){
+        reasons.push('Equacionamento de déficit atuarial e prazos de implementação/adequação.');
+      }
+      if (String(payload.CRITERIOS_ESTRUT_ESTABELECIDOS || '').trim()){
+        reasons.push('Organização do RPPS conforme critérios estruturantes (incl. art. 40, § 20, da CF).');
+      }
+      if (String(payload.OUTRO_CRITERIO_COMPLEXO || '').trim()){
+        reasons.push('Outro critério de maior complexidade para o RPPS/ente.');
+      }
+
+      const ul = box.querySelector('ul');
+      if (ul) {
+        ul.innerHTML = reasons.length
+          ? reasons.map(r => `<li>${r}</li>`).join('')
+          : `<li>${notInformed}</li>`;
+      }
     })();
+
+    // ===== Seções 4–7 (inalteradas) =====
+
     // util para filtrar listas por códigos
     function filterBy(listId, codes){
       const list = document.getElementById(listId);
@@ -171,6 +201,17 @@
       }
       items.forEach(li => { if (!codes.includes(li.getAttribute('data-code'))) li.remove(); });
     }
+
+    // 4) A/B – Finalidades iniciais
+    (function(){
+      const a = String(payload.CELEBRACAO_TERMO_PARCELA_DEBITOS || '').trim();
+      const b = String(payload.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '').trim();
+      const labels = [];
+      if (a) labels.push('A - Parcelamento de débitos.');
+      if (b) labels.push('B - Regularização de pendências para emissão administrativa e regular do CRP. Detalhamento da(s) finalidade(s)');
+      const el = document.getElementById('finalidades-iniciais');
+      if (el) el.innerHTML = labels.length ? labels.join(' e/ou ') : notInformed;
+    })();
 
     // 4.1 / 4.2 / 4.3 / 4.4
     (function(){
@@ -236,7 +277,6 @@
         const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
         fontsReady.finally(() => {
           requestAnimationFrame(() => {
-            //garante que o backend detecta “ready” mesmo se perder o evento
             window.__TERMO_PRINT_READY__ = true;
             document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY'));
           });
@@ -247,10 +287,8 @@
 
   // ========= Fluxo 1: Preview (postMessage) =========
   window.addEventListener('message', (ev) => {
-    // Aceita mensagens de qualquer origin, mas exige o “tipo” esperado
     const msg = ev && ev.data;
     if (!msg || msg.type !== 'TERMO_PREVIEW_DATA') return;
-    // (opcional) pequena validação de estrutura:
     const p = msg.payload || {};
     if (!p || (typeof p !== 'object')) return;
     try { renderizarTermo(p); }
@@ -263,7 +301,7 @@
     renderizarTermo(window.__TERMO_DATA__ || {});
   });
 
-  // ========= Fallback: querystring antiga =========
+  // ========= Fallback: querystring (mantido p/ testes) =========
   document.addEventListener('DOMContentLoaded', () => {
     if (window.__TERMO_DATA__) { renderizarTermo(window.__TERMO_DATA__ || {}); return; }
     const p = new URLSearchParams(location.search);
@@ -277,20 +315,29 @@
         CARGO_REP_ENTE: p.get('cargo_rep_ente') || '', EMAIL_REP_ENTE: p.get('email_rep_ente') || '',
         NOME_REP_UG: p.get('nome_rep_ug') || '', CPF_REP_UG: p.get('cpf_rep_ug') || '',
         CARGO_REP_UG: p.get('cargo_rep_ug') || '', EMAIL_REP_UG: p.get('email_rep_ug') || '',
-        DATA_VENCIMENTO_ULTIMO_CRP: p.get('venc_ult_crp') || '',
-        TIPO_EMISSAO_ULTIMO_CRP: p.get('tipo_emissao_crp') || '',
+
+        //  novos campos (Seção 3)
+        CRITERIOS_IRREGULARES: (()=>{
+          // aceita ?criterio=... múltiplos ou ?criterios=...;...;...
+          const multi = p.getAll('criterio');
+          if (multi && multi.length) return multi;
+          const joined = p.get('criterios') || '';
+          return joined ? joined.split(';').map(s=>s.trim()).filter(Boolean) : [];
+        })(),
+        ADESAO_SEM_IRREGULARIDADES: p.get('adesao_sem_irregularidades') || '',
+        OUTRO_CRITERIO_COMPLEXO: p.get('outro_criterio_complexo') || '',
+
+        // finalidades (usadas também para bullets do 3.2)
         CELEBRACAO_TERMO_PARCELA_DEBITOS: p.get('celebracao') || '',
         REGULARIZACAO_PENDEN_ADMINISTRATIVA: p.get('regularizacao') || '',
         DEFICIT_ATUARIAL: p.get('deficit') || '',
         CRITERIOS_ESTRUT_ESTABELECIDOS: p.get('criterios_estrut') || '',
         MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: p.get('manutencao_normas') || '',
+
         COMPROMISSO_FIRMADO_ADESAO: p.get('compromisso') || p.get('compromissos') || '',
         PROVIDENCIA_NECESS_ADESAO: p.get('providencias') || '',
         CONDICAO_VIGENCIA: p.get('condicao_vigencia') || '',
-        DATA_TERMO_GERADO: p.get('data_termo') || '',
-        CRITERIOS_IRREGULARES: Array.from(p.entries())
-          .filter(([k,v]) => /^criterio\d+$/i.test(k) && v)
-          .map(([,v]) => v)
+        DATA_TERMO_GERADO: p.get('data_termo') || ''
       };
       renderizarTermo(payload);
     }

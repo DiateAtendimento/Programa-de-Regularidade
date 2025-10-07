@@ -348,6 +348,18 @@
       if (el) data.values[id] = !!el.checked;
     });
 
+    // === persistência específica da Seção 3.2 (por name) ===
+    [
+      'ADESAO_SEM_IRREGULARIDADES',
+      'MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS',
+      'DEFICIT_ATUARIAL',
+      'CRITERIOS_ESTRUT_ESTABELECIDOS',
+      'OUTRO_CRITERIO_COMPLEXO'
+    ].forEach(name => {
+      const el = document.querySelector(`input[name="${name}"]`);
+      if (el) data.values[`__byname__:${name}`] = !!el.checked;
+    });
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }
 
@@ -377,6 +389,14 @@
         } else {
           el.value = v ?? '';
         }
+      });
+
+      // === restaura os checkboxes da 3.2 salvos por name ===
+      Object.entries(vals).forEach(([k, v]) => {
+        if (!k.startsWith('__byname__:')) return;
+        const name = k.replace('__byname__:', '');
+        const el = document.querySelector(`input[name="${name}"]`);
+        if (el) el.checked = !!v;
       });
 
       return st;
@@ -645,14 +665,72 @@
 
     const fmt = isCnpj ? maskCNPJ(value) : maskCPF(value);
     elConfirmMsg.innerHTML = `
-      Não encontramos esse ${isCnpj ? 'CNPJ' : 'CPF'} em nosso banco de dados.<br>
-      Você poderia verificar se os dados estão corretos? <strong>${fmt}</strong>.<br><br>
-      Caso deseje prosseguir mesmo assim, podemos adicioná-lo e continuar com o preenchimento das informações.
+      Não encontramos esse ${isCnpj ? 'CNPJ' : 'CPF'} no nosso banco de dados.<br>
+      Confirme se está correto: <strong>${fmt}</strong>.<br><br>
+      Se preferir seguir assim mesmo, informe os dados do representante legal e continue o preenchimento.
+      <hr>
+      Depois, regularize no sistemas oficiais:
+      <ul class="mb-0">
+        <li><a href="https://cadprev.previdencia.gov.br/Cadprev/pages/index.xhtml" target="_blank" rel="noopener">Cadprev – “Novo cadastro”</a></li>
+        <li><a href="https://view.officeapps.live.com/op/view.aspx?src=https%3A%2F%2Fwww.gov.br%2Fprevidencia%2Fpt-br%2Fassuntos%2Frpps%2Fsistemas%2Fcadprev%2Fmodelodeoficioparaautorizacaodeacessoaocadprev20241.docx%2F%40%40download%2Ffile" target="_blank" rel="noopener">Modelo de Ofício de solicitação de autorização</a></li>
+        <li><a href="https://novogescon.previdencia.gov.br/gescon/" target="_blank" rel="noopener">Envio pelo Gescon</a></li>
+      </ul>
+      <small class="text-muted d-block mt-1">Essa atualização é necessária para o prosseguimento do Pró-Regularidade RPPS.</small>
     `;
+
 
     btnConfirmYes.onclick = () => { try { onYes?.(); } finally { modalConfirmAdd.hide(); killBackdropLocks(); } };
     safeShowModal(modalConfirmAdd);
   }
+
+  // === Seção 3: 3.2 só habilita se "Sem irregularidades" marcado e 3.1 sem marcação ===
+  (function setupSecao3Gate(){
+    const cbSemIrreg = document.getElementById('chkSemIrregularidades');
+    const grpFinal   = document.getElementById('grpFinalidades');
+    const finBoxes   = () => Array.from(document.querySelectorAll('#grpFinalidades .fin-3-2'));
+    const critBoxes  = Array.from(document.querySelectorAll('input[name="CRITERIOS_IRREGULARES[]"]'));
+
+    if (!cbSemIrreg || !grpFinal) return;
+
+    // desabilita 3.2 por padrão
+    toggle3_2(false, true);
+
+    function toggle3_2(enable, clear=false){
+      finBoxes().forEach(b => {
+        b.disabled = !enable;
+        if (clear) b.checked = false;
+      });
+      grpFinal.classList.toggle('disabled', !enable);
+      grpFinal.setAttribute('aria-disabled', enable ? 'false' : 'true');
+    }
+
+    cbSemIrreg.addEventListener('change', () => {
+      const algumIrreg = critBoxes.some(i => i.checked);
+      // se houver irregularidade marcada em 3.1, 3.2 não pode ficar ativo
+      if (algumIrreg && cbSemIrreg.checked) cbSemIrreg.checked = false;
+      toggle3_2(cbSemIrreg.checked, !cbSemIrreg.checked);
+    });
+
+    critBoxes.forEach(i => {
+      i.addEventListener('change', () => {
+        const algumIrreg = critBoxes.some(x => x.checked);
+        if (algumIrreg) {
+          if (cbSemIrreg.checked) cbSemIrreg.checked = false;
+          toggle3_2(false, true);
+        } else {
+          toggle3_2(cbSemIrreg.checked, !cbSemIrreg.checked);
+        }
+      });
+    });
+
+    // Exponho helpers para usar na validação/serialização
+    window.__sec3__ = {
+      isSemIrreg: () => !!cbSemIrreg.checked,
+      hasCritIrreg: () => critBoxes.some(i => i.checked),
+      hasAlgumaFinalidade: () => finBoxes().some(i => i.checked)
+    };
+  })();
+
 
   /* ========= Stepper / Navegação ========= */
   let step = 0;   // 0..8
@@ -810,18 +888,24 @@
         if (!ok) msgs.push('Esfera de Governo');
       }
 
-      if (s===3) {
-        const adm = $('#em_adm'), jud = $('#em_jud');
-        const rOK = adm?.checked || jud?.checked;
-        [adm,jud].forEach(i => paintLabelForInput(i, !rOK));
-        if (!rOK) msgs.push('Tipo de emissão do último CRP (item 3.2)');
+    if (s === 3) {
+      const crits = $$('input[name="CRITERIOS_IRREGULARES[]"]');
+      const cOK   = crits.some(i=>i.checked);
 
-        const crits = $$('input[name="CRITERIOS_IRREGULARES[]"]');
-        const cOK = crits.some(i=>i.checked);
-        crits.forEach(i => paintLabelForInput(i, !cOK));
-        if (!cOK) msgs.push('Critérios irregulares (item 3.3)');
+      // pinta 3.1 se nada marcado
+      crits.forEach(i => paintLabelForInput(i, !cOK));
+
+      // regra nova:
+      // (A) marcar pelo menos 1 critério em 3.1, OU
+      // (B) marcar "Sem irregularidades" e pelo menos 1 finalidade em 3.2
+      const semIrreg = (window.__sec3__?.isSemIrreg() === true);
+      const finsOK   = (window.__sec3__?.hasAlgumaFinalidade() === true);
+
+      if (!(cOK || (semIrreg && finsOK))) {
+        msgs.push('Na etapa 3, selecione pelo menos um item em "3.1 Critério(s) irregulares" OU marque "Sem irregularidades" e escolha ao menos uma finalidade (3.2).');
       }
     }
+  }
 
     if (s === 4) {
       const sec4 = document.querySelector('[data-step="4"]');
@@ -1100,11 +1184,15 @@
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
 
       const iso = data.CRP_DATA_VALIDADE_ISO || '';
-      if (iso) $('#DATA_VENCIMENTO_ULTIMO_CRP').value = iso;
+      const elVenc = $('#DATA_VENCIMENTO_ULTIMO_CRP');
+      if (iso && elVenc) elVenc.value = iso;
 
       const dj = rmAcc(String(data.CRP_DECISAO_JUDICIAL || ''));
-      $('#em_adm').checked = (dj==='nao');
-      $('#em_jud').checked = (dj==='sim');
+      const elAdm = $('#em_adm'), elJud = $('#em_jud');
+      if (elAdm && elJud) {
+        elAdm.checked = (dj === 'nao');
+        elJud.checked = (dj === 'sim');
+      }
 
       autoselectEsferaByEnte(data.ENTE);
 
@@ -1292,10 +1380,11 @@
       CARGO_REP_UG: $('#CARGO_REP_UG').value.trim(),
       CPF_REP_UG: digits($('#CPF_REP_UG').value),
       EMAIL_REP_UG: $('#EMAIL_REP_UG').value.trim(),
-      DATA_VENCIMENTO_ULTIMO_CRP: $('#DATA_VENCIMENTO_ULTIMO_CRP').value || '',
-      TIPO_EMISSAO_ULTIMO_CRP:
-        ($('#em_adm').checked && 'Administrativa') ||
-        ($('#em_jud').checked && 'Judicial') || '',
+      ADESAO_SEM_IRREGULARIDADES: (document.querySelector('input[name="ADESAO_SEM_IRREGULARIDADES"]')?.checked ? 'SIM' : ''),
+      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: (document.querySelector('input[name="MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS"]')?.checked ? 'SIM' : ''),
+      DEFICIT_ATUARIAL: (document.querySelector('input[name="DEFICIT_ATUARIAL"]')?.checked ? 'SIM' : ''),
+      CRITERIOS_ESTRUT_ESTABELECIDOS: (document.querySelector('input[name="CRITERIOS_ESTRUT_ESTABELECIDOS"]')?.checked ? 'SIM' : ''),
+      OUTRO_CRITERIO_COMPLEXO: (document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : ''),
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i=>i.value),
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300').filter(i=>i.checked).map(i=>i.value).join('; '),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$('input#reg_sem_jud, input#reg_com_jud').filter(i=>i.checked).map(i=>i.value).join('; '),
