@@ -391,83 +391,167 @@
           <section class="app-section" data-step="4">
             <div class="section-head">
               <h2 class="section-title">4. Finalidade(s) inicial(is) da adesão ao Programa de Regularidade Previdenciária</h2>
-            <p class="small text-muted mb-0">Assinale ao menos um item. É possível marcar múltiplos.</p>
             </div>
 
-            <p class="fw-semibold mt-3 mb-2">Finalidade Inicial da Adesão:</p>
-            <div class="form-check mb-1">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="fin_parc" value="A - Parcelamento de débitos">
-              <label class="form-check-label" for="fin_parc">A - Parcelamento de débitos</label>
-            </div>
+            <!-- 4.1 -->
+            <p class="fw-semibold mb-1">4.1 Celebração de termos de parcelamento ou reparcelamento de débitos</p>
             <div class="form-check mb-3">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="fin_reg" value="B - Regularização de pendências para emissão administrativa e regular do CRP">
-              <label class="form-check-label" for="fin_reg">B - Regularização de pendências para emissão administrativa e regular do CRP</label>
+              <input
+                class="form-check-input grp-finalidade"
+                type="checkbox"
+                id="parc300"
+                name="FINALIDADES[]"
+                value="Celebração de termos de parcelamento ou reparcelamento de débitos em até trezentas parcelas (ADCT arts. 115 e 117, EC 136/2025; Anexo XVII, arts. 4 a 14, Portaria MTP 1.467/2022).">
+              <label class="form-check-label" for="parc300">
+                Celebração de termos de parcelamento ou reparcelamento de débitos em até trezentas parcelas, com base nas regras
+                previstas nos arts. 115 e 117 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela
+                Emenda Constitucional nº 136, de 09 de setembro de 2025, observados os parâmetros dos arts. 4º a 14 do Anexo XVII
+                da Portaria MTP nº 1.467/2022.
+              </label>
             </div>
 
-            <p class="fw-semibold mb-2">Detalhamento da(s) finalidade(s):</p>
-
-            <p class="fw-semibold mb-1">4.1  Para celebração de termos de parcelamento de débitos:</p>
-            <div class="form-check mb-1">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="parc60" name="FINALIDADES[]" value="4.1.1 em até sessenta parcelas (arts. 14 e 15 do ADCT, EC nº XXX/2025)">
-              <label class="form-check-label" for="parc60">4.1.1  em até sessenta parcelas, com base nas regras previstas nos arts. 14 e 15 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025.</label>
-            </div>
-            <div class="form-check mb-3">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="parc300" name="FINALIDADES[]" value="4.1.2 em até trezentas parcelas (arts. 115 e 117 do ADCT, EC nº XXX/2025; arts. 4º a 11 do Anexo XVII da Portaria MTP 1.467/2022)">
-              <label class="form-check-label" for="parc300">4.1.2  em até trezentas parcelas, com base nas regras previstas nos arts. 115 e 117 do Ato das Disposições Constitucionais Transitórias, com a redação dada pela Emenda Constitucional nº XXX, de xxxx de 2025, conforme disposto nos arts. 4º a 11 do Anexo XVII da Portaria MTP nº 1.467/2022.</label>
-            </div>
-
-            <p class="fw-semibold mb-1">4.2  Para regularização de pendências para a emissão administrativa e regular do Certificado de Regularidade Previdenciária:</p>
+            <!-- 4.2 -->
+            <p class="fw-semibold mb-1">4.2 Regularização de pendências para a emissão administrativa e regular do Certificado de Regularidade Previdenciária</p>
             <div class="form-check mb-1">
               <input class="form-check-input grp-finalidade" type="checkbox" id="reg_sem_jud" value="4.2.1 para entes sem decisão judicial">
               <label class="form-check-label" for="reg_sem_jud">4.2.1 para entes sem decisão judicial</label>
             </div>
             <div class="form-check mb-3">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="reg_com_jud" value="4.2.2 para entes com decisão judicial (RE 1.007.271, Tema 968)">
-              <label class="form-check-label" for="reg_com_jud">4.2.2 para entes com decisão judicial, tendo em vista o disposto no Acórdão proferido pelo Supremo Tribunal Federal nos autos do Recurso Extraordinário nº 1.007.271, Tema 968 de Repercussão Geral.</label>
-            </div>
-
-            <p class="fw-semibold mb-1">4.3  Para equacionamento de déficit atuarial do RPPS</p>
-            <p class="small text-muted">Observados os requisitos previstos no art. 3º, caput, inciso VI, do Anexo XVIII da Portaria MTP nº 1.467/2022, com a apresentação obrigatória de plano de ação.</p>
-            <div class="form-check mb-1">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_implano" value="4.3.1 implementação de plano de equacionamento do déficit atuarial">
-              <label class="form-check-label" for="eq_implano">4.3.1  para implementação de plano de equacionamento do déficit atuarial do RPPS</label>
-            </div>
-            <div class="form-check mb-1">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_prazos" value="4.3.2 prazos adicionais para comprovação de medidas">
-              <label class="form-check-label" for="eq_prazos">4.3.2  para situações que exijam prazos adicionais para a comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à sua adequação à situação orçamentária, financeira e fiscal do ente federativo</label>
+              <input class="form-check-input grp-finalidade" type="checkbox" id="reg_com_jud" value="4.2.2 para entes com decisão judicial, tendo em vista o disposto no Acórdão proferido pelo Supremo Tribunal Federal nos autos do Recurso Extraordinário nº 1.007.271, Tema 968 de Repercussão Geral">
+              <label class="form-check-label" for="reg_com_jud">
+                4.2.2 para entes com decisão judicial, tendo em vista o disposto no Acórdão proferido pelo Supremo Tribunal Federal nos autos do Recurso Extraordinário nº 1.007.271, Tema 968 de Repercussão Geral.
+              </label>
             </div>
             <div class="form-check mb-3">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_plano_alt" value="4.3.3 plano de equacionamento alternativo (art. 55, §7º)">
-              <label class="form-check-label" for="eq_plano_alt">4.3.3  para apresentação de plano de equacionamento de déficit atuarial alternativo aos previstos na Portaria MTP nº 1.467/2022, desde que observados os requisitos previstos no art. 55, § 7º, da referida Portaria.</label>
+              <input class="form-check-input grp-finalidade" type="checkbox" id="reg_com_jud" value="4.2.3 para resolução de litígios que impactam a emissão do CRP.">
+              <label class="form-check-label" for="reg_com_jud">
+                4.2.3 para resolução de litígios que impactam a emissão do CRP.
+              </label>
             </div>
 
-            <p class="fw-semibold mb-1">4.4  Para organização do RPPS conforme os critérios estruturantes estabelecidos nas normas gerais</p>
-            <p class="small text-muted">Observados os requisitos previstos no art. 3º, caput, inciso VI, do Anexo XVIII da Portaria MTP nº 1.467/2022, com a apresentação obrigatória de plano de ação.</p>
+            <!-- 4.3 -->
+            <p class="fw-semibold mb-1">4.3 Equacionamento do déficit atuarial do RPPS e garantia de sua sustentabilidade</p>
+            <p class="small text-muted">
+              Observados os requisitos previstos no art. 4º, caput, inciso III, do Anexo XVIII da Portaria MTP nº 1.467/2022, com a apresentação obrigatória de planos de ação </p>
             <div class="form-check mb-1">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="org_ugu" value="4.4.1 adequação da Unidade Gestora Única (CF art. 40, §20)">
-              <label class="form-check-label" for="org_ugu">4.4.1  para adequação da Unidade Gestora Única do RPPS ao disposto no art. 40, § 20, da Constituição Federal</label>
+              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_implano" value="4.3.1 para implementação de plano que assegure o equacionamento do déficit atuarial do RPPS">
+              <label class="form-check-label" for="eq_implano">4.3.1 para implementação de plano que assegure o equacionamento do déficit atuarial do RPPS</label>
+            </div>
+            <div class="form-check mb-1">
+              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_prazos" value="4.3.2 para situações que exijam prazos adicionais para a comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à sua adequação à situação orçamentária, financeira e fiscal do ente federativo">
+              <label class="form-check-label" for="eq_prazos">
+                4.3.2 para situações que exijam prazos adicionais para a comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à sua adequação à situação orçamentária, financeira e fiscal do ente federativo
+              </label>
             </div>
             <div class="form-check mb-3">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="org_outros" value="4.4.2 cumprimento de outro critério de maior complexidade">
-              <label class="form-check-label" for="org_outros">4.4.2  para o cumprimento de outro critério que apresente maior complexidade (ao clicar abre a lista de critérios do CRP previstos no extrato previdenciário para selecionar um ou mais critérios)</label>
+              <input class="form-check-input grp-finalidade" type="checkbox" id="eq_plano_alt" value="4.3.3 para apresentação de plano de equacionamento de déficit atuarial alternativo aos previstos na Portaria MTP nº 1.467/2022, desde que observado o disposto no art. 55, § 7º, da referida Portaria">
+              <label class="form-check-label" for="eq_plano_alt">
+                4.3.3 para apresentação de plano de equacionamento de déficit atuarial alternativo aos previstos na Portaria MTP nº 1.467/2022, desde que observado o disposto no art. 55, § 7º, da referida Portaria.
+              </label>
             </div>
 
-            <p class="fw-semibold mb-1">4.5  Para acesso à Fase de Manutenção da Conformidade do RPPS às normas gerais</p>
-            <p class="small text-muted mb-2">Nesta Fase há uma demonstração de medidas de autorregularização, cooperação e reciprocidade do RPPS com a Secretaria de Regime Próprio e Complementar, conforme previsto no art. 236, § 5º, da Portaria MTP nº 1.467/2022.</p>
-
+            <!-- 4.4 -->
+            <p class="fw-semibold mb-1">4.4 Organização do RPPS conforme os critérios estruturantes estabelecidos nas normas gerais</p>
+            <p class="small text-muted">
+              Observados os requisitos previstos no art. 4º, caput, inciso III, do Anexo XVIII da Portaria MTP nº 1.467/2022, com a apresentação obrigatória de planos de ação.
+            </p>
             <div class="form-check mb-1">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="man_cert" value="Certificação institucional no Pró-Gestão RPPS (nível II/III/IV, conforme porte ISP-RPPS)">
-              <label class="form-check-label" for="man_cert">Certificação institucional no Pró-Gestão RPPS no nível II, caso classificado como Pequeno Porte do ISP-RPPS; nível III, caso classificado como Médio e Grande Porte; ou nível IV, caso classificado como Porte Especial.</label>
-            </div>
-            <div class="form-check mb-1">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="man_melhoria" value="Houve melhora na situação financeira e atuarial do RPPS (indicadores ISP-RPPS)">
-              <label class="form-check-label" for="man_melhoria">Houve melhora na situação financeira e atuarial do RPPS, com base, entre outros critérios, nos indicadores que compõem o Índice de Situação Previdenciária - ISP-RPPS.</label>
+              <input class="form-check-input grp-finalidade" type="checkbox" id="org_ugu" value="4.4.1 para adequação da Unidade Gestora Única do RPPS ao disposto no art. 40, § 20, da Constituição Federal e sua consolidação">
+              <label class="form-check-label" for="org_ugu">
+                4.4.1 para adequação da Unidade Gestora Única do RPPS ao disposto no art. 40, § 20, da Constituição Federal e sua consolidação
+              </label>
             </div>
             <div class="form-check mb-3">
-              <input class="form-check-input grp-finalidade" type="checkbox" id="man_acomp" value="Comprovo adoção das medidas de acompanhamento atuarial (arts. 67 a 69 da Portaria MTP 1.467/2022)">
-              <label class="form-check-label" for="man_acomp">Comprovo a adoção das medidas de acompanhamento atuarial previstas nos arts. 67 a 69 da Portaria MTP nº 1.467, de 02 de junho de 2022. Nesta fase, caso necessário, poderão ser apresentados plano de ação, para eventuais emissões de CRP emergenciais.</label>
+              <input class="form-check-input grp-finalidade" type="checkbox" id="org_outros" value="4.4.2 para o cumprimento de outro critério que apresente maior complexidade para o RPPS ou para o ente ">
+              <label class="form-check-label" for="org_outros">
+                4.4.2 para o cumprimento de outro critério que apresente maior complexidade para o RPPS ou para o ente
+              </label>
+            </div>
+
+            <!-- 4.5 (NOVO CHECKBOX) -->
+            <p class="fw-semibold mb-1">4.5 Promoção de adequações da legislação do RPPS às normas gerais, inclusive à Emenda Constitucional nº 103, de 12 de novembro de 2019.</p>
+            <div class="form-check mb-3">
+              <input
+                class="form-check-input grp-finalidade"
+                type="checkbox"
+                id="adeq_leg"
+                value="4.5 Promoção de adequações da legislação do RPPS às normas gerais, inclusive à Emenda Constitucional nº 103, de 12 de novembro de 2019. Reforma previdenciária com a adoção de regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS, no mínimo, assemelhadas às aplicáveis aos segurados do RPPS da União e que  contribuam efetivamente para o atingimento e a manutenção do equilíbrio financeiro e atuarial do regime">
+              <label class="form-check-label" for="adeq_leg">
+                Reforma previdenciária com a adoção de regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS, no mínimo, assemelhadas às aplicáveis aos segurados do RPPS da União e que  contribuam efetivamente para o atingimento e a manutenção do equilíbrio financeiro e atuarial do regime.
+              </label>
+            </div>
+
+            <!-- 4.6 (Fase de Manutenção da Conformidade) -->
+            <p class="fw-semibold mb-1">4.6 Para o acesso à Fase de Manutenção da Conformidade do RPPS às normas gerais</p>
+            <p class="small text-muted mb-2">
+                Nesta Fase, cujos requisitos estão previstos no art. 4º, caput, inciso IV, do Anexo XVIII da Portaria MTP nº 1.467/2022:
+            <br>
+                - há uma demonstração de medidas de autorregularização, cooperação e reciprocidade do RPPS com a Secretaria de Regime Próprio e Complementar, conforme previsto no art. 236, § 5º, dessa Portaria MTP nº 1.467/2022.
+
+            <br>
+                - o ente poderá solicitar prazos adicionais, por meio da apresentação de Planos de Ação:
+            <br>
+                o	complementares aos apresentados na fase anterior, para concluir a sua execução;
+                o	ou em caso de dificuldades supervenientes para a manutenção da regularidade em algum dos critérios exigidos para emissão do CRP ou previstos nas normas gerais do RPPS.
+            <br><br>
+                Certificação institucional no Pró-Gestão RPPS:
+            </p>
+
+            <div class="form-check mb-1">
+              <input
+                class="form-check-input grp-finalidade"
+                type="checkbox"
+                id="man_cert"
+                value="no nível II, caso o RPPS seja classificado como Pequeno Porte no ISP-RPPS; ou">
+              <label class="form-check-label" for="man_cert">
+                no nível II, caso o RPPS seja classificado como Pequeno Porte no ISP-RPPS; ou
+              </label>
+            </div>
+
+            <div class="form-check mb-1">
+              <input
+                class="form-check-input grp-finalidade"
+                type="checkbox"
+                id="man_melhoria"
+                value="no nível III, caso seja classificado como Médio ou Grande Porte no ISP-RPPS">
+              <label class="form-check-label" for="man_melhoria">
+                no nível III, caso seja classificado como Médio ou Grande Porte no ISP-RPPS;
+              </label>
+            </div>
+
+            <div class="form-check mb-3">
+              <input
+                class="form-check-input grp-finalidade"
+                type="checkbox"
+                id="man_acomp"
+                value="ou nível IV, caso o RPPS seja classificado como Porte Especial no ISP-RPPS">
+              <label class="form-check-label" for="man_acomp">
+                ou nível IV, caso o RPPS seja classificado como Porte Especial no ISP-RPPS
+              </label>
+            </div>
+
+            <div class="form-check mb-3">
+              <input
+                class="form-check-input grp-finalidade"
+                type="checkbox"
+                id="man_acomp"
+                value="Comprovação de evolução favorável da situação financeira e atuarial do RPPS, com base, entre outros critérios, nos indicadores que compõem o Índice de Situação Previdenciária - ISP-RPPS">
+              <label class="form-check-label" for="man_acomp">
+                Comprovação de evolução favorável da situação financeira e atuarial do RPPS, com base, entre outros critérios, nos indicadores que compõem o Índice de Situação Previdenciária - ISP-RPPS
+              </label>
+            </div>
+
+            <div class="form-check mb-3">
+              <input
+                class="form-check-input grp-finalidade"
+                type="checkbox"
+                id="man_acomp"
+                value="Comprovação da adoção das medidas de acompanhamento atuarial previstas nos arts. 67 a 69 da Portaria MTP nº 1.467/2022">
+              <label class="form-check-label" for="man_acomp">
+                Comprovação da adoção das medidas de acompanhamento atuarial previstas nos arts. 67 a 69 da Portaria MTP nº 1.467/2022              </label>
             </div>
           </section>
+
           <!-- ETAPA 5 -->
           <section class="app-section" data-step="5">
             <div class="section-head">

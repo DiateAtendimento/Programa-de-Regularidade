@@ -907,14 +907,6 @@
     }
   }
 
-    if (s === 4) {
-      const sec4 = document.querySelector('[data-step="4"]');
-      const chks = sec4 ? Array.from(sec4.querySelectorAll('input[type="checkbox"]')) : [];
-      const ok = chks.some(i => i.checked);
-      chks.forEach(i => paintLabelForInput(i, !ok));
-      if (!ok) msgs.push('Marque pelo menos um item na etapa 4.');
-    }
-
     if (s === 5){
       const all = $$('.grp-comp');
       const checked = all.filter(i=>i.checked);
@@ -1369,31 +1361,57 @@
       UF: $('#UF').value.trim(),
       CNPJ_ENTE: digits($('#CNPJ_ENTE').value),
       EMAIL_ENTE: emailFinal('EMAIL_ENTE','EMAIL_REP_ENTE'),
+
       NOME_REP_ENTE: $('#NOME_REP_ENTE').value.trim(),
       CARGO_REP_ENTE: $('#CARGO_REP_ENTE').value.trim(),
       CPF_REP_ENTE: digits($('#CPF_REP_ENTE').value),
       EMAIL_REP_ENTE: $('#EMAIL_REP_ENTE').value.trim(),
+
       UG: $('#UG').value.trim(),
       CNPJ_UG: digits($('#CNPJ_UG').value),
-      EMAIL_UG:   emailFinal('EMAIL_UG','EMAIL_REP_UG'),
+      EMAIL_UG: emailFinal('EMAIL_UG','EMAIL_REP_UG'),
+
       NOME_REP_UG: $('#NOME_REP_UG').value.trim(),
       CARGO_REP_UG: $('#CARGO_REP_UG').value.trim(),
       CPF_REP_UG: digits($('#CPF_REP_UG').value),
       EMAIL_REP_UG: $('#EMAIL_REP_UG').value.trim(),
-      ADESAO_SEM_IRREGULARIDADES: (document.querySelector('input[name="ADESAO_SEM_IRREGULARIDADES"]')?.checked ? 'SIM' : ''),
-      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: (document.querySelector('input[name="MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS"]')?.checked ? 'SIM' : ''),
-      DEFICIT_ATUARIAL: (document.querySelector('input[name="DEFICIT_ATUARIAL"]')?.checked ? 'SIM' : ''),
-      CRITERIOS_ESTRUT_ESTABELECIDOS: (document.querySelector('input[name="CRITERIOS_ESTRUT_ESTABELECIDOS"]')?.checked ? 'SIM' : ''),
-      OUTRO_CRITERIO_COMPLEXO: (document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : ''),
-      CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i=>i.value),
-      CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300').filter(i=>i.checked).map(i=>i.value).join('; '),
-      REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$('input#reg_sem_jud, input#reg_com_jud').filter(i=>i.checked).map(i=>i.value).join('; '),
-      DEFICIT_ATUARIAL: $$('input#eq_implano, input#eq_prazos, input#eq_plano_alt').filter(i=>i.checked).map(i=>i.value).join('; '),
-      CRITERIOS_ESTRUT_ESTABELECIDOS: $$('input#org_ugu, input#org_outros').filter(i=>i.checked).map(i=>i.value).join('; '),
-      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$('input#man_cert, input#man_melhoria, input#man_acomp').filter(i=>i.checked).map(i=>i.value).join('; '),
-      COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked').map(i=>i.value).join('; '),
-      PROVIDENCIA_NECESS_ADESAO: $$('input[name="PROVIDENCIAS[]"]:checked').map(i=>i.value).join('; '),
-      CONDICAO_VIGENCIA: $$('input[name="CONDICOES[]"]:checked').map(i => i.value).join('; '),
+
+      // ——— ETAPA 3 ———
+      CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked')
+        .map(i => i.value).join('; '),
+
+      // 3.2 (a planilha só pede estes dois flags)
+      ADESAO_SEM_IRREGULARIDADES:
+        (document.querySelector('input[name="ADESAO_SEM_IRREGULARIDADES"]')?.checked ? 'SIM' : ''),
+      OUTRO_CRITERIO_COMPLEXO:
+        (document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : ''),
+
+      // ——— ETAPA 4 ——— (use exatamente os nomes das colunas)
+      CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300')
+        .filter(i => i.checked).map(i => i.value).join('; '),
+
+      REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$('input#reg_sem_jud, input#reg_com_jud')
+        .filter(i => i.checked).map(i => i.value).join('; '),
+
+      DEFICIT_ATUARIAL: $$('input#eq_implano, input#eq_prazos, input#eq_plano_alt')
+        .filter(i => i.checked).map(i => i.value).join('; '),
+
+      CRITERIOS_ESTRUTABELECIDOS: undefined, // (evita erro de digitação)
+      CRITERIOS_ESTRUT_ESTABELECIDOS: $$('input#org_ugu, input#org_outros')
+        .filter(i => i.checked).map(i => i.value).join('; '),
+
+      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$('input#man_cert, input#man_melhoria, input#man_acomp')
+        .filter(i => i.checked).map(i => i.value).join('; '),
+
+      // ——— ETAPAS 5–7 ———
+      COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked')
+        .map(i => i.value).join('; '),
+      PROVIDENCIA_NECESS_ADESAO: $$('input[name="PROVIDENCIAS[]"]:checked')
+        .map(i => i.value).join('; '),
+      CONDICAO_VIGENCIA: $$('input[name="CONDICOES[]"]:checked')
+        .map(i => i.value).join('; '),
+
+      // ——— Carimbos / metadados ———
       MES: $('#MES').value,
       DATA_TERMO_GERADO: $('#DATA_TERMO_GERADO').value,
       HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO').value,
@@ -1403,6 +1421,7 @@
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
+
 
   // ======== Preview (sem PII na URL) ========
   function openTermoWithPayload(payload, autoFlag){
