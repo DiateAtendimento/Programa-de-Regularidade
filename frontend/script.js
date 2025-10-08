@@ -321,8 +321,8 @@
     [
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
       'CPF_REP_ENTE','NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
-      'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
-      'DATA_VENCIMENTO_ULTIMO_CRP'
+      'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG'
+
     ].forEach(id => { const el = document.getElementById(id); if (el) data.values[id] = el.value; });
 
     data.values['em_adm'] = !!document.getElementById('em_adm')?.checked;
@@ -538,12 +538,26 @@
       mountLottie('lottieError', 'animacao/confirm-error.json', { loop:false, autoplay:true });
     }
   }
+
+  // flag global: após o usuário clicar OK no aviso da Etapa 3, liberamos a passagem
+  let allowSkipStep3 = false;
+
+  // garanta que o botão OK sempre existe e podemos “ouvir” o clique
+  const btnAtencaoOk = document.getElementById('btnAtencaoOk');
+
+  // sobrescreva (ou ajuste) a função showAtencao para usar o rodapé com OK
   function showAtencao(msgs){
     const ul = $('#modalErroLista'); ul.innerHTML='';
     msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
     setErroHeader('atencao');
+    // quando este aviso for mostrado pela etapa 3, o handler abaixo marcará a flag:
+    if (btnAtencaoOk) {
+      btnAtencaoOk.onclick = () => { allowSkipStep3 = true; };
+    }
     safeShowModal(modalErro);
   }
+
+
   function showErro(msgs){
     const ul = $('#modalErroLista'); ul.innerHTML='';
     msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
@@ -854,8 +868,7 @@
         {id:'NOME_REP_UG', type:'text', label:'Nome do Rep. da UG'},
         {id:'CARGO_REP_UG', type:'text', label:'Cargo do Rep. da UG'},
         {id:'EMAIL_REP_UG', type:'email', label:'E-mail do Rep. da UG'}
-      ],
-      3: [{id:'DATA_VENCIMENTO_ULTIMO_CRP', type:'date', label:'Data do último CRP'}]
+      ]
     };
     const checkField = (id,type)=>{
       const el = document.getElementById(id); if(!el) return true;
@@ -892,17 +905,17 @@
       const crits = $$('input[name="CRITERIOS_IRREGULARES[]"]');
       const cOK   = crits.some(i=>i.checked);
 
-      // pinta 3.1 se nada marcado
-      crits.forEach(i => paintLabelForInput(i, !cOK));
-
-      // regra nova:
-      // (A) marcar pelo menos 1 critério em 3.1, OU
-      // (B) marcar "Sem irregularidades" e pelo menos 1 finalidade em 3.2
+      // regra original “completa” (você pode manter para futuras validações internas)
       const semIrreg = (window.__sec3__?.isSemIrreg() === true);
       const finsOK   = (window.__sec3__?.hasAlgumaFinalidade() === true);
 
+      //COMPORTAMENTO: só AVISAR e bloquear apenas a primeira tentativa
       if (!(cOK || (semIrreg && finsOK))) {
-        msgs.push('Na etapa 3, selecione pelo menos um item em "3.1 Critério(s) irregulares" OU marque "Sem irregularidades" e escolha ao menos uma finalidade (3.2).');
+        if (!allowSkipStep3) {
+          showAtencao(['Verifique se foram assinalados todos os critérios irregulares do extrato previdenciário (item 3.1)']);
+          return false; // bloqueia apenas nesta 1ª tentativa; ao clicar OK, a flag libera
+        }
+        // se o usuário já clicou OK uma vez, deixamos passar
       }
     }
   }
@@ -1034,7 +1047,7 @@
     'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
     'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
     // 3. CRP
-    'DATA_VENCIMENTO_ULTIMO_CRP','em_adm','em_jud',
+    'em_adm','em_jud',
     // 4. Finalidades (todos os itens)
     'fin_parc','fin_reg',
     'parc60','parc300',

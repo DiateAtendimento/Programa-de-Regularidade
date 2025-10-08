@@ -1,5 +1,3 @@
-//server.js
-
 // server.js — API RPPS (multi-etapas) c/ idempotência em /api/gerar-termo
 // Hardened: CORS allowlist obrigatório, API key em prod, sanitização p/ Sheets,
 // Puppeteer same-origin only, Helmet extra (Referrer, COOP, HSTS), rate-limit fallback,
@@ -156,7 +154,6 @@ app.use('/api/solic-crp-pdf', rlPdf);
 app.use('/api/gerar-solic-crp', rlWrite);
 app.use('/api/termo-solic-crp-pdf', rlPdf);
 
-
 app.use(
   ['/api/termo-solic-crp-pdf','/api/solic-crp-pdf','/api/termo-pdf'],
   (req,res,next)=>{
@@ -312,7 +309,6 @@ function requireKey(req, res, next) {
   const must = process.env.API_KEY;
   const got = req.headers['x-api-key'];
 
-  // Não deixe passar silenciosamente em caso de má config
   if (typeof must !== 'string' || must.length < 8) {
     return res.status(500).json({ error: 'API key não configurada no servidor.' });
   }
@@ -324,9 +320,7 @@ function requireKey(req, res, next) {
     if (crypto.timingSafeEqual(Buffer.from(must, 'utf8'), Buffer.from(got, 'utf8'))) {
       return next();
     }
-  } catch (_) {
-    // fallthrough
-  }
+  } catch (_) {}
   return res.status(401).json({ error: 'API key ausente ou inválida.' });
 }
 
@@ -346,18 +340,11 @@ function sanitizeForSheet(v) {
   if (!s) return '';
   if (s.startsWith("'")) return s;
 
-  // protege contra CSV/Planilha injection
   if (/^[=\+\-@]/.test(s) || /^\t/.test(s)) return `'${s}`;
-
-  // ⚠️ NOVO: para números puros (ex.: CPF/CNPJ) preserva zeros à esquerda
-  // regra: só dígitos e comprimento >= 11 (CPF) — cobre CNPJ (14) também
   if (/^\d{11,}$/.test(s)) return `'${s}`;
-
   return s;
 }
 
-
-/** Aplica sanitize em objeto plano (somente campos string) */
 function sheetSanObject(obj) {
   const out = {};
   for (const [k, v] of Object.entries(obj || {})) {
@@ -396,7 +383,7 @@ async function getOrCreateSheet(title, headerValues){
   s = await doc.addSheet({
     title,
     headerValues,
-    gridProperties: { rowCount: 1000, columnCount: minCols } // 👈 já nasce com espaço
+    gridProperties: { rowCount: 1000, columnCount: minCols }
   });
   return s;
 }
@@ -409,8 +396,6 @@ async function ensureSheetHasColumns(sheet, requiredHeaders = []) {
   if (!missing.length) return false;
 
   const next = [...current, ...missing];
-
-  // 🔧 garante colunas suficientes para TODOS os cabeçalhos
   await ensureMinColumns(sheet, next.length);
 
   await withLimiter(`${sheet.title}:setHeaderRow`, () =>
@@ -419,13 +404,9 @@ async function ensureSheetHasColumns(sheet, requiredHeaders = []) {
   return true;
 }
 
-
-// Garante que a planilha tenha ao menos N colunas (evita "Sheet is not large enough...")
 async function ensureMinColumns(sheet, minCols) {
   const currentCols = Number(sheet.columnCount || 0);
   if (currentCols >= minCols) return false;
-
-  // Mantém a quantidade de linhas atual (ou 1000, se ausente)
   const nextRows = Number(sheet.rowCount || 1000);
 
   await withLimiter(`${sheet.title}:resize`, () =>
@@ -435,7 +416,6 @@ async function ensureMinColumns(sheet, minCols) {
   );
   return true;
 }
-
 
 /* ===== Concorrência + Timeout/Retry (Sheets) ===== */
 const _q = [];
@@ -507,7 +487,6 @@ async function safeLoadCells(sheet, opts, label) {
   );
 }
 async function safeAddRow(sheet, data, label) {
-  // SANITIZA ANTES DE GRAVAR
   return withLimiter(`${label || sheet.title}:addRow`, () =>
     withTimeoutAndRetry(`${label || sheet.title}:addRow`, () => sheet.addRow(sheetSanObject(data)))
   );
@@ -561,6 +540,7 @@ async function getRowsViaCells(sheet) {
   }
   return rows;
 }
+
 /* Datas */
 function parseDMYorYMD(s) {
   const v = norm(s);
@@ -571,34 +551,27 @@ function parseDMYorYMD(s) {
   const d = new Date(v);
   return isNaN(d) ? new Date(0) : d;
 }
-// helper simples para ler célula (valor formatado > valor bruto) como string
 function cellStr(sheet, rowIdx, colIdx) {
   if (colIdx < 0) return '';
   const cell = sheet.getCell(rowIdx, colIdx);
   const v = (cell?.formattedValue ?? cell?.value ?? '');
   return String(v).trim();
 }
-
-// ── coloque após parseDMYorYMD / format helpers ──
 function normalizeSheetDateAny(cell) {
-  // tenta formattedValue primeiro (caso "dd/mm/aaaa")
   const fv = cell?.formattedValue;
   if (fv && /^\d{2}\/\d{2}\/\d{4}$/.test(String(fv))) {
     const d = parseDMYorYMD(fv);
     return { iso: formatDateISO(d), dmy: formatDateDMY(d), raw: fv };
   }
-  // Date nativo
   if (cell?.value instanceof Date) {
     const d = cell.value;
     return { iso: formatDateISO(d), dmy: formatDateDMY(d), raw: String(fv || d.toISOString()) };
   }
-  // Número (serial Sheets/Excel)
   if (typeof cell?.value === 'number') {
     const epoch = new Date(Date.UTC(1899, 11, 30));
     const d = new Date(epoch.getTime() + cell.value * 86400000);
     return { iso: formatDateISO(d), dmy: formatDateDMY(d), raw: String(cell.value) };
   }
-  // String livre
   const s = String(cell?.value || '').trim();
   if (s) {
     const d = parseDMYorYMD(s);
@@ -606,7 +579,6 @@ function normalizeSheetDateAny(cell) {
   }
   return { iso: '', dmy: '', raw: '' };
 }
-
 const formatDateDMY = d => {
   const dd = String(d.getDate()).padStart(2,'0');
   const mm = String(d.getMonth()+1).padStart(2,'0');
@@ -619,6 +591,7 @@ const formatDateISO = d => {
   const yy = d.getFullYear();
   return `${yy}-${mm}-${dd}`;
 };
+
 /* === CRP FAST LOOKUP === */
 async function findCRPByCnpjFast(sheet, cnpjDigits) {
   const colCNPJ = 1, colVal = 5, colDec = 6; // 0-based: B, F, G
@@ -675,7 +648,6 @@ async function findCRPByCnpjFast(sheet, cnpjDigits) {
   }
   return best;
 }
-
 /* ─────────────── PUPPETEER (robust + same-origin only) ─────────────── */
 process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || path.resolve(__dirname, '.puppeteer');
 process.env.TMPDIR = process.env.TMPDIR || '/tmp';
@@ -745,13 +717,11 @@ async function authSheets() {
   );
 }
 
-// garante que a aba tenha header; cria e redimensiona colunas se necessário
 async function ensureHeaderRow(sheet, headerValues = []) {
   try {
     await sheet.loadHeaderRow();
     const hasHeader = Array.isArray(sheet.headerValues) && sheet.headerValues.length > 0;
 
-    // Se a aba não tem header e recebemos um, garanta colunas suficientes
     if (!hasHeader && headerValues.length) {
       await ensureMinColumns(sheet, headerValues.length);
       await withLimiter(`${sheet.title}:setHeaderRow`, () =>
@@ -760,7 +730,6 @@ async function ensureHeaderRow(sheet, headerValues = []) {
     }
   } catch (e) {
     const msg = String(e?.message || '').toLowerCase();
-    // caso clássico: "no values in the header row"
     if (msg.includes('no values in the header row') && headerValues.length) {
       await ensureMinColumns(sheet, headerValues.length);
       await withLimiter(`${sheet.title}:setHeaderRow`, () =>
@@ -771,7 +740,6 @@ async function ensureHeaderRow(sheet, headerValues = []) {
     }
   }
 }
-
 
 app.get('/api/health', (_req,res)=> res.json({ ok:true }));
 app.get('/api/healthz', (_req,res)=> res.json({ ok:true, uptime: process.uptime(), ts: Date.now() }));
@@ -858,49 +826,6 @@ app.get('/api/consulta', async (req, res) => {
         __snapshot: {}
       };
       return res.json({ ok: true, data: out, missing: true });
-    }
-
-    // --- Header sanitizer p/ chaves de planilha ---
-    const _sanKey = (s) => (s ?? '')
-      .toString()
-      .trim()
-      .toLowerCase()
-      .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-      .replace(/[^\p{L}\p{N}]+/gu, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_+|_+$/g, '');
-
-    // --- Lê um campo de row/obj do google-spreadsheet (robusto) ---
-    function getVal(rowOrObj, key) {
-      if (!rowOrObj || !key) return '';
-
-      // 1) acesso direto
-      if (Object.prototype.hasOwnProperty.call(rowOrObj, key)) {
-        return rowOrObj[key] ?? '';
-      }
-
-      // 2) Row.get('Cabeçalho')
-      if (typeof rowOrObj.get === 'function') {
-        try {
-          const v = rowOrObj.get(key);
-          if (v != null) return v;
-        } catch (_) {}
-      }
-
-      // 3) match por chave normalizada
-      const want = _sanKey(key);
-      for (const [k, v] of Object.entries(rowOrObj)) {
-        if (_sanKey(k) === want) return v ?? '';
-      }
-
-      // 4) fallback: _rawData + headerValues
-      const raw = rowOrObj._rawData;
-      const headers = rowOrObj._sheet?.headerValues;
-      if (Array.isArray(raw) && Array.isArray(headers) && headers.length === raw.length) {
-        const idx = headers.findIndex(h => _sanKey(h) === want);
-        if (idx >= 0) return raw[idx] ?? '';
-      }
-      return '';
     }
 
     const UF          = norm(getVal(base, 'UF'));
@@ -1165,7 +1090,7 @@ app.post('/api/gescon/termo-enc', async (req, res) => {
       if (v && v === cnpj) { rowHit = r; break; }
     }
     if (rowHit < 0) {
-      return res.json({}); // front interpreta como “não encontrado”
+      return res.json({});
     }
 
     const endCol = headers.length || s.columnCount || 26;
@@ -1182,15 +1107,11 @@ app.post('/api/gescon/termo-enc', async (req, res) => {
       uf:        cellStr(s, rowHit, col.uf),
       ente:      cellStr(s, rowHit, col.ente),
       n_gescon:  cellStr(s, rowHit, col.n_gescon),
-      // mantém compat p/ o front atual
       data_enc_via_gescon: normDataEnc.dmy || normDataEnc.raw || '',
-      // extras (se quiser usar depois)
       data_enc_via_gescon_iso: normDataEnc.iso,
       data_enc_via_gescon_dmy: normDataEnc.dmy
     };
 
-
-    // se faltar algum essencial, retorna vazio
     if (!payload.n_gescon || !payload.uf || !payload.ente || !payload.data_enc_via_gescon) {
       return res.json({});
     }
@@ -1205,8 +1126,6 @@ app.post('/api/gescon/termo-enc', async (req, res) => {
     return res.status(500).json({ error: 'Falha ao consultar encaminhamento no Gescon.' });
   }
 });
-
-
 /** POST /api/termos-registrados  { cnpj } */
 app.post('/api/termos-registrados', async (req, res) => {
   try {
@@ -1220,7 +1139,7 @@ app.post('/api/termos-registrados', async (req, res) => {
     const sTerm = await getSheetStrict('Termos_registrados');
     const sCrp  = await getSheetStrict('CRP');
 
-    // 1) Base CNPJ_ENTE_UG
+    // Base
     await sBase.loadHeaderRow();
     const headersB = sBase.headerValues || [];
     const san = (s) => (s ?? '').toString().trim().toLowerCase()
@@ -1281,7 +1200,7 @@ app.post('/api/termos-registrados', async (req, res) => {
       };
     }
 
-    // 2) Último termo em Termos_registrados
+    // Último termo
     await sTerm.loadHeaderRow();
     const rowsT = await safeGetRows(sTerm, 'Termos_registrados:getRows');
     const matches = rowsT.filter(r => {
@@ -1312,7 +1231,7 @@ app.post('/api/termos-registrados', async (req, res) => {
     const criteriosStr = (getVal(last,'CRITERIOS_IRREGULARES') || '').toString().trim();
     const criteriosArr = criteriosStr ? criteriosStr.split(',').map(s => s.trim()).filter(Boolean) : [];
 
-    // 3) CRP (rápido)
+    // CRP (rápido)
     const crpFast = await findCRPByCnpjFast(sCrp, cnpj) || {};
     const tipo = (crpFast.DECISAO_JUDICIAL || '').toString().trim();
     const crpPayload = {
@@ -1320,7 +1239,6 @@ app.post('/api/termos-registrados', async (req, res) => {
       tipo: /jud/i.test(tipo) ? 'Judicial' : (tipo ? 'Administrativa' : '')
     };
 
-    // Completa ente com dados do último termo se base estiver vazia
     if (!entePayload.uf && last) {
       entePayload.uf = (getVal(last,'UF') || '').toString().trim();
       entePayload.nome = (getVal(last,'ENTE') || '').toString().trim();
@@ -1333,7 +1251,6 @@ app.post('/api/termos-registrados', async (req, res) => {
 
     const esfera = esferaFromEnte(entePayload.nome || getVal(last,'ENTE') || '');
 
-    // e no objeto de resposta final, inclua "esfera"
     return res.json({
       ente: { ...entePayload, esfera },
       responsaveis: responsaveisPayload,
@@ -1349,14 +1266,15 @@ app.post('/api/termos-registrados', async (req, res) => {
     return res.status(500).json({ error: 'Falha ao montar dados dos Termos_registrados.' });
   }
 });
+
 /* ===== Joi Schemas (novos) ===== */
 const schemaGesconTermoEnc = Joi.object({
   cnpj: Joi.string().pattern(/^\D*\d{14}\D*$/).required()
 });
-
 const schemaTermosRegistradosByCnpj = Joi.object({
   cnpj: Joi.string().pattern(/^\D*\d{14}\D*$/).required()
 });
+
 /* ===== Joi Schemas ===== */
 const schemaUpsertCnpj = Joi.object({
   UF: Joi.string().trim().min(1).required(),
@@ -1378,6 +1296,8 @@ const schemaUpsertRep = Joi.object({
   TELEFONE: Joi.string().allow(''),
   CARGO: Joi.string().trim().allow(''),
 }).unknown(true);
+
+/* ====== ATENÇÃO: Removidos DATA_VENCIMENTO_ULTIMO_CRP e TIPO_EMISSAO_ULTIMO_CRP ====== */
 const schemaGerarTermo = Joi.object({
   UF: Joi.string().trim().min(1).required(),
   ENTE: Joi.string().trim().min(1).required(),
@@ -1394,8 +1314,6 @@ const schemaGerarTermo = Joi.object({
   EMAIL_REP_UG: Joi.string().email().allow(''),
   EMAIL_ENTE: Joi.string().email().allow(''),
   EMAIL_UG: Joi.string().email().allow(''),
-  DATA_VENCIMENTO_ULTIMO_CRP: Joi.string().trim().min(4).required(),
-  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().trim().min(1).required(),
   CRITERIOS_IRREGULARES: Joi.alternatives().try(
     Joi.array().items(Joi.string().trim()),
     Joi.string().allow('')
@@ -1413,8 +1331,7 @@ const schemaGerarTermo = Joi.object({
   IDEMP_KEY: Joi.string().allow(''),
 }).unknown(true);
 
-
-
+/* PDF schema do Termo — REMOVIDOS campos do CRP */
 const schemaTermoPdf = Joi.object({
   UF: Joi.string().allow(''),
   ENTE: Joi.string().allow(''),
@@ -1429,8 +1346,6 @@ const schemaTermoPdf = Joi.object({
   CPF_REP_UG: Joi.string().allow(''),
   CARGO_REP_UG: Joi.string().allow(''),
   EMAIL_REP_UG: Joi.string().allow(''),
-  DATA_VENCIMENTO_ULTIMO_CRP: Joi.string().allow(''),
-  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().allow(''),
   CRITERIOS_IRREGULARES: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string()).optional(),
   CELEBRACAO_TERMO_PARCELA_DEBITOS: Joi.string().allow(''),
   REGULARIZACAO_PENDEN_ADMINISTRATIVA: Joi.string().allow(''),
@@ -1443,9 +1358,8 @@ const schemaTermoPdf = Joi.object({
   DATA_TERMO_GERADO: Joi.string().allow(''),
 }).unknown(true);
 
-/* === PDF: schema para Termo de Solicitação de CRP Emergencial === */
+/* === PDF: schema para Termo de Solicitação de CRP Emergencial (inalterado) === */
 const schemaTermoSolicPdf = Joi.object({
-  // Identificação do ente/UG
   UF: Joi.string().allow(''),
   ENTE: Joi.string().allow(''),
   CNPJ_ENTE: Joi.string().allow(''),
@@ -1454,45 +1368,30 @@ const schemaTermoSolicPdf = Joi.object({
   CNPJ_UG: Joi.string().allow(''),
   EMAIL_UG: Joi.string().allow(''),
   ESFERA: Joi.string().allow(''),
-
-  // Representantes (ente)
   NOME_REP_ENTE: Joi.string().allow(''),
   CPF_REP_ENTE: Joi.string().allow(''),
   CARGO_REP_ENTE: Joi.string().allow(''),
   EMAIL_REP_ENTE: Joi.string().allow(''),
   TEL_REP_ENTE: Joi.string().allow(''),
-
-  // Representantes (UG)
   NOME_REP_UG: Joi.string().allow(''),
   CPF_REP_UG: Joi.string().allow(''),
   CARGO_REP_UG: Joi.string().allow(''),
   EMAIL_REP_UG: Joi.string().allow(''),
   TEL_REP_UG: Joi.string().allow(''),
-
-  // CRP
-  DATA_VENCIMENTO_ULTIMO_CRP: Joi.string().allow(''),
-  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().allow(''),
   CRITERIOS_IRREGULARES: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string()).optional(),
-
-  // Fase 4 (seleção e dados por sub-bloco)
   FASE_PROGRAMA: Joi.string().valid('4.1','4.2','4.3','4.4','4.5','4.6').allow(''),
   F41_OPCAO: Joi.string().allow(''),
-
   F42_LISTA: Joi.array().items(Joi.string()).optional(),
-
   F43_LISTA: Joi.array().items(Joi.string()).optional(),
   F43_JUST: Joi.string().allow(''),
   F43_PLANO: Joi.string().allow(''),
-
   F44_CRITERIOS: Joi.array().items(Joi.string()).optional(),
   F44_DECLS: Joi.array().items(Joi.string()).optional(),
   F44_FINALIDADES: Joi.array().items(Joi.string()).optional(),
   F44_ANEXOS: Joi.string().allow(''),
-
   F45_OK451: Joi.boolean().optional(),
   F45_DOCS: Joi.string().allow(''),
   F45_JUST: Joi.string().allow(''),
-
   F46_CRITERIOS: Joi.array().items(Joi.string()).optional(),
   F46_PROGESTAO: Joi.string().allow(''),
   F46_PORTE: Joi.string().allow(''),
@@ -1504,26 +1403,18 @@ const schemaTermoSolicPdf = Joi.object({
   F46_ANEXOS: Joi.string().allow(''),
   F46_JUST_PLANOS: Joi.string().allow(''),
   F46_COMP_CUMPR: Joi.string().allow(''),
-
-  // Justificativas gerais
   JUSTIFICATIVAS_GERAIS: Joi.string().allow(''),
-
-  // Metadados Gescon exibidos no subtítulo
   HAS_TERMO_ENC_GESCON: Joi.alternatives().try(Joi.string(), Joi.number(), Joi.boolean()).optional(),
   N_GESCON: Joi.string().allow(''),
   DATA_ENC_VIA_GESCON: Joi.string().allow(''),
-
-  // Carimbos
   DATA_SOLIC_GERADA: Joi.string().allow(''),
   HORA_SOLIC_GERADA: Joi.string().allow(''),
   DATA_TERMO_GERADO: Joi.string().allow(''),
   HORA_TERMO_GERADO: Joi.string().allow(''),
 }).unknown(true);
 
-
 /* ===== CRP (Solicitação) — Joi Schemas ===== */
 const schemaSolicCrp = Joi.object({
-  // básicos (obrigatórios como no front)
   ESFERA: Joi.string().allow(''),
   UF: Joi.string().trim().min(1).required(),
   ENTE: Joi.string().trim().min(1).required(),
@@ -1532,26 +1423,17 @@ const schemaSolicCrp = Joi.object({
   UG: Joi.string().trim().min(1).required(),
   CNPJ_UG: Joi.string().pattern(/^\D*\d{14}\D*$/).required(),
   EMAIL_UG: Joi.string().email().allow(''),
-
-  // reps
   CPF_REP_ENTE: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
   NOME_REP_ENTE: Joi.string().trim().min(2).required(),
   CARGO_REP_ENTE: Joi.string().trim().min(1).required(),
   EMAIL_REP_ENTE: Joi.string().email().allow(''),
   TEL_REP_ENTE: Joi.string().allow(''),
-
   CPF_REP_UG: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
   NOME_REP_UG: Joi.string().trim().min(2).required(),
   CARGO_REP_UG: Joi.string().trim().min(1).required(),
   EMAIL_REP_UG: Joi.string().email().allow(''),
   TEL_REP_UG: Joi.string().allow(''),
-
-  // etapa 3
-  DATA_VENCIMENTO_ULTIMO_CRP: Joi.string().trim().min(4).required(),
-  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().valid('Administrativa','Judicial').required(),
   CRITERIOS_IRREGULARES: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string().allow('')).optional(),
-
-  // etapa 4 (tudo opcional; front valida a combinação)
   FASE_PROGRAMA: Joi.string().valid('4.1','4.2','4.3','4.4','4.5','4.6').allow(''),
   F41_OPCAO: Joi.string().allow(''),
   F42_LISTA: Joi.array().items(Joi.string()).optional(),
@@ -1576,21 +1458,14 @@ const schemaSolicCrp = Joi.object({
   F46_ANEXOS: Joi.string().allow(''),
   F46_JUST_PLANOS: Joi.string().allow(''),
   F46_COMP_CUMPR: Joi.string().allow(''),
-
-  // etapa 5
   JUSTIFICATIVAS_GERAIS: Joi.string().allow(''),
-
-  // carimbos
   MES: Joi.string().allow(''),
   DATA_SOLIC_GERADA: Joi.string().allow(''),
   HORA_SOLIC_GERADA: Joi.string().allow(''),
   ANO_SOLIC_GERADA: Joi.string().allow(''),
-
-  // gescon (gate informativo)
   HAS_TERMO_ENC_GESCON: Joi.boolean().optional(),
   N_GESCON: Joi.string().allow(''),
   DATA_ENC_VIA_GESCON: Joi.string().allow(''),
-
   IDEMP_KEY: Joi.string().allow('')
 }).unknown(true);
 
@@ -1598,8 +1473,6 @@ const schemaSolicCrpPdf = schemaSolicCrp.fork(
   Object.keys(schemaSolicCrp.describe().keys),
   (s) => s.optional()
 ).unknown(true);
-
-
 
 function validateOr400(res, schema, obj) {
   const { error, value } = schema.validate(obj, { abortEarly: false, stripUnknown: false, convert: true });
@@ -1611,8 +1484,6 @@ function validateOr400(res, schema, obj) {
   }
   return value;
 }
-
-
 /* util: upsert representante */
 async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
   const sReps = await getOrCreateSheet('Dados_REP_ENTE_UG', ['UF','ENTE','NOME','CPF','EMAIL','TELEFONE','TELEFONE_MOVEL','CARGO','UG']);
@@ -1645,7 +1516,6 @@ async function upsertRep({ UF, ENTE, UG, NOME, CPF, EMAIL, TELEFONE, CARGO }) {
     return { updated: true };
   }
 
-  // fallback por células
   await sReps.loadHeaderRow();
   const headers = sReps.headerValues || [];
   const san = s => (s ?? '').toString().trim().toLowerCase()
@@ -1736,6 +1606,7 @@ async function upsertCNPJBase({ UF, ENTE, UG, CNPJ_ENTE, CNPJ_UG, EMAIL_ENTE, EM
   }
   return { updated: false };
 }
+
 /* ===== util de idempotência ===== */
 function makeIdemKeyFromPayload(p) {
   const keyObj = {
@@ -1746,7 +1617,6 @@ function makeIdemKeyFromPayload(p) {
     CNPJ_UG: cnpj14(p.CNPJ_UG),
     CPF_REP_ENTE: digits(p.CPF_REP_ENTE),
     CPF_REP_UG: digits(p.CPF_REP_UG),
-    DATA_VENCIMENTO_ULTIMO_CRP: norm(p.DATA_VENCIMENTO_ULTIMO_CRP),
     COMP: norm(p.COMPROMISSO_FIRMADO_ADESAO || ''),
     PROVID: norm(p.PROVIDENCIA_NECESS_ADESAO || ''),
     TS_DIA: String(p.DATA_TERMO_GERADO || ''),
@@ -1755,7 +1625,7 @@ function makeIdemKeyFromPayload(p) {
   return 'fp_' + crypto.createHash('sha256').update(raw).digest('hex').slice(0, 24);
 }
 
-/* ===== Idempotência p/ Solic_CRPs ===== */
+/* ===== Idempotência p/ Solic_CRPs (sem campos de CRP legado) ===== */
 function makeIdemKeyFromSolicCrp(p) {
   const keyObj = {
     UF: norm(p.UF), ENTE: norm(p.ENTE),
@@ -1763,7 +1633,6 @@ function makeIdemKeyFromSolicCrp(p) {
     CNPJ_UG: cnpj14(p.CNPJ_UG),
     CPF_REP_ENTE: digits(p.CPF_REP_ENTE),
     CPF_REP_UG: digits(p.CPF_REP_UG),
-    DATA_VENC: norm(p.DATA_VENCIMENTO_ULTIMO_CRP),
     FASE: norm(p.FASE_PROGRAMA || ''),
     DIA: norm(p.DATA_SOLIC_GERADA || '')
   };
@@ -1782,12 +1651,14 @@ async function findSolicByIdemKey(sheet, idemKey) {
   }
   return null;
 }
+
+/* ====== Removidos campos CRP dos headers da Solic_CRPs ====== */
 const SOLIC_HEADERS = [
   'ESFERA','UF','ENTE','CNPJ_ENTE','EMAIL_ENTE',
   'UG','CNPJ_UG','EMAIL_UG',
   'NOME_REP_ENTE','CPF_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
   'NOME_REP_UG','CPF_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
-  'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP','CRITERIOS_IRREGULARES',
+  'CRITERIOS_IRREGULARES',
   'FASE_PROGRAMA','F41_OPCAO','F42_LISTA','F43_LISTA','F43_JUST','F43_PLANO',
   'F44_CRITERIOS','F44_DECLS','F44_FINALIDADES','F44_ANEXOS',
   'F45_OK451','F45_DOCS','F45_JUST',
@@ -1834,8 +1705,6 @@ app.post('/api/upsert-rep', async (req,res)=>{
   try{
     const clean = validateOr400(res, schemaUpsertRep, req.body || {});
     if (!clean) return;
-
-    // normalizações consistentes com validação
     clean.CPF = digits(clean.CPF);
     await authSheets();
     const r = await upsertRep(clean);
@@ -1850,6 +1719,7 @@ app.post('/api/upsert-rep', async (req,res)=>{
   }
 });
 
+/* ===== log de alterações — REMOVIDOS campos do CRP ===== */
 async function logAlteracoesInline(p, snapshotRaw = {}) {
   const sLog = await getOrCreateSheet('Reg_alteracao_dados_ente_ug', [
     'UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA'
@@ -1861,8 +1731,7 @@ async function logAlteracoesInline(p, snapshotRaw = {}) {
     'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE',
     'UG','CNPJ_UG','EMAIL_UG',
     'NOME_REP_ENTE','CPF_REP_ENTE','TEL_REP_ENTE','EMAIL_REP_ENTE','CARGO_REP_ENTE',
-    'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG',
-    'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP'
+    'NOME_REP_UG','CPF_REP_UG','TEL_REP_UG','EMAIL_REP_UG','CARGO_REP_UG'
   ];
 
   const changed = [];
@@ -1912,7 +1781,6 @@ app.post('/api/gerar-termo', async (req, res) => {
       'NOME_REP_ENTE','CARGO_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE',
       'UG','CNPJ_UG','EMAIL_UG',
       'NOME_REP_UG','CARGO_REP_UG','CPF_REP_UG','EMAIL_REP_UG',
-      'DATA_VENCIMENTO_ULTIMO_CRP','TIPO_EMISSAO_ULTIMO_CRP',
       'CRITERIOS_IRREGULARES',
       'CELEBRACAO_TERMO_PARCELA_DEBITOS',
       'REGULARIZACAO_PENDEN_ADMINISTRATIVA',
@@ -1928,7 +1796,6 @@ app.post('/api/gerar-termo', async (req, res) => {
     await sTermosSheet.loadHeaderRow();
     await ensureSheetHasColumns(sTermosSheet, ['IDEMP_KEY']);
 
-    // Idempotência
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
     const idemBody   = String(p.IDEMP_KEY || '').trim();
     const idemKey    = idemHeader || idemBody || makeIdemKeyFromPayload(p);
@@ -1973,8 +1840,6 @@ app.post('/api/gerar-termo', async (req, res) => {
       UG: norm(p.UG), CNPJ_UG: digits(p.CNPJ_UG), EMAIL_UG:   emailUgFinal,
       NOME_REP_UG: norm(p.NOME_REP_UG), CARGO_REP_UG: norm(p.CARGO_REP_UG),
       CPF_REP_UG: digits(p.CPF_REP_UG), EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
-      DATA_VENCIMENTO_ULTIMO_CRP: norm(p.DATA_VENCIMENTO_ULTIMO_CRP),
-      TIPO_EMISSAO_ULTIMO_CRP: norm(p.TIPO_EMISSAO_ULTIMO_CRP),
       CRITERIOS_IRREGULARES: criterios.join(', '),
       CELEBRACAO_TERMO_PARCELA_DEBITOS: norm(p.CELEBRACAO_TERMO_PARCELA_DEBITOS),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: norm(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA),
@@ -2023,8 +1888,6 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
     await ensureHeaderRow(s, SOLIC_HEADERS);
     await ensureSheetHasColumns(s, ['IDEMP_KEY']);
 
-
-
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
     const idemBody   = String(p.IDEMP_KEY || '').trim();
     const idemKey    = idemHeader || idemBody || makeIdemKeyFromSolicCrp(p);
@@ -2037,7 +1900,6 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
     const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
       ? p.CRITERIOS_IRREGULARES : String(p.CRITERIOS_IRREGULARES||'').split(',').map(v=>v.trim()).filter(Boolean);
 
-    // arrays em CSV
     const asCSV = (a) => Array.isArray(a) ? a.join(', ') : String(a||'');
 
     await safeAddRow(s, sheetSanObject({
@@ -2046,7 +1908,6 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
       UG: p.UG, CNPJ_UG: digits(p.CNPJ_UG), EMAIL_UG: norm(p.EMAIL_UG),
       NOME_REP_ENTE: p.NOME_REP_ENTE, CPF_REP_ENTE: digits(p.CPF_REP_ENTE), CARGO_REP_ENTE: p.CARGO_REP_ENTE, EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE), TEL_REP_ENTE: norm(p.TEL_REP_ENTE),
       NOME_REP_UG: p.NOME_REP_UG, CPF_REP_UG: digits(p.CPF_REP_UG), CARGO_REP_UG: p.CARGO_REP_UG, EMAIL_REP_UG: norm(p.EMAIL_REP_UG), TEL_REP_UG: norm(p.TEL_REP_UG),
-      DATA_VENCIMENTO_ULTIMO_CRP: norm(p.DATA_VENCIMENTO_ULTIMO_CRP), TIPO_EMISSAO_ULTIMO_CRP: norm(p.TIPO_EMISSAO_ULTIMO_CRP),
       CRITERIOS_IRREGULARES: criterios.join(', '),
 
       FASE_PROGRAMA: p.FASE_PROGRAMA || '',
@@ -2080,18 +1941,13 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
     return res.status(500).json({ error:'Falha ao registrar a solicitação de CRP.' });
   }
 });
+
 /* ========= PDF (Puppeteer) ========= */
+/* ——— /api/termo-pdf (sem campos de CRP legado) ——— */
 const PDF_CONCURRENCY = Number(process.env.PDF_CONCURRENCY || 1);
 const _pdfQ = []; let _pdfActive = 0;
-function _pdfRunNext() {
-  if (_pdfActive >= PDF_CONCURRENCY) return;
-  const it = _pdfQ.shift(); if (!it) return;
-  _pdfActive++;
-  (async () => { try { it.resolve(await it.fn()); } catch (e) { it.reject(e); } finally { _pdfActive--; _pdfRunNext(); } })();
-}
-function withPdfLimiter(fn) {
-  return new Promise((resolve, reject) => { _pdfQ.push({ fn, resolve, reject }); _pdfRunNext(); });
-}
+function _pdfRunNext() { if (_pdfActive >= PDF_CONCURRENCY) return; const it = _pdfQ.shift(); if (!it) return; _pdfActive++; (async()=>{ try{ it.resolve(await it.fn()); }catch(e){ it.reject(e);} finally{ _pdfActive--; _pdfRunNext(); } })(); }
+function withPdfLimiter(fn) { return new Promise((resolve, reject) => { _pdfQ.push({ fn, resolve, reject }); _pdfRunNext(); }); }
 const _svgCache = {};
 function inlineSvg(relPath) {
   try {
@@ -2126,27 +1982,8 @@ app.post('/api/termo-pdf', async (req, res) => {
         const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6','5.7']
           .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
 
-        const qs = new URLSearchParams({
-          uf: p.UF || '', ente: p.ENTE || '', cnpj_ente: p.CNPJ_ENTE || '', email_ente: p.EMAIL_ENTE || '',
-          ug: p.UG || '', cnpj_ug: p.CNPJ_UG || '', email_ug: p.EMAIL_UG || '',
-          esfera: p.ESFERA || '',
-          nome_rep_ente: p.NOME_REP_ENTE || '', cpf_rep_ente: p.CPF_REP_ENTE || '', cargo_rep_ente: p.CARGO_REP_ENTE || '', email_rep_ente: p.EMAIL_REP_ENTE || '',
-          nome_rep_ug: p.NOME_REP_UG || '', cpf_rep_ug: p.CPF_REP_UG || '', cargo_rep_ug: p.CARGO_REP_UG || '', email_rep_ug: p.EMAIL_REP_UG || '',
-          venc_ult_crp: p.DATA_VENCIMENTO_ULTIMO_CRP || '', tipo_emissao_crp: p.TIPO_EMISSAO_ULTIMO_CRP || '',
-          celebracao: p.CELEBRACAO_TERMO_PARCELA_DEBITOS || '', regularizacao: p.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '',
-          deficit: p.DEFICIT_ATUARIAL || '', criterios_estrut: p.CRITERIOS_ESTRUT_ESTABELECIDOS || '',
-          manutencao_normas: p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '',
-          compromisso: p.COMPROMISSO_FIRMADO_ADESAO || '', providencias: p.PROVIDENCIA_NECESS_ADESAO || '',
-          condicao_vigencia: p.CONDICAO_VIGENCIA || '', data_termo: p.DATA_TERMO_GERADO || '', auto: '1'
-        });
-        (Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : []).forEach((c, i) => qs.append(`criterio${i+1}`, String(c || '')));
-        compCodes.forEach(code => qs.append('comp', code));
-
-        // ✅ Não derive URL pública do cabeçalho do request
         const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
-        // Se quiser permitir externo, defina PUBLIC_URL fixo no .env (ex.: https://seu-dominio.gov.br)
         const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
-
 
         try { browser = await getBrowser(); page = await browser.newPage(); }
         catch (e) {
@@ -2175,30 +2012,22 @@ app.post('/api/termo-pdf', async (req, res) => {
         page.setDefaultTimeout(90_000);
         await page.emulateMediaType('screen');
 
-        // 1) carrega a página SEM querystring (evita PII em logs/cache)
         const urlsToTry = [
           `${LOOPBACK_BASE}/termo.html`
         ];
-        if (PUBLIC_BASE) {
-          urlsToTry.push(`${PUBLIC_BASE}/termo.html`);
-        }
+        if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/termo.html`);
 
         let loaded = false; let lastErr = null;
         for (const u of urlsToTry) {
-          try {
-            await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-            loaded = true; break;
-          } catch (e) { lastErr = e; }
+          try { await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 }); loaded = true; break; }
+          catch (e) { lastErr = e; }
         }
         if (!loaded) throw lastErr || new Error('Falha ao carregar termo.html');
 
-        // 2) injeta os dados na página após o load
         const payloadForClient = {
           ...p,
-          // já que antes você colocava alguns campos na querystring:
           ESFERA: p.ESFERA || '',
           CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [],
-          // reaproveita os códigos que você calculou lá em cima
           COMP_CODES: compCodes
         };
 
@@ -2208,19 +2037,16 @@ app.post('/api/termo-pdf', async (req, res) => {
         }, payloadForClient);
 
         if (DEBUG_PDF) console.log('📤 dados injetados no template');
-      
-        // 1) espera o container do PDF existir
+
         await page.waitForSelector('#pdf-root', { timeout: 20000 }).catch(()=>{});
-        // 2) espera o evento do template + as fontes carregarem (sem fallback curto)
         await page.evaluate(() => new Promise((resolve) => {
           const finish = async () => {
             try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_) {}
-            setTimeout(resolve, 150); // pequeno idle para o layout estabilizar
+            setTimeout(resolve, 150);
           };
           if (window.__TERMO_PRINT_READY__ === true) return void finish();
           document.addEventListener('TERMO_PRINT_READY', () => finish(), { once: true });
         }));
-        // (opcional) marcar classes de export — idempotente
         await page.evaluate(() => {
           document.documentElement.classList.add('pdf-export');
           document.body.classList.add('pdf-export');
@@ -2249,13 +2075,6 @@ app.post('/api/termo-pdf', async (req, res) => {
           .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
           .term-title { margin-top: 2mm !important; }
         `});
-        
-        // após page.goto(...), page.addStyleTag(...), page.addScriptTag(...)
-        await page.evaluate(() => {
-          document.documentElement.classList.add('pdf-export'); // <html>
-          document.body.classList.add('pdf-export');            // <body>
-        });
-
 
         const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
         const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
@@ -2276,16 +2095,12 @@ app.post('/api/termo-pdf', async (req, res) => {
             <div class="rule"></div>
           </div>`;
         const footerTemplate = `<div></div>`;
-        
-        if (DEBUG_PDF) console.log('🖨️ gerando PDF…');
 
         const pdf = await page.pdf({
           printBackground: true, preferCSSPageSize: true, displayHeaderFooter: true,
           headerTemplate, footerTemplate, margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
         });
         await page.close();
-        
-        if (DEBUG_PDF) console.log('📄 PDF gerado, bytes =', pdf?.length);
 
         const filenameSafe = (p.ENTE || 'termo-adesao')
           .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
@@ -2306,10 +2121,9 @@ app.post('/api/termo-pdf', async (req, res) => {
   }
 });
 
-/** POST /api/termo-solic-crp-pdf — gera PDF do termo_solic_crp.html */
+/** POST /api/termo-solic-crp-pdf — gera PDF do termo_solic_crp.html (sem campos CRP legado em debug) */
 app.post('/api/termo-solic-crp-pdf', async (req, res) => {
   try {
-
     if (DEBUG_PDF) {
       console.log('📥 /termo-solic-crp-pdf: body keys =', Object.keys(req.body||{}));
     }
@@ -2320,23 +2134,10 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
     await withPdfLimiter(async () => {
       let page; let browser; let triedRestart = false;
       try {
-
-        if (DEBUG_PDF) {
-          console.log('🧩 campos essenciais:', {
-            UF:p.UF, ENTE:p.ENTE,
-            CNPJ_ENTE: String(p.CNPJ_ENTE||'').slice(0,4)+'…',
-            CNPJ_UG: String(p.CNPJ_UG||'').slice(0,4)+'…',
-            DATA_VENC: p.DATA_VENCIMENTO_ULTIMO_CRP,
-            TIPO: p.TIPO_EMISSAO_ULTIMO_CRP
-          });
-        }
-
-        // Bases internas: loopback e (opcional) PUBLIC_URL estática do .env
         const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
         const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
 
         try { browser = await getBrowser(); page = await browser.newPage(); }
-        
         catch (e) {
           const msg = String(e?.message || '');
           if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
@@ -2361,57 +2162,34 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         page.setDefaultTimeout(90_000);
         await page.emulateMediaType('screen');
 
-        // 1) Carrega a página SEM querystring
-         const CANDIDATES = [
-           'termo_solic_crp.html',
-           'solic_crp.html'
-         ];
-         const urlsToTry = [
-           ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
-           ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
-         ];
+        const CANDIDATES = ['termo_solic_crp.html','solic_crp.html'];
+        const urlsToTry = [
+          ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
+          ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
+        ];
 
-         if (DEBUG_PDF) console.log('🚦 tentando carregar templates:', urlsToTry);
-
+        if (DEBUG_PDF) console.log('🚦 tentando carregar templates:', urlsToTry);
 
         let loaded = false; let lastErr = null;
         for (const u of urlsToTry) {
           try { await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 }); loaded = true; break; }
           catch (e) { lastErr = e; }
         }
-
-        // Sanidade forte: confirma que carregamos o template "limpo"
         await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
-
         const sanity = await page.evaluate(() => {
-          const href = location.href;
-          const title = document.title || '';
           const h1 = (document.querySelector('h1.term-title')?.textContent || '').trim();
-
           const okTitle =
             /TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL/i.test(h1) ||
             /SOLICITAÇÃO DE CRP/i.test(h1);
-
           const hasPdfRoot = !!document.querySelector('#pdf-root .term-wrap');
-
-          // Se tiver qualquer controle de formulário, é o wizard (página errada)
-          const hasFormControls = !!document.querySelector(
-            'form, select, textarea, input[type=checkbox], input[type=radio], input[type=text], input[type=date], input[type=email]'
-          );
-
-          return { href, title, h1, okTitle, hasPdfRoot, hasFormControls };
+          const hasFormControls = !!document.querySelector('form, select, textarea, input');
+          return { okTitle, hasPdfRoot, hasFormControls };
         });
-
         if (!sanity.hasPdfRoot || sanity.hasFormControls || !sanity.okTitle) {
-          throw new Error(
-            `Template inválido p/ impressão | loaded=${sanity.href} | title="${sanity.title}" | ` +
-            `h1="${sanity.h1}" okTitle=${sanity.okTitle} hasForm=${sanity.hasFormControls} hasPdfRoot=${sanity.hasPdfRoot}`
-          );
+          throw new Error('Template inválido p/ impressão');
         }
-
         if (!loaded) throw lastErr || new Error('Falha ao carregar termo_solic_crp.html');
 
-        // 2) Injeta os dados na página
         const payloadForClient = {
           ...p,
           CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
@@ -2427,399 +2205,14 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
         }, payloadForClient);
 
-
         await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(() => {});
-
-        // aguarda evento do template OU estado já sinalizado
-        await page.waitForFunction(
-          'window.__TERMO_PRINT_READY__ === true',
-          { timeout: 30_000 }
-        ).catch(() => {}); // se o template já disparou, esta condição será verdadeira
-
-        // garante fontes e layout estabilizados
+        await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 30_000 }).catch(() => {});
         await page.evaluate(async () => {
           try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch {}
           await new Promise(r => requestAnimationFrame(() => setTimeout(r, 150)));
         });
-
-        // modo print (usa @page)
         await page.emulateMediaType('print');
 
-
-        // 4) Embute fontes iguais ao outro termo
-        function findFont(candidates){
-          const path = require('path'); const fs = require('fs');
-          for (const rel of candidates){
-            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
-            if (fs.existsSync(abs)) return (function inlineFont(relPath) {
-              try{
-                const pth = path.join(__dirname, '../frontend', relPath.replace(/^\/+/, ''));
-                const buf = fs.readFileSync(pth);
-                const b64 = buf.toString('base64');
-                const ext = require('path').extname(pth).toLowerCase();
-                const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : ext === '.ttf' ? 'font/ttf' : 'application/octet-stream';
-                const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
-                return `url(data:${mime};base64,${b64}) format('${fmt}')`;
-              }catch{ return null; }
-            })(rel);
-          }
-          return null;
-        }
-        const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf']);
-        const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf']);
-        let fontCSS = '';
-        if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
-        if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
-        fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
-
-        await page.addStyleTag({ content: `
-          ${fontCSS}
-          html, body, #pdf-root { background:#ffffff !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .page-head .logos-wrap { display: none !important; }
-          .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
-          .term-title { margin-top: 2mm !important; }
-        `});
-
-        // 5) Header/footer (mesmo padrão visual do /api/termo-pdf)
-        const path = require('path'); const fs = require('fs');
-        function inlineSvg(relPath) {
-          try {
-            const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
-            const raw = fs.readFileSync(abs, 'utf8');
-            return raw.replace(/<\?xml[^>]*>/g, '').replace(/<!DOCTYPE[^>]*>/g, '')
-              .replace(/\r?\n|\t/g, ' ').replace(/>\s+</g, '><').trim();
-          } catch { return ''; }
-        }
-        const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
-        const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
-        const headerTemplate = `
-          <style>
-            .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6mm 12mm 4mm; }
-            .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
-            .pdf-header .logo-sec svg { height: 19mm; width:auto; }
-            .pdf-header .logo-mps svg { height: 20mm; width:auto; }
-            .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
-            .date, .title, .url, .pageNumber, .totalPages { display:none; }
-          </style>
-          <div class="pdf-header">
-            <div class="logos">
-              <div class="logo-sec">${svgSec}</div>
-              <div class="logo-mps">${svgMps}</div>
-            </div>
-            <div class="rule"></div>
-          </div>`;
-        const footerTemplate = `<div></div>`;
-
-        // 6) Gera o PDF
-        const pdf = await page.pdf({
-          printBackground: true,
-          preferCSSPageSize: true,
-          displayHeaderFooter: true,
-          headerTemplate,
-          footerTemplate,
-          margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
-        });
-        await page.close();
-
-        const filenameSafe = (p.ENTE || 'termo-solic-crp')
-          .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
-
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="termo-solic-${filenameSafe}.pdf"`);
-        res.setHeader('Cache-Control', 'no-store, max-age=0');
-        res.send(pdf);
-      } catch (e) {
-        console.error('❌ /api/termo-solic-crp-pdf:', e);
-        try { if (page) await page.close(); } catch(_) {}
-        res.status(500).json({ error: 'Falha ao gerar PDF' });
-      }
-    });
-  } catch (e) {
-    console.error('❌ (outer) /api/termo-solic-crp-pdf:', e);
-    if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
-  }
-});
-
-
-/** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */
-app.post('/api/solic-crp-pdf', async (req, res) => {
-  try {
-    const p = validateOr400(res, schemaSolicCrpPdf, req.body || {});
-    if (!p) return;
-
-    await withPdfLimiter(async () => {
-      let page; let browser; let triedRestart = false;
-      try {
-        // base loopback (mesma proteção do /api/termo-pdf)
-        const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
-        const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
-
-        try { browser = await getBrowser(); page = await browser.newPage();
-          if (DEBUG_PDF) {
-            page.on('console', msg => console.log('🖥️ [page]', msg.type(), msg.text()));
-            page.on('request', reqObj => console.log('🌐 req →', reqObj.method(), reqObj.url()));
-            page.on('requestfinished', reqObj => console.log('✅ req ✓', reqObj.url()));
-            page.on('requestfailed', reqObj => console.warn('❌ req ✗', reqObj.url(), reqObj.failure()?.errorText));
-            page.on('pageerror', err => console.error('💥 pageerror:', err?.message || err));
-          }
-        }
-        catch (e) {
-          const msg = String(e?.message || '');
-          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
-            triedRestart = true;
-            try { await browser?.close().catch(()=>{}); } catch(_){}
-            _browserPromise = null; browser = await getBrowser(); page = await browser.newPage();
-          } else { throw e; }
-        }
-
-        await page.setCacheEnabled(false);
-        await page.setRequestInterception(true);
-        page.on('request', (reqObj) => {
-          const u = reqObj.url();
-          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
-          const allowed =
-            (u.startsWith(LOOPBACK_BASE)) ||
-            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
-          return allowed ? reqObj.continue() : reqObj.abort();
-        });
-
-        page.setDefaultNavigationTimeout(90_000);
-        page.setDefaultTimeout(90_000);
-        await page.emulateMediaType('screen');
-
-        // 1) Carrega a página SEM querystring para evitar PII em logs
-        const CANDIDATES = [
-          'solic_crp.html',
-          'termo_solic_crp.html',
-          'form_gera_termo_solic_crp_2.html',
-          'form_gera_termo_solic_crp.html'
-        ];
-        const urlsToTry = [
-          ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
-          ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
-        ];
-
-        let loaded = false; let lastErr = null;
-        for (const u of urlsToTry) {
-          try {
-            await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-            loaded = true;
-            break;
-          } catch (e) {
-            lastErr = e;
-          }
-        }
-        if (!loaded) throw lastErr || new Error('Falha ao carregar solic_crp.html');
-
-        // 2) Injeta os dados esperados pelo front
-        const payloadForClient = {
-          ...p,
-          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
-            ? p.CRITERIOS_IRREGULARES
-            : String(p.CRITERIOS_IRREGULARES || '')
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean)
-        };
-
-        await page.evaluate((payload) => {
-          window.__TERMO_DATA__ = payload;
-          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-        }, payloadForClient);
-
-        
-
-        // 3) Sinalização de pronto para impressão
-        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(() => {});
-        await page.evaluate(() => new Promise((ok) => {
-          if (window.__TERMO_PRINT_READY__ === true) return ok();
-          document.addEventListener('TERMO_PRINT_READY', () => ok(), { once: true });
-          setTimeout(ok, 1500);
-        }));
-
-        // 4) Embute fontes (mesma família dos outros PDFs)
-        function findFont(candidates){
-          const path = require('path'); const fs = require('fs');
-          for (const rel of candidates){
-            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
-            if (fs.existsSync(abs)) {
-              try{
-                const buf = fs.readFileSync(abs);
-                const b64 = buf.toString('base64');
-                const ext = path.extname(abs).toLowerCase();
-                const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : ext === '.ttf' ? 'font/ttf' : 'application/octet-stream';
-                const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
-                return `url(data:${mime};base64,${b64}) format('${fmt}')`;
-              }catch{ return null; }
-            }
-          }
-          return null;
-        }
-const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf']);
-        const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf']);
-        let fontCSS = '';
-        if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
-        if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
-        fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
-
-        await page.addStyleTag({ content: `
-          ${fontCSS}
-          html, body, #pdf-root { background:#ffffff !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .page-head .logos-wrap { display: none !important; }
-          .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
-          .term-title { margin-top: 2mm !important; }
-        `});
-
-        // 5) Header/footer (mesmo padrão visual do /api/termo-pdf)
-        const path = require('path'); const fs = require('fs');
-        function inlineSvg(relPath) {
-          try {
-            const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
-            const raw = fs.readFileSync(abs, 'utf8');
-            return raw.replace(/<\?xml[^>]*>/g, '').replace(/<!DOCTYPE[^>]*>/g, '')
-              .replace(/\r?\n|\t/g, ' ').replace(/>\s+</g, '><').trim();
-          } catch { return ''; }
-        }
-        const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
-        const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
-        const headerTemplate = `
-          <style>
-            .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6mm 12mm 4mm; }
-            .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
-            .pdf-header .logo-sec svg { height: 19mm; width:auto; }
-            .pdf-header .logo-mps svg { height: 20mm; width:auto; }
-            .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
-            .date, .title, .url, .pageNumber, .totalPages { display:none; }
-          </style>
-          <div class="pdf-header">
-            <div class="logos">
-              <div class="logo-sec">${svgSec}</div>
-              <div class="logo-mps">${svgMps}</div>
-            </div>
-            <div class="rule"></div>
-          </div>`;
-        const footerTemplate = `<div></div>`;
-
-        // 6) Gera o PDF
-        const pdf = await page.pdf({
-          printBackground: true,
-          preferCSSPageSize: true,
-          displayHeaderFooter: true,
-          headerTemplate,
-          footerTemplate,
-          margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
-        });
-        await page.close();
-
-        const filenameSafe = (p.ENTE || 'termo-solic-crp')
-          .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
-
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="termo-solic-${filenameSafe}.pdf"`);
-        res.setHeader('Cache-Control', 'no-store, max-age=0');
-        res.send(pdf);
-      } catch (e) {
-        console.error('❌ /api/termo-solic-crp-pdf:', e);
-        try { if (page) await page.close(); } catch(_) {}
-        res.status(500).json({ error: 'Falha ao gerar PDF' });
-      }
-    });
-  } catch (e) {
-    console.error('❌ (outer) /api/termo-solic-crp-pdf:', e);
-    if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
-  }
-});
-
-
-/** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */
-app.post('/api/solic-crp-pdf', async (req, res) => {
-  try {
-    const p = validateOr400(res, schemaSolicCrpPdf, req.body || {});
-    if (!p) return;
-
-    await withPdfLimiter(async () => {
-      let page; let browser; let triedRestart = false;
-      try {
-        // base loopback (mesma proteção do /api/termo-pdf)
-        const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
-        const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
-
-        try { browser = await getBrowser(); page = await browser.newPage(); }
-        catch (e) {
-          const msg = String(e?.message || '');
-          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
-            triedRestart = true;
-            try { await browser?.close().catch(()=>{}); } catch(_){}
-            _browserPromise = null; browser = await getBrowser(); page = await browser.newPage();
-          } else { throw e; }
-        }
-
-        await page.setCacheEnabled(false);
-        await page.setRequestInterception(true);
-        page.on('request', (reqObj) => {
-          const u = reqObj.url();
-          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
-          const allowed =
-            (u.startsWith(LOOPBACK_BASE)) ||
-            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
-          return allowed ? reqObj.continue() : reqObj.abort();
-        });
-
-        page.setDefaultNavigationTimeout(90_000);
-        page.setDefaultTimeout(90_000);
-        await page.emulateMediaType('screen');
-
-        // 1) Carrega a página SEM querystring para evitar PII em logs
-        const CANDIDATES = [
-          'solic_crp.html',
-          'termo_solic_crp.html',
-          'form_gera_termo_solic_crp_2.html',
-          'form_gera_termo_solic_crp.html'
-        ];
-        const urlsToTry = [
-          ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
-          ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
-        ];
-
-        let loaded = false; let lastErr = null;
-        for (const u of urlsToTry) {
-          try {
-            await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-            loaded = true;
-            break;
-          } catch (e) {
-            lastErr = e;
-          }
-        }
-        if (!loaded) throw lastErr || new Error('Falha ao carregar solic_crp.html');
-
-        // 2) Injeta os dados esperados pelo front
-        const payloadForClient = {
-          ...p,
-          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
-            ? p.CRITERIOS_IRREGULARES
-            : String(p.CRITERIOS_IRREGULARES || '')
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean)
-        };
-
-        await page.evaluate((payload) => {
-          window.__TERMO_DATA__ = payload;
-          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-        }, payloadForClient);
-
-        // 3) Sinalização de pronto para impressão
-        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(() => {});
-        await page.evaluate(() => new Promise((ok) => {
-          if (window.__TERMO_PRINT_READY__ === true) return ok();
-          document.addEventListener('TERMO_PRINT_READY', () => ok(), { once: true });
-          setTimeout(ok, 1500);
-        }));
-
-        // 4) Embute fontes (mesma família dos outros PDFs)
         function findFont(candidates){
           const path = require('path'); const fs = require('fs');
           for (const rel of candidates){
@@ -2853,9 +2246,8 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
           .term-title { margin-top: 2mm !important; }
         `});
 
-        // 5) Header/footer com logos
         const path = require('path'); const fs = require('fs');
-        function inlineSvg(relPath) {
+        function inlineSvgLocal(relPath) {
           try {
             const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
             const raw = fs.readFileSync(abs, 'utf8');
@@ -2863,8 +2255,8 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
               .replace(/\r?\n|\t/g, ' ').replace(/>\s+</g, '><').trim();
           } catch { return ''; }
         }
-        const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
-        const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
+        const svgSec = inlineSvgLocal('imagens/logo-secretaria-complementar.svg');
+        const svgMps = inlineSvgLocal('imagens/logo-termo-drpps.svg');
         const headerTemplate = `
           <style>
             .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6mm 12mm 4mm; }
@@ -2883,7 +2275,6 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
           </div>`;
         const footerTemplate = `<div></div>`;
 
-        // 6) Gera PDF
         const pdf = await page.pdf({
           printBackground: true,
           preferCSSPageSize: true,
@@ -2894,11 +2285,179 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
         });
         await page.close();
 
-        const filenameSafe = (p.ENTE || 'solic-crp')
+        const filenameSafe = (p.ENTE || 'termo-solic-crp')
           .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="solic-crp-${filenameSafe}.pdf"`);
+        res.setHeader('Content-Disposition', `attachment; filename="termo-solic-${filenameSafe}.pdf"`);
+        res.setHeader('Cache-Control', 'no-store, max-age=0');
+        res.send(pdf);
+      } catch (e) {
+        console.error('❌ /api/termo-solic-crp-pdf:', e);
+        try { if (page) await page.close(); } catch(_) {}
+        res.status(500).json({ error: 'Falha ao gerar PDF' });
+      }
+    });
+  } catch (e) {
+    console.error('❌ (outer) /api/termo-solic-crp-pdf:', e);
+    if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
+  }
+});
+
+/** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */
+app.post('/api/solic-crp-pdf', async (req, res) => {
+  try {
+    const p = validateOr400(res, schemaSolicCrpPdf, req.body || {});
+    if (!p) return;
+
+    await withPdfLimiter(async () => {
+      let page; let browser; let triedRestart = false;
+      try {
+        const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
+        const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
+
+        try { browser = await getBrowser(); page = await browser.newPage(); } 
+        catch (e) {
+          const msg = String(e?.message || '');
+          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
+            triedRestart = true;
+            try { await browser?.close().catch(()=>{}); } catch(_){}
+            _browserPromise = null; browser = await getBrowser(); page = await browser.newPage();
+          } else { throw e; }
+        }
+
+        await page.setCacheEnabled(false);
+        await page.setRequestInterception(true);
+        page.on('request', (reqObj) => {
+          const u = reqObj.url();
+          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
+          const allowed =
+            (u.startsWith(LOOPBACK_BASE)) ||
+            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
+          return allowed ? reqObj.continue() : reqObj.abort();
+        });
+
+        page.setDefaultNavigationTimeout(90_000);
+        page.setDefaultTimeout(90_000);
+        await page.emulateMediaType('screen');
+
+        const CANDIDATES = [
+          'solic_crp.html',
+          'termo_solic_crp.html',
+          'form_gera_termo_solic_crp_2.html',
+          'form_gera_termo_solic_crp.html'
+        ];
+        const urlsToTry = [
+          ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
+          ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
+        ];
+
+        let loaded = false; let lastErr = null;
+        for (const u of urlsToTry) {
+          try { await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 }); loaded = true; break; }
+          catch (e) { lastErr = e; }
+        }
+        if (!loaded) throw lastErr || new Error('Falha ao carregar solic_crp.html');
+
+        const payloadForClient = {
+          ...p,
+          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
+            ? p.CRITERIOS_IRREGULARES
+            : String(p.CRITERIOS_IRREGULARES || '')
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean)
+        };
+
+        await page.evaluate((payload) => {
+          window.__TERMO_DATA__ = payload;
+          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+        }, payloadForClient);
+
+        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(() => {});
+        await page.evaluate(() => new Promise((ok) => {
+          if (window.__TERMO_PRINT_READY__ === true) return ok();
+          document.addEventListener('TERMO_PRINT_READY', () => ok(), { once: true });
+          setTimeout(ok, 1500);
+        }));
+
+        function findFont(candidates){
+          const path = require('path'); const fs = require('fs');
+          for (const rel of candidates){
+            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
+            if (fs.existsSync(abs)) {
+              try{
+                const buf = fs.readFileSync(abs);
+                const b64 = buf.toString('base64');
+                const ext = path.extname(abs).toLowerCase();
+                const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : ext === '.ttf' ? 'font/ttf' : 'application/octet-stream';
+                const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
+                return `url(data:${mime};base64,${b64}) format('${fmt}')`;
+              }catch{ return null; }
+            }
+          }
+          return null;
+        }
+        const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf']);
+        const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf']);
+        let fontCSS = '';
+        if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
+        if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
+        fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
+
+        await page.addStyleTag({ content: `
+          ${fontCSS}
+          html, body, #pdf-root { background:#ffffff !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .page-head .logos-wrap { display: none !important; }
+          .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
+          .term-title { margin-top: 2mm !important; }
+        `});
+
+        const path = require('path'); const fs = require('fs');
+        function inlineSvgLocal(relPath) {
+          try {
+            const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
+            const raw = fs.readFileSync(abs, 'utf8');
+            return raw.replace(/<\?xml[^>]*>/g, '').replace(/<!DOCTYPE[^>]*>/g, '')
+              .replace(/\r?\n|\t/g, ' ').replace(/>\s+</g, '><').trim();
+          } catch { return ''; }
+        }
+        const svgSec = inlineSvgLocal('imagens/logo-secretaria-complementar.svg');
+        const svgMps = inlineSvgLocal('imagens/logo-termo-drpps.svg');
+        const headerTemplate = `
+          <style>
+            .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6mm 12mm 4mm; }
+            .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
+            .pdf-header .logo-sec svg { height: 19mm; width:auto; }
+            .pdf-header .logo-mps svg { height: 20mm; width:auto; }
+            .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
+            .date, .title, .url, .pageNumber, .totalPages { display:none; }
+          </style>
+          <div class="pdf-header">
+            <div class="logos">
+              <div class="logo-sec">${svgSec}</div>
+              <div class="logo-mps">${svgMps}</div>
+            </div>
+            <div class="rule"></div>
+          </div>`;
+        const footerTemplate = `<div></div>`;
+
+        const pdf = await page.pdf({
+          printBackground: true,
+          preferCSSPageSize: true,
+          displayHeaderFooter: true,
+          headerTemplate,
+          footerTemplate,
+          margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
+        });
+        await page.close();
+
+        const filenameSafe = (p.ENTE || 'termo-solic-crp')
+          .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="termo-solic-${filenameSafe}.pdf"`);
         res.setHeader('Cache-Control', 'no-store, max-age=0');
         res.send(pdf);
       } catch (e) {
@@ -2913,26 +2472,7 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
   }
 });
 
-
-/* ========= Boot ========= */
 const PORT = Number(process.env.PORT || 3000);
-const HOST = process.env.HOST || '0.0.0.0';
-
-const server = app.listen(PORT, HOST, () => {
-  if (LOG_LEVEL !== 'silent') {
-    console.log(`🚀 RPPS API ouvindo em http://${HOST}:${PORT}`);
-    if (REQUIRE_API_KEY) console.log('🔐 API Key exigida (REQUIRE_API_KEY=1)');
-    console.log(`🛡  trust proxy = ${JSON.stringify(TRUST_PROXY)}`);
-  }
+app.listen(PORT, () => {
+  console.log(`✅ RPPS API ouvindo em :${PORT}`);
 });
-
-// opcional: encerra graciosamente
-function shutdown(sig) {
-  if (LOG_LEVEL !== 'silent') console.log(`\n${sig} recebido. Encerrando...`);
-  try { server.close(() => process.exit(0)); }
-  catch { process.exit(0); }
-}
-process.on('SIGINT',  () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-
-module.exports = app;
