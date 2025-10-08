@@ -1390,8 +1390,9 @@
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300')
         .filter(i => i.checked).map(i => i.value).join('; '),
 
-      REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$('input#reg_sem_jud, input#reg_com_jud')
-        .filter(i => i.checked).map(i => i.value).join('; '),
+      REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$(
+        'input#reg_sem_jud, input#reg_com_jud, input#reg_litigios'
+      ).filter(i => i.checked).map(i => i.value).join('; '),
 
       DEFICIT_ATUARIAL: $$('input#eq_implano, input#eq_prazos, input#eq_plano_alt')
         .filter(i => i.checked).map(i => i.value).join('; '),
@@ -1400,8 +1401,10 @@
       CRITERIOS_ESTRUT_ESTABELECIDOS: $$('input#org_ugu, input#org_outros')
         .filter(i => i.checked).map(i => i.value).join('; '),
 
-      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$('input#man_cert, input#man_melhoria, input#man_acomp')
-        .filter(i => i.checked).map(i => i.value).join('; '),
+      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$(
+        'input#man_cert, input#man_melhoria, input#man_acomp, input#man_evolucao, input#man_acomp_atuarial'
+      ).filter(i => i.checked).map(i => i.value).join('; '),
+
 
       // ——— ETAPAS 5–7 ———
       COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked')
