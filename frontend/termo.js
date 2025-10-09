@@ -1,3 +1,4 @@
+// termo.js (ALINHADO AO FORM ETAPAS 1–7)
 (() => {
   'use strict';
 
@@ -5,95 +6,75 @@
   const digits = v => String(v || '').replace(/\D+/g, '');
 
   const fmtCPF  = v => {
-    const d = digits(v).padStart(11, ''); if (d.length !== 11) return v || '';
-    return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    const d = digits(v);
+    return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : (v || '');
   };
 
   const fmtCNPJ = v => {
-    const d = digits(v).padStart(14, ''); if (d.length !== 14) return v || '';
-    return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    const d = digits(v);
+    return d.length === 14 ? d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : (v || '');
   };
 
-  // ÚNICA função de data: aceita 'aaaa-mm-dd' e 'aaaa-mm-ddTHH:MM:SS...' e mantém dd/mm/aaaa
+  // aceita 'aaaa-mm-dd' e 'aaaa-mm-ddTHH:MM:SS...' e mantém dd/mm/aaaa
   const fmtDataBR = v => {
     const s = String(v || '').trim();
     const mISO = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);
     if (mISO) return `${mISO[3]}/${mISO[2]}/${mISO[1]}`;
-    return s; // se já estiver em dd/mm/aaaa, mantém
+    return s;
   };
 
   const setTextAll = (k, v) => {
-    document.querySelectorAll(`[data-k="${k}"]`).forEach(el => el.textContent = v || '');
+    const text = (v == null || String(v).trim() === '') ? '' : v;
+    document.querySelectorAll(`[data-k="${k}"]`).forEach(el => el.textContent = text);
   };
 
   const notInformed = '<em>Não informado.</em>';
 
-  // Mapas para compromissos 5.x
-  const COMP_VALUE_TO_CODE = {
-    'Manter regularidade nos repasses e nas parcelas (arts. 14 e 15 da Portaria MTP 1.467/2022)': '5.1',
-    'Regularidade no encaminhamento de documentos (art. 241 da Portaria MTP 1.467/2022)': '5.2',
-    'Utilizar recursos previdenciários apenas para finalidades legais': '5.3',
-    'Aplicar recursos conforme CMN': '5.4',
-    'Promover adequações na legislação do RPPS': '5.5',
-    'Cumprir Planos de Ação nas fases Específica e de Manutenção': '5.6',
-    'Promover o equilíbrio financeiro e atuarial do RPPS e a sustentabilidade do seu plano de custeio e de benefícios': '5.7'
-  };
-
-  // 7.x a partir de texto livre
-  function extractCond7Codes(raw) {
-    const t = String(raw || '');
-    const seen = new Set();
-    if (/\b7\.?1\b|art\.\s*3\b|requisitos.*anexo\s*xviii/i.test(t)) seen.add('7.1');
-    if (/\b7\.?2\b|planos?\s*de\s*ação|art\.\s*4\b/i.test(t))        seen.add('7.2');
-    if (/\b7\.?3\b|art\.\s*6\b|prazos|condiç|parcelament/i.test(t))  seen.add('7.3');
-    if (/\b7\.?4\b|n[aã]o\s+ingresso\s+com\s+a[cç][aã]o|judicial/i.test(t)) seen.add('7.4');
-    ['7.1','7.2','7.3','7.4'].forEach(code => { if (new RegExp(code.replace('.','\\.')).test(t)) seen.add(code); });
-    return ['7.1','7.2','7.3','7.4'].filter(c => seen.has(c));
-  }
-
-  function extractCompCodesFromPayload(p){
-    const seen = new Set();
-    const agg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
-    ['5.1','5.2','5.3','5.4','5.5','5.6','5.7'].forEach(code => {
-      const re = new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`);
-      if (re.test(agg)) seen.add(code);
-    });
-    agg.split(';').map(s=>s.trim()).forEach(label=>{
-      const code = COMP_VALUE_TO_CODE[label];
-      if (code) seen.add(code);
-    });
-    return ['5.1','5.2','5.3','5.4','5.5','5.6','5.7'].filter(c => seen.has(c));
+  // ===== util para filtrar listas por códigos =====
+  function filterBy(listId, codes){
+    const list = document.getElementById(listId);
+    if (!list) return;
+    const items = [...list.querySelectorAll('li')];
+    if (!codes.length){
+      items.forEach(li => li.remove());
+      const li = document.createElement('li'); li.innerHTML = notInformed; list.appendChild(li);
+      return;
+    }
+    items.forEach(li => { if (!codes.includes(li.getAttribute('data-code'))) li.remove(); });
   }
 
   // ========= Render principal =========
-  function renderizarTermo(payload){
-    // 1) Campos diretos
-    setTextAll('uf',          payload.UF || '');
-    setTextAll('ente',        payload.ENTE || '');
-    setTextAll('cnpj_ente',   fmtCNPJ(payload.CNPJ_ENTE || ''));
-    setTextAll('email_ente',  payload.EMAIL_ENTE || '');
-    setTextAll('ug',          payload.UG || '');
-    setTextAll('cnpj_ug',     fmtCNPJ(payload.CNPJ_UG || ''));
-    setTextAll('email_ug',    payload.EMAIL_UG || '');
+  function renderizarTermo(p){
+    // 1) Campos diretos – Etapa 1
+    setTextAll('uf',          p.UF || '');
+    setTextAll('ente',        p.ENTE || '');
+    setTextAll('cnpj_ente',   fmtCNPJ(p.CNPJ_ENTE || ''));
+    setTextAll('email_ente',  p.EMAIL_ENTE || '');
+    setTextAll('ug',          p.UG || '');
+    setTextAll('cnpj_ug',     fmtCNPJ(p.CNPJ_UG || ''));
+    setTextAll('email_ug',    p.EMAIL_UG || '');
 
-    setTextAll('nome_rep_ente',  payload.NOME_REP_ENTE || '');
-    setTextAll('cargo_rep_ente', payload.CARGO_REP_ENTE || '');
-    setTextAll('cpf_rep_ente',   fmtCPF(payload.CPF_REP_ENTE || ''));
-    setTextAll('email_rep_ente', payload.EMAIL_REP_ENTE || '');
+    // Etapa 2 – responsáveis (inclui telefones)
+    setTextAll('nome_rep_ente',  p.NOME_REP_ENTE || '');
+    setTextAll('cargo_rep_ente', p.CARGO_REP_ENTE || '');
+    setTextAll('cpf_rep_ente',   fmtCPF(p.CPF_REP_ENTE || ''));
+    setTextAll('email_rep_ente', p.EMAIL_REP_ENTE || '');
+    setTextAll('tel_rep_ente',   p.TEL_REP_ENTE || '');
 
-    setTextAll('nome_rep_ug',  payload.NOME_REP_UG || '');
-    setTextAll('cargo_rep_ug', payload.CARGO_REP_UG || '');
-    setTextAll('cpf_rep_ug',   fmtCPF(payload.CPF_REP_UG || ''));
-    setTextAll('email_rep_ug', payload.EMAIL_REP_UG || '');
+    setTextAll('nome_rep_ug',  p.NOME_REP_UG || '');
+    setTextAll('cargo_rep_ug', p.CARGO_REP_UG || '');
+    setTextAll('cpf_rep_ug',   fmtCPF(p.CPF_REP_UG || ''));
+    setTextAll('email_rep_ug', p.EMAIL_REP_UG || '');
+    setTextAll('tel_rep_ug',   p.TEL_REP_UG || '');
 
-    setTextAll('data_termo',   fmtDataBR(payload.DATA_TERMO_GERADO || ''));
+    setTextAll('data_termo',   fmtDataBR(p.DATA_TERMO_GERADO || ''));
 
-    // 1.1 – Esfera de Governo (1.1.1 / 1.1.2)
+    // 1.1 – Esfera de Governo
     (function(){
-      const listId = 'opt-1-1';
-      const list = document.getElementById(listId);
+      const list = document.getElementById('opt-1-1');
       if (!list) return;
-      const esfera = String(payload.ESFERA || payload.ESFERA_DE_GOVERNO || '').toLowerCase();
+      const esfRaw = p.ESFERA_GOVERNO ?? p.ESFERA ?? p.ESFERA_DE_GOVERNO;
+      const esfera = Array.isArray(esfRaw) ? esfRaw.join(' ').toLowerCase() : String(esfRaw || '').toLowerCase();
       const codes = [];
       if (/municip/.test(esfera)) codes.push('1.1.1');
       if (/estadual|distrit/.test(esfera)) codes.push('1.1.2');
@@ -106,7 +87,6 @@
         items.forEach(li => { if (!codes.includes(li.getAttribute('data-code'))) li.remove(); });
       }
 
-      // legenda da assinatura (ente municipal x estadual/distrital)
       const sig = document.getElementById('sig-cap-ente');
       if (sig) {
         sig.innerHTML = (/estadual|distrit/.test(esfera))
@@ -115,162 +95,131 @@
       }
     })();
 
-    // ===== Seção 3 – Nova lógica =====
-
-    // 3.1 – Critérios irregulares (lista “opt-3-1” ou fallback “list-3-1”)
+    // ===== Etapa 3 =====
+    // 3.1 – Critérios irregulares
     (function(){
-      const list = document.getElementById('opt-3-1') || document.getElementById('list-3-1');
+      const list = document.getElementById('criterios-list');
       if (!list) return;
+      const arr = Array.isArray(p.CRITERIOS_IRREGULARES)
+        ? p.CRITERIOS_IRREGULARES
+        : String(p.CRITERIOS_IRREGULARES || '')
+            .split(';').map(s=>s.trim()).filter(Boolean);
 
-      // aceita array ou string separada por ';'
-      const arr = Array.isArray(payload.CRITERIOS_IRREGULARES)
-        ? payload.CRITERIOS_IRREGULARES
-        : String(payload.CRITERIOS_IRREGULARES || '')
-            .split(';')
-            .map(s => s.trim())
-            .filter(Boolean);
-
-      const templatedItems = list.querySelectorAll('li[data-value]');
-      if (!arr.length){
-        // sem irregularidade marcada — mostra “Não informado”
-        if (templatedItems.length) templatedItems.forEach(li => li.remove());
-        list.innerHTML = `<li>${notInformed}</li>`;
-        return;
-      }
-
-      if (templatedItems.length){
-        // se o template já tem <li data-value="...">, remove os que não foram marcados
-        templatedItems.forEach(li => {
-          const v = li.getAttribute('data-value') || '';
-          if (!arr.includes(v)) li.remove();
-        });
-      } else {
-        // senão, renderiza itens dinamicamente
-        list.innerHTML = arr.map(v => `<li>${v}</li>`).join('');
-      }
+      list.innerHTML = arr.length ? arr.map(v => `<li>${v}</li>`).join('') : `<li>${notInformed}</li>`;
     })();
 
-    // 3.2 – Adesão sem irregularidades (bloco “blk-3-2-adesao” com <ul> interno)
+    // 3.2 – Adesão sem irregularidades (bullets das finalidades)
     (function(){
       const box = document.getElementById('blk-3-2-adesao');
       if (!box) return;
-
-      const flag = String(payload.ADESAO_SEM_IRREGULARIDADES || '').trim().toUpperCase();
+      const flag = String(p.ADESAO_SEM_IRREGULARIDADES || '').trim().toUpperCase();
       const isYes = (flag === 'SIM' || flag === 'TRUE' || flag === '1' || flag === 'ON' || flag === 'X');
+      if (!isYes){ box.remove(); return; }
 
-      if (!isYes){
-        // se não for o caso, remove o bloco para não aparecer no PDF
-        box.remove();
-        return;
-      }
-
-      // Monta bullets com base nas finalidades informadas
       const reasons = [];
-      if (String(payload.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '').trim()){
-        reasons.push('Manutenção da conformidade.');
-      }
-      if (String(payload.DEFICIT_ATUARIAL || '').trim()){
-        reasons.push('Equacionamento de déficit atuarial e prazos de implementação/adequação.');
-      }
-      if (String(payload.CRITERIOS_ESTRUT_ESTABELECIDOS || '').trim()){
-        reasons.push('Organização do RPPS conforme critérios estruturantes (incl. art. 40, § 20, da CF).');
-      }
-      if (String(payload.OUTRO_CRITERIO_COMPLEXO || '').trim()){
-        reasons.push('Outro critério de maior complexidade para o RPPS/ente.');
-      }
+      if (String(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '').trim()) reasons.push('Manutenção da conformidade.');
+      if (String(p.DEFICIT_ATUARIAL || '').trim())                      reasons.push('Equacionamento de déficit atuarial e prazos de implementação/adequação.');
+      if (String(p.CRITERIOS_ESTRUT_ESTABELECIDOS || '').trim())        reasons.push('Organização do RPPS conforme critérios estruturantes (incl. art. 40, §20, CF).');
+      if (String(p.OUTRO_CRITERIO_COMPLEXO || '').trim())               reasons.push('Outro critério de maior complexidade para o RPPS/ente.');
 
-      const ul = box.querySelector('ul');
-      if (ul) {
-        ul.innerHTML = reasons.length
-          ? reasons.map(r => `<li>${r}</li>`).join('')
-          : `<li>${notInformed}</li>`;
-      }
+      const ul = document.getElementById('finalidades-3-2');
+      if (ul) ul.innerHTML = reasons.length ? reasons.map(r => `<li>${r}</li>`).join('') : `<li>${notInformed}</li>`;
     })();
 
-    // ===== Seções 4–7 (inalteradas) =====
+    // ===== Etapa 4 – FINALIDADES =====
+    // Espera-se p.FINALIDADES como array (ou string ';')
+    const fins = (()=>{
+      if (Array.isArray(p.FINALIDADES)) return p.FINALIDADES;
+      const s = String(p.FINALIDADES || '').trim();
+      return s ? s.split(';').map(x=>x.trim()).filter(Boolean) : [];
+    })().join(' | ').toLowerCase();
 
-    // util para filtrar listas por códigos
-    function filterBy(listId, codes){
-      const list = document.getElementById(listId);
-      if (!list) return;
-      const items = [...list.querySelectorAll('li')];
-      if (!codes.length){
-        items.forEach(li => li.remove());
-        const li = document.createElement('li'); li.innerHTML = notInformed; list.appendChild(li);
-        return;
-      }
-      items.forEach(li => { if (!codes.includes(li.getAttribute('data-code'))) li.remove(); });
-    }
-
-    // 4) A/B – Finalidades iniciais
+    // 4.1 – até 300 parcelas
     (function(){
-      const a = String(payload.CELEBRACAO_TERMO_PARCELA_DEBITOS || '').trim();
-      const b = String(payload.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '').trim();
-      const labels = [];
-      if (a) labels.push('A - Parcelamento de débitos.');
-      if (b) labels.push('B - Regularização de pendências para emissão administrativa e regular do CRP. Detalhamento da(s) finalidade(s)');
-      const el = document.getElementById('finalidades-iniciais');
-      if (el) el.innerHTML = labels.length ? labels.join(' e/ou ') : notInformed;
-    })();
-
-    // 4.1 / 4.2 / 4.3 / 4.4
-    (function(){
-      const raw = String(payload.CELEBRACAO_TERMO_PARCELA_DEBITOS || '');
-      const codes = [];
-      if (/4\.1\.1|sessent|60\b/i.test(raw)) codes.push('4.1.1');
-      if (/4\.1\.2|trezent|300\b/i.test(raw)) codes.push('4.1.2');
+      const codes = /trezent|300\b|parcelament|reparcelament/.test(fins) ? ['4.1.1'] : [];
       filterBy('opt-4-1', codes);
     })();
+
+    // 4.2 – regularização administrativa (3 itens)
     (function(){
-      const raw = String(payload.REGULARIZACAO_PENDEN_ADMINISTRATIVA || '');
       const codes = [];
-      if (/4\.2\.1|sem\s+decis/i.test(raw)) codes.push('4.2.1');
-      if (/4\.2\.2|com\s+decis/i.test(raw)) codes.push('4.2.2');
+      if (/4\.2\.1|sem decis/i.test(fins)) codes.push('4.2.1');
+      if (/4\.2\.2|com decis/i.test(fins)) codes.push('4.2.2');
+      if (/4\.2\.3|lit[ií]gio/.test(fins)) codes.push('4.2.3');
       filterBy('opt-4-2', codes);
     })();
+
+    // 4.3 – déficit atuarial
     (function(){
-      const raw = String(payload.DEFICIT_ATUARIAL || '');
       const codes = [];
-      if (/4\.3\.1|implementa/i.test(raw)) codes.push('4.3.1');
-      if (/4\.3\.2|prazo/i.test(raw))      codes.push('4.3.2');
-      if (/4\.3\.3|altern/i.test(raw))     codes.push('4.3.3');
+      if (/4\.3\.1|implementa..o de plano|equacionamento do d[ée]ficit/.test(fins)) codes.push('4.3.1');
+      if (/4\.3\.2|prazos adicionais|adequ[aá]..o or[çc]ament[áa]ria/.test(fins))   codes.push('4.3.2');
+      if (/4\.3\.3|plano alternativo|55.*§\s*7/.test(fins))                         codes.push('4.3.3');
       filterBy('opt-4-3', codes);
     })();
+
+    // 4.4 – critérios estruturantes
     (function(){
-      const raw = String(payload.CRITERIOS_ESTRUT_ESTABELECIDOS || '');
       const codes = [];
-      if (/4\.4\.1|unidade\s+gestora|\§\s*20/i.test(raw)) codes.push('4.4.1');
-      if (/4\.4\.2|outro\s+crit/i.test(raw))               codes.push('4.4.2');
+      if (/4\.4\.1|unidade gestora [uú]nica|§\s*20/.test(fins)) codes.push('4.4.1');
+      if (/4\.4\.2|outro crit[ée]rio/.test(fins))                codes.push('4.4.2');
       filterBy('opt-4-4', codes);
     })();
 
-    // 5.x (compromissos)
+    // 4.5 – adequações da legislação (item único)
     (function(){
-      const codes = extractCompCodesFromPayload(payload);
+      const codes = /4\.5|adequ[aá]..es da legisla..o|ec\s*103/.test(fins) ? ['4.5'] : [];
+      filterBy('opt-4-5', codes);
+    })();
+
+    // 4.6 – manutenção da conformidade (5 itens)
+    (function(){
+      const codes = [];
+      if (/n[ií]vel\s*ii\b|pequeno porte/.test(fins))                           codes.push('4.6.1');
+      if (/n[ií]vel\s*iii\b|m[eé]dio|grande porte/.test(fins))                  codes.push('4.6.2');
+      if (/n[ií]vel\s*iv\b|porte especial/.test(fins))                          codes.push('4.6.3');
+      if (/evolu[cç][aã]o favor[aá]vel|situa[cç][aã]o financeira e atuarial/.test(fins)) codes.push('4.6.4');
+      if (/acompanhamento atuarial|arts?\.\s*67\s*a\s*69/.test(fins))           codes.push('4.6.5');
+      filterBy('opt-4-6', codes);
+    })();
+
+    // ===== Etapa 5 – Compromissos (5.1 a 5.8) =====
+    (function(){
+      const src = Array.isArray(p.COMPROMISSOS) ? p.COMPROMISSOS.join(' | ')
+                : String(p.COMPROMISSOS || p.COMPROMISSO_FIRMADO_ADESAO || '');
+      const codes = [];
+      ['5.1','5.2','5.3','5.4','5.5','5.6','5.7','5.8'].forEach(code=>{
+        const re = new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`);
+        if (re.test(src)) codes.push(code);
+      });
       filterBy('opt-5', codes);
     })();
 
-    // 6.x
+    // ===== Etapa 6 – Providências (6.1/6.2) =====
     (function(){
-      const raw = String(payload.PROVIDENCIA_NECESS_ADESAO || '');
+      const src = Array.isArray(p.PROVIDENCIAS) ? p.PROVIDENCIAS.join(' | ') : String(p.PROVIDENCIAS || '');
       const codes = [];
-      if (/6\.?1\b|inclus[aã]o|incluir|cadprev/i.test(raw)) codes.push('6.1');
-      if (/6\.?2\b|inexist[eê]ncia|j[aá]\s*regulariz/i.test(raw)) codes.push('6.2');
+      if (/6\.?1\b|inclus[aã]o|cadprev/i.test(src)) codes.push('6.1');
+      if (/6\.?2\b|inexist[eê]ncia|j[aá]\s*regulariz/i.test(src)) codes.push('6.2');
       filterBy('opt-6', codes);
     })();
 
-    // 7 – Condições (apenas marcadas)
+    // ===== Etapa 7 – Condições (7.1–7.4) =====
     (function(){
-      const raw = String(payload.CONDICAO_VIGENCIA || '');
-      const codes = extractCond7Codes(raw);
+      const src = Array.isArray(p.CONDICOES) ? p.CONDICOES.join(' | ') : String(p.CONDICOES || p.CONDICAO_VIGENCIA || '');
+      const codes = [];
+      if (/7\.?1\b|condi[cç][oõ]es.*compromissos/i.test(src)) codes.push('7.1');
+      if (/7\.?2\b|planos?\s*de\s*a[cç][aã]o/i.test(src))     codes.push('7.2');
+      if (/7\.?3\b|art\.\s*7\b|anexo\s*xvii|parcelament/i.test(src)) codes.push('7.3');
+      if (/7\.?4\b|n[aã]o\s+ingresso\s+com\s+a[cç][aã]o|judicial/i.test(src))   codes.push('7.4');
       filterBy('opt-7', codes);
     })();
 
-    // Re-hidrata spans de assinatura que dependem de 'ente/uf'
-    setTextAll('ente', payload.ENTE || '');
-    setTextAll('uf',   payload.UF   || '');
+    // re-hidrata spans usados nas assinaturas
+    setTextAll('ente', p.ENTE || '');
+    setTextAll('uf',   p.UF   || '');
 
-    // 🔔 Sinaliza ao backend (Puppeteer) que terminou de renderizar
+    // 🔔 sinaliza “pronto para imprimir”
     try {
       if (!window.__TERMO_READY_FIRED__) {
         window.__TERMO_READY_FIRED__ = true;
@@ -295,49 +244,55 @@
     catch (e) { console.error('[TERMO_PREVIEW_DATA] render error:', e); }
   }, false);
 
-
   // ========= Fluxo 2: PDF (Puppeteer) =========
   document.addEventListener('TERMO_DATA_READY', () => {
     renderizarTermo(window.__TERMO_DATA__ || {});
   });
 
-  // ========= Fallback: querystring (mantido p/ testes) =========
+  // ========= Fallback: querystring (para testes) =========
   document.addEventListener('DOMContentLoaded', () => {
     if (window.__TERMO_DATA__) { renderizarTermo(window.__TERMO_DATA__ || {}); return; }
-    const p = new URLSearchParams(location.search);
-    if (p.has('uf') || p.has('ente')) {
+    const q = new URLSearchParams(location.search);
+    if (q.has('uf') || q.has('ente')) {
       const payload = {
-        UF: p.get('uf') || '', ENTE: p.get('ente') || '',
-        CNPJ_ENTE: p.get('cnpj_ente') || '', EMAIL_ENTE: p.get('email_ente') || '',
-        UG: p.get('ug') || '', CNPJ_UG: p.get('cnpj_ug') || '', EMAIL_UG: p.get('email_ug') || '',
-        ESFERA: p.get('esfera') || '',
-        NOME_REP_ENTE: p.get('nome_rep_ente') || '', CPF_REP_ENTE: p.get('cpf_rep_ente') || '',
-        CARGO_REP_ENTE: p.get('cargo_rep_ente') || '', EMAIL_REP_ENTE: p.get('email_rep_ente') || '',
-        NOME_REP_UG: p.get('nome_rep_ug') || '', CPF_REP_UG: p.get('cpf_rep_ug') || '',
-        CARGO_REP_UG: p.get('cargo_rep_ug') || '', EMAIL_REP_UG: p.get('email_rep_ug') || '',
+        UF: q.get('uf') || '', ENTE: q.get('ente') || '',
+        CNPJ_ENTE: q.get('cnpj_ente') || '', EMAIL_ENTE: q.get('email_ente') || '',
+        UG: q.get('ug') || '', CNPJ_UG: q.get('cnpj_ug') || '', EMAIL_UG: q.get('email_ug') || '',
+        ESFERA_GOVERNO: q.getAll('esfera') || q.get('esfera') || '',
 
-        //  novos campos (Seção 3)
+        NOME_REP_ENTE: q.get('nome_rep_ente') || '', CPF_REP_ENTE: q.get('cpf_rep_ente') || '',
+        CARGO_REP_ENTE: q.get('cargo_rep_ente') || '', EMAIL_REP_ENTE: q.get('email_rep_ente') || '',
+        TEL_REP_ENTE: q.get('tel_rep_ente') || '',
+
+        NOME_REP_UG: q.get('nome_rep_ug') || '', CPF_REP_UG: q.get('cpf_rep_ug') || '',
+        CARGO_REP_UG: q.get('cargo_rep_ug') || '', EMAIL_REP_UG: q.get('email_rep_ug') || '',
+        TEL_REP_UG: q.get('tel_rep_ug') || '',
+
+        // Etapa 3
         CRITERIOS_IRREGULARES: (()=>{
-          // aceita ?criterio=... múltiplos ou ?criterios=...;...;...
-          const multi = p.getAll('criterio');
+          const multi = q.getAll('criterio'); if (multi && multi.length) return multi;
+          const joined = q.get('criterios') || ''; return joined ? joined.split(';').map(s=>s.trim()).filter(Boolean) : [];
+        })(),
+        ADESAO_SEM_IRREGULARIDADES: q.get('adesao_sem_irregularidades') || '',
+        MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: q.get('manutencao_normas') || '',
+        DEFICIT_ATUARIAL: q.get('deficit') || '',
+        CRITERIOS_ESTRUT_ESTABELECIDOS: q.get('criterios_estrut') || '',
+        OUTRO_CRITERIO_COMPLEXO: q.get('outro_criterio_complexo') || '',
+
+        // Etapa 4 – FINALIDADES (aceita ?fin=... múltiplos ou ?finalidades=...;...;...)
+        FINALIDADES: (()=>{
+          const multi = q.getAll('fin');
           if (multi && multi.length) return multi;
-          const joined = p.get('criterios') || '';
+          const joined = q.get('finalidades') || '';
           return joined ? joined.split(';').map(s=>s.trim()).filter(Boolean) : [];
         })(),
-        ADESAO_SEM_IRREGULARIDADES: p.get('adesao_sem_irregularidades') || '',
-        OUTRO_CRITERIO_COMPLEXO: p.get('outro_criterio_complexo') || '',
 
-        // finalidades (usadas também para bullets do 3.2)
-        CELEBRACAO_TERMO_PARCELA_DEBITOS: p.get('celebracao') || '',
-        REGULARIZACAO_PENDEN_ADMINISTRATIVA: p.get('regularizacao') || '',
-        DEFICIT_ATUARIAL: p.get('deficit') || '',
-        CRITERIOS_ESTRUT_ESTABELECIDOS: p.get('criterios_estrut') || '',
-        MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: p.get('manutencao_normas') || '',
+        // Etapa 5–7
+        COMPROMISSOS: q.getAll('comp') || q.get('compromissos') || '',
+        PROVIDENCIAS: q.getAll('prov') || q.get('providencias') || '',
+        CONDICOES: q.getAll('cond') || q.get('condicoes') || '',
 
-        COMPROMISSO_FIRMADO_ADESAO: p.get('compromisso') || p.get('compromissos') || '',
-        PROVIDENCIA_NECESS_ADESAO: p.get('providencias') || '',
-        CONDICAO_VIGENCIA: p.get('condicao_vigencia') || '',
-        DATA_TERMO_GERADO: p.get('data_termo') || ''
+        DATA_TERMO_GERADO: q.get('data_termo') || ''
       };
       renderizarTermo(payload);
     }
