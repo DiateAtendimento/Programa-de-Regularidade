@@ -96,36 +96,56 @@
     })();
 
     // ===== Etapa 3 =====
-    // 3.1 – Critérios irregulares
+    // 3.1 – Critério(s) irregular(es) no extrato previdenciário
     (function(){
       const list = document.getElementById('criterios-list');
       if (!list) return;
 
-      const arr = Array.isArray(p.CRITERIOS_IRREGULARES)
-        ? p.CRITERIOS_IRREGULARES
-        : String(p.CRITERIOS_IRREGULARES || '')
-            .split(/[;,]/).map(s=>s.trim()).filter(Boolean);
+      const raw = p.CRITERIOS_IRREGULARES;
+      const arr = Array.isArray(raw)
+        ? raw
+        : String(raw || '')
+            .split(/[;,]/)         // aceita ; ou ,
+            .map(s => s.trim())
+            .filter(Boolean);      // remove vazios
 
-      list.innerHTML = arr.length ? arr.map(v => `<li>${v}</li>`).join('') : `<li>${notInformed}</li>`;
+      list.innerHTML = arr.length
+        ? arr.map(v => `<li>${v}</li>`).join('')
+        : '<li><em>Não informado.</em></li>';
     })();
 
-    // 3.2 – Adesão sem irregularidades (lista de motivações)
+    // 3.2 – Adesão sem irregularidades (quando aplicável)
     (function(){
       const box = document.getElementById('blk-3-2-adesao');
-      if (!box) return;
+      const ul  = document.getElementById('finalidades-3-2');
+      if (!box || !ul) return;
+
       const flag = String(p.ADESAO_SEM_IRREGULARIDADES || '').trim().toUpperCase();
       const isYes = (flag === 'SIM' || flag === 'TRUE' || flag === '1' || flag === 'ON' || flag === 'X');
-      if (!isYes){ box.remove(); return; }
 
+      // Se não for adesão "sem irregularidades", mostramos "Não informado."
+      if (!isYes) {
+        ul.innerHTML = '<li><em>Não informado.</em></li>';
+        return;
+      }
+
+      // Quando for "SIM", lista as finalidades/motivos marcados nas etapas
       const reasons = [];
-      if (String(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '').trim()) reasons.push('Manutenção da conformidade.');
-      if (String(p.DEFICIT_ATUARIAL || '').trim())                      reasons.push('Equacionamento de déficit atuarial e prazos.');
-      if (String(p.CRITERIOS_ESTRUT_ESTABELECIDOS || '').trim())        reasons.push('Organização do RPPS conforme critérios estruturantes.');
-      if (String(p.OUTRO_CRITERIO_COMPLEXO || '').trim())               reasons.push('Outro critério de maior complexidade.');
+      if (String(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '').trim())
+        reasons.push('Manutenção da conformidade.');
+      if (String(p.DEFICIT_ATUARIAL || '').trim())
+        reasons.push('Equacionamento de déficit atuarial e prazos.');
+      if (String(p.CRITERIOS_ESTRUT_ESTABELECIDOS || '').trim())
+        reasons.push('Organização do RPPS conforme critérios estruturantes.');
+      if (String(p.OUTRO_CRITERIO_COMPLEXO || '').trim())
+        reasons.push('Outro critério de maior complexidade.');
 
-      const ul = document.getElementById('finalidades-3-2');
-      if (ul) ul.innerHTML = reasons.length ? reasons.map(r => `<li>${r}</li>`).join('') : `<li>${notInformed}</li>`;
+      ul.innerHTML = reasons.length
+        ? reasons.map(r => `<li>${r}</li>`).join('')
+        : '<li><em>Não informado.</em></li>';
     })();
+
+
 
     // ===== Etapa 4 – FINALIDADES =====
     // Criamos uma string-aggregator só com os campos previstos nas etapas
