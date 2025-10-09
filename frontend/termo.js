@@ -114,36 +114,38 @@
         : '<li><em>Não informado.</em></li>';
     })();
 
-    // 3.2 – Adesão sem irregularidades (quando aplicável)
-    (function(){
-      const box = document.getElementById('blk-3-2-adesao');
-      const ul  = document.getElementById('finalidades-3-2');
-      if (!box || !ul) return;
+  // 3.2 – Adesão sem irregularidades (quando aplicável)
+  (function(){
+    const box = document.getElementById('blk-3-2-adesao');
+    const ul  = document.getElementById('finalidades-3-2');
+    if (!box || !ul) return;
 
-      const flag = String(p.ADESAO_SEM_IRREGULARIDADES || '').trim().toUpperCase();
-      const isYes = (flag === 'SIM' || flag === 'TRUE' || flag === '1' || flag === 'ON' || flag === 'X');
+    const flag = String(p.ADESAO_SEM_IRREGULARIDADES || '').trim().toUpperCase();
+    const isYes = /^(SIM|TRUE|1|ON|X)$/.test(flag);
 
-      // Se não for adesão "sem irregularidades", mostramos "Não informado."
-      if (!isYes) {
-        ul.innerHTML = '<li><em>Não informado.</em></li>';
-        return;
-      }
+    if (!isYes) {
+      // quando não se aplica, esconda o bloco (ou deixe, se preferir, com "Não informado.")
+      box.style.display = 'none';
+      ul.innerHTML = ''; // ou: '<li><em>Não informado.</em></li>';
+      return;
+    }
 
-      // Quando for "SIM", lista as finalidades/motivos marcados nas etapas
-      const reasons = [];
-      if (String(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '').trim())
-        reasons.push('Manutenção da conformidade.');
-      if (String(p.DEFICIT_ATUARIAL || '').trim())
-        reasons.push('Equacionamento de déficit atuarial e prazos.');
-      if (String(p.CRITERIOS_ESTRUT_ESTABELECIDOS || '').trim())
-        reasons.push('Organização do RPPS conforme critérios estruturantes.');
-      if (String(p.OUTRO_CRITERIO_COMPLEXO || '').trim())
-        reasons.push('Outro critério de maior complexidade.');
+    // garante exibição quando SIM
+    box.style.display = '';
 
-      ul.innerHTML = reasons.length
-        ? reasons.map(r => `<li>${r}</li>`).join('')
-        : '<li><em>Não informado.</em></li>';
-    })();
+    const reasons = ['Adesão realizada sem irregularidades no extrato previdenciário.'];
+    const maybePush = (cond, text) => { if (String(cond || '').trim()) reasons.push(text); };
+
+    // Finalidades iniciais (4.x) — adiciona quando houver texto
+    maybePush(p.CELEBRACAO_TERMO_PARCELA_DEBITOS,        'Celebração de termos de (re)parcelamento.');
+    maybePush(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA,     'Regularização de pendências para emissão administrativa do CRP.');
+    maybePush(p.DEFICIT_ATUARIAL,                        'Equacionamento do déficit atuarial.');
+    maybePush(p.CRITERIOS_ESTRUT_ESTABELECIDOS,          'Adequação a critérios estruturantes do RPPS.');
+    maybePush(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS,   'Manutenção da conformidade às normas gerais.');
+    maybePush(p.OUTRO_CRITERIO_COMPLEXO,                 'Outro critério de maior complexidade.');
+
+    ul.innerHTML = reasons.map(r => `<li>${r}</li>`).join('');
+  })();
 
 
 

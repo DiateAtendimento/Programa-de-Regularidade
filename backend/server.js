@@ -1318,6 +1318,7 @@ const schemaGerarTermo = Joi.object({
     Joi.array().items(Joi.string().trim()),
     Joi.string().allow('')
   ).optional(),
+  ADESAO_SEM_IRREGULARIDADES: Joi.string().allow(''),
   CELEBRACAO_TERMO_PARCELA_DEBITOS: Joi.string().allow(''),
   REGULARIZACAO_PENDEN_ADMINISTRATIVA: Joi.string().allow(''),
   DEFICIT_ATUARIAL: Joi.string().allow(''),
@@ -1358,6 +1359,7 @@ const schemaTermoPdf = Joi.object({
   COMPROMISSO_FIRMADO_ADESAO: Joi.string().allow(''),
   PROVIDENCIA_NECESS_ADESAO: Joi.string().allow(''),
   CONDICAO_VIGENCIA: Joi.string().allow(''),
+  ADESAO_SEM_IRREGULARIDADES: Joi.string().allow(''),
   DATA_TERMO_GERADO: Joi.string().allow(''),
 }).unknown(true);
 
@@ -1439,7 +1441,12 @@ const schemaSolicCrp = Joi.object({
   CARGO_REP_UG: Joi.string().trim().min(1).required(),
   EMAIL_REP_UG: Joi.string().email().allow(''),
   TEL_REP_UG: Joi.string().allow(''),
-  CRITERIOS_IRREGULARES: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string().allow('')).optional(),
+  CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
+   ? p.CRITERIOS_IRREGULARES
+   : String(p.CRITERIOS_IRREGULARES || '')
+       .split(/[;,]/)
+       .map(s => s.trim())
+       .filter(Boolean),
   FASE_PROGRAMA: Joi.string().valid('4.1','4.2','4.3','4.4','4.5','4.6').allow(''),
   F41_OPCAO: Joi.string().allow(''),
   F42_LISTA: Joi.array().items(Joi.string()).optional(),
@@ -1788,6 +1795,7 @@ app.post('/api/gerar-termo', async (req, res) => {
       'UG','CNPJ_UG','EMAIL_UG',
       'NOME_REP_UG','CARGO_REP_UG','CPF_REP_UG','EMAIL_REP_UG',
       'CRITERIOS_IRREGULARES',
+      'ADESAO_SEM_IRREGULARIDADES',
       'CELEBRACAO_TERMO_PARCELA_DEBITOS',
       'REGULARIZACAO_PENDEN_ADMINISTRATIVA',
       'DEFICIT_ATUARIAL',
@@ -1847,6 +1855,7 @@ app.post('/api/gerar-termo', async (req, res) => {
       NOME_REP_UG: norm(p.NOME_REP_UG), CARGO_REP_UG: norm(p.CARGO_REP_UG),
       CPF_REP_UG: digits(p.CPF_REP_UG), EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
       CRITERIOS_IRREGULARES: criterios.join(', '),
+      ADESAO_SEM_IRREGULARIDADES: norm(p.ADESAO_SEM_IRREGULARIDADES),
       CELEBRACAO_TERMO_PARCELA_DEBITOS: norm(p.CELEBRACAO_TERMO_PARCELA_DEBITOS),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: norm(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA),
       DEFICIT_ATUARIAL: norm(p.DEFICIT_ATUARIAL),
