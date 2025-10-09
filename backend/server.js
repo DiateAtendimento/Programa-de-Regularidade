@@ -1229,7 +1229,10 @@ app.post('/api/termos-registrados', async (req, res) => {
     };
 
     const criteriosStr = (getVal(last,'CRITERIOS_IRREGULARES') || '').toString().trim();
-    const criteriosArr = criteriosStr ? criteriosStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const criteriosArr = criteriosStr
+      ? criteriosStr.split(/[;,]/).map(s => s.trim()).filter(Boolean)
+      : [];
+
 
     // CRP (rápido)
     const crpFast = await findCRPByCnpjFast(sCrp, cnpj) || {};
@@ -1442,9 +1445,9 @@ const schemaSolicCrp = Joi.object({
   EMAIL_REP_UG: Joi.string().email().allow(''),
   TEL_REP_UG: Joi.string().allow(''),
   CRITERIOS_IRREGULARES: Joi.alternatives().try(
-      Joi.array().items(Joi.string().trim()),
-      Joi.string().allow('')
-    ).optional(),
+    Joi.array().items(Joi.string().trim()),
+    Joi.string().allow('')
+  ).optional(),
   FASE_PROGRAMA: Joi.string().valid('4.1','4.2','4.3','4.4','4.5','4.6').allow(''),
   F41_OPCAO: Joi.string().allow(''),
   F42_LISTA: Joi.array().items(Joi.string()).optional(),
@@ -1833,9 +1836,10 @@ app.post('/api/gerar-termo', async (req, res) => {
     const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
       ? p.CRITERIOS_IRREGULARES
       : String(p.CRITERIOS_IRREGULARES || '')
-          .split(',')
+          .split(/[;,]/)
           .map(s => s.trim())
           .filter(Boolean);
+
 
     const { DATA, HORA, ANO, MES } = nowBR();
 
@@ -1992,8 +1996,9 @@ app.post('/api/termo-pdf', async (req, res) => {
       let page; let browser; let triedRestart = false;
       try {
         const compAgg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
-        const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6','5.7']
+        const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6','5.7','5.8']
           .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
+
 
         const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
         const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
@@ -2037,12 +2042,20 @@ app.post('/api/termo-pdf', async (req, res) => {
         }
         if (!loaded) throw lastErr || new Error('Falha ao carregar termo.html');
 
+        const toArr = (val) => Array.isArray(val)
+          ? val
+          : String(val || '')
+              .split(/[;,]/)           // ; ou ,
+              .map(s => s.trim())
+              .filter(Boolean);
+
         const payloadForClient = {
           ...p,
           ESFERA: p.ESFERA || '',
-          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES : [],
+          CRITERIOS_IRREGULARES: toArr(p.CRITERIOS_IRREGULARES),
           COMP_CODES: compCodes
         };
+
 
         await page.evaluate((payload) => {
           window.__TERMO_DATA__ = payload;

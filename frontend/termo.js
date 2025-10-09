@@ -121,31 +121,38 @@
     if (!box || !ul) return;
 
     const flag = String(p.ADESAO_SEM_IRREGULARIDADES || '').trim().toUpperCase();
-    const isYes = /^(SIM|TRUE|1|ON|X)$/.test(flag);
+    const isYes = (flag === 'SIM' || flag === 'TRUE' || flag === '1' || flag === 'ON' || flag === 'X');
 
     if (!isYes) {
-      // quando não se aplica, esconda o bloco (ou deixe, se preferir, com "Não informado.")
-      box.style.display = 'none';
-      ul.innerHTML = ''; // ou: '<li><em>Não informado.</em></li>';
+      // Mostra explicitamente o fallback
+      ul.innerHTML = '<li><em>Não informado.</em></li>';
+      // (opcional) garantir que o bloco apareça mesmo assim:
+      // box.style.removeProperty('display');
       return;
     }
 
-    // garante exibição quando SIM
-    box.style.display = '';
+    // Se SIM, garante visibilidade
+    box.style.removeProperty('display');
 
-    const reasons = ['Adesão realizada sem irregularidades no extrato previdenciário.'];
-    const maybePush = (cond, text) => { if (String(cond || '').trim()) reasons.push(text); };
+    const reasons = [];
+    // 1 item “fixo” exigido
+    reasons.push('Adesão realizada sem irregularidades no extrato previdenciário');
 
-    // Finalidades iniciais (4.x) — adiciona quando houver texto
-    maybePush(p.CELEBRACAO_TERMO_PARCELA_DEBITOS,        'Celebração de termos de (re)parcelamento.');
-    maybePush(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA,     'Regularização de pendências para emissão administrativa do CRP.');
-    maybePush(p.DEFICIT_ATUARIAL,                        'Equacionamento do déficit atuarial.');
-    maybePush(p.CRITERIOS_ESTRUT_ESTABELECIDOS,          'Adequação a critérios estruturantes do RPPS.');
-    maybePush(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS,   'Manutenção da conformidade às normas gerais.');
-    maybePush(p.OUTRO_CRITERIO_COMPLEXO,                 'Outro critério de maior complexidade.');
+    // (Opcional) listar finalidades iniciais do payload, quando vierem não-vazias
+    const mapFinalidades = [
+      ['CELEBRACAO_TERMO_PARCELA_DEBITOS', 'Celebração de termos de parcelamento/reparcelamento.'],
+      ['REGULARIZACAO_PENDEN_ADMINISTRATIVA', 'Regularização de pendências administrativas.'],
+      ['DEFICIT_ATUARIAL', 'Equacionamento de déficit atuarial/prazos.'],
+      ['CRITERIOS_ESTRUT_ESTABELECIDOS', 'Organização por critérios estruturantes.'],
+      ['MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS', 'Manutenção da conformidade às normas gerais.']
+    ];
+    for (const [k, txt] of mapFinalidades) {
+      if (String(p[k] || '').trim()) reasons.push(txt);
+    }
 
     ul.innerHTML = reasons.map(r => `<li>${r}</li>`).join('');
   })();
+
 
 
 
@@ -204,17 +211,20 @@
       filterBy('opt-4-5', codes);
     })();
 
-    // 4.6 – Manutenção da Conformidade (decodifica “nível II/III/IV…”)
+    // 4.6 – Manutenção da Conformidade
     (function(){
       const src = String(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '').toLowerCase();
       const codes = [];
       if (/n[ií]vel\s*ii\b|pequeno\s+porte/.test(src)) codes.push('4.6.1');
       if (/n[ií]vel\s*iii\b|m[eé]dio|grande\s+porte/.test(src)) codes.push('4.6.2');
       if (/n[ií]vel\s*iv\b|porte\s+especial/.test(src)) codes.push('4.6.3');
-      if (/evolu[cç][aã]o\s+favor[aá]vel|situa[cç][aã]o\s+financeira\s+e\s+atuarial/.test(src)) codes.push('4.6.4');
-      if (/acompanhamento\s+atuarial|arts?\.\s*67\s*a\s*69/.test(src)) codes.push('4.6.5');
       filterBy('opt-4-6', codes);
     })();
+
+    // Sinalizar que terminou de renderizar (usado pelo Puppeteer)
+    window.__TERMO_PRINT_READY__ = true;
+    document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY'));
+
 
     // ===== Etapa 5 – Compromissos (5.1 a 5.8) =====
     (function(){
