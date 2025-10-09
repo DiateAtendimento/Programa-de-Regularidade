@@ -1346,7 +1346,10 @@ const schemaTermoPdf = Joi.object({
   CPF_REP_UG: Joi.string().allow(''),
   CARGO_REP_UG: Joi.string().allow(''),
   EMAIL_REP_UG: Joi.string().allow(''),
-  CRITERIOS_IRREGULARES: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string()).optional(),
+  CRITERIOS_IRREGULARES: Joi.alternatives().try(
+    Joi.array().items(Joi.string().trim()),
+    Joi.string().allow('')
+  ).optional(),
   CELEBRACAO_TERMO_PARCELA_DEBITOS: Joi.string().allow(''),
   REGULARIZACAO_PENDEN_ADMINISTRATIVA: Joi.string().allow(''),
   DEFICIT_ATUARIAL: Joi.string().allow(''),
@@ -1378,7 +1381,10 @@ const schemaTermoSolicPdf = Joi.object({
   CARGO_REP_UG: Joi.string().allow(''),
   EMAIL_REP_UG: Joi.string().allow(''),
   TEL_REP_UG: Joi.string().allow(''),
-  CRITERIOS_IRREGULARES: Joi.alternatives().try(Joi.array().items(Joi.string()), Joi.string()).optional(),
+  CRITERIOS_IRREGULARES: Joi.alternatives().try(
+    Joi.array().items(Joi.string().trim()),
+    Joi.string().allow('')
+  ).optional(),
   FASE_PROGRAMA: Joi.string().valid('4.1','4.2','4.3','4.4','4.5','4.6').allow(''),
   F41_OPCAO: Joi.string().allow(''),
   F42_LISTA: Joi.array().items(Joi.string()).optional(),
