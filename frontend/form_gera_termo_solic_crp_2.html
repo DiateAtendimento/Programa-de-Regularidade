@@ -82,18 +82,13 @@
             </div>
           </section>
 
-          <!-- ETAPA 1: Identificação do ente -->
+          <!-- ETAPA 1 -->
           <section class="app-section" data-step="1">
             <div class="section-head">
-              <p class="mb-2">
-                O Regime Próprio de Previdência Social (RPPS) abaixo especificado requer a emissão de Certificado de Regularidade Previdenciária, na forma emergencial, para execução do Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social instituído pelo Ministério da Previdência Social, conforme previsto no art. 281-A e Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022.
-              </p>
-              <div class="gescon-breadcrumb small">
-                <span><strong>Consulta Gescon:</strong> <span id="infoNumGescon" class="text-body" data-bind="N_GESCON">—</span></span>
-                <span class="sep">•</span>
-                <span><strong>Data do encaminhamento:</strong> <span id="infoDataEncGescon" class="text-body" data-bind="DATA_ENC_VIA_GESCON">—</span></span>
-              </div>
               <h2 class="section-title">1. Identificação do ente federativo</h2>
+              <p class="small text-muted mb-0">
+                Informe a esfera de Governo, o ente federativo e o órgão ou entidade gestora do RPPS.
+              </p>
             </div>
 
             <div class="mb-3" id="grpESFERA">
@@ -142,10 +137,10 @@
                 <input type="email" id="EMAIL_ENTE" class="form-control" placeholder="ente@exemplo.gov.br" />
               </div>
 
-              <div class="col-12 mt-2"><div class="sub-title">1.3 Regime Próprio de Previdência Social (RPPS)</div></div>
+              <div class="col-12 mt-2"><div class="sub-title">1.3.1 Regime Próprio de Previdência Social (RPPS)</div></div>
 
               <div class="col-md-6">
-                <label class="form-label" for="UG">Unidade Gestora</label>
+                <label class="form-label" for="UG">1.3.2 Unidade Gestora</label>
                 <input type="text" id="UG" class="form-control" />
               </div>
 
@@ -161,25 +156,31 @@
             </div>
           </section>
 
-          <!-- ETAPA 2: Responsáveis (auto a partir de Termos_registrados) -->
+          <!-- ETAPA 2 -->
           <section class="app-section" data-step="2">
             <div class="section-head">
               <h2 class="section-title">2. Identificação dos responsáveis</h2>
-
+              <p class="small text-muted mb-0">
+                Digite o CPF e clique em <em>Pesquisar</em> em cada subitem. Os campos serão preenchidos automaticamente após a consulta.
+              </p>
             </div>
 
             <div class="card-subblock mb-3">
               <div class="sub-title">2.1 Representante legal do ente federativo</div>
               <div class="row g-3 align-items-end">
+                <!-- CPF + Pesquisar -->
                 <div class="col-12 col-md-6">
                   <label class="form-label" for="CPF_REP_ENTE">CPF</label>
                   <input type="text" id="CPF_REP_ENTE" class="form-control" placeholder="000.000.000-00" />
                 </div>
                 <div class="col-auto">
                   <label class="d-none d-md-block">&nbsp;</label>
-                  <button type="button" id="btnPesqRepEnte" class="btn btn-outline-primary">Pesquisar</button>
+                  <button type="button" id="btnPesqRepEnte" class="btn btn-outline-primary">
+                    Pesquisar
+                  </button>
                 </div>
 
+                <!-- Campos empilhados -->
                 <div class="col-12">
                   <label class="form-label" for="NOME_REP_ENTE">Nome</label>
                   <input id="NOME_REP_ENTE" class="form-control" />
@@ -202,15 +203,19 @@
             <div class="card-subblock">
               <div class="sub-title">2.2 Representante legal do RPPS</div>
               <div class="row g-3 align-items-end">
+                <!-- CPF + Pesquisar -->
                 <div class="col-12 col-md-6">
                   <label class="form-label" for="CPF_REP_UG">CPF</label>
                   <input type="text" id="CPF_REP_UG" class="form-control" placeholder="000.000.000-00" />
                 </div>
                 <div class="col-auto">
                   <label class="d-none d-md-block">&nbsp;</label>
-                  <button type="button" id="btnPesqRepUg" class="btn btn-outline-primary">Pesquisar</button>
+                  <button type="button" id="btnPesqRepUg" class="btn btn-outline-primary">
+                    Pesquisar
+                  </button>
                 </div>
 
+                <!-- Campos empilhados -->
                 <div class="col-12">
                   <label class="form-label" for="NOME_REP_UG">Nome</label>
                   <input id="NOME_REP_UG" class="form-control" />
@@ -231,61 +236,158 @@
             </div>
           </section>
 
-          <!-- ETAPA 3: Situação relativa ao CRP (de Termos_registrados/CRP) -->
-          <section class="app-section" data-step="3">
-            <div class="section-head">
-              <h2 class="section-title">3. Situação relativa ao CRP</h2>
+          <!-- ETAPA 3 -->
+          <section id="secCRP" class="app-section" data-step="3">
+            <h2 class="section-title">3. Situação relativa ao CRP</h2>
 
-            </div>
+            <!-- 3.1 -->
+            <div class="mb-3">
+              <div class="sub-title">3.1 Critério(s) irregular(es) no extrato previdenciário</div>
+              <p class="small text-muted mb-2">Selecione todos os itens apontados como irregulares no extrato.</p>
 
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label" for="DATA_VENCIMENTO_ULTIMO_CRP">3.1 Data de vencimento do último CRP</label>
-                <input type="date" id="DATA_VENCIMENTO_ULTIMO_CRP" class="form-control" />
-              </div>
-            </div>
-
-            <div class="mt-3">
-              <div class="sub-title">3.2 Tipo de emissão do último CRP</div>
-              <div class="d-flex flex-column gap-2">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="TIPO_EMISSAO_ULTIMO_CRP" id="em_adm" value="Administrativa">
-                  <label class="form-check-label" for="em_adm">Administrativa</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="TIPO_EMISSAO_ULTIMO_CRP" id="em_jud" value="Judicial">
-                  <label class="form-check-label" for="em_jud">Judicial</label>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-4">
-              <div class="sub-title">3.3 Critério(s) irregular(es) no extrato previdenciário</div>
-              <div class="small text-muted mb-2">Selecione todos os itens apontados como irregulares no extrato.</div>
-              
               <div class="d-flex flex-column gap-2" id="grpCRITERIOS">
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="1-Aplicações Financeiras Resolv. CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)"><span class="form-check-label">1 - Aplicações Financeiras – Bacen/CMN – Adequação da DAIR e da Política de Investimentos (objeto de PAP)</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="2-Atendimento à fiscalização"><span class="form-check-label">2 - Atendimento à fiscalização</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="3-Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar"><span class="form-check-label">3 - Atendimento a solicitações de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="4-Caráter contributivo – repasses (objeto de Processo Administrativo Previdenciário)"><span class="form-check-label">4 - Caráter contributivo – repasses (objeto de Processo Administrativo Previdenciário)</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="5-DPIN – Demonstrativo da Política de Investimentos – Consistência"><span class="form-check-label">5 - DPIN – Demonstrativo da Política de Investimentos – Consistência</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="6-DPIN – Demonstrativo da Política de Investimentos – Encaminhamento"><span class="form-check-label">6 - DPIN – Demonstrativo da Política de Investimentos – Encaminhamento</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="7-DAR – Demonstrativo de Aplicações e Investimentos dos Recursos – Consistência"><span class="form-check-label">7 - DAR – Demonstrativo de Aplicações e Investimentos dos Recursos – Consistência</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="8-DAR – Demonstrativo de Aplicações e Investimentos dos Recursos – Encaminhamento"><span class="form-check-label">8 - DAR – Demonstrativo de Aplicações e Investimentos dos Recursos – Encaminhamento</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="9-DIPR – Demonstrativo de Informações Previdenciárias e Repasses – Consistência e caráter contributivo"><span class="form-check-label">9 - DIPR – Demonstrativo de Informações Previdenciárias e Repasses – Consistência e caráter contributivo</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="10-DIPR – Demonstrativo de Informações Previdenciárias e Repasses – Encaminhamento"><span class="form-check-label">10 - DIPR – Demonstrativo de Informações Previdenciárias e Repasses – Encaminhamento</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="11-Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi"><span class="form-check-label">11 - Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="12-Equilíbrio Financeiro e Atuarial – encaminhamento da NTA, DRAA e resultados das análises"><span class="form-check-label">12 - Equilíbrio Financeiro e Atuarial – encaminhamento da NTA, DRAA e resultados das análises</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="13-Existência e funcionamento de unidade gestora única e de regime próprio únicos"><span class="form-check-label">13 - Existência e funcionamento de unidade gestora única e de regime próprio únicos</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="14-Filiação ao RPPS e regras de concessão, cálculo e reajuste de benefícios (art. 40 da CF)"><span class="form-check-label">14 - Filiação ao RPPS e regras de concessão, cálculo e reajuste de benefícios (art. 40 da CF)</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="15-Instituição do regime de previdência complementar – aprovação da lei"><span class="form-check-label">15 - Instituição do regime de previdência complementar – aprovação da lei</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="16-Observância dos limites de contribuição do ente"><span class="form-check-label">16 - Observância dos limites de contribuição do ente</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="17-Observância dos limites de contribuição dos segurados e beneficiários"><span class="form-check-label">17 - Observância dos limites de contribuição dos segurados e beneficiários</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="18-Operacionalização da compensação previdenciária – termo de adesão e contrato com a empresa de tecnologia"><span class="form-check-label">18 - Operacionalização da compensação previdenciária – termo de adesão e contrato com a empresa de tecnologia</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="19-Plano de benefícios integrado apenas por aposentadorias e pensões por morte"><span class="form-check-label">19 - Plano de benefícios integrado apenas por aposentadorias e pensões por morte</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="20-Requisitos para dirigentes, conselhos deliberativo e fiscal e comitê de investimentos do RPPS"><span class="form-check-label">20 - Requisitos para dirigentes, conselhos deliberativo e fiscal e comitê de investimentos do RPPS</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="21-Utilização dos recursos previdenciários (objeto de PAP)"><span class="form-check-label">21 - Utilização dos recursos previdenciários (objeto de PAP)</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="22-Instituição do regime de previdência complementar – Aprovação e operacionalização do convênio de adesão"> <span class="form-check-label">22 - Instituição do regime de previdência complementar – Aprovação e operacionalização do convênio de adesão</span></label>
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="1-Atendimento à solicitação de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar">
+                  <span class="form-check-label">1 - Atendimento à solicitação de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="2-Aplicações Financeiras Resolução CMN – Adequação DAIR e Política">
+                  <span class="form-check-label">2 - Aplicações Financeiras (Res. CMN) – Adequação do DAIR e da Política</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="3-Investimentos (objeto de PAP)">
+                  <span class="form-check-label">3 - Investimentos (objeto de PAP)</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="4-Atendimento à fiscalização">
+                  <span class="form-check-label">4 - Atendimento à fiscalização</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="5-Caráter contributivo – Repasse (objeto de Processo Administrativo Previdenciário)">
+                  <span class="form-check-label">5 - Caráter contributivo – Repasse (objeto de Processo Administrativo Previdenciário)</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="6-DPIN – Consistência">
+                  <span class="form-check-label">6 - Demonstrativo da Política de Investimentos (DPIN) – Consistência</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="7-DPIN – Encaminhamento">
+                  <span class="form-check-label">7 - Demonstrativo da Política de Investimentos (DPIN) – Encaminhamento</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="8-DAIR – Consistência">
+                  <span class="form-check-label">8 - Demonstrativo das Aplicações e Investimentos dos Recursos (DAIR) – Consistência</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="9-DAIR – Encaminhamento">
+                  <span class="form-check-label">9 - Demonstrativo das Aplicações e Investimentos dos Recursos (DAIR) – Encaminhamento</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="10-DIPR – Consistência e Caráter Contributivo">
+                  <span class="form-check-label">10 - Demonstrativo de Informações Previdenciárias e Repasses (DIPR) – Consistência e Caráter Contributivo</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="11-DIPR – Encaminhamento">
+                  <span class="form-check-label">11 - Demonstrativo de Informações Previdenciárias e Repasses (DIPR) – Encaminhamento</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="12-Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi">
+                  <span class="form-check-label">12 - Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="13-Equilíbrio Financeiro e Atuarial – Encaminhamento NTA, DRAA e resultados das análises">
+                  <span class="form-check-label">13 - Equilíbrio Financeiro e Atuarial – Encaminhamento NTA, DRAA e resultados das análises</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="14-Existência e funcionamento de unidade gestora e regime próprio únicos">
+                  <span class="form-check-label">14 - Existência e funcionamento de unidade gestora e regime próprio únicos</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="15-Filiação ao RPPS e regras de concessão, cálculo e reajustamento dos benefícios, nos termos do art. 40 da Constituição Federal">
+                  <span class="form-check-label">15 - Filiação ao RPPS e regras de concessão, cálculo e reajustamento dos benefícios (art. 40 da CF)</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="16-Instituição do regime de previdência complementar – Aprovação da lei">
+                  <span class="form-check-label">16 - Instituição do regime de previdência complementar – Aprovação da lei</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="17-Observância dos limites de contribuição do ente">
+                  <span class="form-check-label">17 - Observância dos limites de contribuição do ente</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="18-Observância dos limites de contribuição dos segurados e beneficiários">
+                  <span class="form-check-label">18 - Observância dos limites de contribuição dos segurados e beneficiários</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="19-Operacionalização da compensação previdenciária – Termo de Adesão e Contrato com a empresa de tecnologia">
+                  <span class="form-check-label">19 - Operacionalização da compensação previdenciária – Termo de Adesão e Contrato com a empresa de tecnologia</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="20-Plano de benefícios integrado apenas por aposentadorias e pensões por morte">
+                  <span class="form-check-label">20 - Plano de benefícios integrado apenas por aposentadorias e pensões por morte</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="21-Requisitos para dirigentes, membros titulares dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS">
+                  <span class="form-check-label">21 - Requisitos para dirigentes, membros titulares dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS</span>
+              </label>
+
+              <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="22-Utilização dos recursos previdenciários (objeto de PAP)">
+                  <span class="form-check-label">22 - Utilização dos recursos previdenciários (objeto de PAP)</span>
+              </label>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <!-- 3.2 -->
+            <div class="mb-2">
+              <div class="sub-title mb-2">3.2 Adesão sem irregularidades (finalidades)</div>
+
+              <label class="form-check mb-2">
+                <input id="chkSemIrregularidades" class="form-check-input me-2" type="checkbox" name="ADESAO_SEM_IRREGULARIDADES" value="SIM">
+                <span class="form-check-label">
+                  O RPPS <strong>não apresenta, atualmente, irregularidades</strong> nos critérios do extrato previdenciário, mas adere ao Pró-Regularidade RPPS com a finalidade de:
+                </span>
+              </label>
+
+              <div id="grpFinalidades" class="card-subblock">
+                <label class="form-check mb-1">
+                  <input class="form-check-input me-2 fin-3-2" type="checkbox" name="MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS" value="SIM">
+                  <span class="form-check-label">Manutenção da conformidade</span>
+                </label>
+                <label class="form-check mb-1">
+                  <input class="form-check-input me-2 fin-3-2" type="checkbox" name="DEFICIT_ATUARIAL" value="SIM">
+                  <span class="form-check-label">Equacionamento de déficit atuarial ou prazos adicionais para implementação</span>
+                </label>
+                <label class="form-check mb-1">
+                  <input class="form-check-input me-2 fin-3-2" type="checkbox" name="CRITERIOS_ESTRUT_ESTABELECIDOS" value="SIM">
+                  <span class="form-check-label">Organização do RPPS conforme critérios estruturantes (inclui art. 40, §20, CF)</span>
+                </label>
+                <label class="form-check">
+                  <input class="form-check-input me-2 fin-3-2" type="checkbox" name="OUTRO_CRITERIO_COMPLEXO" value="SIM">
+                  <span class="form-check-label">Outro critério que apresente (ou possa apresentar) maior complexidade</span>
+                </label>
               </div>
             </div>
           </section>
