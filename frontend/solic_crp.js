@@ -1,3 +1,5 @@
+//solic_crp.js
+
 // solic_crp.js — fluxo completo da Solicitação de CRP Emergencial (isolado da Adesão)
 
 (() => {
@@ -66,7 +68,6 @@
   function isGesconNumber(x){
     return /^[SL]\d{6}\/\d{4}$/i.test(String(x).trim());
   }
-
   /* ========= Robust fetch (timeout + retries) ========= */
   const FETCH_TIMEOUT_MS = 120000;
   const FETCH_RETRIES    = 1;
@@ -176,7 +177,7 @@
         const m = String(e?.message||'').toLowerCase();
         const isHttp = (e && typeof e.status === 'number');
         const retriable =
-          (isHttp && (e.status===429 || e.status===502 || e.status===503 || e.status===504 || e.status>=500)) ||
+          (isHttp && (e.status===429 || e.status===503 || e.status===504 || e.status>=500)) ||
           m.includes('timeout:') || !navigator.onLine || m.includes('failed');
         if(retriable && attempt <= (retries+1)){
           const backoff = 300 * Math.pow(2, attempt-1);
@@ -291,7 +292,6 @@
       if(e.key==='Enter'){ e.preventDefault(); el.btnPesquisar?.click(); }
     });
   }
-
   /* ========= Persistência (TTL) ========= */
   function getState(){
     try{ return JSON.parse(localStorage.getItem(FORM_STORAGE_KEY) || 'null'); }catch{ return null; }
@@ -365,11 +365,19 @@
     data.values['F44_DECLS[]']       = $$(`#blk_44 .d-flex input[type="checkbox"]:checked`).map(i=>i.value);
     data.values['F44_FINALIDADES[]'] = $$(`#F44_FINALIDADES input[type="checkbox"]:checked`).map(i=>i.value);
     data.values['F44_ANEXOS']        = $('#F44_ANEXOS')?.value || '';
+    data.values['F441_OPTD']        = !!$('#F441_OPTD')?.checked;
+    data.values['F441_LEGISLACAO']  = $('#F441_LEGISLACAO')?.value || '';
+    data.values['F445_DESC_PLANOS'] = $('#F445_DESC_PLANOS')?.value || '';
+    data.values['F446_DOCS']        = $('#F446_DOCS')?.value || '';
+    data.values['F446_EXEC_RES']    = $('#F446_EXEC_RES')?.value || '';
 
     // 4.5
     data.values['F45_OK451'] = !!$('#blk_45 input[type="checkbox"]:checked');
     data.values['F45_DOCS']  = $('#F45_DOCS')?.value || '';
     data.values['F45_JUST']  = $('#F45_JUST')?.value || '';
+
+    // 4.5.3
+    data.values['F453_EXEC_RES'] = $('#F453_EXEC_RES')?.value || '';
 
     // 4.6
     data.values['F46_CRITERIOS[]']   = $$(`#F46_CRITERIOS input[type="checkbox"]:checked`).map(i=>i.value);
@@ -383,6 +391,19 @@
     data.values['F46_ANEXOS']        = $('#F46_ANEXOS')?.value || '';
     data.values['F46_JUST_PLANOS']   = $('#F46_JUST_PLANOS')?.value || '';
     data.values['F46_COMP_CUMPR']    = $('#F46_COMP_CUMPR')?.value || '';
+    data.values['F462F_OPTF']       = !!$('#F462F_OPTF')?.checked;
+    data.values['F462F_CRITERIOS[]']= $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
+    data.values['F466_DOCS']        = $('#F466_DOCS')?.value || '';
+    data.values['F466_EXEC_RES']    = $('#F466_EXEC_RES')?.value || '';
+
+    // 4.3.10
+    data.values['F4310_OPCAO']      = document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || '';
+    data.values['F4310_LEGISLACAO'] = $('#F4310_LEGISLACAO')?.value || '';
+    data.values['F4310_DOCS']       = $('#F4310_DOCS')?.value || '';
+
+    // 4.3.12
+    data.values['F43_SOLICITA_INCLUSAO'] = !!$('#F43_SOLICITA_INCLUSAO')?.checked;
+    data.values['F43_DESC_PLANOS']       = $('#F43_DESC_PLANOS')?.value || '';
 
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
   }
@@ -414,6 +435,49 @@
         const c = document.getElementById('chkSemIrregularidades');
         if (c) c.checked = true;
       }
+
+      // 4.3.10 radios/áreas condicionais
+      (function(){
+        const v = st.values?.['F4310_OPCAO'] || '';
+        const r = v && document.querySelector(`input[name="F4310_OPCAO"][value="${v}"]`);
+        if (r) { r.checked = true; }
+        const a = document.getElementById('F4310_LEGISLACAO_WRAP');
+        const b = document.getElementById('F4310_DOCS_WRAP');
+        if (a) a.classList.toggle('d-none', v !== 'A');
+        if (b) b.classList.toggle('d-none', v !== 'B');
+      })();
+
+      // 4.3.12 toggle
+      (function(){
+        const chk = document.getElementById('F43_SOLICITA_INCLUSAO');
+        const wrap = document.getElementById('F43_INCLUSAO_WRAP');
+        if (chk && wrap) {
+          chk.checked = !!st.values?.['F43_SOLICITA_INCLUSAO'];
+          wrap.classList.toggle('d-none', !chk.checked);
+        }
+      })();
+
+      // 4.4.1 (d)
+      (function(){
+        const ck = document.getElementById('F441_OPTD');
+        const w  = document.getElementById('F441_LEGISLACAO_WRAP');
+        if (ck && w) w.classList.toggle('d-none', !ck.checked);
+      })();
+
+      // 4.4.2 (e)
+      (function(){
+        const ck = document.getElementById('F442_OPTE');
+        const w  = document.getElementById('F44_CRIT_WRAP');
+        if (ck && w) w.classList.toggle('d-none', !ck.checked);
+      })();
+
+      // 4.6.2 (f)
+      (function(){
+        const ck = document.getElementById('F462F_OPTF');
+        const w  = document.getElementById('F462F_WRAP');
+        if (ck && w) w.classList.toggle('d-none', !ck.checked);
+      })();
+
       (function(){
         const map = [
           ['FIN_3_2_MANUTENCAO_CONFORMIDADE', 'MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS'],
@@ -495,7 +559,6 @@
   $('#modalSucesso')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieSuccess','animacao/confirm-success.json',{loop:false,autoplay:true}));
   $('#modalGerandoPdf')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieGerandoPdf','animacao/gerando-pdf.json',{loop:true,autoplay:true}));
   $('#modalSalvando')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieSalvando','animacao/gerando-pdf.json',{loop:true,autoplay:true}));
-
   /* ========= Gate: Gescon TERMO_ENC_GESCON & Termos_registrados ========= */
   let searching = false;
 
@@ -577,6 +640,12 @@
 
       el.spanNGescon && (el.spanNGescon.textContent = data.n_gescon || '');
       el.spanDataEnc && (el.spanDataEnc.textContent = dataEncBR || '');
+      // Preencher o bloco introdutório (Etapa 1)
+      const introNG = document.getElementById('intro_N_GESCON');
+      const introDT = document.getElementById('intro_DATA_ENC');
+      if (introNG) introNG.textContent = data.n_gescon || '—';
+      if (introDT) introDT.textContent = toDateBR(data.data_enc_via_gescon) || '—';
+
       el.spanUfGescon && (el.spanUfGescon.textContent = data.uf || '');
       el.spanEnteGescon && (el.spanEnteGescon.textContent = data.ente || '');
       el.boxGescon?.classList.remove('d-none');
@@ -722,6 +791,11 @@
 
       popularListasFaseComBaseNosCritérios();
       saveState();
+      const introNG = document.getElementById('intro_N_GESCON');
+      const introDT = document.getElementById('intro_DATA_ENC');
+      if (introNG) introNG.textContent = el.spanNGescon?.textContent || '—';
+      if (introDT) introDT.textContent = el.spanDataEnc?.textContent || '—';
+
     }
   }
 
@@ -755,46 +829,91 @@
     // Nada de mostrar/ocultar blocos na página — ficam só dentro dos modais
   }
 
+  /* === Condicionais dos modais === */
+  function bindCondicionais() {
+    // 4.3.10 A/B
+    $$('.form-check-input[name="F4310_OPCAO"]').forEach(r => {
+      r.addEventListener('change', () => {
+        const a = document.getElementById('F4310_LEGISLACAO_WRAP');
+        const b = document.getElementById('F4310_DOCS_WRAP');
+        const val = document.querySelector('input[name="F4310_OPCAO"]:checked')?.value;
+        if (a) a.classList.toggle('d-none', val !== 'A');
+        if (b) b.classList.toggle('d-none', val !== 'B');
+      });
+    });
+
+    // 4.3.12 – só mostra lista se solicitar inclusão
+    const chkIncl = document.getElementById('F43_SOLICITA_INCLUSAO');
+    const wrapIncl = document.getElementById('F43_INCLUSAO_WRAP');
+    if (chkIncl && wrapIncl) {
+      const toggle = () => wrapIncl.classList.toggle('d-none', !chkIncl.checked);
+      chkIncl.addEventListener('change', () => { toggle(); saveState(); });
+      toggle();
+    }
+
+    // 4.4.1 (d) legislação
+    const optD = document.getElementById('F441_OPTD');
+    const lWrap = document.getElementById('F441_LEGISLACAO_WRAP');
+    if (optD && lWrap) optD.addEventListener('change', () => lWrap.classList.toggle('d-none', !optD.checked));
+
+    // 4.4.2 (e) abre critérios
+    const optE = document.getElementById('F442_OPTE');
+    const critWrap44 = document.getElementById('F44_CRIT_WRAP');
+    if (optE && critWrap44) optE.addEventListener('change', () => critWrap44.classList.toggle('d-none', !optE.checked));
+
+    // 4.6.2 (f) abre critérios
+    const optF = document.getElementById('F462F_OPTF');
+    const critWrap46 = document.getElementById('F462F_WRAP');
+    if (optF && critWrap46) optF.addEventListener('change', () => critWrap46.classList.toggle('d-none', !optF.checked));
+  }
+
+
   function validarFaseSelecionada(){
     const fases = $$('.fase-check:checked').map(i=>i.value);
     if(!fases.length) return { ok:false, motivo:'Selecione ao menos uma fase (4.1 a 4.6).' };
 
-    // valida cada fase marcada
-    for(const f of fases){
-      if(f==='4.1'){
+    for (const f of fases){
+      if (f==='4.1'){
         const opt = $('input[name="F41_OPCAO"]:checked', el.blk41);
         if(!opt) return { ok:false, motivo:'Na fase 4.1, selecione 4.1.1 ou 4.1.2.' };
       }
-      if(f==='4.2'){
+      if (f==='4.2'){
         const marc = $$('input[type="checkbox"]:checked', el.f42Lista);
-        if(!marc.length) return { ok:false, motivo:'Na fase 4.2, marque ao menos um item (a–g).' };
+        if(!marc.length) return { ok:false, motivo:'Na fase 4.2, marque ao menos um item (a–i).' };
       }
-      if(f==='4.3'){
+      if (f==='4.3'){
         const marc = $$('input[type="checkbox"]:checked', el.f43Lista);
         const just = ($('#F43_JUST')?.value||'').trim();
         if(!marc.length && !just) return { ok:false, motivo:'Na fase 4.3, marque ao menos um critério ou preencha as justificativas.' };
       }
-      if(f==='4.4'){
-        const crits = $$('input[type="checkbox"]:checked', el.f44Crits);
-        if(!crits.length) return { ok:false, motivo:'Na fase 4.4, selecione ao menos um critério (4.4.1).' };
-      }
-      if(f==='4.5'){
+      if (f==='4.4'){
+        const optE = document.getElementById('F442_OPTE');
+        if (optE?.checked) {
+          const crits = $$('#F44_CRITERIOS input[type="checkbox"]:checked');
+          if (!crits.length) {
+            return { ok:false, motivo:'Na 4.4, ao marcar a finalidade “e)”, selecione pelo menos um critério em 4.4.3.' };
+          }
+        }
+      } // <-- ESSA CHAVE FALTAVA
+
+      if (f==='4.5'){
         const ok451 = $('#blk_45 input[type="checkbox"]:checked');
         const docs = ($('#F45_DOCS')?.value||'').trim();
         const jus  = ($('#F45_JUST')?.value||'').trim();
-        if(!ok451 && !docs && !jus) return { ok:false, motivo:'Na fase 4.5, marque 4.5.1 ou preencha documentos/justificativas.' };
+        if(!ok451 && !docs && !jus) {
+          return { ok:false, motivo:'Na fase 4.5, marque 4.5.1 ou preencha documentos/justificativas.' };
+        }
       }
-      if(f==='4.6'){
+      if (f==='4.6'){
         const crits = $$('input[type="checkbox"]:checked', el.f46Crits);
         const nivel = $('#F46_PROGESTAO')?.value || '';
         const porte = $('#F46_PORTE')?.value || '';
         if(!crits.length) return { ok:false, motivo:'Na fase 4.6, selecione ao menos um critério em 4.6.1.' };
-        if(!nivel || !porte) return { ok:false, motivo:'Informe nível Pró-Gestão e Porte ISP-RPPS em 4.6.2.' };
+        if(!nivel || !porte) return { ok:false, motivo:'Informe nível Pró-Gestão e Porte ISP-RPPS em 4.6.1 (b/c).' };
       }
     }
     return { ok:true };
   }
-
   function popularListasFaseComBaseNosCritérios(){
     if(!el.grpCrit) return;
     const itens = $$('input[name="CRITERIOS_IRREGULARES[]"]', el.grpCrit).map(inp => ({
@@ -841,6 +960,13 @@
     }
     if(el.f46Final && !el.f46Final.children.length){
       el.f46Final.innerHTML = el.f44Final.innerHTML;
+    }
+    // 4.6.2 (f) – critérios completos
+    const f462f = document.getElementById('F462F_CRITERIOS');
+    if (f462f && !f462f.children.length) {
+      f462f.innerHTML = itens.map(it => (
+        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
+      )).join('');
     }
   }
 
@@ -981,6 +1107,29 @@
       F46_JUST_PLANOS: $('#F46_JUST_PLANOS')?.value || '',
       F46_COMP_CUMPR:  $('#F46_COMP_CUMPR')?.value || '',
 
+      // 4.3.10
+      F4310_OPCAO:  document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || '',
+      F4310_LEGISLACAO: $('#F4310_LEGISLACAO')?.value || '',
+      F4310_DOCS:       $('#F4310_DOCS')?.value || '',
+
+      // 4.3.12
+      F43_DESC_PLANOS: $('#F43_DESC_PLANOS')?.value || '',
+
+      // 4.4 extras
+      F441_LEGISLACAO: $('#F441_LEGISLACAO')?.value || '',
+      F445_DESC_PLANOS: $('#F445_DESC_PLANOS')?.value || '',
+      F446_DOCS:       $('#F446_DOCS')?.value || '',
+      F446_EXEC_RES:   $('#F446_EXEC_RES')?.value || '',
+
+      // 4.5.3
+      F453_EXEC_RES: $('#F453_EXEC_RES')?.value || '',
+
+      // 4.6 extras
+      F462F_CRITERIOS: $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value),
+      F466_DOCS:      $('#F466_DOCS')?.value || '',
+      F466_EXEC_RES:  $('#F466_EXEC_RES')?.value || '',
+
+
       // 5
       JUSTIFICATIVAS_GERAIS: el.justGerais?.value || '',
 
@@ -994,10 +1143,6 @@
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
-
-
-
-
   /* ========= Fluxo ÚNICO de PDF ========= */
   async function gerarBaixarPDF(payload){
     // 👇 converte apenas para o endpoint de PDF
@@ -1026,8 +1171,6 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
-
-
 
 
   /* ========= Ações: Gerar & Submit ========= */
@@ -1143,6 +1286,7 @@
     bindMasks();
     el.btnPesquisar?.addEventListener('click', onPesquisar, false);
     setupFase4Toggles();
+    bindCondicionais();
     const faseSel = document.querySelector('input[name="FASE_PROGRAMA"]:checked');
     if (faseSel) faseSel.dispatchEvent(new Event('change'));
     popularListasFaseComBaseNosCritérios();

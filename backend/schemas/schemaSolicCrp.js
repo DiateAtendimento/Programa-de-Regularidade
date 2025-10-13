@@ -31,9 +31,9 @@ export const schemaSolicCrp = z.object({
   EMAIL_REP_UG: z.string().email(),
   TEL_REP_UG: z.string().optional().nullable(),
 
-  // 3) CRP anterior
-  DATA_VENCIMENTO_ULTIMO_CRP: z.string().min(1),
-  TIPO_EMISSAO_ULTIMO_CRP: z.enum(["Administrativa","Judicial"]),
+  // 3) CRP anterior (opcionais aqui)
+  DATA_VENCIMENTO_ULTIMO_CRP: z.string().optional().default(""),
+  TIPO_EMISSAO_ULTIMO_CRP: z.enum(["Administrativa","Judicial"]).optional().or(z.literal("")).default(""),
   CRITERIOS_IRREGULARES: z.array(z.string()).optional().default([]),
 
   // 4) Fase
@@ -49,17 +49,26 @@ export const schemaSolicCrp = z.object({
   F43_LISTA: z.array(z.string()).optional().default([]),
   F43_JUST: z.string().optional().default(""),
   F43_PLANO: z.string().optional().default(""),
+  F4310_OPCAO: z.enum(["A","B"]).optional().or(z.literal("")).default(""),
+  F4310_LEGISLACAO: z.string().optional().default(""),
+  F4310_DOCS: z.string().optional().default(""),
+  F43_DESC_PLANOS: z.string().optional().default(""),
 
   // 4.4
   F44_CRITERIOS: z.array(z.string()).optional().default([]),
   F44_DECLS: z.array(z.string()).optional().default([]),
   F44_FINALIDADES: z.array(z.string()).optional().default([]),
   F44_ANEXOS: z.string().optional().default(""),
+  F441_LEGISLACAO: z.string().optional().default(""),
+  F445_DESC_PLANOS: z.string().optional().default(""),
+  F446_DOCS: z.string().optional().default(""),
+  F446_EXEC_RES: z.string().optional().default(""),
 
   // 4.5
   F45_OK451: z.boolean().optional().default(false),
   F45_DOCS: z.string().optional().default(""),
   F45_JUST: z.string().optional().default(""),
+  F453_EXEC_RES: z.string().optional().default(""),
 
   // 4.6
   F46_CRITERIOS: z.array(z.string()).optional().default([]),
@@ -73,6 +82,9 @@ export const schemaSolicCrp = z.object({
   F46_ANEXOS: z.string().optional().default(""),
   F46_JUST_PLANOS: z.string().optional().default(""),
   F46_COMP_CUMPR: z.string().optional().default(""),
+  F462F_CRITERIOS: z.array(z.string()).optional().default([]),
+  F466_DOCS: z.string().optional().default(""),
+  F466_EXEC_RES: z.string().optional().default(""),
 
   // 5) Justificativas gerais
   JUSTIFICATIVAS_GERAIS: z.string().optional().default(""),
@@ -86,3 +98,4 @@ export const schemaSolicCrp = z.object({
   // Idempotência
   IDEMP_KEY: z.string().optional().default(""),
 });
+
