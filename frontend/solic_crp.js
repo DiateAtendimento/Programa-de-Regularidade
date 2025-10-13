@@ -232,8 +232,6 @@
     cargoRepUg: $('#CARGO_REP_UG'), emailRepUg: $('#EMAIL_REP_UG'), telRepUg: $('#TEL_REP_UG'),
 
     // etapa 3
-    dataUltCrp: $('#DATA_VENCIMENTO_ULTIMO_CRP'),
-    tipoAdm: $('#em_adm'), tipoJud: $('#em_jud'),
     grpCrit: $('#grpCRITERIOS'),
 
     // etapa 4
@@ -321,13 +319,28 @@
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
       'CPF_REP_ENTE','NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
       'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
-      'DATA_VENCIMENTO_ULTIMO_CRP','JUSTIFICATIVAS_GERAIS'
+      'JUSTIFICATIVAS_GERAIS'
     ].forEach(id=>{ const e=$('#'+id); if(e) data.values[id]=e.value; });
 
     data.values['esf_mun'] = !!el.esfMun?.checked;
     data.values['esf_est'] = !!el.esfEst?.checked;
-    data.values['TIPO_EMISSAO_ULT'] = el.tipoAdm?.checked ? 'Administrativa' : (el.tipoJud?.checked ? 'Judicial' : '');
     data.values['FASES_MARCADAS[]'] = $$('.fase-check:checked').map(i => i.value);
+
+    // 3.2
+    data.values['ADESAO_SEM_IRREGULARIDADES'] =
+      $('#chkSemIrregularidades')?.checked ? 'SIM' : '';
+
+    data.values['FIN_3_2_MANUTENCAO_CONFORMIDADE'] =
+      document.querySelector('input[name="MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS"]')?.checked ? 'SIM' : '';
+
+    data.values['FIN_3_2_DEFICIT_ATUARIAL'] =
+      document.querySelector('input[name="DEFICIT_ATUARIAL"]')?.checked ? 'SIM' : '';
+
+    data.values['FIN_3_2_CRITERIOS_ESTRUTURANTES'] =
+      document.querySelector('input[name="CRITERIOS_ESTRUT_ESTABELECIDOS"]')?.checked ? 'SIM' : '';
+
+    data.values['FIN_3_2_OUTRO_CRITERIO_COMPLEXO'] =
+      document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : '';
 
     // 3.3 critérios
     data.values['CRITERIOS_IRREGULARES[]'] = $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i=>i.value);
@@ -373,6 +386,7 @@
 
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
   }
+
   function loadState(){
     try{
       const raw = localStorage.getItem(FORM_STORAGE_KEY);
@@ -382,23 +396,43 @@
       if(st.lastSaved && (now - st.lastSaved > FORM_TTL_MS)){ clearAllState(); return null; }
 
       const vals = st.values || {};
+      // Restaura campos que são arrays (terminam com [])
       Object.entries(vals).forEach(([k,v])=>{
         if (k.endsWith('[]')){
           $$(`input[name="${k}"]`).forEach(i => { i.checked = Array.isArray(v) && v.includes(i.value); });
         }
       });
+      // Restaura campos simples por id
       Object.entries(vals).forEach(([k,v])=>{
         if (k.endsWith('[]')) return;
         const e = $('#'+k); if(!e) return;
         if (e.type==='checkbox' || e.type==='radio'){ e.checked = !!v; } else { e.value = v ?? ''; }
       });
 
-      if(vals['TIPO_EMISSAO_ULT']==='Administrativa') el.tipoAdm.checked = true;
-      if(vals['TIPO_EMISSAO_ULT']==='Judicial')      el.tipoJud.checked = true;
+      // 3.2 — restaurar marcações
+      if (vals['ADESAO_SEM_IRREGULARIDADES'] === 'SIM') {
+        const c = document.getElementById('chkSemIrregularidades');
+        if (c) c.checked = true;
+      }
+      (function(){
+        const map = [
+          ['FIN_3_2_MANUTENCAO_CONFORMIDADE', 'MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS'],
+          ['FIN_3_2_DEFICIT_ATUARIAL',        'DEFICIT_ATUARIAL'],
+          ['FIN_3_2_CRITERIOS_ESTRUTURANTES', 'CRITERIOS_ESTRUT_ESTABELECIDOS'],
+          ['FIN_3_2_OUTRO_CRITERIO_COMPLEXO', 'OUTRO_CRITERIO_COMPLEXO'],
+        ];
+        map.forEach(([k,name])=>{
+          if (vals[k] === 'SIM') {
+            const c = document.querySelector(`input[name="${name}"]`);
+            if (c) c.checked = true;
+          }
+        });
+      })();
 
       return st;
     }catch{ return null; }
   }
+
 
   /* ========= Stepper fallback ========= */
   let curStep = 0;
@@ -577,8 +611,37 @@
     }
   }
 
+  // === hidratarTermosRegistrados(cnpj) — completo e ajustado (inclui fuzzy do 3.1 e fallback do form 1) ===
   async function hidratarTermosRegistrados(cnpj){
     dbg('[hidratarTermosRegistrados] start →', cnpj);
+
+    // helper para marcar os checkboxes de 3.1 mesmo com values diferentes (match por label)
+    function marcarIrregulares(entradaArray){
+      if (!Array.isArray(entradaArray) || !el.grpCrit) return;
+
+      const slug = s => String(s||'')
+        .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+        .toLowerCase().replace(/[^a-z0-9]+/g,' ')
+        .trim();
+
+      const opts = $$('input[name="CRITERIOS_IRREGULARES[]"]', el.grpCrit).map(inp => {
+        const labelTxt = inp.nextElementSibling ? inp.nextElementSibling.textContent : inp.value;
+        return { inp, label: labelTxt, sLabel: slug(labelTxt), sValue: slug(inp.value) };
+      });
+
+      entradaArray.forEach(v => {
+        const sIn = slug(v);
+        let hit = opts.find(o => o.sValue === sIn); // 1) por value
+        if (!hit) hit = opts.find(o => o.sLabel.includes(sIn) || sIn.includes(o.sLabel)); // 2) por label
+        if (!hit) { // 3) heurística por tokens
+          const tokens = ['dair','dipr','dpin','dar','draa','aplicacoes','contabil','atuarial','compensacao','gestao'];
+          const hasTok = t => sIn.includes(t);
+          hit = opts.find(o => tokens.some(t => hasTok(t) && o.sLabel.includes(t)));
+        }
+        if (hit) hit.inp.checked = true;
+      });
+    }
+
     try{
       const data = await consultarTermosRegistrados(cnpj);
 
@@ -618,12 +681,21 @@
       if (crp.tipo === 'Administrativa') el.tipoAdm.checked = true;
       if (crp.tipo === 'Judicial')       el.tipoJud.checked = true;
 
-      // 3.3 Irregulares
-      if (Array.isArray(crp.irregulares)){
-        crp.irregulares.forEach(v=>{
-          const inp = $(`input[name="CRITERIOS_IRREGULARES[]"][value="${CSS.escape(v)}"]`, el.grpCrit);
-          if (inp) inp.checked = true;
-        });
+      // 3.1 – marcar irregulares vindos do primeiro formulário (ou API)
+      if (Array.isArray(crp.irregulares)) {
+        marcarIrregulares(crp.irregulares);
+      } else {
+        // fallback: tenta do storage do form 1
+        try{
+          const raw = localStorage.getItem('rpps-form-v1');
+          if (raw) {
+            const st = JSON.parse(raw)||{};
+            const vals = st.values||{};
+            if (Array.isArray(vals['CRITERIOS_IRREGULARES[]'])) {
+              marcarIrregulares(vals['CRITERIOS_IRREGULARES[]']);
+            }
+          }
+        }catch{}
       }
 
       // Esfera
@@ -633,15 +705,31 @@
         else if (/estadual|distrital/i.test(esfera)) { el.esfEst && (el.esfEst.checked = true); el.esfMun && (el.esfMun.checked = false); }
       }
 
+      // Popular listas dependentes e salvar
       popularListasFaseComBaseNosCritérios();
+
+      // Opcional: aplicar flags 3.2 na UI a partir do storage do form 1 (se você criou os inputs visuais no form 2)
+      try{
+        const raw = localStorage.getItem('rpps-form-v1');
+        if (raw) {
+          const vals = (JSON.parse(raw)||{}).values||{};
+          const set = (sel, on) => { const e=document.querySelector(sel); if (e) e.checked = !!on; };
+          set('#chkSemIrregularidades', vals['ADESAO_SEM_IRREGULARIDADES']==='SIM');
+          set('input[name="MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS"]', !!vals['MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS']);
+          set('input[name="DEFICIT_ATUARIAL"]', !!vals['DEFICIT_ATUARIAL']);
+          set('input[name="CRITERIOS_ESTRUT_ESTABELECIDOS"]', !!vals['CRITERIOS_ESTRUT_ESTABELECIDOS']);
+          set('input[name="OUTRO_CRITERIO_COMPLEXO"]', !!vals['OUTRO_CRITERIO_COMPLEXO']);
+        }
+      }catch{}
+
       saveState();
       dbg('[hidratarTermosRegistrados] done ✓');
+
     }catch(err){
       // <<< Fallback quando a API quebra (500)
       dbe('[hidratarTermosRegistrados] API falhou, aplicando fallback com dados do Formulário 1.', { status: err?.status, message: err?.message });
 
-      // 1) Use dados que já estão visíveis no passo 1 (mantém o que o usuário preencheu)
-      //    e complete com o que veio do Gescon (UF/Ente) via spans informativos.
+      // 1) Usa spans do Gescon e o próprio CNPJ digitado
       if (!el.uf.value && el.spanUfGescon?.textContent) {
         el.uf.value = el.spanUfGescon.textContent.trim();
       }
@@ -650,13 +738,30 @@
       }
       if (!el.cnpjEnte.value) el.cnpjEnte.value = maskCNPJ(cnpj);
 
-      // 2) Garantir listas da fase 4
+      // 2) Tenta recuperar 3.1 e 3.2 do storage do form 1
+      try{
+        const raw = localStorage.getItem('rpps-form-v1');
+        if (raw) {
+          const st = JSON.parse(raw)||{};
+          const vals = st.values||{};
+          if (Array.isArray(vals['CRITERIOS_IRREGULARES[]'])) {
+            marcarIrregulares(vals['CRITERIOS_IRREGULARES[]']);
+          }
+          // opcional: refletir na UI se houver inputs 3.2
+          const set = (sel, on) => { const e=document.querySelector(sel); if (e) e.checked = !!on; };
+          set('#chkSemIrregularidades', vals['ADESAO_SEM_IRREGULARIDADES']==='SIM');
+          set('input[name="MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS"]', !!vals['MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS']);
+          set('input[name="DEFICIT_ATUARIAL"]', !!vals['DEFICIT_ATUARIAL']);
+          set('input[name="CRITERIOS_ESTRUT_ESTABELECIDOS"]', !!vals['CRITERIOS_ESTRUT_ESTABELECIDOS']);
+          set('input[name="OUTRO_CRITERIO_COMPLEXO"]', !!vals['OUTRO_CRITERIO_COMPLEXO']);
+        }
+      }catch{}
+
+      // 3) Garante listas e salva
       popularListasFaseComBaseNosCritérios();
       saveState();
     }
   }
-
-
 
 
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
@@ -799,8 +904,7 @@
     if(!isEmail(el.emailRepUg.value)) msgs.push('E-mail do Rep. da UG');
 
     // 3
-    if(!el.dataUltCrp.value) msgs.push('Data de vencimento do último CRP (3.1)');
-    if(!(el.tipoAdm.checked || el.tipoJud.checked)) msgs.push('Tipo de emissão do último CRP (3.2)');
+
 
     // 3.3 (opcional marcar nenhum, então não obriga)
 
@@ -817,6 +921,7 @@
     el.anoSol.value = String(now.getFullYear());
   }
   /* ========= Payload (alinhado ao schemaSolicCrp) ========= */
+  // === buildPayload() — completo e ajustado ===
   function buildPayload(){
     const ESFERA =
       (el.esfMun?.checked ? 'RPPS Municipal' :
@@ -825,6 +930,41 @@
     // fases marcadas e fase “mais alta” (compatível com backend antigo)
     const marcadas   = $$('.fase-check:checked').map(i=>i.value);
     const faseCompat = marcadas.sort().slice(-1)[0] || '';
+
+    // 3.2 – flags de adesão (vêm da UI se existirem; senão, caem no fallback do form 1)
+    const adesaoFlags = (function(){
+      const v = {
+        ADESAO_SEM_IRREGULARIDADES:
+          document.querySelector('#chkSemIrregularidades')?.checked ? 'SIM' : '',
+        FIN_3_2_MANUTENCAO_CONFORMIDADE:
+          document.querySelector('input[name="MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS"]')?.checked ? 'SIM' : '',
+        FIN_3_2_DEFICIT_ATUARIAL:
+          document.querySelector('input[name="DEFICIT_ATUARIAL"]')?.checked ? 'SIM' : '',
+        FIN_3_2_CRITERIOS_ESTRUTURANTES:
+          document.querySelector('input[name="CRITERIOS_ESTRUT_ESTABELECIDOS"]')?.checked ? 'SIM' : '',
+        FIN_3_2_OUTRO_CRITERIO_COMPLEXO:
+          document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : '',
+      };
+      // fallback do storage do FORM 1 (rpps-form-v1)
+      try{
+        const raw = localStorage.getItem('rpps-form-v1');
+        if (raw) {
+          const st = JSON.parse(raw)||{};
+          const vals = st.values||{};
+          if (!v.ADESAO_SEM_IRREGULARIDADES)
+            v.ADESAO_SEM_IRREGULARIDADES = vals['ADESAO_SEM_IRREGULARIDADES'] || '';
+          if (!v.FIN_3_2_MANUTENCAO_CONFORMIDADE)
+            v.FIN_3_2_MANUTENCAO_CONFORMIDADE = vals['MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS'] ? 'SIM' : '';
+          if (!v.FIN_3_2_DEFICIT_ATUARIAL)
+            v.FIN_3_2_DEFICIT_ATUARIAL = vals['DEFICIT_ATUARIAL'] ? 'SIM' : '';
+          if (!v.FIN_3_2_CRITERIOS_ESTRUTURANTES)
+            v.FIN_3_2_CRITERIOS_ESTRUTURANTES = vals['CRITERIOS_ESTRUT_ESTABELECIDOS'] ? 'SIM' : '';
+          if (!v.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)
+            v.FIN_3_2_OUTRO_CRITERIO_COMPLEXO = vals['OUTRO_CRITERIO_COMPLEXO'] ? 'SIM' : '';
+        }
+      }catch{}
+      return v;
+    })();
 
     return {
       // Gate Gescon (informativo)
@@ -860,6 +1000,13 @@
       DATA_VENCIMENTO_ULTIMO_CRP: el.dataUltCrp.value || '',
       TIPO_EMISSAO_ULTIMO_CRP: (el.tipoAdm.checked && 'Administrativa') || (el.tipoJud.checked && 'Judicial') || '',
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i => i.value),
+
+      // 3.2 – flags (para a planilha)
+      ADESAO_SEM_IRREGULARIDADES: adesaoFlags.ADESAO_SEM_IRREGULARIDADES,
+      FIN_3_2_MANUTENCAO_CONFORMIDADE: adesaoFlags.FIN_3_2_MANUTENCAO_CONFORMIDADE,
+      FIN_3_2_DEFICIT_ATUARIAL: adesaoFlags.FIN_3_2_DEFICIT_ATUARIAL,
+      FIN_3_2_CRITERIOS_ESTRUTURANTES: adesaoFlags.FIN_3_2_CRITERIOS_ESTRUTURANTES,
+      FIN_3_2_OUTRO_CRITERIO_COMPLEXO: adesaoFlags.FIN_3_2_OUTRO_CRITERIO_COMPLEXO,
 
       // 4) Fase do programa
       FASES_MARCADAS: marcadas,
