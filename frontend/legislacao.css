@@ -164,7 +164,7 @@ body.page-legislacao{
 /* ========== Timeline ========== */
 .timeline{
   position: relative;
-  display:grid; grid-template-columns: repeat(5, minmax(160px, 1fr));
+  display:grid; grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 1rem; margin-top:.75rem;
 }
 .timeline-track{
