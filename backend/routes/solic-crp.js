@@ -27,23 +27,23 @@ const toISO = (s) => {
 };
 
 // === GESCON / Termos registrados ===
- r.post("/gescon/termo-enc", requireKey, async (req, res, next) => {
-   try {
-     const b = req.body || {};
-     const c = digits(b.cnpj || b.cnpj_ente);
-     if (c.length !== 14) return res.status(422).json({ error: 'VALIDATION', field: 'cnpj' });
-     return res.json(await buscarGescon(c));
-   } catch (e) { next(e); }
- });
+r.post("/gescon/termo-enc", requireKey, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const c = digits(b.cnpj || b.cnpj_ente || b.CNPJ_ENTE);
+    if (c.length !== 14) return res.status(422).json({ error: "VALIDATION", field: "cnpj" });
+    return res.json(await buscarGescon(c));
+  } catch (e) { next(e); }
+});
 
- r.post("/termos-registrados", requireKey, async (req, res, next) => {
-   try {
-     const b = req.body || {};
-     const c = digits(b.cnpj || b.cnpj_ente);
-     if (c.length !== 14) return res.status(422).json({ error: 'VALIDATION', field: 'cnpj' });
-     return res.json(await buscarTermosRegistrados(c));
-   } catch (e) { next(e); }
- });
+r.post("/termos-registrados", requireKey, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const c = digits(b.cnpj || b.cnpj_ente || b.CNPJ_ENTE);
+    if (c.length !== 14) return res.status(422).json({ error: "VALIDATION", field: "cnpj" });
+    return res.json(await buscarTermosRegistrados(c));
+  } catch (e) { next(e); }
+});
 
 // === Registrar Solicitação CRP ===
 r.post("/gerar-solic-crp", requireKey, async (req, res, next) => {
@@ -80,7 +80,8 @@ r.post("/gerar-solic-crp", requireKey, async (req, res, next) => {
 r.post("/termo-solic-crp-pdf", requireKey, async (req, res, next) => {
   try {
     const payload = schemaTermoSolicPdf.parse(req.body);
-    const pdf = await pdfFromSolicCrp(payload);
+    // passa o req para o serviço resolver o origin corretamente
+    const pdf = await pdfFromSolicCrp(payload, req);
     res.setHeader("Content-Type","application/pdf");
     res.setHeader("Content-Disposition",'attachment; filename="solic-crp.pdf"');
     return res.send(pdf);

@@ -40,9 +40,9 @@
           de 02 de junho de 2022.
         </p><br>
         <div class="gescon-breadcrumb small">
-          <span><strong>Consulta Gescon:</strong> <span id="infoNumGescon" class="text-body" data-bind="N_GESCON">—</span></span>
+          <span><strong>Consulta Gescon:</strong> <span class="text-body" data-k="N_GESCON">—</span></span>
           <span class="sep">•</span>
-          <span><strong>Data do encaminhamento:</strong> <span id="infoDataEncGescon" class="text-body" data-bind="DATA_ENC_VIA_GESCON">—</span></span>
+          <span><strong>Data do encaminhamento:</strong> <span class="text-body" data-k="DATA_ENC_VIA_GESCON">—</span></span>
         </div>
 
         <h2><br>1. IDENTIFICAÇÃO DO ENTE FEDERATIVO E DA UNIDADE GESTORA</h2>
@@ -256,7 +256,9 @@
     fillText('cnpj_ug', p.CNPJ_UG || p.cnpj_ug);
     fillText('email_ente', p.EMAIL_ENTE || p.email_ente);
     fillText('email_ug', p.EMAIL_UG || p.email_ug);
-    fillText('data_enc_via_gescon', p.DATA_ENC_VIA_GESCON || p.data_enc_via_gescon || '');
+    fillText('N_GESCON', p.N_GESCON || p.n_gescon || '');
+    fillText('DATA_ENC_VIA_GESCON', p.DATA_ENC_VIA_GESCON || p.data_enc_via_gescon || '');
+
 
     /* ================= 2) Responsáveis ================= */
     fillText('nome_rep_ente',  p.NOME_REP_ENTE || p.nome_rep_ente);

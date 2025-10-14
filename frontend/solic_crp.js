@@ -1145,18 +1145,21 @@
   }
   /* ========= Fluxo ÚNICO de PDF ========= */
   async function gerarBaixarPDF(payload){
-    // 👇 converte apenas para o endpoint de PDF
+    // Conversões de compatibilidade com o template/PDF
     const payloadForPdf = {
       ...payload,
-      HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : ''
+      // o template aceita string '1' para o gate (compat com adesão)
+      HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : '',
+      // DATA usada no rodapé do termo (alias da sua DATA_SOLIC_GERADA)
+      DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
     };
 
     const blob = await fetchBinary(
-      api('/termo-solic-crp-pdf'), // rota existente no server (via /_api/)
+      api('/termo-solic-crp-pdf'),
       {
         method: 'POST',
         headers: withKey({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(payloadForPdf) // << usa o payload convertido
+        body: JSON.stringify(payloadForPdf)
       },
       { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 1 }
     );
@@ -1171,6 +1174,7 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
+
 
 
   /* ========= Ações: Gerar & Submit ========= */

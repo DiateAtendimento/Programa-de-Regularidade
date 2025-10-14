@@ -98,4 +98,3 @@ export const schemaSolicCrp = z.object({
   // Idempotência
   IDEMP_KEY: z.string().optional().default(""),
 });
-
