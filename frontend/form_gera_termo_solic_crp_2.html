@@ -871,10 +871,10 @@
 
               <div id="F43_INCLUSAO_WRAP" class="d-none">
                 <div class="fw-semibold mt-2 mb-1">a) Critérios do extrato que o ente, comprovadamente, precisará incluir em Plano de Ação:</div>
-                <div id="F43_INCLUIR" class="d-flex flex-column gap-2"></div>
+                <div id="F43_INCLUIR_B" class="d-flex flex-column gap-2"></div>
 
                 <div class="small text-muted mt-2 mb-1">b) Justificativas/informações apresentadas relativas à solicitação de inclusão (anexos podem ser citados abaixo):</div>
-                <textarea id="F43_PLANO" class="form-control" rows="3" placeholder="Justificativas e documentos…"></textarea>
+                <textarea id="F43_PLANO_B" class="form-control" rows="3" placeholder="Justificativas e documentos…"></textarea>
 
                 <div class="mt-2">
                   <label class="form-label" for="F43_DESC_PLANOS">c) Descrever sucintamente o(s) Plano(s) de Ação apresentado(s)</label>
@@ -885,6 +885,7 @@
                   <strong>Obs.:</strong> A solicitação de inclusão no Plano de Ação não se aplica aos seguintes critérios: “DIPR - Consistência e Caráter Contributivo”; “Caráter contributivo - Repasse (objeto de PAP)” e “Utilização dos recursos previdenciários (objeto de PAP)”.
                 </p>
               </div>
+
             </div>
           </div>
         </div>
@@ -892,12 +893,15 @@
     </div>
   </div>
 
-  <!-- MODAL 4.4 (atualizado e sem duplicidade) -->
+  <!-- MODAL 4.4 (corrigido, sem duplicações) -->
   <div class="modal fade" id="modalF44" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
       <div class="modal-content">
+        <div class="modal-header bg-brand text-white">
+          <h5 class="modal-title">4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
         <div class="modal-body">
-          <!-- 4.4 -->
           <div class="card-subblock mt-3" id="blk_44">
             <div class="sub-title">4.4 Fase Específica/Focalizada – 4º CRP Emergencial</div>
             <p class="small text-muted mb-2">
@@ -908,26 +912,10 @@
             <div class="mb-2">
               <label class="form-label">4.4.1 Declaro ter cumprido as seguintes condições:</label>
               <div class="d-flex flex-column gap-2">
-                <label class="form-check">
-                  <input class="form-check-input me-2" type="checkbox" value="Foi mantida a regularidade quanto aos critérios do extrato previdenciário exigidos nas fases anteriores.">
-                  <span class="form-check-label">a) Foi mantida a regularidade quanto aos critérios do extrato previdenciário exigidos nas fases anteriores.</span>
-                </label>
-
-                <label class="form-check">
-                  <input class="form-check-input me-2" type="checkbox" value="RPC vigente e operacionalizado">
-                  <span class="form-check-label">b) O Regime de Previdência Complementar – RPC dos servidores filiados ao RPPS encontra-se vigente (convênio de adesão autorizado pela Previc) e em efetiva operacionalização.</span>
-                </label>
-
-                <label class="form-check">
-                  <input class="form-check-input me-2" type="checkbox" value="Demais critérios não objeto do Plano estão regulares">
-                  <span class="form-check-label">c) Os demais critérios do extrato previdenciário que não são objeto do Plano(s) de Ação apresentado(s) estão regulares.</span>
-                </label>
-
-                <label class="form-check">
-                  <input id="F441_OPTD" class="form-check-input me-2" type="checkbox" value="Adoção de regras de benefícios conforme EC 103/2019">
-                  <span class="form-check-label">d) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS que (i) observam o art. 40 da CF/88 e o art. 164 da Portaria MTP nº 1.467/2022; (ii) aplicam-se aos atuais segurados e aos ingressantes; e (iii) são, no mínimo, assemelhadas às do RPPS da União.</span>
-                </label>
-
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Foi mantida a regularidade quanto aos critérios do extrato previdenciário exigidos nas fases anteriores."><span class="form-check-label">a) Foi mantida a regularidade quanto aos critérios do extrato previdenciário exigidos nas fases anteriores.</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="RPC vigente e operacionalizado"><span class="form-check-label">b) O Regime de Previdência Complementar – RPC dos servidores filiados ao RPPS encontra-se vigente (convênio de adesão autorizado pela Previc) e em efetiva operacionalização.</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Demais critérios não objeto do Plano estão regulares"><span class="form-check-label">c) Os demais critérios do extrato previdenciário que não são objeto do Plano(s) de Ação apresentado(s) estão regulares.</span></label>
+                <label class="form-check"><input id="F441_OPTD" class="form-check-input me-2" type="checkbox" value="Adoção de regras de benefícios conforme EC 103/2019"><span class="form-check-label">d) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS que (i) observam o art. 40 da CF/88 e o art. 164 da Portaria MTP nº 1.467/2022; (ii) aplicam-se aos atuais segurados e aos ingressantes; e (iii) são, no mínimo, assemelhadas às do RPPS da União.</span></label>
                 <div class="mt-2 ms-4 d-none" id="F441_LEGISLACAO_WRAP">
                   <label class="form-label" for="F441_LEGISLACAO">Relacionar a legislação que adequou as regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</label>
                   <textarea id="F441_LEGISLACAO" class="form-control" rows="3"></textarea>
@@ -939,34 +927,15 @@
             <div class="mb-2">
               <label class="form-label">4.4.2 Finalidade do(s) Plano(s) de Ação apresentado(s)</label>
               <div class="d-flex flex-column gap-2" id="F44_FINALIDADES">
-                <label class="form-check">
-                  <input class="form-check-input me-2" type="checkbox" value="Para implementação de plano de equacionamento do déficit atuarial do RPPS">
-                  <span class="form-check-label">a) Para implementação de plano de equacionamento do déficit atuarial do RPPS;</span>
-                </label>
-
-                <label class="form-check">
-                  <input class="form-check-input me-2" type="checkbox" value="Para prazos adicionais para comprovação de medidas">
-                  <span class="form-check-label">b) Para situações que exijam prazos adicionais para comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à adequação orçamentária, financeira e fiscal do ente;</span>
-                </label>
-
-                <label class="form-check">
-                  <input class="form-check-input me-2" type="checkbox" value="Plano de equacionamento alternativo (art. 55, § 7º, Portaria 1.467/2022)">
-                  <span class="form-check-label">c) Para implementação de plano de equacionamento de déficit atuarial alternativo (art. 55, § 7º, Portaria MTP nº 1.467/2022);</span>
-                </label>
-
-                <label class="form-check">
-                  <input class="form-check-input me-2" type="checkbox" value="Adequação da Unidade Gestora Única do RPPS (CF, art. 40, § 20)">
-                  <span class="form-check-label">d) Para adequação da Unidade Gestora Única do RPPS ao art. 40, § 20, da Constituição Federal; e/ou</span>
-                </label>
-
-                <label class="form-check">
-                  <input id="F442_OPTE" class="form-check-input me-2" type="checkbox" value="Organização do RPPS/critério estruturante (especificar)">
-                  <span class="form-check-label">e) Para a organização do RPPS conforme critérios estruturantes das normas gerais ou o cumprimento de outro critério do extrato com maior complexidade (especificar).</span>
-                </label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Para implementação de plano de equacionamento do déficit atuarial do RPPS"><span class="form-check-label">a) Para implementação de plano de equacionamento do déficit atuarial do RPPS;</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Para prazos adicionais para comprovação de medidas"><span class="form-check-label">b) Para situações que exijam prazos adicionais para comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à adequação orçamentária, financeira e fiscal do ente;</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Plano de equacionamento alternativo (art. 55, § 7º, Portaria 1.467/2022)"><span class="form-check-label">c) Para implementação de plano de equacionamento de déficit atuarial alternativo (art. 55, § 7º, Portaria MTP nº 1.467/2022);</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Adequação da Unidade Gestora Única do RPPS (CF, art. 40, § 20)"><span class="form-check-label">d) Para adequação da Unidade Gestora Única do RPPS ao art. 40, § 20, da Constituição Federal; e/ou</span></label>
+                <label class="form-check"><input id="F442_OPTE" class="form-check-input me-2" type="checkbox" value="Organização do RPPS/critério estruturante (especificar)"><span class="form-check-label">e) Para a organização do RPPS conforme critérios estruturantes das normas gerais ou o cumprimento de outro critério do extrato com maior complexidade (especificar).</span></label>
               </div>
             </div>
 
-            <!-- 4.4.3 Critérios (aparece somente se 4.4.2 'e' estiver marcada) -->
+            <!-- 4.4.3 (aparece se marcar 4.4.2 e) -->
             <div class="mb-2 d-none" id="F44_CRIT_WRAP">
               <label class="form-label">4.4.3 Critério(s) do extrato previdenciário objeto do(s) Plano(s) de Ação</label>
               <div id="F44_CRITERIOS" class="d-flex flex-column gap-2"></div>
@@ -989,7 +958,6 @@
               <div class="fw-semibold mb-2">4.4.6 Em caso de Plano(s) de Ação que havia sido apresentado na Fase Intermediária:</div>
               <label class="form-label" for="F446_DOCS">a) Comprovação do cumprimento do(s) Plano(s) de Ação (relacione os documentos, um por linha)</label>
               <textarea id="F446_DOCS" class="form-control" rows="3"></textarea>
-
               <label class="form-label mt-2" for="F446_EXEC_RES">b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados</label>
               <textarea id="F446_EXEC_RES" class="form-control" rows="3"></textarea>
             </div>
@@ -998,6 +966,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- MODAL 4.5 -->
   <div class="modal fade" id="modalF45" tabindex="-1" aria-hidden="true">
