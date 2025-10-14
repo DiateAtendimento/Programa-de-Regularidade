@@ -28,8 +28,8 @@
   const FORM_TTL_MS      = 30 * 60 * 1000;              // 30 min
 
   /* ========= Utils ========= */
-  const $  = (s, r=document) => r.querySelector(s);
-  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  const $  = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const digits  = v => String(v||'').replace(/\D+/g,'');
   const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
   const fmtBR   = d => d.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'});
