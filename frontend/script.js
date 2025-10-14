@@ -683,13 +683,12 @@
       Confirme se está correto: <strong>${fmt}</strong>.<br><br>
       Se preferir seguir assim mesmo, informe os dados do representante legal e continue o preenchimento.
       <hr>
-      Depois, regularize no sistemas oficiais:
+      Depois, não esqueça de atualizar os dados da seguinte forma:
       <ul class="mb-0">
         <li><a href="https://cadprev.previdencia.gov.br/Cadprev/pages/index.xhtml" target="_blank" rel="noopener">Cadprev – “Novo cadastro”</a></li>
         <li><a href="https://view.officeapps.live.com/op/view.aspx?src=https%3A%2F%2Fwww.gov.br%2Fprevidencia%2Fpt-br%2Fassuntos%2Frpps%2Fsistemas%2Fcadprev%2Fmodelodeoficioparaautorizacaodeacessoaocadprev20241.docx%2F%40%40download%2Ffile" target="_blank" rel="noopener">Modelo de Ofício de solicitação de autorização</a></li>
         <li><a href="https://novogescon.previdencia.gov.br/gescon/" target="_blank" rel="noopener">Envio pelo Gescon</a></li>
       </ul>
-      <small class="text-muted d-block mt-1">Essa atualização é necessária para o prosseguimento do Pró-Regularidade RPPS.</small>
     `;
 
 
