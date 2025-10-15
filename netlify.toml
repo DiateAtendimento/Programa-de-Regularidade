@@ -1,4 +1,5 @@
 # Base directory = "frontend" no painel
+
 [build]
   publish = "."
   functions = "netlify/functions"
@@ -53,14 +54,14 @@
   node_bundler = "esbuild"
   external_node_modules = ["@sparticuz/chromium", "puppeteer-core"]
 
-# >>> nome precisa casar com o arquivo .js e com o redirect
+# >>> aplique o bloco ao NOME REAL da função (com -v2)
 [functions."termo-solic-crp-pdf-v2"]
-  timeout = 26
-  memory = 1536
+  timeout = 30
+  memory  = 1536
 
 [functions."gerar-solic-crp"]
   timeout = 20
-  memory = 1024
+  memory  = 1024
 
 [build.environment]
   NODE_VERSION = "20"
