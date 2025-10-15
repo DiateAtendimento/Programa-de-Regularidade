@@ -1,27 +1,10 @@
-# Base directory = "frontend" no painel
+# frontend/netlify.toml  (coloque este arquivo DENTRO de /frontend)
 
 [build]
   publish = "."
   functions = "netlify/functions"
 
-# Health/Diag
-[[redirects]]
-  from = "/_api/health"
-  to = "/.netlify/functions/api-proxy/health"
-  status = 200
-
-[[redirects]]
-  from = "/_api/_diag"
-  to = "/.netlify/functions/api-proxy/_diag"
-  status = 200
-
-# Proxy catch-all
-[[redirects]]
-  from = "/_api/*"
-  to = "/.netlify/functions/api-proxy/:splat"
-  status = 200
-
-# Mapear as 2 rotas /api/... para as funções Netlify
+# ---- Redirects p/ funções ----
 [[redirects]]
   from = "/api/termo-solic-crp-pdf"
   to = "/.netlify/functions/termo-solic-crp-pdf-v2"
@@ -30,6 +13,17 @@
 [[redirects]]
   from = "/api/gerar-solic-crp"
   to = "/.netlify/functions/gerar-solic-crp"
+  status = 200
+
+# Health/Diag (usa api-proxy.js)
+[[redirects]]
+  from = "/_api/health"
+  to = "/.netlify/functions/api-proxy/health"
+  status = 200
+
+[[redirects]]
+  from = "/_api/_diag"
+  to = "/.netlify/functions/api-proxy/_diag"
   status = 200
 
 # Atalhos sem .html
@@ -49,12 +43,11 @@
   to = "/index.html"
   status = 200
 
-# Functions config
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["@sparticuz/chromium", "puppeteer-core"]
 
-# >>> aplique o bloco ao NOME REAL da função (com -v2)
+# Ajuste de recursos/timeout (respeita limite do plano)
 [functions."termo-solic-crp-pdf-v2"]
   timeout = 30
   memory  = 1536
