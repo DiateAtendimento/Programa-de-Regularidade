@@ -1,10 +1,10 @@
-# frontend/netlify.toml  (coloque este arquivo DENTRO de /frontend)
+# frontend/netlify.toml
 
 [build]
   publish = "."
   functions = "netlify/functions"
 
-# ---- Redirects p/ funções ----
+# ---- Redirects p/ funções dedicadas ----
 [[redirects]]
   from = "/api/termo-solic-crp-pdf"
   to = "/.netlify/functions/termo-solic-crp-pdf-v2"
@@ -15,7 +15,14 @@
   to = "/.netlify/functions/gerar-solic-crp"
   status = 200
 
-# Health/Diag (usa api-proxy.js)
+# ---- API proxy (catch-all) ----
+# Qualquer outra rota em /api/* cai no api-proxy (ex.: /api/termos-registrados)
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api-proxy/:splat"
+  status = 200
+
+# Health/Diag (usa api-proxy)
 [[redirects]]
   from = "/_api/health"
   to = "/.netlify/functions/api-proxy/health"
@@ -26,7 +33,7 @@
   to = "/.netlify/functions/api-proxy/_diag"
   status = 200
 
-# Atalhos sem .html
+# ---- Atalhos sem .html ----
 [[redirects]]
   from = "/form_gera_termo_adesao_1"
   to = "/form_gera_termo_adesao_1.html"
@@ -37,11 +44,22 @@
   to = "/form_gera_termo_solic_crp_2.html"
   status = 200
 
-# SPA fallback
+# ---- SPA fallback (deixe por último) ----
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# ---- Headers (CORS básico para chamadas de API) ----
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/_api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
 
 [functions]
   node_bundler = "esbuild"
