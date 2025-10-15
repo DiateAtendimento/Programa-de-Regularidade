@@ -389,7 +389,8 @@
       if (!window.__TERMO_READY_FIRED__) {
         window.__TERMO_READY_FIRED__ = true;
         const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-        fontsReady.finally(() => {
+        const maxWait = new Promise(r => setTimeout(r, 1500)); // 1,5s de tolerância
+        Promise.race([fontsReady, maxWait]).finally(() => {
           requestAnimationFrame(() => {
             window.__TERMO_PRINT_READY__ = true;
             document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY'));

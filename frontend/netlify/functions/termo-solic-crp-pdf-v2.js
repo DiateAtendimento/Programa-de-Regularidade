@@ -1,3 +1,4 @@
+// netlify/functions/termo-solic-crp-pdf-v2.js
 const chromium = require('@sparticuz/chromium');
 const puppeteer = require('puppeteer-core');
 
@@ -36,15 +37,30 @@ exports.handler = async (event) => {
     const page = await browser.newPage();
     await page.setJavaScriptEnabled(true);
 
-    const res = await page.goto(templateUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+    // Bloqueia recursos que atrasam e não são necessários para o PDF
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      const rt = req.resourceType();
+      const url = req.url();
+      const isExternal = !url.startsWith(origin);
+
+      if (rt === 'image' || rt === 'media' || rt === 'eventsource') return req.abort();
+      if (rt === 'font' || /google-analytics|gtm|doubleclick|facebook|hotjar/i.test(url)) return req.abort();
+      if (rt === 'stylesheet' && isExternal) return req.abort(); // CSS externo bloqueado
+      return req.continue();
+    });
+
+    // Carrega o template – DOM pronto é suficiente (o template sinaliza "print ready")
+    const res = await page.goto(templateUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
     const status = res?.status() || 0;
 
+    // Marcações para CSS de impressão
     await page.evaluate(() => {
       document.documentElement.classList.add('pdf-export');
       document.body.classList.add('pdf-export');
     });
 
-    // Sanidade forte
+    // Sanidade forte do template
     await page.waitForSelector('h1.term-title', { timeout: 20000 }).catch(()=>{});
     const sanity = await page.evaluate(() => {
       const href = location.href;
@@ -69,13 +85,21 @@ exports.handler = async (event) => {
       );
     }
 
+    // Injeta os dados do termo
     await page.evaluate((d) => {
       window.__TERMO_DATA__ = d;
       document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
     }, data);
 
     await page.emulateMediaType('print');
-    await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 30000 });
+
+    // Espera o sinal de pronto, com fallback curto
+    try {
+      await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 8000 });
+    } catch {
+      const hasRoot = await page.$('#pdf-root .term-wrap');
+      if (!hasRoot) throw new Error('PDF root não encontrado e TERMO_PRINT_READY não chegou');
+    }
 
     const pdf = await page.pdf({
       format: 'A4',

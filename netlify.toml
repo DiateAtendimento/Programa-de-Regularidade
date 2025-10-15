@@ -22,6 +22,18 @@
   to = "/.netlify/functions/api-proxy/:splat"
   status = 200
 
+# Mapear as 2 rotas /api/... para as funções Netlify
+[[redirects]]
+  from = "/api/termo-solic-crp-pdf"
+  to = "/.netlify/functions/termo-solic-crp-pdf-v2"
+  status = 200
+
+[[redirects]]
+  from = "/api/gerar-solic-crp"
+  to = "/.netlify/functions/gerar-solic-crp"
+  status = 200
+
+
 # Atalhos sem .html
 [[redirects]]
   from = "/form_gera_termo_adesao_1"

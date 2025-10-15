@@ -1,8 +1,6 @@
-// frontend/netlify/functions/gerar-solic-crp.js
-const fetch = require('node-fetch');
+// netlify/functions/gerar-solic-crp.js
+// Usa fetch nativo do Node 20 (sem dependência de node-fetch)
 
-// Ex.: https://programa-de-regularidade.onrender.com  (defina em Netlify)
-// Fallback para API_BASE, se você já usa esse nome.
 const TARGET = process.env.TARGET_API_BASE || process.env.API_BASE;
 
 exports.handler = async (event) => {
