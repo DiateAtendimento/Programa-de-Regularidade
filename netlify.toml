@@ -1,9 +1,7 @@
 # Base directory = "frontend" no painel
-
 [build]
   publish = "."
   functions = "netlify/functions"
-
 
 # Health/Diag
 [[redirects]]
@@ -33,7 +31,6 @@
   to = "/.netlify/functions/gerar-solic-crp"
   status = 200
 
-
 # Atalhos sem .html
 [[redirects]]
   from = "/form_gera_termo_adesao_1"
@@ -56,7 +53,8 @@
   node_bundler = "esbuild"
   external_node_modules = ["@sparticuz/chromium", "puppeteer-core"]
 
-[functions."termo-solic-crp-pdf"]
+# >>> nome precisa casar com o arquivo .js e com o redirect
+[functions."termo-solic-crp-pdf-v2"]
   timeout = 26
   memory = 1536
 
