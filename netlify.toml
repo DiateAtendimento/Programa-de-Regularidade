@@ -1,0 +1,67 @@
+# Base directory = "frontend" no painel
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Health/Diag
+[[redirects]]
+  from = "/_api/health"
+  to = "/.netlify/functions/api-proxy/health"
+  status = 200
+
+[[redirects]]
+  from = "/_api/_diag"
+  to = "/.netlify/functions/api-proxy/_diag"
+  status = 200
+
+# Proxy catch-all
+[[redirects]]
+  from = "/_api/*"
+  to = "/.netlify/functions/api-proxy/:splat"
+  status = 200
+
+# Mapear as 2 rotas /api/... para as funções Netlify
+[[redirects]]
+  from = "/api/termo-solic-crp-pdf"
+  to = "/.netlify/functions/termo-solic-crp-pdf-v2"
+  status = 200
+
+[[redirects]]
+  from = "/api/gerar-solic-crp"
+  to = "/.netlify/functions/gerar-solic-crp"
+  status = 200
+
+# Atalhos sem .html
+[[redirects]]
+  from = "/form_gera_termo_adesao_1"
+  to = "/form_gera_termo_adesao_1.html"
+  status = 200
+
+[[redirects]]
+  from = "/form_gera_termo_solic_crp_2"
+  to = "/form_gera_termo_solic_crp_2.html"
+  status = 200
+
+# SPA fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Functions config
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["@sparticuz/chromium", "puppeteer-core"]
+
+# >>> aplique o bloco ao NOME REAL da função (com -v2)
+[functions."termo-solic-crp-pdf-v2"]
+  timeout = 30
+  memory  = 1536
+
+[functions."gerar-solic-crp"]
+  timeout = 20
+  memory  = 1024
+
+[build.environment]
+  NODE_VERSION = "20"
