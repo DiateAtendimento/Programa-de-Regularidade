@@ -6,18 +6,15 @@ const API_KEY = process.env.API_KEY || '';
 
 // 👇 aceita CORS_ALLOWLIST OU CORS_ORIGIN_LIST (lista separada por vírgulas)
 const _allow = process.env.CORS_ALLOWLIST || process.env.CORS_ORIGIN_LIST || '';
-const ORIGIN_ALLOWLIST = _allow
-  .split(',')
-  .map(s => s.trim().replace(/\/+$/, '').toLowerCase())
-  .filter(Boolean);
+const ORIGIN_ALLOWLIST = _allow.split(',').map(s => s.trim()).filter(Boolean);
 
 // Timeout do proxy (ms) — pode ajustar via variável de ambiente
-// (padrão aumentado p/ 90s por conta de geração de PDF no upstream)
-const PROXY_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS || 90000);
+const PROXY_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS || 25000);
 
 /**
  * Allowlist de paths (SEM o prefixo /api do upstream).
  * Chame pelo browser como /_api/<rota>, que o proxy redireciona para <UPSTREAM_BASE>/api/<rota>.
+ * Obs.: a checagem é feita sobre o subpath **normalizado** (sem barra final).
  */
 const PATH_ALLOWLIST = [
   // —— Formulário 1 (Adesão) — rotas do server.js ——
@@ -39,6 +36,7 @@ const PATH_ALLOWLIST = [
   /^\/gerar-solic-crp$/i,
   /^\/solic-crp-pdf$/i,
   /^\/termo-solic-crp-pdf$/i,
+  /^\/termo-solic-crp-pdf-v2$/i,
 
   // —— Ferramentas de diagnóstico do próprio proxy ——
   /^\/_diag$/i,
@@ -46,15 +44,12 @@ const PATH_ALLOWLIST = [
 ];
 
 export async function handler(event) {
-  const requestOrigin = (event.headers?.origin || '').trim();
+  const requestOrigin = event.headers?.origin || '';
   const originAllowed = isOriginAllowed(requestOrigin);
-  const corsOrigin = originAllowed ? requestOrigin : '';
+  const corsOrigin = originAllowed ? requestOrigin : '*';
 
-  // Pré-flight
+  // Pré-flight CORS
   if (event.httpMethod === 'OPTIONS') {
-    if (!originAllowed) {
-      return { statusCode: 403, headers: { Vary: 'Origin' }, body: '' };
-    }
     return {
       statusCode: 204,
       headers: {
@@ -62,28 +57,29 @@ export async function handler(event) {
         'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type,Cache-Control,X-Idempotency-Key,X-API-Key,Authorization,X-Requested-With',
         'Access-Control-Max-Age': '3600',
+        'Access-Control-Expose-Headers': 'Content-Disposition',
         Vary: 'Origin',
       },
     };
   }
 
-  // Bloqueia origins não permitidos
-  if (!originAllowed) {
-    return json(403, { error: 'Origin não permitido.' });
-  }
-
-  if (!API_KEY) {
-    return json(500, { error: 'API_KEY não definida no ambiente do Netlify.' }, corsOrigin);
-  }
+  if (!API_KEY) return json(500, { error: 'API_KEY não definida no ambiente do Netlify.' }, corsOrigin);
 
   const url = new URL(event.rawUrl);
   let subpath = url.pathname;
 
   // aceita chamadas via /.netlify/functions/api-proxy/* ou /_api/*
   for (const base of ['/.netlify/functions/api-proxy', '/_api']) {
-    if (subpath.startsWith(base)) { subpath = subpath.slice(base.length); break; }
+    if (subpath.startsWith(base)) {
+      subpath = subpath.slice(base.length);
+      break;
+    }
   }
+
   if (!subpath.startsWith('/')) subpath = '/' + subpath;
+
+  // 🔧 normaliza barra final (mantém "/" puro)
+  if (subpath.length > 1) subpath = subpath.replace(/\/+$/, '');
 
   // health simples do próprio proxy
   if (subpath === '/health') {
@@ -105,11 +101,11 @@ export async function handler(event) {
     if (cnpj.length !== 14) return json(400, { error: 'Informe ?cnpj=14 dígitos' }, corsOrigin);
 
     const target = `${UPSTREAM_BASE}/api/gescon/termo-enc`;
-    const r = await fetch(target, {
+    const r = await safeFetch(target, {
       method: 'POST',
       headers: { 'X-API-Key': API_KEY, 'Accept': 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({ cnpj })
-    }).catch(e => ({ status: 599, headers: new Headers(), text: async () => String(e) }));
+    });
 
     const ct = r.headers.get('content-type') || '';
     const sample = await r.text();
@@ -121,7 +117,7 @@ export async function handler(event) {
     }, corsOrigin);
   }
 
-  // valida rota
+  // valida rota (subpath já normalizado)
   if (!PATH_ALLOWLIST.some(rx => rx.test(subpath))) {
     return json(403, { error: 'Rota não permitida no proxy.', subpath }, corsOrigin);
   }
@@ -152,7 +148,6 @@ export async function handler(event) {
   } catch (err) {
     clearTimeout(t);
     const msg = String(err?.message || err || '');
-    // 1) Logar falhas também
     console.error('[api-proxy][error]', {
       method: event.httpMethod,
       path: subpath,
@@ -163,13 +158,16 @@ export async function handler(event) {
     return json(msg.includes('timeout') ? 504 : 502, { error: 'Upstream error', detail: msg, target }, corsOrigin);
   }
   clearTimeout(t);
+
   // 2) Medir latência
   const ms = Date.now() - started;
 
   const upstreamCT = res.headers.get('content-type') || 'application/octet-stream';
-  const isText =
-    (/^text\//i.test(upstreamCT) || /application\/(json|javascript)/i.test(upstreamCT)) &&
-    !/^application\/octet-stream$/i.test(upstreamCT);
+  const contentDisposition = res.headers.get('content-disposition') || '';
+  const isLikelyBinary =
+    /^application\/pdf\b/i.test(upstreamCT) ||
+    /^application\/octet-stream\b/i.test(upstreamCT) ||
+    /attachment/i.test(contentDisposition);
 
   const buf = Buffer.from(await res.arrayBuffer());
 
@@ -196,27 +194,46 @@ export async function handler(event) {
   return {
     statusCode: res.status,
     headers: outHeaders,
-    body: isText ? buf.toString('utf8') : buf.toString('base64'),
-    isBase64Encoded: !isText
+    body: (!isLikelyBinary && isProbablyText(upstreamCT)) ? buf.toString('utf8') : buf.toString('base64'),
+    isBase64Encoded: (isLikelyBinary || !isProbablyText(upstreamCT))
   };
 }
 
-function json(status, obj, origin) {
-  const headers = {
-    'Content-Type': 'application/json; charset=utf-8',
-    Vary: 'Origin'
-  };
-  if (origin) headers['Access-Control-Allow-Origin'] = origin;
+function json(status, obj, origin='*'){
   return {
     statusCode: status,
-    headers,
+    headers: {
+      'Content-Type':'application/json; charset=utf-8',
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Expose-Headers': 'Content-Disposition',
+      Vary:'Origin'
+    },
     body: JSON.stringify(obj)
   };
 }
 
 function isOriginAllowed(origin){
-  if (!origin) return false;
-  if (!ORIGIN_ALLOWLIST.length) return false;
-  const o = origin.trim().replace(/\/+$/, '').toLowerCase();
-  return ORIGIN_ALLOWLIST.includes(o);
+  if(!origin) return true;
+  if(!ORIGIN_ALLOWLIST.length) return true;
+  return ORIGIN_ALLOWLIST.includes(origin);
+}
+
+function isProbablyText(ct) {
+  return (
+    /^text\//i.test(ct) ||
+    /application\/(json|javascript|xml|x-www-form-urlencoded)/i.test(ct)
+  );
+}
+
+// fetch de diagnóstico (_probe) com fallback de erro
+async function safeFetch(url, opts) {
+  try {
+    return await fetch(url, opts);
+  } catch (e) {
+    return {
+      status: 599,
+      headers: new Headers(),
+      text: async () => String(e?.message || e || '')
+    };
+  }
 }
