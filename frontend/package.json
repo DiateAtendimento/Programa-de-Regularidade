@@ -1,0 +1,10 @@
+{
+  "name": "regularidade-frontend",
+  "private": true,
+  "type": "commonjs",
+  "engines": { "node": "20.x" },
+  "dependencies": {
+    "@sparticuz/chromium": "^140.0.0",
+    "puppeteer-core": "^24.22.3"
+  }
+}
