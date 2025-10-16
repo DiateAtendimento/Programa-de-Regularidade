@@ -6,10 +6,14 @@ const API_KEY = process.env.API_KEY || '';
 
 // 👇 aceita CORS_ALLOWLIST OU CORS_ORIGIN_LIST (lista separada por vírgulas)
 const _allow = process.env.CORS_ALLOWLIST || process.env.CORS_ORIGIN_LIST || '';
-const ORIGIN_ALLOWLIST = _allow.split(',').map(s => s.trim()).filter(Boolean);
+const ORIGIN_ALLOWLIST = _allow
+  .split(',')
+  .map(s => s.trim().replace(/\/+$/, '').toLowerCase())
+  .filter(Boolean);
 
 // Timeout do proxy (ms) — pode ajustar via variável de ambiente
-const PROXY_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS || 25000);
+// (padrão aumentado p/ 90s por conta de geração de PDF no upstream)
+const PROXY_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS || 90000);
 
 /**
  * Allowlist de paths (SEM o prefixo /api do upstream).
@@ -35,7 +39,6 @@ const PATH_ALLOWLIST = [
   /^\/gerar-solic-crp$/i,
   /^\/solic-crp-pdf$/i,
   /^\/termo-solic-crp-pdf$/i,
-  /^\/termo-solic-crp-pdf-v2$/i,
 
   // —— Ferramentas de diagnóstico do próprio proxy ——
   /^\/_diag$/i,
@@ -43,11 +46,15 @@ const PATH_ALLOWLIST = [
 ];
 
 export async function handler(event) {
-  const requestOrigin = event.headers?.origin || '';
+  const requestOrigin = (event.headers?.origin || '').trim();
   const originAllowed = isOriginAllowed(requestOrigin);
-  const corsOrigin = originAllowed ? requestOrigin : '*';
+  const corsOrigin = originAllowed ? requestOrigin : '';
 
+  // Pré-flight
   if (event.httpMethod === 'OPTIONS') {
+    if (!originAllowed) {
+      return { statusCode: 403, headers: { Vary: 'Origin' }, body: '' };
+    }
     return {
       statusCode: 204,
       headers: {
@@ -60,7 +67,14 @@ export async function handler(event) {
     };
   }
 
-  if (!API_KEY) return json(500, { error: 'API_KEY não definida no ambiente do Netlify.' }, corsOrigin);
+  // Bloqueia origins não permitidos
+  if (!originAllowed) {
+    return json(403, { error: 'Origin não permitido.' });
+  }
+
+  if (!API_KEY) {
+    return json(500, { error: 'API_KEY não definida no ambiente do Netlify.' }, corsOrigin);
+  }
 
   const url = new URL(event.rawUrl);
   let subpath = url.pathname;
@@ -159,7 +173,12 @@ export async function handler(event) {
 
   const buf = Buffer.from(await res.arrayBuffer());
 
-  const outHeaders = { 'Content-Type': upstreamCT, 'Access-Control-Allow-Origin': corsOrigin, Vary: 'Origin' };
+  const outHeaders = {
+    'Content-Type': upstreamCT,
+    'Access-Control-Allow-Origin': corsOrigin,
+    'Access-Control-Expose-Headers': 'Content-Disposition',
+    Vary: 'Origin'
+  };
   ['Content-Disposition','Cache-Control','ETag','Last-Modified'].forEach(k => {
     const v = res.headers.get(k); if (v) outHeaders[k] = v;
   });
@@ -182,20 +201,22 @@ export async function handler(event) {
   };
 }
 
-function json(status, obj, origin='*'){
+function json(status, obj, origin) {
+  const headers = {
+    'Content-Type': 'application/json; charset=utf-8',
+    Vary: 'Origin'
+  };
+  if (origin) headers['Access-Control-Allow-Origin'] = origin;
   return {
     statusCode: status,
-    headers: {
-      'Content-Type':'application/json; charset=utf-8',
-      'Access-Control-Allow-Origin': origin,
-      Vary:'Origin'
-    },
+    headers,
     body: JSON.stringify(obj)
   };
 }
 
 function isOriginAllowed(origin){
-  if(!origin) return true;
-  if(!ORIGIN_ALLOWLIST.length) return true;
-  return ORIGIN_ALLOWLIST.includes(origin);
+  if (!origin) return false;
+  if (!ORIGIN_ALLOWLIST.length) return false;
+  const o = origin.trim().replace(/\/+$/, '').toLowerCase();
+  return ORIGIN_ALLOWLIST.includes(o);
 }
