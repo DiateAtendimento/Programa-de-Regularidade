@@ -1181,8 +1181,13 @@
 
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
+    // força a função Netlify (evita qualquer confusão com API_BASE)
+    // e loga a URL final no console quando __DEBUG_SOLIC_CRP__ = true
+    const pdfUrl = '/api/termo-solic-crp-pdf';
+    dbg('[PDF] POST →', pdfUrl);
+
     const blob = await fetchBinary(
-      api('/termo-solic-crp-pdf'),
+      pdfUrl,
       {
         method: 'POST',
         headers: withKey({ 'Content-Type': 'application/json' }),
@@ -1190,6 +1195,7 @@
       },
       { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 1 }
     );
+
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
