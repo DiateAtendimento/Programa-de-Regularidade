@@ -148,6 +148,74 @@
                 <label class="form-label" for="EMAIL_UG">E-mail</label>
                 <input type="email" id="EMAIL_UG" class="form-control" placeholder="ug@exemplo.gov.br" />
               </div>
+              
+              <!-- 1.3 Regime -->
+              <div class="col-12 mt-2"><div class="sub-title">1.3 Regime</div></div>
+
+              <!-- 1.3.1 Situação do RPPS -->
+              <div class="col-12">
+                <label class="form-label mb-1 d-block">1.3.1 Situação do RPPS</label>
+
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio"
+                        name="rpps_situacao" id="rpps_situacao_ativo"
+                        value="RPPS" checked>
+                  <label class="form-check-label" for="rpps_situacao_ativo">RPPS</label>
+                </div>
+
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio"
+                        name="rpps_situacao" id="rpps_situacao_extincao"
+                        value="RPPS em Extinção">
+                  <label class="form-check-label" for="rpps_situacao_extincao">RPPS em Extinção</label>
+                </div>
+              </div>
+
+              <!-- 1.3.2 Unidade Gestora -->
+              <div class="col-12 mt-2" id="grpUG" data-ug-obrigatoria="true">
+                <div class="sub-title small mb-2">1.3.2 Unidade Gestora (UG)</div>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label" for="ug_nome">Nome da UG</label>
+                    <input type="text" class="form-control"
+                          id="ug_nome" name="ug_nome"
+                          required aria-required="true"
+                          placeholder="Ex.: Instituto de Previdência do Município">
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label" for="ug_cnpj">CNPJ</label>
+                    <input type="text" class="form-control"
+                          id="ug_cnpj" name="ug_cnpj"
+                          required aria-required="true"
+                          placeholder="00.000.000/0000-00">
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label" for="ug_email">E-mail</label>
+                    <input type="email" class="form-control"
+                          id="ug_email" name="ug_email"
+                          required aria-required="true"
+                          placeholder="ug@exemplo.gov.br">
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label" for="ug_orgao_vinc">Órgão de Vinculação</label>
+                    <input type="text" class="form-control"
+                          id="ug_orgao_vinc" name="ug_orgao_vinc"
+                          required aria-required="true"
+                          placeholder="Ex.: Secretaria de Administração">
+                  </div>
+                </div>
+
+                <!-- dica visual quando ficar opcional -->
+                <small id="ugHint" class="help-text small text-muted d-none">
+                  Com “RPPS em Extinção” selecionado, os dados da UG não são obrigatórios.
+                </small>
+              </div>
+
+              
             </div>
           </section>
 
@@ -766,7 +834,7 @@
               O Termo de Adesão ao Pró-Regularidade RPPS terá validade a partir da data do seu encaminhamento ao Ministério da Previdência Social por meio do Sistema de Gestão de Consultas e Normas – Gescon-RPPS.
             </p>
             <p>
-              Os procedimentos para adesão e execução do Pró-Regularidade RPPS foram estabelecidos na Portaria SRPC/MP nº XX, de xx de outubro de 2025, que corresponde a um manual do Programa. 
+              Os procedimentos para adesão e execução do Pró-Regularidade RPPS foram estabelecidos na Portaria SRPC/MP nº 2.024, de 15 de outubro de 2025, que corresponde a um manual do Programa. 
               Para o encaminhamento do Termo de Adesão do Pró-Regularidade RPPS, por meio do Gescon, o ente deverá:
             </p>
 
