@@ -57,7 +57,7 @@
 # >>> aplique o bloco ao NOME REAL da função (com -v2)
 [functions."termo-solic-crp-pdf-v2"]
   timeout = 30
-  memory  = 1536
+  memory  = 2048
 
 [functions."gerar-solic-crp"]
   timeout = 30

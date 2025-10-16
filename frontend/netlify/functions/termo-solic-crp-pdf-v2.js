@@ -35,14 +35,37 @@ exports.handler = async (event) => {
 
   let browser;
   try {
-    console.time('[pdf] launch');
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-    });
-    console.timeEnd('[pdf] launch');
+    // ===== LAUNCH COM RETRY (cobre cold start do Chrome) =====
+    async function launchWithRetry() {
+      const opts = {
+        args: [
+          ...chromium.args,
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+        ],
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+      };
+
+      console.time('[pdf] launch');
+      try {
+        return await puppeteer.launch(opts);
+      } catch (e) {
+        console.warn('[pdf] launch fail (1ª tentativa):', e && e.message);
+        await new Promise(r => setTimeout(r, 800));
+        console.time('[pdf] relaunch');
+        const b = await puppeteer.launch(opts);
+        console.timeEnd('[pdf] relaunch');
+        return b;
+      } finally {
+        console.timeEnd('[pdf] launch');
+      }
+    }
+
+    browser = await launchWithRetry();
 
     const page = await browser.newPage();
     await page.setJavaScriptEnabled(true);
@@ -70,10 +93,24 @@ exports.handler = async (event) => {
       return req.continue();
     });
 
-    console.time('[pdf] goto');
-    const res = await page.goto(templateUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    // ===== GOTO COM RETRY + TIMEOUT MAIOR =====
+    async function gotoWithRetry(url) {
+      console.time('[pdf] goto');
+      try {
+        // primeira tentativa: espera rede ficar ociosa
+        return await page.goto(url, { waitUntil: 'networkidle2', timeout: 25000 });
+      } catch (e) {
+        console.warn('[pdf] goto fail (1ª):', e && e.message);
+        await new Promise(r => setTimeout(r, 500));
+        // fallback: carrega DOM e segue
+        return await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      } finally {
+        console.timeEnd('[pdf] goto');
+      }
+    }
+
+    const res = await gotoWithRetry(templateUrl);
     const status = res?.status() || 0;
-    console.timeEnd('[pdf] goto');
     console.log('[pdf] HTTP status do template:', status);
 
     // Marcações para CSS de impressão
@@ -83,7 +120,7 @@ exports.handler = async (event) => {
     });
 
     console.time('[pdf] sanity');
-    await page.waitForSelector('h1.term-title', { timeout: 20000 }).catch(()=>{});
+    await page.waitForSelector('h1.term-title', { timeout: 25000 }).catch(()=>{});
     const sanity = await page.evaluate(() => {
       const href = location.href;
       const title = document.title || '';
@@ -160,6 +197,3 @@ exports.handler = async (event) => {
     };
   }
 };
-
-
-
