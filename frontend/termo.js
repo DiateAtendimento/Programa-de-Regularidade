@@ -104,7 +104,7 @@
 
     // ===== Etapa 3 =====
     // 3.1 – Critério(s) irregular(es) no extrato previdenciário
-    (function(){
+    (function () {
       const list = document.getElementById('criterios-list');
       if (!list) return;
 
@@ -112,14 +112,27 @@
       const arr = Array.isArray(raw)
         ? raw
         : String(raw || '')
-            .split(/[;,]/)         // aceita ; ou ,
+            .split(/[;,]/) // aceita ; ou ,
             .map(s => s.trim())
-            .filter(Boolean);      // remove vazios
+            .filter(Boolean); // remove vazios
 
-      list.innerHTML = arr.length
-        ? arr.map(v => `<li>${v}</li>`).join('')
-        : '<li><em>Não informado.</em></li>';
+      // limpa a lista atual
+      list.innerHTML = '';
+
+      if (!arr.length) {
+        const li = document.createElement('li');
+        li.innerHTML = '<em>Não informado.</em>'; // HTML fixo e controlado
+        list.appendChild(li);
+        return;
+      }
+
+      arr.forEach(v => {
+        const li = document.createElement('li');
+        li.textContent = v; // seguro: sempre texto, sem interpretar HTML
+        list.appendChild(li);
+      });
     })();
+
 
     // 3.2 – Adesão sem irregularidades (quando aplicável)
     (function(){
@@ -164,11 +177,14 @@
       p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS
     ].map(s => String(s || '')).join(' | ').toLowerCase();
 
-    // 4.1 – até 300 parcelas
+    // 4.1 – até 60 OU até 300 (se/quando existir no HTML)
     (function(){
-      const codes = /trezent|300\b|parcelament|reparcelament/.test(finsTxt) ? ['4.1.1'] : [];
+      const codes = [];
+      if (/sessenta|60\b/.test(finsTxt)) codes.push('4.1.0'); // ex.: data-code do item 60
+      if (/trezent|300\b|parcelament|reparcelament/.test(finsTxt)) codes.push('4.1.1');
       filterBy('opt-4-1', codes);
     })();
+
 
     // 4.2 – regularização administrativa (3 itens)
     (function(){

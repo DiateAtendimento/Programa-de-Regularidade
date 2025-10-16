@@ -413,11 +413,8 @@
 
     // === persistência específica da Seção 3.2 (por name) ===
     [
-      'ADESAO_SEM_IRREGULARIDADES',
-      'MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS',
-      'DEFICIT_ATUARIAL',
-      'CRITERIOS_ESTRUT_ESTABELECIDOS',
-      'OUTRO_CRITERIO_COMPLEXO'
+      'ADESAO_SEM_IRREGULARIDADES'
+
     ].forEach(name => {
       const el = document.querySelector(`input[name="${name}"]`);
       if (el) data.values[`__byname__:${name}`] = !!el.checked;
@@ -967,13 +964,10 @@
     if (s === 3) {
       const crits = $$('input[name="CRITERIOS_IRREGULARES[]"]');
       const cOK   = crits.some(i=>i.checked);
-
-      // regra original “completa” (você pode manter para futuras validações internas)
       const semIrreg = (window.__sec3__?.isSemIrreg() === true);
-      const finsOK   = (window.__sec3__?.hasAlgumaFinalidade() === true);
 
       //COMPORTAMENTO: só AVISAR e bloquear apenas a primeira tentativa
-      if (!(cOK || (semIrreg && finsOK))) {
+      if (!(cOK || semIrreg)) {
         if (!allowSkipStep3) {
           showAtencao(['Verifique se foram assinalados todos os critérios irregulares do extrato previdenciário (item 3.1)']);
           return false; // bloqueia apenas nesta 1ª tentativa; ao clicar OK, a flag libera
@@ -1457,8 +1451,6 @@
       // 3.2 (a planilha só pede estes dois flags)
       ADESAO_SEM_IRREGULARIDADES:
         (document.querySelector('input[name="ADESAO_SEM_IRREGULARIDADES"]')?.checked ? 'SIM' : ''),
-      OUTRO_CRITERIO_COMPLEXO:
-        (document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : ''),
 
       // ——— ETAPA 4 ——— (use exatamente os nomes das colunas)
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300')
