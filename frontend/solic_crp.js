@@ -202,16 +202,18 @@
         const m = String(e?.message||'').toLowerCase();
         const isHttp = (e && typeof e.status === 'number');
         const retriable =
-          (isHttp && (e.status===429 || e.status===503 || e.status===504 || e.status>=500)) ||
+          (isHttp && (e.status===429 || e.status===502 || e.status===503 || e.status===504 || e.status>=500)) || // <— inclui 502
           m.includes('timeout:') || !navigator.onLine || m.includes('failed');
         if(retriable && attempt <= (retries+1)){
-          const backoff = 300 * Math.pow(2, attempt-1);
-          await new Promise(r=>setTimeout(r, backoff)); continue;
+          const backoff = Math.min(5000, 400 * Math.pow(2, attempt-1));
+          await new Promise(r=>setTimeout(r, backoff));
+          continue;
         }
         throw e;
       }
     }
   }
+
 
   function friendlyErrorMessages(err, fallback='Falha ao comunicar com o servidor.'){
     const status = err?.status;

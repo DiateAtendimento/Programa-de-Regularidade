@@ -1,5 +1,3 @@
-//gerar-solic.crp.js
-
 // netlify/functions/gerar-solic-crp.js
 // Usa fetch nativo do Node 20 + LOGS detalhados
 
@@ -88,10 +86,11 @@ exports.handler = async (event) => {
     const url = `${TARGET.replace(/\/+$/, '')}/api/gerar-solic-crp`;
     const headers = { 'Content-Type': 'application/json' };
 
-    // Propaga X-API-Key e X-Idempotency-Key
-    const apiKey = event.headers['x-api-key'] || event.headers['X-API-Key'];
+    // Propaga X-API-Key e X-Idempotency-Key (com fallback para variável de ambiente)
+    const hdrs = event.headers || {};
+    const apiKey = hdrs['x-api-key'] || hdrs['X-API-Key'] || process.env.API_KEY || '';
     if (apiKey) headers['X-API-Key'] = apiKey;
-    const idem = event.headers['x-idempotency-key'] || event.headers['X-Idempotency-Key'];
+    const idem = hdrs['x-idempotency-key'] || hdrs['X-Idempotency-Key'] || '';
     if (idem) headers['X-Idempotency-Key'] = idem;
 
     console.log('[gerar-solic] POST →', url);
@@ -101,12 +100,12 @@ exports.handler = async (event) => {
       'X-Idempotency-Key': idem ? mask(idem) : '(none)'
     });
 
-    // timeout via AbortController (28s, alinhado ao timeout=30s em netlify.toml)
+    // timeout simples via AbortController (25s)
     const ac = new AbortController();
     const timeout = setTimeout(() => {
       console.warn('[gerar-solic] aborting upstream fetch (timeout)');
       ac.abort();
-    }, 28000);
+    }, 25000);
 
     console.time('[gerar-solic] upstream');
     let upstream;
