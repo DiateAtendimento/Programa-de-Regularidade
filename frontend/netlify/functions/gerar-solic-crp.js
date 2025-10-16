@@ -101,12 +101,12 @@ exports.handler = async (event) => {
       'X-Idempotency-Key': idem ? mask(idem) : '(none)'
     });
 
-    // timeout simples via AbortController (25s)
+    // timeout via AbortController (28s, alinhado ao timeout=30s em netlify.toml)
     const ac = new AbortController();
     const timeout = setTimeout(() => {
       console.warn('[gerar-solic] aborting upstream fetch (timeout)');
       ac.abort();
-    }, 25000);
+    }, 28000);
 
     console.time('[gerar-solic] upstream');
     let upstream;

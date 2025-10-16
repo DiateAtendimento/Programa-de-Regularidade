@@ -14,7 +14,7 @@
     const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
     if (override) return override;
     // fallback padrão (Netlify + dev) via proxy
-    return '/_api';
+    return '/api';
   })();
 
   
@@ -22,6 +22,21 @@
   // (opcional) chave para o backend
   const API_KEY = window.__API_KEY || '';
   const withKey = (h = {}) => (API_KEY ? { ...h, 'X-API-Key': API_KEY } : h)
+
+  // === Warmup/Health do backend ===
+  // Verifica /_api/health por até 60s para evitar cold start antes dos POSTs pesados
+  async function waitForService({ timeoutMs = 60000, pollMs = 1500 } = {}) {
+    const end = Date.now() + timeoutMs;
+    while (Date.now() < end) {
+      try {
+        // usa o proxy apenas para o health (/_api/health)
+        const r = await fetchJSON('/_api/health', {}, { label: 'health', timeout: 4000, retries: 0 });
+        if (r && (r.ok || r.status === 'ok')) return true;
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, pollMs));
+    }
+    return false;
+  }
 
   const FORM_STORAGE_KEY = 'solic-crp-form-v1';
   const IDEM_STORE_KEY   = 'rpps-idem-submit:solic-crp';
@@ -1154,6 +1169,8 @@
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
     };
 
+    await waitForService({ timeoutMs: 60000, pollMs: 1500 });
+
     const blob = await fetchBinary(
       api('/termo-solic-crp-pdf'),
       {
@@ -1220,6 +1237,9 @@
     let t = setTimeout(()=> bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).show(), 3000);
 
     try{
+      
+      await waitForService({ timeoutMs: 60000, pollMs: 1500 });
+
       await fetchJSON(api('/gerar-solic-crp'), {
       method:'POST',
       headers: withKey({'Content-Type':'application/json','X-Idempotency-Key':idem}),

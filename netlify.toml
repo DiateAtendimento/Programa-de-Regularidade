@@ -60,7 +60,7 @@
   memory  = 1536
 
 [functions."gerar-solic-crp"]
-  timeout = 20
+  timeout = 30
   memory  = 1024
 
 [build.environment]
