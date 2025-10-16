@@ -1168,6 +1168,7 @@
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
+  
   /* ========= Fluxo ÚNICO de PDF ========= */
   async function gerarBaixarPDF(payload){
     // Conversões de compatibilidade com o template/PDF
@@ -1179,24 +1180,47 @@
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
     };
 
+    // aguarda a function/API responder health ok
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-    // força a função Netlify (evita qualquer confusão com API_BASE)
-    // e loga a URL final no console quando __DEBUG_SOLIC_CRP__ = true
-    const pdfUrl = '/api/termo-solic-crp-pdf';
-    dbg('[PDF] POST →', pdfUrl);
+    // TENTA /api primeiro; se vier 5xx/timeout, cai para a função direta
+    const tryUrls = [
+      '/api/termo-solic-crp-pdf',
+      '/.netlify/functions/termo-solic-crp-pdf-v2'
+    ];
 
-    const blob = await fetchBinary(
-      pdfUrl,
-      {
-        method: 'POST',
-        headers: withKey({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(payloadForPdf)
-      },
-      { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 1 }
-    );
+    let blob = null;
+    let lastErr = null;
 
+    for (const urlTry of tryUrls) {
+      dbg('[PDF] tentando →', urlTry);
+      try {
+        blob = await fetchBinary(
+          urlTry,
+          {
+            method: 'POST',
+            headers: withKey({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(payloadForPdf)
+          },
+          // deixamos o retry do nosso laço fazer o trabalho (retries: 0 aqui)
+          { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 0 }
+        );
+        dbg('[PDF] OK em →', urlTry);
+        break;
+      } catch (e) {
+        lastErr = e;
+        const s = e && e.status;
+        const msg = String(e?.message || '').toLowerCase();
+        dbg('[PDF] falhou em', urlTry, '| status:', s, '| msg:', e && e.message);
+        // somente erros 5xx/timeout tentam próxima URL; demais abortam
+        const isRetriable = (s >= 500) || msg.includes('timeout') || msg.includes('failed');
+        if (!isRetriable) throw e;
+      }
+    }
 
+    if (!blob) throw lastErr || new Error('Falha ao gerar PDF (todas as rotas tentadas)');
+
+    // baixa o arquivo
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const enteSlug = String(payload.ENTE || 'solic-crp')
@@ -1207,6 +1231,7 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
+
 
 
 
