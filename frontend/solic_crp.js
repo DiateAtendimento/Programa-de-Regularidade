@@ -1,5 +1,3 @@
-//solic_crp.js
-
 // solic_crp.js — fluxo completo da Solicitação de CRP Emergencial (isolado da Adesão)
 
 (() => {
@@ -246,7 +244,6 @@
     spanUfGescon: $('#UF_GESCON'),
     spanEnteGescon: $('#ENTE_GESCON'),
     infoDataEncGescon: $('#infoDataEncGescon'),
-
     // etapa 1
     uf: $('#UF'), ente: $('#ENTE'), cnpjEnte: $('#CNPJ_ENTE'), emailEnte: $('#EMAIL_ENTE'),
     ug: $('#UG'), cnpjUg: $('#CNPJ_UG'), emailUg: $('#EMAIL_UG'),
@@ -348,7 +345,6 @@
       'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
       'JUSTIFICATIVAS_GERAIS'
     ].forEach(id=>{ const e=$('#'+id); if(e) data.values[id]=e.value; });
-
     data.values['esf_mun'] = !!el.esfMun?.checked;
     data.values['esf_est'] = !!el.esfEst?.checked;
     data.values['FASES_MARCADAS[]'] = $$('.fase-check:checked').map(i => i.value);
@@ -462,7 +458,6 @@
         const c = document.getElementById('chkSemIrregularidades');
         if (c) c.checked = true;
       }
-
       // 4.3.10 radios/áreas condicionais
       (function(){
         const v = st.values?.['F4310_OPCAO'] || '';
@@ -612,7 +607,6 @@
     dbg('[consultarTermosRegistrados] <<', out);
     return out;
   }
-
 
   async function onPesquisar(ev){
     if (searching) return;
@@ -822,16 +816,11 @@
       const introDT = document.getElementById('intro_DATA_ENC');
       if (introNG) introNG.textContent = el.spanNGescon?.textContent || '—';
       if (introDT) introDT.textContent = el.spanDataEnc?.textContent || '—';
-
     }
   }
 
-
-
-
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
   function setupFase4Toggles(){
-    // mapa: valor do checkbox da fase -> id do modal correspondente
     const modalByFase = {
       '4.1': 'modalF41',
       '4.2': 'modalF42',
@@ -840,8 +829,6 @@
       '4.5': 'modalF45',
       '4.6': 'modalF46'
     };
-
-    // Ao marcar uma fase, abre o modal (não limpa nada ao fechar)
     el.faseChecks.forEach(chk=>{
       chk.addEventListener('change', ()=>{
         const target = modalByFase[chk.value];
@@ -852,8 +839,6 @@
         saveState();
       });
     });
-
-    // Nada de mostrar/ocultar blocos na página — ficam só dentro dos modais
   }
 
   /* === Condicionais dos modais === */
@@ -894,7 +879,6 @@
     if (optF && critWrap46) optF.addEventListener('change', () => critWrap46.classList.toggle('d-none', !optF.checked));
   }
 
-
   function validarFaseSelecionada(){
     const fases = $$('.fase-check:checked').map(i=>i.value);
     if(!fases.length) return { ok:false, motivo:'Selecione ao menos uma fase (4.1 a 4.6).' };
@@ -921,8 +905,7 @@
             return { ok:false, motivo:'Na 4.4, ao marcar a finalidade “e)”, selecione pelo menos um critério em 4.4.3.' };
           }
         }
-      } // <-- ESSA CHAVE FALTAVA
-
+      }
       if (f==='4.5'){
         const ok451 = $('#blk_45 input[type="checkbox"]:checked');
         const docs = ($('#F45_DOCS')?.value||'').trim();
@@ -941,6 +924,7 @@
     }
     return { ok:true };
   }
+
   function popularListasFaseComBaseNosCritérios(){
     if(!el.grpCrit) return;
     const itens = $$('input[name="CRITERIOS_IRREGULARES[]"]', el.grpCrit).map(inp => ({
@@ -948,7 +932,7 @@
       label: inp.nextElementSibling ? inp.nextElementSibling.textContent : inp.value
     }));
 
-    // 4.3.11(a) – incluir no Plano da Fase Específica
+    // 4.3.11(a)
     const f43Incl = document.getElementById('F43_INCLUIR');
     if (f43Incl && !f43Incl.children.length){
       f43Incl.innerHTML = itens.map(it => (
@@ -956,7 +940,7 @@
       )).join('');
     }
 
-    // 4.3 – lista dos critérios regulares na fase intermediária
+    // 4.3 lista
     if (el.f43Lista && !el.f43Lista.children.length){
       el.f43Lista.innerHTML = itens.map(it => (
         `<label class="form-check"><input class="form-check-input me-2" type="checkbox" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
@@ -988,7 +972,7 @@
     if(el.f46Final && !el.f46Final.children.length){
       el.f46Final.innerHTML = el.f44Final.innerHTML;
     }
-    // 4.6.2 (f) – critérios completos
+    // 4.6.2 (f)
     const f462f = document.getElementById('F462F_CRITERIOS');
     if (f462f && !f462f.children.length) {
       f462f.innerHTML = itens.map(it => (
@@ -1000,7 +984,6 @@
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
     const msgs=[];
-    // 1.2 / 1.3
     if(!el.uf.value.trim()) msgs.push('UF');
     if(!el.ente.value.trim()) msgs.push('Ente');
     if(digits(el.cnpjEnte.value).length!==14) msgs.push('CNPJ do Ente');
@@ -1009,7 +992,6 @@
     if(digits(el.cnpjUg.value).length!==14) msgs.push('CNPJ da UG');
     if(!isEmail(el.emailUg.value)) msgs.push('E-mail da UG');
 
-    // 2
     if(digits(el.cpfRepEnte.value).length!==11) msgs.push('CPF do Rep. do Ente');
     if(!el.nomeRepEnte.value.trim()) msgs.push('Nome do Rep. do Ente');
     if(!el.cargoRepEnte.value.trim()) msgs.push('Cargo do Rep. do Ente');
@@ -1019,11 +1001,6 @@
     if(!el.nomeRepUg.value.trim()) msgs.push('Nome do Rep. da UG');
     if(!el.cargoRepUg.value.trim()) msgs.push('Cargo do Rep. da UG');
     if(!isEmail(el.emailRepUg.value)) msgs.push('E-mail do Rep. da UG');
-
-    // 3
-
-
-    // 3.3 (opcional marcar nenhum, então não obriga)
 
     if(msgs.length){ showAtencao(['Preencha os campos:', ...msgs.map(m=>'• '+m)]); return false; }
     return true;
@@ -1059,7 +1036,6 @@
     const FIN_3_2_OUTRO_CRITERIO_COMPLEXO =
       document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : '';
 
-    // Campos do CRP anterior podem não existir neste formulário
     const DATA_VENCIMENTO_ULTIMO_CRP = (el.dataUltCrp?.value) || '';
     const TIPO_EMISSAO_ULTIMO_CRP =
       (el.tipoAdm?.checked && 'Administrativa') ||
@@ -1070,7 +1046,6 @@
       N_GESCON: el.spanNGescon?.textContent || '',
       DATA_ENC_VIA_GESCON: el.spanDataEnc?.textContent || '',
 
-      // 1) Identificação
       ESFERA,
       UF: el.uf.value.trim(),
       ENTE: el.ente.value.trim(),
@@ -1080,7 +1055,6 @@
       CNPJ_UG: digits(el.cnpjUg.value),
       EMAIL_UG: el.emailUg.value.trim(),
 
-      // 2) Representantes
       CPF_REP_ENTE: digits(el.cpfRepEnte.value),
       NOME_REP_ENTE: el.nomeRepEnte.value.trim(),
       CARGO_REP_ENTE: el.cargoRepEnte.value.trim(),
@@ -1092,21 +1066,17 @@
       EMAIL_REP_UG: el.emailRepUg.value.trim(),
       TEL_REP_UG: el.telRepUg.value.trim(),
 
-      // 3) CRP anterior (opcionais no form_2)
       DATA_VENCIMENTO_ULTIMO_CRP,
       TIPO_EMISSAO_ULTIMO_CRP,
 
-      // 3.1
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i => i.value),
 
-      // 3.2
       ADESAO_SEM_IRREGULARIDADES,
       FIN_3_2_MANUTENCAO_CONFORMIDADE,
       FIN_3_2_DEFICIT_ATUARIAL,
       FIN_3_2_CRITERIOS_ESTRUTURANTES,
       FIN_3_2_OUTRO_CRITERIO_COMPLEXO,
 
-      // 4) Fases
       FASES_MARCADAS: marcadas,
       FASE_PROGRAMA: faseCompat,
       F41_OPCAO: $('input[name="F41_OPCAO"]:checked')?.value || '',
@@ -1134,95 +1104,59 @@
       F46_JUST_PLANOS: $('#F46_JUST_PLANOS')?.value || '',
       F46_COMP_CUMPR:  $('#F46_COMP_CUMPR')?.value || '',
 
-      // 4.3.10
       F4310_OPCAO:  document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || '',
       F4310_LEGISLACAO: $('#F4310_LEGISLACAO')?.value || '',
       F4310_DOCS:       $('#F4310_DOCS')?.value || '',
 
-      // 4.3.12
       F43_DESC_PLANOS: $('#F43_DESC_PLANOS')?.value || '',
 
-      // 4.4 extras
       F441_LEGISLACAO: $('#F441_LEGISLACAO')?.value || '',
       F445_DESC_PLANOS: $('#F445_DESC_PLANOS')?.value || '',
       F446_DOCS:       $('#F446_DOCS')?.value || '',
       F446_EXEC_RES:   $('#F446_EXEC_RES')?.value || '',
 
-      // 4.5.3
       F453_EXEC_RES: $('#F453_EXEC_RES')?.value || '',
 
-      // 4.6 extras
       F462F_CRITERIOS: $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value),
       F466_DOCS:      $('#F466_DOCS')?.value || '',
       F466_EXEC_RES:  $('#F466_EXEC_RES')?.value || '',
 
-
-      // 5
       JUSTIFICATIVAS_GERAIS: el.justGerais?.value || '',
 
-      // Carimbos
       MES: el.mes.value,
       DATA_SOLIC_GERADA: el.dataSol.value,
       HORA_SOLIC_GERADA: el.horaSol.value,
       ANO_SOLIC_GERADA: el.anoSol.value,
 
-      // Idempotência
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
-  
-  /* ========= Fluxo ÚNICO de PDF ========= */
+
+  /* ========= Fluxo ÚNICO de PDF (força /api) ========= */
   async function gerarBaixarPDF(payload){
-    // Conversões de compatibilidade com o template/PDF
     const payloadForPdf = {
       ...payload,
-      // o template aceita string '1' para o gate (compat com adesão)
       HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : '',
-      // DATA usada no rodapé do termo (alias da sua DATA_SOLIC_GERADA)
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
     };
 
-    // aguarda a function/API responder health ok
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-    // TENTA /api primeiro; se vier 5xx/timeout, cai para a função direta
-    const tryUrls = [
-      '/api/termo-solic-crp-pdf',
-      '/.netlify/functions/termo-solic-crp-pdf-v2'
-    ];
+    // força a função Netlify (evita qualquer confusão com API_BASE)
+    // e loga a URL final no console quando __DEBUG_SOLIC_CRP__ = true
+    const pdfUrl = '/api/termo-solic-crp-pdf';
+    dbg('[PDF] POST →', pdfUrl);
 
-    let blob = null;
-    let lastErr = null;
+    const blob = await fetchBinary(
+      pdfUrl,
+      {
+        method: 'POST',
+        headers: withKey({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payloadForPdf)
+      },
+      { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 1 }
+    );
 
-    for (const urlTry of tryUrls) {
-      dbg('[PDF] tentando →', urlTry);
-      try {
-        blob = await fetchBinary(
-          urlTry,
-          {
-            method: 'POST',
-            headers: withKey({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify(payloadForPdf)
-          },
-          // deixamos o retry do nosso laço fazer o trabalho (retries: 0 aqui)
-          { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 0 }
-        );
-        dbg('[PDF] OK em →', urlTry);
-        break;
-      } catch (e) {
-        lastErr = e;
-        const s = e && e.status;
-        const msg = String(e?.message || '').toLowerCase();
-        dbg('[PDF] falhou em', urlTry, '| status:', s, '| msg:', e && e.message);
-        // somente erros 5xx/timeout tentam próxima URL; demais abortam
-        const isRetriable = (s >= 500) || msg.includes('timeout') || msg.includes('failed');
-        if (!isRetriable) throw e;
-      }
-    }
-
-    if (!blob) throw lastErr || new Error('Falha ao gerar PDF (todas as rotas tentadas)');
-
-    // baixa o arquivo
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const enteSlug = String(payload.ENTE || 'solic-crp')
@@ -1233,9 +1167,6 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
-
-
-
 
   /* ========= Ações: Gerar & Submit ========= */
   let gerarBusy=false;
@@ -1276,17 +1207,15 @@
     const btn = el.btnSubmit; const old = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = 'Finalizando…';
 
-    // abre “Salvando…” se demorar
     let t = setTimeout(()=> bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).show(), 3000);
 
     try{
-      
       await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
       await fetchJSON(api('/gerar-solic-crp'), {
-      method:'POST',
-      headers: withKey({'Content-Type':'application/json','X-Idempotency-Key':idem}),
-      body: JSON.stringify(payload)
+        method:'POST',
+        headers: withKey({'Content-Type':'application/json','X-Idempotency-Key':idem}),
+        body: JSON.stringify(payload)
       }, { label:'gerar-solic-crp', timeout:30000, retries:1 });
 
       clearTimeout(t);
@@ -1294,12 +1223,10 @@
       clearIdemKey();
       btn.innerHTML = 'Finalizado ✓';
       
-      // limpar formulário e estado
       setTimeout(()=>{
         try{ form.reset(); }catch{}
         clearAllState();
 
-        // Zera gate do Gescon e limpa visual
         el.hasGescon && (el.hasGescon.value = '0');
         el.cnpjInput && (el.cnpjInput.value = '');
         el.boxGescon && el.boxGescon.classList.add('d-none');
@@ -1309,12 +1236,10 @@
         if (el.spanEnteGescon) el.spanEnteGescon.textContent = '';
         if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
 
-        // Bloqueia novamente o "Próximo" até nova pesquisa válida
         if (el.btnNext) el.btnNext.disabled = true;
 
         btn.disabled=false; btn.innerHTML=old;
 
-        // Volta para o passo 0 e re-renderiza
         curStep = 0;
         window.__renderStepper?.();
 
@@ -1324,10 +1249,10 @@
       clearTimeout(t);
       try{ bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); }catch{}
       showErro(friendlyErrorMessages(err, 'Falha ao registrar a solicitação.'));
-      // mantém idemKey p/ reenvio
       btn.disabled=false; btn.innerHTML=old;
     }
   });
+
   /* ========= UI helpers ========= */
   function showModal(id){ const mEl=document.getElementById(id); if(!mEl) return; bootstrap.Modal.getOrCreateInstance(mEl).show(); }
   function initWelcome(){
@@ -1335,7 +1260,7 @@
     if(mw){ setTimeout(()=> bootstrap.Modal.getOrCreateInstance(mw).show(), 150); }
   }
 
-  // Versão única de showErro (mantida)
+  // versão única de showErro
   function showErro(msgs) {
     try {
       const ul = document.getElementById('modalErroLista');
@@ -1359,7 +1284,6 @@
     popularListasFaseComBaseNosCritérios();
     initWelcome();
 
-    // exclusividade esfera
     $$('.esf-only-one').forEach(chk=>{
       chk.addEventListener('change', ()=>{
         if(chk.checked) $$('.esf-only-one').forEach(o=>{ if(o!==chk) o.checked=false; });
@@ -1367,19 +1291,17 @@
       });
     });
 
-    // salvar alterou
     const form = $('#solicCrpForm');
     form?.addEventListener('input', ()=> setTimeout(saveState, 300));
     form?.addEventListener('change', ()=> setTimeout(saveState, 300));
 
-    // Step 0: começa desabilitado até achar Gescon
     if(el.btnNext) el.btnNext.disabled = true;
 
-    // restore & stepper
     ensureStepperFallback();
     window.addEventListener('beforeunload', saveState);
   }
 
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); }
   else{ init(); }
+
 })();
