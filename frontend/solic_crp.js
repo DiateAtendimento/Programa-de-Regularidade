@@ -19,6 +19,16 @@
 
   
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
+
+  // Rotas que continuam no proxy (/_api)
+  function apiRoute(p) {
+    const path = p.startsWith('/') ? p : '/' + p;
+    if (/^\/(gescon\/termo-enc|termos-registrados)$/i.test(path)) {
+      return '/_api' + path; // usa proxy para essas rotas
+    }
+    return api(path); // demais vão para /api
+  }
+
   // (opcional) chave para o backend
   const API_KEY = window.__API_KEY || '';
   const withKey = (h = {}) => (API_KEY ? { ...h, 'X-API-Key': API_KEY } : h)
@@ -580,7 +590,7 @@
   async function consultarGesconByCnpj(cnpj){
     const body = { cnpj };
     dbg('[consultarGesconByCnpj] >> body:', body);
-    const out = await fetchJSON(api('/gescon/termo-enc'), {
+    const out = await fetchJSON(apiRoute('/gescon/termo-enc'), {
       method:'POST',
       headers: withKey({'Content-Type':'application/json'}),
       body: JSON.stringify(body)
@@ -592,7 +602,7 @@
   async function consultarTermosRegistrados(cnpj){
     const body = { cnpj };
     dbg('[consultarTermosRegistrados] >> body:', body);
-    const out = await fetchJSON(api('/termos-registrados'), {
+    const out = await fetchJSON(apiRoute('/termos-registrados'), {
       method:'POST',
       headers: withKey({'Content-Type':'application/json'}),
       body: JSON.stringify(body)
