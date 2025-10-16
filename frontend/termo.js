@@ -134,7 +134,7 @@
     })();
 
 
-    // 3.2 – Adesão sem irregularidades (quando aplicável)
+    // 3.2 – Adesão sem irregularidades (apenas a frase única)
     (function(){
       const box = document.getElementById('blk-3-2-adesao');
       const ul  = document.getElementById('finalidades-3-2');
@@ -148,25 +148,15 @@
         return;
       }
 
-      // Se SIM, garante visibilidade
+      // mostra o bloco e imprime só a frase desejada
       box.style.removeProperty('display');
-
-      const reasons = [];
-      reasons.push('Adesão realizada sem irregularidades no extrato previdenciário');
-
-      const mapFinalidades = [
-        ['CELEBRACAO_TERMO_PARCELA_DEBITOS', 'Celebração de termos de parcelamento/reparcelamento.'],
-        ['REGULARIZACAO_PENDEN_ADMINISTRATIVA', 'Regularização de pendências administrativas.'],
-        ['DEFICIT_ATUARIAL', 'Equacionamento de déficit atuarial/prazos.'],
-        ['CRITERIOS_ESTRUT_ESTABELECIDOS', 'Organização por critérios estruturantes.'],
-        ['MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS', 'Manutenção da conformidade às normas gerais.']
-      ];
-      for (const [k, txt] of mapFinalidades) {
-        if (String(p[k] || '').trim()) reasons.push(txt);
-      }
-
-      ul.innerHTML = reasons.map(r => `<li>${r}</li>`).join('');
+      ul.innerHTML = `
+        <li>
+          O RPPS <strong>não apresenta, atualmente, irregularidades</strong> nos critérios do extrato previdenciário,
+          mas adere ao Pró-Regularidade RPPS para as outras finalidades nele previstas.
+        </li>`;
     })();
+
 
     // ===== Etapa 4 – FINALIDADES =====
     const finsTxt = [
