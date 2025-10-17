@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apresentação do Programa — Regulariza RPPS</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.cdnfonts.com/css/rawline" rel="stylesheet"/>
+
+  <!-- Favicon principal em SVG -->
+  <link rel="icon" href="imagens/favicon.svg" type="image/svg+xml" sizes="any">
+  <!-- Fallbacks -->
+  <link rel="icon" href="imagens/favicon.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="imagens/favicon.png" sizes="16x16" type="image/png">
+
+  <!-- CSS específico destas páginas -->
+  <link rel="stylesheet" href="construcao.css" />
+</head>
+<body class="construcao-body">
+  <!-- BG (compatibilidade com layout) -->
+  <div class="home-bg d-none d-md-block"></div>
+
+  <!-- BARRA SUPERIOR: logo MPS + contatos -->
+  <header class="mps-header">
+    <div class="container-xl d-flex align-items-center justify-content-between gap-3">
+      <a href="index.html" class="d-inline-block">
+        <img src="imagens/logo-termo-drpps.svg" alt="Ministério da Previdência Social" class="logo-mps-top">
+      </a>
+
+      <div class="d-none d-md-flex align-items-center gap-4">
+        <div class="d-flex align-items-center gap-2">
+          <img src="imagens/logo-email-mps.svg" alt="" height="20">
+          <span class="fw-600">programa.regularidade.rpps@previdencia.gov.br</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <img src="imagens/logo-telefone-mps.svg" alt="" height="20">
+          <span class="fw-600">(61) 2021-5555</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO -->
+  <main class="container-xl py-5">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10">
+        <section class="card-blur p-4 p-md-5 text-center">
+          <div class="mb-3">
+            <span class="badge-soft">Página</span>
+          </div>
+          <h1 class="page-title mb-2">Apresentação do Programa</h1>
+          <p class="text-muted mb-4">Conteúdo em construção</p>
+
+          <div class="lottie-wrap mx-auto mb-4">
+            <div id="lottieConstrucao" class="lottie-box" aria-hidden="true"></div>
+          </div>
+
+          <p class="lead mb-4">
+            Estamos preparando esta seção com todas as informações sobre o Programa de Regularidade Previdenciária.
+            Em breve, você encontrará aqui a visão geral, objetivos e princípios do Pró-Regularidade RPPS.
+          </p>
+
+          <div class="d-flex flex-wrap gap-3 justify-content-center">
+            <a href="index.html" class="btn btn-primary btn-lg px-4">Voltar ao início</a>
+            <a href="form_gera_termo_adesao_1.html" class="btn btn-outline-primary btn-lg px-4" target="_blank">
+              Abrir Formulário de Adesão
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+  <script>
+    (function(){
+      try {
+        lottie.loadAnimation({
+          container: document.getElementById('lottieConstrucao'),
+          renderer: 'svg',
+          loop: true,
+          autoplay: true,
+          path: 'animacao/em-construcao.json'
+        });
+      } catch(_) {}
+    })();
+  </script>
+</body>
+</html>
