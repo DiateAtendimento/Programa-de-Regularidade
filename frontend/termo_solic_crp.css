@@ -4,6 +4,22 @@
    ====================================================================== */
 
 /* -------------------- Bases compartilhadas (layout A4 / termo) -------------------- */
+@font-face{
+  font-family: 'Rawline'; font-weight: 400; font-style: normal; font-display: swap;
+  src: url('./fonts/rawline-400.ttf') format('truetype');
+}
+@font-face{
+  font-family: 'Rawline'; font-weight: 600; font-style: normal; font-display: swap;
+  src: url('./fonts/rawline-600.ttf') format('truetype');
+}
+@font-face{
+  font-family: 'Rawline'; font-weight: 700; font-style: normal; font-display: swap;
+  src: url('./fonts/rawline-700.ttf') format('truetype');
+}
+body{
+  font-family: 'Rawline', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
 :root{
   --page-w: 210mm;
   --page-h: 297mm;
@@ -219,3 +235,4 @@ body.pdf-export .term-meta{
 /* Tamanhos padrão das lotties nos modais deste form */
 .lottie-box{ width: 140px; height: 140px; }
 .lottie-loading{ width: 120px; height:120px; }
+

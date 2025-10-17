@@ -12,6 +12,18 @@ function resolveOrigin(event) {
 }
 
 exports.handler = async (event) => {
+  // Healthcheck / warm-up: aceita GET e responde 200
+  if (event.httpMethod === 'GET') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ ok: true, fn: 'termo-solic-crp-pdf-v2' })
+    };
+  }
+
   console.time('[pdf] total');
   console.log('[pdf] start, node', process.version, '| headless?', chromium.headless);
   if (event.httpMethod !== 'POST') {
@@ -68,6 +80,37 @@ exports.handler = async (event) => {
     browser = await launchWithRetry();
 
     const page = await browser.newPage();
+    // Intercepta requisições do headless browser
+    await page.setRequestInterception(true);
+
+    page.on('request', async (req) => {
+      const url = req.url();
+
+      // 1) Bloqueia Google Fonts no PDF
+      if (url.includes('fonts.googleapis.com')) {
+        return req.respond({
+          status: 200,
+          contentType: 'text/css',
+          body: '/* fonts blocked for PDF */'
+        });
+      }
+
+      // 2) Garante entrega dos SVGs de logo (usa fetch do Node 20+)
+      if (/\/imagens\/logo-(secretaria-complementar|termo-drpps)\.svg$/.test(url)) {
+        try {
+          const r = await fetch(url, { cache: 'no-store' });
+          const body = await r.text();
+          return req.respond({ status: 200, contentType: 'image/svg+xml', body });
+        } catch (e) {
+          console.warn('[pdf][logo] fallback continue()', e?.message);
+          return req.continue();
+        }
+      }
+
+      // Demais recursos seguem normalmente
+      return req.continue();
+    });
+
     await page.setJavaScriptEnabled(true);
 
     // Encaminha logs do browser para a função (aparecem no painel da Netlify)
