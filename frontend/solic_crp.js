@@ -1140,7 +1140,7 @@
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
     };
 
-    // aquece serviços gerais (proxy) como você já faz
+    // aquece serviços gerais (proxy)
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
     // aquece explicitamente a função de PDF da Netlify (cold start)
@@ -1151,7 +1151,7 @@
       );
     } catch(_) { /* não bloqueia */ }
 
-    // tentaremos nas duas rotas; começamos pela /api (respeita redirects do netlify.toml)
+    // 1ª rota respeita os redirects do netlify.toml; 2ª é fallback direto
     const tryUrls = [
       '/api/termo-solic-crp-pdf',
       '/.netlify/functions/termo-solic-crp-pdf-v2'
@@ -1165,12 +1165,12 @@
       for (const urlTry of tryUrls) {
         dbg('[PDF] tentando →', urlTry, '(round', round+1, ')');
         try {
-          // aqui cada rota ganha 3 tentativas internas com backoff
+          // cada rota ganha tentativas internas com backoff
           blob = await fetchBinary(
             urlTry,
             {
               method: 'POST',
-              headers: withKey({ 'Content-Type': 'application/json' }),
+              headers: withKey({ 'Content-Type': 'application/json; charset=utf-8' }),
               body: JSON.stringify(payloadForPdf)
             },
             { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 3 }
@@ -1184,20 +1184,17 @@
           const retriable = (s >= 500) || msg.includes('timeout') || msg.includes('failed') || e.name === 'AbortError';
           dbg('[PDF] falhou em', urlTry, '| status:', s, '| msg:', e && e.message, '| retriable?', retriable);
           if (!retriable) throw e; // 4xx etc: não adianta insistir
-          // pequeno jitter entre uma URL e outra
-          await new Promise(r => setTimeout(r, 300 + Math.random()*300));
+          await new Promise(r => setTimeout(r, 300 + Math.random()*300)); // jitter entre URLs
         }
       }
-
-      // se nenhuma URL funcionou nesta rodada, espera um pouco e repete o conjunto
       if (!blob) {
-        await new Promise(r => setTimeout(r, 800 + Math.random()*400));
+        await new Promise(r => setTimeout(r, 800 + Math.random()*400)); // backoff entre rodadas
       }
     }
 
     if (!blob) throw lastErr || new Error('Falha ao gerar PDF (todas as rotas tentadas)');
 
-    // download
+    // download do PDF
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const enteSlug = String(payload.ENTE || 'solic-crp')
@@ -1208,6 +1205,7 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
+
 
 
   /* ========= Ações: Gerar & Submit ========= */

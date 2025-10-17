@@ -58,6 +58,8 @@
 [functions."termo-solic-crp-pdf-v2"]
   timeout = 30
   memory  = 3072
+  # garantir que os arquivos estáticos usados no template sejam empacotados
+  included_files = ["**/*.html", "**/*.css", "imagens/**", "animacao/**"]
 
 [functions."gerar-solic-crp"]
   timeout = 30
@@ -65,4 +67,4 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  NODE_OPTIONS="--max-old-space-size=3000"
+  NODE_OPTIONS = "--max-old-space-size=3000"
