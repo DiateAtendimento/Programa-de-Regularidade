@@ -1740,6 +1740,7 @@ async function logAlteracoesInline(p, snapshotRaw = {}) {
   ]);
   await sLog.loadHeaderRow();
   await ensureSheetHasColumns(sLog, ['UF','ENTE','CAMPOS ALTERADOS','QTD_CAMPOS_ALTERADOS','MES','DATA','HORA']);
+
   const snap = snapshotRaw || {};
   const WATCH = [
     'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE',
@@ -1774,12 +1775,13 @@ async function logAlteracoesInline(p, snapshotRaw = {}) {
     UF: (p.UF || '').trim(),
     ENTE: (p.ENTE || '').trim(),
     'CAMPOS ALTERADOS': finalChanged.join(', '),
-    'QTD_CAMPOS ALTERADOS': finalChanged.length,
+    'QTD_CAMPOS_ALTERADOS': finalChanged.length, // <- agora com underscore (certo)
     MES: t.MES, DATA: t.DATA, HORA: t.HORA
   }), 'Reg_alteracao:add');
 
   return finalChanged.length;
 }
+
 
 /** POST /api/gerar-termo  — IDEMPOTENTE */
 app.post('/api/gerar-termo', async (req, res) => {

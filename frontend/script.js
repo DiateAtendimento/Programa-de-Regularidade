@@ -116,7 +116,6 @@
       }
     }
   }
-
   // === NOVO: fetchBinary (Blob) com timeout + retries (mesma política do fetchJSON) ===
   async function fetchBinary(
     url,
@@ -204,6 +203,68 @@
   const fmtBR = d => d.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'});
   const fmtHR = d => d.toLocaleTimeString('pt-BR',{hour12:false,timeZone:'America/Sao_Paulo'});
   const rmAcc = s => String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+  /* ========= Regime / UG helpers (compat) ========= */
+  function getRPPS_SITUACAO(){
+    return document.querySelector('input[name="rpps_situacao"]:checked')?.value || 'RPPS';
+  }
+
+  function setRPPS_SITUACAO(v){
+    const id = (String(v) === 'RPPS em Extinção') ? 'rpps_situacao_extincao' : 'rpps_situacao_ativo';
+    const el = document.getElementById(id);
+    if (el) { el.checked = true; try { el.dispatchEvent(new Event('change',{bubbles:true})); } catch {} }
+  }
+
+  function getUGFields(){
+    // preferir campos novos, cair nos legados se não existirem
+    const nome  = document.getElementById('ug_nome')?.value ?? document.getElementById('UG')?.value ?? '';
+    const cnpjN = document.getElementById('ug_cnpj')?.value ?? document.getElementById('CNPJ_UG')?.value ?? '';
+    const email = document.getElementById('ug_email')?.value ?? document.getElementById('EMAIL_UG')?.value ?? '';
+    const orgao = document.getElementById('ug_orgao_vinc')?.value ?? '';
+    return {
+      nome: String(nome || '').trim(),
+      cnpj: digits(cnpjN),
+      email: String(email || '').trim(),
+      orgao: String(orgao || '').trim()
+    };
+  }
+
+  function setUGFields({ nome='', cnpj='', email='', orgao='' } = {}){
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+
+    // set nos campos novos (se existirem)
+    setVal('ug_nome', nome);
+    setVal('ug_cnpj', cnpj ? maskCNPJ(cnpj) : '');
+    setVal('ug_email', email);
+    setVal('ug_orgao_vinc', orgao);
+
+    // e espelha nos legados (mantém compat do resto do código)
+    setVal('UG', nome || document.getElementById('UG')?.value || '');
+    setVal('CNPJ_UG', cnpj ? maskCNPJ(cnpj) : (document.getElementById('CNPJ_UG')?.value || ''));
+    setVal('EMAIL_UG', email || document.getElementById('EMAIL_UG')?.value || '');
+  }
+
+  /* Alterna obrigatoriedade/estilo da UG conforme situação */
+  function toggleUGObrigatoriedade() {
+    const ehExtincao = (getRPPS_SITUACAO() === 'RPPS em Extinção');
+    const grpUG = document.getElementById('grpUG') || document.getElementById('bloco-1-3-ug');
+    const ugHint = document.getElementById('ugHint');
+
+    const idsUG = ['ug_nome','ug_cnpj','ug_orgao_vinc','ug_email','UG','CNPJ_UG','EMAIL_UG'];
+    const camposUG = idsUG.map(id => document.getElementById(id)).filter(Boolean);
+
+    if (grpUG) grpUG.classList.toggle('is-optional', ehExtincao);
+    if (grpUG) grpUG.setAttribute('data-ug-obrigatoria', ehExtincao ? 'false' : 'true');
+    if (ugHint) ugHint.classList.toggle('d-none', !ehExtincao);
+
+    // tornar obrigatórios apenas quando não for extinção
+    camposUG.forEach(c => {
+      // só aplica "required" nos ids novos; nos legados deixamos sem required
+      if (c && ['ug_nome','ug_cnpj','ug_orgao_vinc','ug_email'].includes(c.id)) {
+        c.required = !ehExtincao;
+        c.setAttribute('aria-required', String(!ehExtincao));
+      }
+    });
+  }
 
   /* ========= Replicação imediata de e-mails (colunas F/G da aba CNPJ_ENTE_UG) ========= */
   function debounce(fn, wait=800) {
@@ -217,11 +278,14 @@
   async function forceReplicateEmails(reason = 'edit') {
     try {
       const cnpjEnte = digits($('#CNPJ_ENTE')?.value || '');
-      const cnpjUg   = digits($('#CNPJ_UG')?.value || '');
+      const cnpjUg   = getUGFields().cnpj;
 
       // e-mails diretos
-      const emailEnte    = ($('#EMAIL_ENTE')?.value || '').trim();
-      const emailUg      = ($('#EMAIL_UG')?.value || '').trim();
+      const emailEnte = ($('#EMAIL_ENTE')?.value || '').trim();
+      const emailUgNew= ($('#ug_email')?.value || '').trim();
+      const emailUgOld= ($('#EMAIL_UG')?.value || '').trim();
+      const emailUg   = emailUgNew || emailUgOld;
+
       // fallbacks (representantes)
       const emailRepEnte = ($('#EMAIL_REP_ENTE')?.value || '').trim();
       const emailRepUg   = ($('#EMAIL_REP_UG')?.value || '').trim();
@@ -265,7 +329,7 @@
   const replicateEmails = debounce(forceReplicateEmails, 800);
 
   // Dispara replicação ao digitar e ao sair do campo
-  ['EMAIL_ENTE','EMAIL_UG','EMAIL_REP_ENTE','EMAIL_REP_UG'].forEach(id => {
+  ['EMAIL_ENTE','EMAIL_UG','EMAIL_REP_ENTE','EMAIL_REP_UG','ug_email'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('input', () => replicateEmails('input'));
@@ -279,7 +343,6 @@
   const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
   const modalGerandoPdf = new bootstrap.Modal($('#modalGerandoPdf'), { backdrop:'static', keyboard:false });
   const modalSalvando = new bootstrap.Modal($('#modalSalvando'), { backdrop:'static', keyboard:false });
-
   /* ========= Persistência (etapa + campos) ========= */
   const STORAGE_KEY = 'rpps-form-v1';
 
@@ -350,11 +413,8 @@
 
     // === persistência específica da Seção 3.2 (por name) ===
     [
-      'ADESAO_SEM_IRREGULARIDADES',
-      'MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS',
-      'DEFICIT_ATUARIAL',
-      'CRITERIOS_ESTRUT_ESTABELECIDOS',
-      'OUTRO_CRITERIO_COMPLEXO'
+      'ADESAO_SEM_IRREGULARIDADES'
+
     ].forEach(name => {
       const el = document.querySelector(`input[name="${name}"]`);
       if (el) data.values[`__byname__:${name}`] = !!el.checked;
@@ -462,7 +522,6 @@
       killBackdropLocks();
     }, 0);
   }
-
   /* ========= Lottie ========= */
   const lotties = {};
   function mountLottie(id, jsonPath, {loop=true, autoplay=true, renderer='svg'}={}) {
@@ -557,7 +616,6 @@
     safeShowModal(modalErro);
   }
 
-
   function showErro(msgs){
     const ul = $('#modalErroLista'); ul.innerHTML='';
     msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
@@ -598,9 +656,15 @@
       formEl.addEventListener('change', saveStateDebounced);
     }
 
+    // === Regime/UG: listeners e estado inicial ===
+    (() => {
+      const radios = document.querySelectorAll('input[name="rpps_situacao"]');
+      radios.forEach(r => r.addEventListener('change', toggleUGObrigatoriedade));
+      toggleUGObrigatoriedade();
+    })();
+
   });
   window.addEventListener('beforeunload', saveState);
-
   /* ========= Máscaras ========= */
   const maskCPF = v => {
     const d = digits(v).slice(0,11);
@@ -631,7 +695,7 @@
       el.classList.toggle('is-invalid', !ok && !!el.value);
     });
   }
-  ['CNPJ_ENTE_PESQ','CNPJ_ENTE','CNPJ_UG'].forEach(id=>applyMask(id,'cnpj'));
+  ['CNPJ_ENTE_PESQ','CNPJ_ENTE','CNPJ_UG','ug_cnpj'].forEach(id=>applyMask(id,'cnpj'));
   ['CPF_REP_ENTE','CPF_REP_UG'].forEach(id=>applyMask(id,'cpf'));
 
   function maskPhone(v){
@@ -691,7 +755,6 @@
       </ul>
     `;
 
-
     btnConfirmYes.onclick = () => { try { onYes?.(); } finally { modalConfirmAdd.hide(); killBackdropLocks(); } };
     safeShowModal(modalConfirmAdd);
   }
@@ -743,8 +806,6 @@
       hasAlgumaFinalidade: () => finBoxes().some(i => i.checked)
     };
   })();
-
-
   /* ========= Stepper / Navegação ========= */
   let step = 0;   // 0..8
   let cnpjOK = false;
@@ -903,13 +964,10 @@
     if (s === 3) {
       const crits = $$('input[name="CRITERIOS_IRREGULARES[]"]');
       const cOK   = crits.some(i=>i.checked);
-
-      // regra original “completa” (você pode manter para futuras validações internas)
       const semIrreg = (window.__sec3__?.isSemIrreg() === true);
-      const finsOK   = (window.__sec3__?.hasAlgumaFinalidade() === true);
 
       //COMPORTAMENTO: só AVISAR e bloquear apenas a primeira tentativa
-      if (!(cOK || (semIrreg && finsOK))) {
+      if (!(cOK || semIrreg)) {
         if (!allowSkipStep3) {
           showAtencao(['Verifique se foram assinalados todos os critérios irregulares do extrato previdenciário (item 3.1)']);
           return false; // bloqueia apenas nesta 1ª tentativa; ao clicar OK, a flag libera
@@ -918,7 +976,6 @@
       }
     }
   }
-
     if (s === 5){
       const all = $$('.grp-comp');
       const checked = all.filter(i=>i.checked);
@@ -1089,7 +1146,6 @@
       ).catch(()=>{});
     }
   }
-
   /* ========= Busca por CNPJ ========= */
   let searching = false;
   $('#btnPesquisar')?.addEventListener('click', async (ev)=>{
@@ -1395,8 +1451,6 @@
       // 3.2 (a planilha só pede estes dois flags)
       ADESAO_SEM_IRREGULARIDADES:
         (document.querySelector('input[name="ADESAO_SEM_IRREGULARIDADES"]')?.checked ? 'SIM' : ''),
-      OUTRO_CRITERIO_COMPLEXO:
-        (document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : ''),
 
       // ——— ETAPA 4 ——— (use exatamente os nomes das colunas)
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300')
@@ -1437,7 +1491,6 @@
     };
   }
 
-
   // ======== Preview (sem PII na URL) ========
   function openTermoWithPayload(payload, autoFlag){
     const esfera = ($('#esf_mun')?.checked ? 'RPPS Municipal' :
@@ -1459,6 +1512,7 @@
       } catch (_) {}
     }, 200);
   }
+
   /* ========= Helper: gerar & baixar PDF ========= */
   async function gerarBaixarPDF(payload){
     const esfera =
@@ -1560,7 +1614,6 @@
       gerarBusy = false;
     }
   });
-
   /* ========= Submit / Finalizar (com espera + reenvio seguro) ========= */
   const form = document.getElementById('regularidadeForm');
 

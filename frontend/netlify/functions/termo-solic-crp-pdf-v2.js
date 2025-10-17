@@ -177,23 +177,43 @@ exports.handler = async (event) => {
     await browser.close();
 
     console.timeEnd('[pdf] total');
+
+    // ========== 2.1 SUCESSO: retorno 200 com CORS e X-Request-Id ==========
+    const reqId = event.headers && (event.headers['x-nf-request-id'] || event.headers['X-NF-Request-ID']);
+    console.log('[pdf] done, x-nf-request-id:', reqId);
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'attachment; filename="solic-crp.pdf"',
         'Cache-Control': 'no-store',
+        'Access-Control-Allow-Origin': '*',
+        'X-Request-Id': String(reqId || '')
       },
       body: pdf.toString('base64'),
       isBase64Encoded: true,
     };
+
   } catch (err) {
     console.error('[pdf] ERROR:', err && (err.stack || err.message || err));
     try { if (browser) await browser.close(); } catch (e) { console.warn('[pdf] browser.close fail', e && e.message); }
     console.timeEnd('[pdf] total');
+
+    // ========== 2.2 ERRO: retorno 500 com CORS e X-Request-Id ==========
+    const reqId = event.headers && (event.headers['x-nf-request-id'] || event.headers['X-NF-Request-ID']);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'PDF error', message: String((err && err.message) || err) }),
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Access-Control-Allow-Origin': '*',
+        'X-Request-Id': String(reqId || '')
+      },
+      body: JSON.stringify({
+        error: 'PDF error',
+        message: String((err && err.message) || err),
+        requestId: reqId || ''
+      }),
     };
   }
 };

@@ -66,14 +66,21 @@
     // Data do termo (Etapa 7/registro)
     setTextAll('data_termo',   fmtDataBR(p.DATA_TERMO_GERADO || ''));
 
-    // 1.1 – Esfera de Governo (deduzido só para legenda/checkbox)
+    // 1.1 – Esfera de Governo (usa p.ESFERA quando existir; senão, heurística pelo ENTE)
     (function(){
       const list = document.getElementById('opt-1-1');
       if (!list) return;
 
-      // Heurística simples pela presença de "Prefeitura/Município" → Municipal
-      const ente = String(p.ENTE || '').toLowerCase();
-      const esfera = /estado|distrito/.test(ente) ? 'estadual' : 'municipal';
+      let esfera = '';
+      const rawEsfera = String(p.ESFERA || '').toLowerCase();
+      if (/municipal/.test(rawEsfera)) esfera = 'municipal';
+      else if (/estadual|distrital/.test(rawEsfera)) esfera = 'estadual';
+
+      if (!esfera) {
+        const ente = String(p.ENTE || '').toLowerCase();
+        esfera = /estado|distrito/.test(ente) ? 'estadual' : 'municipal';
+      }
+
       const codes = [];
       if (esfera === 'municipal') codes.push('1.1.1');
       if (esfera === 'estadual')  codes.push('1.1.2');
@@ -97,7 +104,7 @@
 
     // ===== Etapa 3 =====
     // 3.1 – Critério(s) irregular(es) no extrato previdenciário
-    (function(){
+    (function () {
       const list = document.getElementById('criterios-list');
       if (!list) return;
 
@@ -105,59 +112,53 @@
       const arr = Array.isArray(raw)
         ? raw
         : String(raw || '')
-            .split(/[;,]/)         // aceita ; ou ,
+            .split(/[;,]/) // aceita ; ou ,
             .map(s => s.trim())
-            .filter(Boolean);      // remove vazios
+            .filter(Boolean); // remove vazios
 
-      list.innerHTML = arr.length
-        ? arr.map(v => `<li>${v}</li>`).join('')
-        : '<li><em>Não informado.</em></li>';
+      // limpa a lista atual
+      list.innerHTML = '';
+
+      if (!arr.length) {
+        const li = document.createElement('li');
+        li.innerHTML = '<em>Não informado.</em>'; // HTML fixo e controlado
+        list.appendChild(li);
+        return;
+      }
+
+      arr.forEach(v => {
+        const li = document.createElement('li');
+        li.textContent = v; // seguro: sempre texto, sem interpretar HTML
+        list.appendChild(li);
+      });
     })();
 
-  // 3.2 – Adesão sem irregularidades (quando aplicável)
-  (function(){
-    const box = document.getElementById('blk-3-2-adesao');
-    const ul  = document.getElementById('finalidades-3-2');
-    if (!box || !ul) return;
 
-    const flag = String(p.ADESAO_SEM_IRREGULARIDADES || '').trim().toUpperCase();
-    const isYes = (flag === 'SIM' || flag === 'TRUE' || flag === '1' || flag === 'ON' || flag === 'X');
+    // 3.2 – Adesão sem irregularidades (apenas a frase única)
+    (function(){
+      const box = document.getElementById('blk-3-2-adesao');
+      const ul  = document.getElementById('finalidades-3-2');
+      if (!box || !ul) return;
 
-    if (!isYes) {
-      // Mostra explicitamente o fallback
-      ul.innerHTML = '<li><em>Não informado.</em></li>';
-      // (opcional) garantir que o bloco apareça mesmo assim:
-      // box.style.removeProperty('display');
-      return;
-    }
+      const flag = String(p.ADESAO_SEM_IRREGULARIDADES || '').trim().toUpperCase();
+      const isYes = (flag === 'SIM' || flag === 'TRUE' || flag === '1' || flag === 'ON' || flag === 'X');
 
-    // Se SIM, garante visibilidade
-    box.style.removeProperty('display');
+      if (!isYes) {
+        ul.innerHTML = '<li><em>Não informado.</em></li>';
+        return;
+      }
 
-    const reasons = [];
-    // 1 item “fixo” exigido
-    reasons.push('Adesão realizada sem irregularidades no extrato previdenciário');
-
-    // (Opcional) listar finalidades iniciais do payload, quando vierem não-vazias
-    const mapFinalidades = [
-      ['CELEBRACAO_TERMO_PARCELA_DEBITOS', 'Celebração de termos de parcelamento/reparcelamento.'],
-      ['REGULARIZACAO_PENDEN_ADMINISTRATIVA', 'Regularização de pendências administrativas.'],
-      ['DEFICIT_ATUARIAL', 'Equacionamento de déficit atuarial/prazos.'],
-      ['CRITERIOS_ESTRUT_ESTABELECIDOS', 'Organização por critérios estruturantes.'],
-      ['MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS', 'Manutenção da conformidade às normas gerais.']
-    ];
-    for (const [k, txt] of mapFinalidades) {
-      if (String(p[k] || '').trim()) reasons.push(txt);
-    }
-
-    ul.innerHTML = reasons.map(r => `<li>${r}</li>`).join('');
-  })();
-
-
+      // mostra o bloco e imprime só a frase desejada
+      box.style.removeProperty('display');
+      ul.innerHTML = `
+        <li>
+          O RPPS <strong>não apresenta, atualmente, irregularidades</strong> nos critérios do extrato previdenciário,
+          mas adere ao Pró-Regularidade RPPS para as outras finalidades nele previstas.
+        </li>`;
+    })();
 
 
     // ===== Etapa 4 – FINALIDADES =====
-    // Criamos uma string-aggregator só com os campos previstos nas etapas
     const finsTxt = [
       p.CELEBRACAO_TERMO_PARCELA_DEBITOS,
       p.REGULARIZACAO_PENDEN_ADMINISTRATIVA,
@@ -166,11 +167,14 @@
       p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS
     ].map(s => String(s || '')).join(' | ').toLowerCase();
 
-    // 4.1 – até 300 parcelas
+    // 4.1 – até 60 OU até 300 (se/quando existir no HTML)
     (function(){
-      const codes = /trezent|300\b|parcelament|reparcelament/.test(finsTxt) ? ['4.1.1'] : [];
+      const codes = [];
+      if (/sessenta|60\b/.test(finsTxt)) codes.push('4.1.0'); // ex.: data-code do item 60
+      if (/trezent|300\b|parcelament|reparcelament/.test(finsTxt)) codes.push('4.1.1');
       filterBy('opt-4-1', codes);
     })();
+
 
     // 4.2 – regularização administrativa (3 itens)
     (function(){
@@ -211,20 +215,17 @@
       filterBy('opt-4-5', codes);
     })();
 
-    // 4.6 – Manutenção da Conformidade
+    // 4.6 – Manutenção da Conformidade (agora cobre 4.6.1 a 4.6.5)
     (function(){
       const src = String(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || '').toLowerCase();
       const codes = [];
-      if (/n[ií]vel\s*ii\b|pequeno\s+porte/.test(src)) codes.push('4.6.1');
-      if (/n[ií]vel\s*iii\b|m[eé]dio|grande\s+porte/.test(src)) codes.push('4.6.2');
-      if (/n[ií]vel\s*iv\b|porte\s+especial/.test(src)) codes.push('4.6.3');
+      if (/4\.6\.1|n[ií]vel\s*ii\b|pequeno\s+porte/.test(src)) codes.push('4.6.1');
+      if (/4\.6\.2|n[ií]vel\s*iii\b|m[eé]dio|grande\s+porte/.test(src)) codes.push('4.6.2');
+      if (/4\.6\.3|n[ií]vel\s*iv\b|porte\s+especial/.test(src)) codes.push('4.6.3');
+      if (/4\.6\.4|evolu[cç][aã]o\s+favor[aá]vel|isp-?rpps/.test(src)) codes.push('4.6.4');
+      if (/4\.6\.5|acompanhamento\s+atuarial|arts?\.\s*67\s*a\s*69/.test(src)) codes.push('4.6.5');
       filterBy('opt-4-6', codes);
     })();
-
-    // Sinalizar que terminou de renderizar (usado pelo Puppeteer)
-    window.__TERMO_PRINT_READY__ = true;
-    document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY'));
-
 
     // ===== Etapa 5 – Compromissos (5.1 a 5.8) =====
     (function(){
@@ -261,7 +262,7 @@
     setTextAll('ente', p.ENTE || '');
     setTextAll('uf',   p.UF   || '');
 
-    // 🔔 sinaliza “pronto para imprimir”
+    // 🔔 sinaliza “pronto para imprimir” (idempotente e após fontes)
     try {
       if (!window.__TERMO_READY_FIRED__) {
         window.__TERMO_READY_FIRED__ = true;
@@ -328,7 +329,8 @@
         CONDICAO_VIGENCIA: q.get('condicao_vigencia') || '',
 
         // Registro
-        DATA_TERMO_GERADO: q.get('data_termo') || ''
+        DATA_TERMO_GERADO: q.get('data_termo') || '',
+        ESFERA: q.get('esfera') || '' // permite testar 1.1 via query
       };
       renderizarTermo(payload);
     }
