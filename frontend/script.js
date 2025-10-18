@@ -265,7 +265,6 @@
       }
     });
   }
-
   /* ========= Replicação imediata de e-mails (colunas F/G da aba CNPJ_ENTE_UG) ========= */
   function debounce(fn, wait=800) {
     let t;
@@ -386,7 +385,6 @@
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
       'CPF_REP_ENTE','NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
       'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG'
-
     ].forEach(id => { const el = document.getElementById(id); if (el) data.values[id] = el.value; });
 
     data.values['em_adm'] = !!document.getElementById('em_adm')?.checked;
@@ -415,7 +413,6 @@
     // === persistência específica da Seção 3.2 (por name) ===
     [
       'ADESAO_SEM_IRREGULARIDADES'
-
     ].forEach(name => {
       const el = document.querySelector(`input[name="${name}"]`);
       if (el) data.values[`__byname__:${name}`] = !!el.checked;
@@ -463,7 +460,6 @@
       return st;
     } catch { return null; }
   }
-
   // --- Controle robusto do modal de "carregando" + Lottie ---
   let loadingCount = 0;
 
@@ -625,7 +621,6 @@
     setErroHeader('erro');
     safeShowModal(modalErro);
   }
-
   /* ========= DOMContentLoaded ========= */
   document.addEventListener('DOMContentLoaded', () => {
     fullUnlock();
@@ -652,7 +647,13 @@
     waitForService({ timeoutMs: 15000, pollMs: 1500 }).catch(()=>{});
  
     // salvar sempre que o usuário muda algo (sem travar a UI)
-    const formEl = document.getElementById('solicCrpForm');
+    // === MULTI-FORMS: detecta qual form está presente ===
+    const FORM_ID =
+      document.getElementById('solicCrpForm') ? 'solicCrpForm' :
+      (document.getElementById('regularidadeForm') ? 'regularidadeForm' : null);
+    const FORM_SEL = FORM_ID ? `#${FORM_ID} [data-step]` : '[data-step]';
+
+    const formEl = document.getElementById(FORM_ID || 'solicCrpForm');
     if (formEl) {
       const saveStateDebounced = debounce(saveState, 400);
       formEl.addEventListener('input', saveStateDebounced);
@@ -666,8 +667,11 @@
       toggleUGObrigatoriedade();
     })();
 
+    // Expor no escopo para os módulos abaixo usarem FORM_ID/FORM_SEL
+    window.__rpps_form_ctx__ = { FORM_ID, FORM_SEL };
   });
   window.addEventListener('beforeunload', saveState);
+
   /* ========= Máscaras ========= */
   const maskCPF = v => {
     const d = digits(v).slice(0,11);
@@ -714,7 +718,6 @@
   const markValid   = el => { el.classList.add('is-valid'); el.classList.remove('is-invalid'); };
   const markInvalid = el => { el.classList.add('is-invalid'); el.classList.remove('is-valid'); };
   const neutral     = el => el.classList.remove('is-valid','is-invalid');
-
   function paintLabelForInput(input, invalid){
     if (!input) return;
     const label = input.closest('.form-check')?.querySelector('label')
@@ -728,12 +731,14 @@
   }
 
   function clearValidationIn(stepNumber){
-    const sec = [...document.querySelectorAll('#solicCrpForm [data-step]')]
+    const { FORM_SEL } = window.__rpps_form_ctx__ || { FORM_SEL: '[data-step]' };
+    const sec = [...document.querySelectorAll(FORM_SEL)]
       .find(s => Number(s.dataset.step) === stepNumber);
     if (!sec) return;
     sec.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
     sec.querySelectorAll('label.invalid').forEach(el => el.classList.remove('invalid'));
   }
+
   // Modal de confirmação (genérico para CNPJ/CPF)
   const elMCF = $('#modalConfirmAdd');
   const modalConfirmAdd = elMCF ? new bootstrap.Modal(elMCF) : null;
@@ -821,10 +826,16 @@
     };
   })();
   /* ========= Stepper / Navegação ========= */
+  // Contexto multi-form
+  const __ctx = window.__rpps_form_ctx__ || {};
+  const FORM_ID = __ctx.FORM_ID || (document.getElementById('solicCrpForm') ? 'solicCrpForm' :
+                    (document.getElementById('regularidadeForm') ? 'regularidadeForm' : null));
+  const FORM_SEL = __ctx.FORM_SEL || (FORM_ID ? `#${FORM_ID} [data-step]` : '[data-step]');
+
   let step = 0;   // calculado dinamicamente
   let cnpjOK = false;
 
-  const sections = $$('#solicCrpForm [data-step]');
+  const sections = $$(FORM_SEL);
   const stepsUI  = $$('#stepper .step');
   const btnPrev  = $('#btnPrev');
   const btnNext  = $('#btnNext');
@@ -834,7 +845,7 @@
   const pesquisaRow = $('#pesquisaRow');
 
   // descobrir último step a partir do DOM
-  const stepsMeta = $$('#solicCrpForm [data-step]').map(s => Number(s.dataset.step)||0);
+  const stepsMeta = $$(FORM_SEL).map(s => Number(s.dataset.step)||0);
   const LAST_STEP = stepsMeta.length ? Math.max(...stepsMeta) : 6;
 
   const nextAnchor = document.createComment('next-button-anchor');
@@ -999,6 +1010,7 @@
     if (msgs.length){ showAtencao(msgs); return false; }
     return true;
   }
+
   /* ========= Navegação: botão Próximo (com trava anticlique duplo) ========= */
   let navBusy = false;
   btnNext?.addEventListener('click', async () => {
@@ -1028,7 +1040,6 @@
                   : neutral(chk);
     });
   });
-
   /* ───────────── Etapa 5: mapeia COMPROMISSOS[] → códigos 5.1..5.7 ───────────── */
   const COMP_VALUE_TO_CODE = {
     'Manter regularidade nos repasses e nas parcelas (arts. 14 e 15 da Portaria MTP 1.467/2022)': '5.1',
@@ -1138,6 +1149,7 @@
       ).catch(()=>{});
     }
   }
+
   /* ========= Busca por CNPJ ========= */
   let searching = false;
   $('#btnPesquisar')?.addEventListener('click', async (ev)=>{
@@ -1381,6 +1393,7 @@
 
   $('#btnPesqRepEnte')?.addEventListener('click', (ev)=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE', ev));
   $('#btnPesqRepUg')  ?.addEventListener('click', (ev)=> buscarRepByCPF($('#CPF_REP_UG').value,  'UG',   ev));
+
   async function upsertRepresentantes(){
     const base = {
       UF: $('#UF').value.trim(),
@@ -1437,7 +1450,6 @@
       EMAIL_REP_UG: $('#EMAIL_REP_UG').value.trim(),
       TEL_REP_UG:   $('#TEL_REP_UG').value.trim(),
       
-
       // ——— ETAPA 3 ———
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked')
         .map(i => i.value).join('; '),
@@ -1464,7 +1476,6 @@
       MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$(
         'input#man_cert, input#man_melhoria, input#man_acomp, input#man_evolucao, input#man_acomp_atuarial'
       ).filter(i => i.checked).map(i => i.value).join('; '),
-
 
       // ——— ETAPAS 5–7 ———
       COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked')
@@ -1506,6 +1517,7 @@
       } catch (_) {}
     }, 200);
   }
+
   /* ========= Helper: gerar & baixar PDF ========= */
   async function gerarBaixarPDF(payload){
     const esfera =
@@ -1609,7 +1621,7 @@
   });
 
   /* ========= Submit / Finalizar (com espera + reenvio seguro) ========= */
-  const form = document.getElementById('solicCrpForm');
+  const form = document.getElementById(FORM_ID || 'solicCrpForm');
 
   /* helper: limpa UI + memória do formulário */
   function resetFormUI(){
@@ -1766,6 +1778,8 @@
   });
 
   function restoreState({ ignore = false } = {}) {
+    const { FORM_SEL } = window.__rpps_form_ctx__ || { FORM_SEL: '[data-step]' };
+
     if (ignore) {            
       showStep(0);
       return;
