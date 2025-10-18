@@ -1418,13 +1418,33 @@
   }
 
   // ======== carimbos ========
-  function fillNowHiddenFields(){
+  function fillNowHiddenFields() {
     const now = new Date();
-    $('#MES').value               = String(now.getMonth()+1).padStart(2,'0');
-    $('#DATA_SOLIC_GERADA').value = fmtBR(now);
-    $('#HORA_SOLIC_GERADA').value = fmtHR(now);
-    $('#ANO_SOLIC_GERADA').value  = String(now.getFullYear());
+    const mes   = String(now.getMonth() + 1).padStart(2, '0');
+    const data  = fmtBR(now);
+    const hora  = fmtHR(now);
+    const ano   = String(now.getFullYear());
+
+    // helper seguro
+    const setIfExists = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    };
+
+    // comum
+    setIfExists('MES', mes);
+
+    // páginas de ADESÃO (termo)
+    setIfExists('DATA_TERMO_GERADO', data);
+    setIfExists('HORA_TERMO_GERADO', hora);
+    setIfExists('ANO_TERMO_GERADO', ano);
+
+    // páginas de SOLICITAÇÃO CRP
+    setIfExists('DATA_SOLIC_GERADA', data);
+    setIfExists('HORA_SOLIC_GERADA', hora);
+    setIfExists('ANO_SOLIC_GERADA', ano);
   }
+
 
   // ======== payload ========
   function buildPayload(){
