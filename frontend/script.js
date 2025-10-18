@@ -340,7 +340,8 @@
   const modalErro     = new bootstrap.Modal($('#modalErro'));
   const modalSucesso  = new bootstrap.Modal($('#modalSucesso'));
   const modalWelcome  = new bootstrap.Modal($('#modalWelcome'));
-  const modalLoadingSearch = new bootstrap.Modal($('#modalLoadingSearch'), { backdrop:'static', keyboard:false });
+  const elMLS = $('#modalLoadingSearch');
+  const modalLoadingSearch = elMLS ? new bootstrap.Modal(elMLS, { backdrop:'static', keyboard:false }) : null;
   const modalGerandoPdf = new bootstrap.Modal($('#modalGerandoPdf'), { backdrop:'static', keyboard:false });
   const modalSalvando = new bootstrap.Modal($('#modalSalvando'), { backdrop:'static', keyboard:false });
   /* ========= Persistência (etapa + campos) ========= */
@@ -485,7 +486,7 @@
   }
 
   function showLoadingModal() {
-    try { modalLoadingSearch.show(); } catch {}
+    try { modalLoadingSearch?.show(); } catch {}
   }
   function startLoading() {
     loadingCount += 1;
@@ -494,7 +495,7 @@
   function stopLoading() {
     loadingCount = Math.max(0, loadingCount - 1);
     if (loadingCount === 0) {
-      try { modalLoadingSearch.hide(); } catch {}
+      try { modalLoadingSearch?.hide(); } catch {}
       setTimeout(() => {
         const el = $('#modalLoadingSearch');
         el?.classList.remove('show');
@@ -507,7 +508,7 @@
   }
   function forceCloseLoading() { loadingCount = 0; stopLoading(); }
 
-  $('#modalLoadingSearch')?.addEventListener('hidden.bs.modal', () => {
+  elMLS?.addEventListener('hidden.bs.modal', () => {
     const inst = lotties['lottieLoadingSearch'];
     if (inst) { inst.destroy(); delete lotties['lottieLoadingSearch']; }
     killBackdropLocks();
@@ -517,7 +518,7 @@
     forceCloseLoading();      // fecha “Carregando…”, se estiver aberto
     defocusIfInsideModal();
     setTimeout(() => {
-      try { modalInstance.show(); } catch {}
+      try { modalInstance?.show(); } catch {}
       // Limpa backdrops órfãos apenas se não houver outra modal aberta
       killBackdropLocks();
     }, 0);
@@ -548,11 +549,10 @@
     if (inst) { inst.destroy(); delete lotties['lottieSalvando']; }
     killBackdropLocks(); // garante que não fique backdrop travado
   });
-
   // Destrava tudo (modais/backdrop/body/loader)
   function fullUnlock() {
     try { modalWelcome.hide(); } catch {}
-    try { modalLoadingSearch.hide(); } catch {}
+    try { modalLoadingSearch?.hide(); } catch {}
     try { modalGerandoPdf.hide(); } catch {}
     forceCloseLoading();
     killBackdropLocks();
@@ -609,9 +609,12 @@
     const ul = $('#modalErroLista'); ul.innerHTML='';
     msgs.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
     setErroHeader('atencao');
-    // quando este aviso for mostrado pela etapa 3, o handler abaixo marcará a flag:
+    // quando este aviso for mostrado pela etapa 3, marcamos a flag:
     if (btnAtencaoOk) {
       btnAtencaoOk.onclick = () => { allowSkipStep3 = true; };
+    } else {
+      // se não há botão dedicado, libera a passagem após mostrar 1x
+      allowSkipStep3 = true;
     }
     safeShowModal(modalErro);
   }
@@ -649,7 +652,7 @@
     waitForService({ timeoutMs: 15000, pollMs: 1500 }).catch(()=>{});
  
     // salvar sempre que o usuário muda algo (sem travar a UI)
-    const formEl = document.getElementById('regularidadeForm');
+    const formEl = document.getElementById('solicCrpForm');
     if (formEl) {
       const saveStateDebounced = debounce(saveState, 400);
       formEl.addEventListener('input', saveStateDebounced);
@@ -725,38 +728,49 @@
   }
 
   function clearValidationIn(stepNumber){
-    const sec = [...document.querySelectorAll('#regularidadeForm [data-step]')]
+    const sec = [...document.querySelectorAll('#solicCrpForm [data-step]')]
       .find(s => Number(s.dataset.step) === stepNumber);
     if (!sec) return;
     sec.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
     sec.querySelectorAll('label.invalid').forEach(el => el.classList.remove('invalid'));
   }
   // Modal de confirmação (genérico para CNPJ/CPF)
-  const modalConfirmAdd = new bootstrap.Modal($('#modalConfirmAdd'));
+  const elMCF = $('#modalConfirmAdd');
+  const modalConfirmAdd = elMCF ? new bootstrap.Modal(elMCF) : null;
   const elConfirmTitle  = $('#modalConfirmAddTitle');
   const elConfirmMsg    = $('#modalConfirmAddMsg');
   const btnConfirmYes   = $('#btnConfirmAddYes');
 
   function openConfirmAdd({ type, value, onYes }) {
     const isCnpj = (type === 'cnpj');
-    elConfirmTitle.textContent = isCnpj ? 'CNPJ não encontrado' : 'CPF não encontrado';
+    if (elConfirmTitle) elConfirmTitle.textContent = isCnpj ? 'CNPJ não encontrado' : 'CPF não encontrado';
 
     const fmt = isCnpj ? maskCNPJ(value) : maskCPF(value);
-    elConfirmMsg.innerHTML = `
-      Não encontramos esse ${isCnpj ? 'CNPJ' : 'CPF'} no nosso banco de dados.<br>
-      Confirme se está correto: <strong>${fmt}</strong>.<br><br>
-      Se preferir seguir assim mesmo, informe os dados do representante legal e continue o preenchimento.
-      <hr>
-      Depois, não esqueça de atualizar os dados da seguinte forma:
-      <ul class="mb-0">
-        <li><a href="https://cadprev.previdencia.gov.br/Cadprev/pages/index.xhtml" target="_blank" rel="noopener">Cadprev – “Novo cadastro”</a></li>
-        <li><a href="https://view.officeapps.live.com/op/view.aspx?src=https%3A%2F%2Fwww.gov.br%2Fprevidencia%2Fpt-br%2Fassuntos%2Frpps%2Fsistemas%2Fcadprev%2Fmodelodeoficioparaautorizacaodeacessoaocadprev20241.docx%2F%40%40download%2Ffile" target="_blank" rel="noopener">Modelo de Ofício de solicitação de autorização</a></li>
-        <li><a href="https://novogescon.previdencia.gov.br/gescon/" target="_blank" rel="noopener">Envio pelo Gescon</a></li>
-      </ul>
-    `;
+    if (elConfirmMsg) {
+      elConfirmMsg.innerHTML = `
+        Não encontramos esse ${isCnpj ? 'CNPJ' : 'CPF'} no nosso banco de dados.<br>
+        Confirme se está correto: <strong>${fmt}</strong>.<br><br>
+        Se preferir seguir assim mesmo, informe os dados do representante legal e continue o preenchimento.
+        <hr>
+        Depois, não esqueça de atualizar os dados da seguinte forma:
+        <ul class="mb-0">
+          <li><a href="https://cadprev.previdencia.gov.br/Cadprev/pages/index.xhtml" target="_blank" rel="noopener">Cadprev – “Novo cadastro”</a></li>
+          <li><a href="https://view.officeapps.live.com/op/view.aspx?src=https%3A%2F%2Fwww.gov.br%2Fprevidencia%2Fpt-br%2Fassuntos%2Frpps%2Fsistemas%2Fcadprev%2Fmodelodeoficioparaautorizacaodeacessoaocadprev20241.docx%2F%40%40download%2Ffile" target="_blank" rel="noopener">Modelo de Ofício de solicitação de autorização</a></li>
+          <li><a href="https://novogescon.previdencia.gov.br/gescon/" target="_blank" rel="noopener">Envio pelo Gescon</a></li>
+        </ul>
+      `;
+    }
 
-    btnConfirmYes.onclick = () => { try { onYes?.(); } finally { modalConfirmAdd.hide(); killBackdropLocks(); } };
-    safeShowModal(modalConfirmAdd);
+    if (modalConfirmAdd) {
+      if (btnConfirmYes) {
+        btnConfirmYes.onclick = () => { try { onYes?.(); } finally { modalConfirmAdd.hide(); killBackdropLocks(); } };
+      }
+      safeShowModal(modalConfirmAdd);
+    } else {
+      // fallback: informa e segue
+      showAtencao([isCnpj ? 'CNPJ não encontrado.' : 'CPF não encontrado.']);
+      onYes?.();
+    }
   }
 
   // === Seção 3: 3.2 só habilita se "Sem irregularidades" marcado e 3.1 sem marcação ===
@@ -807,17 +821,21 @@
     };
   })();
   /* ========= Stepper / Navegação ========= */
-  let step = 0;   // 0..8
+  let step = 0;   // calculado dinamicamente
   let cnpjOK = false;
 
-  const sections = $$('#regularidadeForm [data-step]');
+  const sections = $$('#solicCrpForm [data-step]');
   const stepsUI  = $$('#stepper .step');
   const btnPrev  = $('#btnPrev');
   const btnNext  = $('#btnNext');
   const btnSubmit= $('#btnSubmit');
-  const btnGerar = $('#btnGerarForm'); // botão de "Gerar Formulário"
+  const btnGerar = $('#btnGerarFormulario'); // botão de "Gerar Formulário"
   const navFooter= $('#navFooter');
   const pesquisaRow = $('#pesquisaRow');
+
+  // descobrir último step a partir do DOM
+  const stepsMeta = $$('#solicCrpForm [data-step]').map(s => Number(s.dataset.step)||0);
+  const LAST_STEP = stepsMeta.length ? Math.max(...stepsMeta) : 6;
 
   const nextAnchor = document.createComment('next-button-anchor');
   if (navFooter && btnSubmit && navFooter.contains(btnSubmit)) {
@@ -853,16 +871,16 @@
     btnPrev?.classList.toggle('d-none', step < 1);
     if (btnNext){
       btnNext.disabled = (step === 0 && !cnpjOK);
-      btnNext.classList.toggle('d-none', step === 8);
+      btnNext.classList.toggle('d-none', step === LAST_STEP);
     }
-    btnSubmit?.classList.toggle('d-none', step !== 8);
-    btnGerar?.classList.toggle('d-none', step !== 8);
+    btnSubmit?.classList.toggle('d-none', step !== LAST_STEP);
+    btnGerar?.classList.toggle('d-none', step !== LAST_STEP);
   }
 
   function updateFooterAlign(){
     if (!navFooter) return;
     [btnPrev, btnNext, btnSubmit, btnGerar].forEach(b => b && b.classList.remove('ms-auto'));
-    if (step === 8){
+    if (step === LAST_STEP){
       btnSubmit?.classList.add('ms-auto');
     } else if (step > 0) {
       btnNext?.classList.add('ms-auto');
@@ -871,7 +889,7 @@
 
   function showStep(n){
     fullUnlock();
-    step = Math.max(0, Math.min(8, n));
+    step = Math.max(0, Math.min(LAST_STEP, n));
 
     sections.forEach(sec => {
       sec.style.display = (Number(sec.dataset.step) === step ? '' : 'none');
@@ -961,52 +979,26 @@
         if (!ok) msgs.push('Esfera de Governo');
       }
 
-    if (s === 3) {
-      const crits = $$('input[name="CRITERIOS_IRREGULARES[]"]');
-      const cOK   = crits.some(i=>i.checked);
-      const semIrreg = (window.__sec3__?.isSemIrreg() === true);
+      if (s === 3) {
+        const crits = $$('input[name="CRITERIOS_IRREGULARES[]"]');
+        const cOK   = crits.some(i=>i.checked);
+        const semIrreg = (window.__sec3__?.isSemIrreg() === true);
+        const hasFinal = (window.__sec3__?.hasAlgumaFinalidade() === true);
 
-      //COMPORTAMENTO: só AVISAR e bloquear apenas a primeira tentativa
-      if (!(cOK || semIrreg)) {
-        if (!allowSkipStep3) {
-          showAtencao(['Verifique se foram assinalados todos os critérios irregulares do extrato previdenciário (item 3.1)']);
-          return false; // bloqueia apenas nesta 1ª tentativa; ao clicar OK, a flag libera
+        // COMPORTAMENTO: só AVISAR e bloquear apenas a primeira tentativa
+        if (!(cOK || (semIrreg && hasFinal))) {
+          if (!allowSkipStep3) {
+            showAtencao(['Verifique se foram assinalados todos os critérios irregulares do extrato previdenciário (item 3.1) ou marque “Sem irregularidades” e selecione ao menos uma finalidade (3.2).']);
+            return false; // bloqueia apenas nesta 1ª tentativa; ao clicar OK, a flag libera
+          }
+          // se o usuário já clicou OK uma vez, deixamos passar
         }
-        // se o usuário já clicou OK uma vez, deixamos passar
       }
-    }
-  }
-    if (s === 5){
-      const all = $$('.grp-comp');
-      const checked = all.filter(i=>i.checked);
-      const ok = checked.length === all.length;
-      all.forEach(i => paintLabelForInput(i, !ok && !i.checked));
-      if (!ok) msgs.push('No item 5, marque todas as declarações de compromisso.');
-    }
-
-    if (s === 6){
-      const provs = $$('.grp-prov');
-      const count = provs.filter(i => i.checked).length;
-      const ok = (count === 1);
-      provs.forEach(i => paintLabelForInput(i, !ok));
-      if (!ok) {
-        msgs.push(count === 0
-          ? 'Marque exatamente uma providência (item 6).'
-          : 'No item 6, marque apenas uma opção (6.1 ou 6.2).');
-      }
-    }
-
-    if (s === 7) {
-      const all = $$('.grp-cond');
-      const ok = all.length > 0 && all.every(i => i.checked);
-      all.forEach(i => paintLabelForInput(i, !ok && !i.checked));
-      if (!ok) msgs.push('Marque os quatro itens do item 7 (7.1 a 7.4).');
     }
 
     if (msgs.length){ showAtencao(msgs); return false; }
     return true;
   }
-
   /* ========= Navegação: botão Próximo (com trava anticlique duplo) ========= */
   let navBusy = false;
   btnNext?.addEventListener('click', async () => {
@@ -1032,8 +1024,8 @@
   /* ========= Esfera ========= */
   $$('.esf-only-one').forEach(chk=>{
     chk.addEventListener('change', ()=>{
-      if(chk.checked){ $$('.esf-only-one').forEach(o=>{ if(o!==chk) o.checked=false; }); markValid(chk); }
-      else { neutral(chk); }
+      chk.checked ? ($$('.esf-only-one').forEach(o=>{ if(o!==chk) o.checked=false; }), markValid(chk))
+                  : neutral(chk);
     });
   });
 
@@ -1260,7 +1252,7 @@
       editedFields.clear();
 
       // Avança após fechar o modal de loading
-      const loadingEl = document.getElementById('modalLoadingSearch');
+      const loadingEl = elMLS;
       if (loadingEl) {
         const onceHidden = () => {
           loadingEl.removeEventListener('hidden.bs.modal', onceHidden);
@@ -1389,7 +1381,6 @@
 
   $('#btnPesqRepEnte')?.addEventListener('click', (ev)=> buscarRepByCPF($('#CPF_REP_ENTE').value,'ENTE', ev));
   $('#btnPesqRepUg')  ?.addEventListener('click', (ev)=> buscarRepByCPF($('#CPF_REP_UG').value,  'UG',   ev));
-
   async function upsertRepresentantes(){
     const base = {
       UF: $('#UF').value.trim(),
@@ -1417,9 +1408,9 @@
   function fillNowHiddenFields(){
     const now = new Date();
     $('#MES').value               = String(now.getMonth()+1).padStart(2,'0');
-    $('#DATA_TERMO_GERADO').value = fmtBR(now);
-    $('#HORA_TERMO_GERADO').value = fmtHR(now);
-    $('#ANO_TERMO_GERADO').value  = String(now.getFullYear());
+    $('#DATA_SOLIC_GERADA').value = fmtBR(now);
+    $('#HORA_SOLIC_GERADA').value = fmtHR(now);
+    $('#ANO_SOLIC_GERADA').value  = String(now.getFullYear());
   }
 
   // ======== payload ========
@@ -1434,6 +1425,7 @@
       CARGO_REP_ENTE: $('#CARGO_REP_ENTE').value.trim(),
       CPF_REP_ENTE: digits($('#CPF_REP_ENTE').value),
       EMAIL_REP_ENTE: $('#EMAIL_REP_ENTE').value.trim(),
+      TEL_REP_ENTE: $('#TEL_REP_ENTE').value.trim(),
 
       UG: $('#UG').value.trim(),
       CNPJ_UG: digits($('#CNPJ_UG').value),
@@ -1443,6 +1435,8 @@
       CARGO_REP_UG: $('#CARGO_REP_UG').value.trim(),
       CPF_REP_UG: digits($('#CPF_REP_UG').value),
       EMAIL_REP_UG: $('#EMAIL_REP_UG').value.trim(),
+      TEL_REP_UG:   $('#TEL_REP_UG').value.trim(),
+      
 
       // ——— ETAPA 3 ———
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked')
@@ -1482,9 +1476,9 @@
 
       // ——— Carimbos / metadados ———
       MES: $('#MES').value,
-      DATA_TERMO_GERADO: $('#DATA_TERMO_GERADO').value,
-      HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO').value,
-      ANO_TERMO_GERADO: $('#ANO_TERMO_GERADO').value,
+      DATA_TERMO_GERADO: $('#DATA_SOLIC_GERADA').value,
+      HORA_TERMO_GERADO: $('#HORA_SOLIC_GERADA').value,
+      ANO_TERMO_GERADO: $('#ANO_SOLIC_GERADA').value,
       __snapshot_base: snapshotBase,
       __user_changed_fields: Array.from(editedFields),
       IDEMP_KEY: takeIdemKey() || ''
@@ -1502,7 +1496,7 @@
     };
 
     // Abre a página de preview sem querystring (sem PII na URL)
-    const child = window.open('termo.html#preview', '_blank', 'noopener');
+    const child = window.open('termo_solic_crp.html#preview', '_blank', 'noopener');
 
     // Envia os dados via postMessage (o termo.html deve escutar "message")
     // window.addEventListener('message', (ev) => { if(ev.data?.type==='TERMO_PREVIEW_DATA'){ ... } }, false);
@@ -1512,7 +1506,6 @@
       } catch (_) {}
     }, 200);
   }
-
   /* ========= Helper: gerar & baixar PDF ========= */
   async function gerarBaixarPDF(payload){
     const esfera =
@@ -1592,7 +1585,7 @@
   btnGerar?.addEventListener('click', async () => {
     if (gerarBusy) return;
 
-    for (let s = 1; s <= 8; s++) { if (!validateStep(s)) return; }
+    for (let s = 1; s <= LAST_STEP; s++) { if (!validateStep(s)) return; }
 
     gerarBusy = true;
     if (btnGerar) btnGerar.disabled = true;
@@ -1614,8 +1607,9 @@
       gerarBusy = false;
     }
   });
+
   /* ========= Submit / Finalizar (com espera + reenvio seguro) ========= */
-  const form = document.getElementById('regularidadeForm');
+  const form = document.getElementById('solicCrpForm');
 
   /* helper: limpa UI + memória do formulário */
   function resetFormUI(){
@@ -1627,9 +1621,9 @@
     cnpjOK = false;
   }
 
-  // evita Enter antes da etapa 8
+  // evita Enter antes da etapa final
   form?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && step < 8) {
+    if (e.key === 'Enter' && step < LAST_STEP) {
       const t = e.target;
       const isTextualInput =
         t && t.tagName === 'INPUT' && !['button','submit','checkbox','radio','file'].includes(t.type);
@@ -1648,7 +1642,7 @@
 
   form?.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    for (let s=1; s<=8; s++){ if(!validateStep(s)) return; }
+    for (let s=1; s<=LAST_STEP; s++){ if(!validateStep(s)) return; }
 
     await upsertBaseIfMissing();
     await upsertRepresentantes();
@@ -1788,7 +1782,7 @@
     }
 
     const vals = st.values || {};
-    let n = Number.isFinite(st.step) ? Number(st.step) : 0;
+    let n = Number.isFinite(st.step) ? Math.min(LAST_STEP, Number(st.step)) : 0;
 
     if (n === 0) {
       cnpjOK = false;
@@ -1798,7 +1792,7 @@
       cnpjOK = digits(vals.CNPJ_ENTE || vals.CNPJ_UG || '').length === 14;
     }
 
-    showStep(Math.max(0, Math.min(8, n)));
+    showStep(Math.max(0, Math.min(LAST_STEP, n)));
     if (st.seenWelcome) { try { modalWelcome.hide(); } catch {} }
   }
 

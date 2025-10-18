@@ -171,8 +171,6 @@
       }
     }
   }
-
-
   async function fetchBinary(
     url,
     { method='GET', headers={}, body=null } = {},
@@ -244,6 +242,9 @@
     spanUfGescon: $('#UF_GESCON'),
     spanEnteGescon: $('#ENTE_GESCON'),
     infoDataEncGescon: $('#infoDataEncGescon'),
+    infoProcSei:  $('#INFO_PROC_SEI'),   
+    introProcSei: $('#INTRO_PROC_SEI'),  
+
     // etapa 1
     uf: $('#UF'), ente: $('#ENTE'), cnpjEnte: $('#CNPJ_ENTE'), emailEnte: $('#EMAIL_ENTE'),
     ug: $('#UG'), cnpjUg: $('#CNPJ_UG'), emailUg: $('#EMAIL_UG'),
@@ -260,7 +261,8 @@
     grpCrit: $('#grpCRITERIOS'),
 
     // etapa 4
-    faseChecks: $$('.fase-check'),
+    // (A-D/F) — agora radios (seleção única) e abertura de modais
+    faseRadios: $$('input[name="FASE_PROGRAMA"]'),
     blk41: $('#blk_41'), blk42: $('#blk_42'), blk43: $('#blk_43'),
     blk44: $('#blk_44'), blk45: $('#blk_45'), blk46: $('#blk_46'),
     f42Lista: $('#F42_LISTA'), f43Lista: $('#F43_LISTA'),
@@ -279,7 +281,6 @@
     dots: $$('#stepper .step'),
     navFooter: $('#navFooter')
   };
-
   /* ========= Máscaras ========= */
   function maskCNPJ(v){
     const d = digits(v).slice(0,14);
@@ -347,7 +348,6 @@
     ].forEach(id=>{ const e=$('#'+id); if(e) data.values[id]=e.value; });
     data.values['esf_mun'] = !!el.esfMun?.checked;
     data.values['esf_est'] = !!el.esfEst?.checked;
-    data.values['FASES_MARCADAS[]'] = $$('.fase-check:checked').map(i => i.value);
 
     // 3.2
     data.values['ADESAO_SEM_IRREGULARIDADES'] =
@@ -368,8 +368,9 @@
     // 3.3 critérios
     data.values['CRITERIOS_IRREGULARES[]'] = $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i=>i.value);
 
-    // fase selecionada
-    const faseSel = $('input[name="FASE_PROGRAMA"]:checked'); data.values['FASE_PROGRAMA'] = faseSel?.value||'';
+    // fase selecionada (radio)
+    const faseSel = $('input[name="FASE_PROGRAMA"]:checked');
+    data.values['FASE_PROGRAMA'] = faseSel?.value || '';
 
     // 4.1
     const f41 = $('input[name="F41_OPCAO"]:checked'); data.values['F41_OPCAO'] = f41?.value||'';
@@ -379,9 +380,16 @@
 
     // 4.3
     data.values['F43_LISTA[]'] = $$(`#F43_LISTA input[type="checkbox"]:checked`).map(i=>i.value);
-    data.values['F43_JUST']    = $('#F43_JUST')?.value || '';
     data.values['F43_PLANO']   = $('#F43_PLANO')?.value || '';
     data.values['F43_INCLUIR[]'] = $$('#F43_INCLUIR input[type="checkbox"]:checked').map(i=>i.value);
+    data.values['F43_SOLICITA_INCLUSAO'] = !!$('#F43_SOLICITA_INCLUSAO')?.checked;
+    data.values['F43_PLANO_B'] = $('#F43_PLANO_B')?.value || '';
+    data.values['F43_DESC_PLANOS'] = $('#F43_DESC_PLANOS')?.value || '';
+
+    // 4.3.10
+    data.values['F4310_OPCAO']      = document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || '';
+    data.values['F4310_LEGISLACAO'] = $('#F4310_LEGISLACAO')?.value || '';
+    data.values['F4310_DOCS']       = $('#F4310_DOCS')?.value || '';
 
     // 4.4
     data.values['F44_CRITERIOS[]']   = $$(`#F44_CRITERIOS input[type="checkbox"]:checked`).map(i=>i.value);
@@ -398,8 +406,6 @@
     data.values['F45_OK451'] = !!$('#blk_45 input[type="checkbox"]:checked');
     data.values['F45_DOCS']  = $('#F45_DOCS')?.value || '';
     data.values['F45_JUST']  = $('#F45_JUST')?.value || '';
-
-    // 4.5.3
     data.values['F453_EXEC_RES'] = $('#F453_EXEC_RES')?.value || '';
 
     // 4.6
@@ -418,15 +424,6 @@
     data.values['F462F_CRITERIOS[]']= $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
     data.values['F466_DOCS']        = $('#F466_DOCS')?.value || '';
     data.values['F466_EXEC_RES']    = $('#F466_EXEC_RES')?.value || '';
-
-    // 4.3.10
-    data.values['F4310_OPCAO']      = document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || '';
-    data.values['F4310_LEGISLACAO'] = $('#F4310_LEGISLACAO')?.value || '';
-    data.values['F4310_DOCS']       = $('#F4310_DOCS')?.value || '';
-
-    // 4.3.12
-    data.values['F43_SOLICITA_INCLUSAO'] = !!$('#F43_SOLICITA_INCLUSAO')?.checked;
-    data.values['F43_DESC_PLANOS']       = $('#F43_DESC_PLANOS')?.value || '';
 
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
   }
@@ -515,11 +512,18 @@
         });
       })();
 
+      // 4 (fase radio)
+      (function() {
+        const v = st.values?.['FASE_PROGRAMA'] || '';
+        if (v) {
+          const r = document.querySelector(`input[name="FASE_PROGRAMA"][value="${v}"]`);
+          if (r) r.checked = true;
+        }
+      })();
+
       return st;
     }catch{ return null; }
   }
-
-
   /* ========= Stepper fallback ========= */
   let curStep = 0;
 
@@ -583,7 +587,6 @@
   $('#modalSalvando')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieSalvando','animacao/gerando-pdf.json',{loop:true,autoplay:true}));
   /* ========= Gate: Gescon TERMO_ENC_GESCON & Termos_registrados ========= */
   let searching = false;
-
   async function consultarGesconByCnpj(cnpj){
     const body = { cnpj };
     dbg('[consultarGesconByCnpj] >> body:', body);
@@ -700,7 +703,6 @@
       searching = false;
     }
   }
-
   async function hidratarTermosRegistrados(cnpj){
     dbg('[hidratarTermosRegistrados] start →', cnpj);
     try{
@@ -818,7 +820,6 @@
       if (introDT) introDT.textContent = el.spanDataEnc?.textContent || '—';
     }
   }
-
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
   function setupFase4Toggles(){
     const modalByFase = {
@@ -829,13 +830,16 @@
       '4.5': 'modalF45',
       '4.6': 'modalF46'
     };
-    el.faseChecks.forEach(chk=>{
-      chk.addEventListener('change', ()=>{
-        const target = modalByFase[chk.value];
-        if (chk.checked && target) {
+    // abrir modal ao selecionar radio (seleção única)
+    el.faseRadios.forEach(r=>{
+      r.addEventListener('change', ()=>{
+        const target = modalByFase[r.value];
+        if (r.checked && target) {
           const m = document.getElementById(target);
           if (m) bootstrap.Modal.getOrCreateInstance(m).show();
         }
+        // habilita Próximo ao escolher a fase (coerente com HTML)
+        if (el.btnNext) el.btnNext.disabled = false;
         saveState();
       });
     });
@@ -880,47 +884,54 @@
   }
 
   function validarFaseSelecionada(){
-    const fases = $$('.fase-check:checked').map(i=>i.value);
-    if(!fases.length) return { ok:false, motivo:'Selecione ao menos uma fase (4.1 a 4.6).' };
+    const f = document.querySelector('input[name="FASE_PROGRAMA"]:checked')?.value || '';
+    if(!f) return { ok:false, motivo:'Selecione a fase do Programa (4.1 a 4.6).' };
 
-    for (const f of fases){
-      if (f==='4.1'){
-        const opt = $('input[name="F41_OPCAO"]:checked', el.blk41);
-        if(!opt) return { ok:false, motivo:'Na fase 4.1, selecione 4.1.1 ou 4.1.2.' };
+    if (f==='4.1'){
+      const opt = $('input[name="F41_OPCAO"]:checked', el.blk41);
+      if(!opt) return { ok:false, motivo:'Na fase 4.1, selecione 4.1.1 ou 4.1.2.' };
+    }
+    if (f==='4.2'){
+      const marc = $$('input[type="checkbox"]:checked', el.f42Lista);
+      if(!marc.length) return { ok:false, motivo:'Na fase 4.2, marque ao menos um item (a–i).' };
+    }
+    if (f==='4.3'){
+      const marc       = $$('input[type="checkbox"]:checked', el.f43Lista);
+      const plano      = ($('#F43_PLANO')?.value||'').trim();
+      const planoB     = ($('#F43_PLANO_B')?.value||'').trim();
+      const descPlanos = ($('#F43_DESC_PLANOS')?.value||'').trim();
+      const incluir    = $$('#F43_INCLUIR input[type="checkbox"]:checked').length > 0;
+      const just       = ($('#F43_JUST')?.value||'').trim();
+
+      const ok = marc.length || plano || planoB || descPlanos || incluir || just;
+      if(!ok){
+        return { ok:false, motivo:'Na fase 4.3, marque ao menos um critério ou descreva/justifique no(s) campo(s) disponível(is).' };
       }
-      if (f==='4.2'){
-        const marc = $$('input[type="checkbox"]:checked', el.f42Lista);
-        if(!marc.length) return { ok:false, motivo:'Na fase 4.2, marque ao menos um item (a–i).' };
-      }
-      if (f==='4.3'){
-        const marc = $$('input[type="checkbox"]:checked', el.f43Lista);
-        const just = ($('#F43_JUST')?.value||'').trim();
-        if(!marc.length && !just) return { ok:false, motivo:'Na fase 4.3, marque ao menos um critério ou preencha as justificativas.' };
-      }
-      if (f==='4.4'){
-        const optE = document.getElementById('F442_OPTE');
-        if (optE?.checked) {
-          const crits = $$('#F44_CRITERIOS input[type="checkbox"]:checked');
-          if (!crits.length) {
-            return { ok:false, motivo:'Na 4.4, ao marcar a finalidade “e)”, selecione pelo menos um critério em 4.4.3.' };
-          }
+    }
+    if (f==='4.4'){
+      const optE = document.getElementById('F442_OPTE');
+      if (optE?.checked) {
+        const crits = $$('#F44_CRITERIOS input[type="checkbox"]:checked');
+        if (!crits.length) {
+          return { ok:false, motivo:'Na 4.4, ao marcar a finalidade “e)”, selecione pelo menos um critério em 4.4.3.' };
         }
       }
-      if (f==='4.5'){
-        const ok451 = $('#blk_45 input[type="checkbox"]:checked');
-        const docs = ($('#F45_DOCS')?.value||'').trim();
-        const jus  = ($('#F45_JUST')?.value||'').trim();
-        if(!ok451 && !docs && !jus) {
-          return { ok:false, motivo:'Na fase 4.5, marque 4.5.1 ou preencha documentos/justificativas.' };
-        }
+    }
+    if (f==='4.5'){
+      const ok451 = $('#blk_45 input[type="checkbox"]:checked');
+      const docs = ($('#F45_DOCS')?.value||'').trim();
+      const jus  = ($('#F45_JUST')?.value||'').trim();
+      const exec = ($('#F453_EXEC_RES')?.value||'').trim();
+      if(!ok451 && !docs && !jus && !exec) {
+        return { ok:false, motivo:'Na fase 4.5, marque 4.5.1 ou preencha documentos/justificativas/execução.' };
       }
-      if (f==='4.6'){
-        const crits = $$('input[type="checkbox"]:checked', el.f46Crits);
-        const nivel = $('#F46_PROGESTAO')?.value || '';
-        const porte = $('#F46_PORTE')?.value || '';
-        if(!crits.length) return { ok:false, motivo:'Na fase 4.6, selecione ao menos um critério em 4.6.1.' };
-        if(!nivel || !porte) return { ok:false, motivo:'Informe nível Pró-Gestão e Porte ISP-RPPS em 4.6.1 (b/c).' };
-      }
+    }
+    if (f==='4.6'){
+      const crits = $$('input[type="checkbox"]:checked', el.f46Crits);
+      const nivel = $('#F46_PROGESTAO')?.value || '';
+      const porte = $('#F46_PORTE')?.value || '';
+      if(!crits.length) return { ok:false, motivo:'Na fase 4.6, selecione ao menos um critério em 4.6.1.' };
+      if(!nivel || !porte) return { ok:false, motivo:'Informe nível Pró-Gestão e Porte ISP-RPPS em 4.6.1 (b/c).' };
     }
     return { ok:true };
   }
@@ -936,20 +947,20 @@
     const f43Incl = document.getElementById('F43_INCLUIR');
     if (f43Incl && !f43Incl.children.length){
       f43Incl.innerHTML = itens.map(it => (
-        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
+        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F43_INCLUIR[]" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
       )).join('');
     }
 
     // 4.3 lista
     if (el.f43Lista && !el.f43Lista.children.length){
       el.f43Lista.innerHTML = itens.map(it => (
-        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
+        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F43_LISTA[]" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
       )).join('');
     }
 
     if(el.f44Crits && !el.f44Crits.children.length){
       el.f44Crits.innerHTML = itens.map(it => (
-        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
+        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F44_CRITERIOS[]" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
       )).join('');
     }
     if(el.f44Final && !el.f44Final.children.length){
@@ -966,7 +977,7 @@
     }
     if(el.f46Crits && !el.f46Crits.children.length){
       el.f46Crits.innerHTML = itens.map(it => (
-        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
+        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F46_CRITERIOS[]" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
       )).join('');
     }
     if(el.f46Final && !el.f46Final.children.length){
@@ -976,14 +987,18 @@
     const f462f = document.getElementById('F462F_CRITERIOS');
     if (f462f && !f462f.children.length) {
       f462f.innerHTML = itens.map(it => (
-        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
+        `<label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F462F_CRITERIOS[]" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
       )).join('');
     }
   }
-
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
     const msgs=[];
+
+    // ESFERA (RPPS Municipal ou Estadual/Distrital) — exigida pelo schema
+    const esferaOk = !!(el.esfMun?.checked || el.esfEst?.checked);
+    if(!esferaOk) msgs.push('Esfera (RPPS Municipal ou Estadual/Distrital)');
+
     if(!el.uf.value.trim()) msgs.push('UF');
     if(!el.ente.value.trim()) msgs.push('Ente');
     if(digits(el.cnpjEnte.value).length!==14) msgs.push('CNPJ do Ente');
@@ -1002,9 +1017,13 @@
     if(!el.cargoRepUg.value.trim()) msgs.push('Cargo do Rep. da UG');
     if(!isEmail(el.emailRepUg.value)) msgs.push('E-mail do Rep. da UG');
 
-    if(msgs.length){ showAtencao(['Preencha os campos:', ...msgs.map(m=>'• '+m)]); return false; }
+    if(msgs.length){
+      showAtencao(['Preencha os campos:', ...msgs.map(m=>'• '+m)]);
+      return false;
+    }
     return true;
   }
+
 
   /* ========= Carimbos ========= */
   function fillNowHiddenFields(){
@@ -1021,8 +1040,8 @@
       (el.esfMun?.checked ? 'RPPS Municipal' :
       (el.esfEst?.checked ? 'Estadual/Distrital' : ''));
 
-    const marcadas   = $$('.fase-check:checked').map(i=>i.value);
-    const faseCompat = marcadas.sort().slice(-1)[0] || '';
+    // fase (seleção única)
+    const faseCompat = document.querySelector('input[name="FASE_PROGRAMA"]:checked')?.value || '';
 
     // 3.2
     const ADESAO_SEM_IRREGULARIDADES =
@@ -1065,6 +1084,7 @@
       CARGO_REP_UG: el.cargoRepUg.value.trim(),
       EMAIL_REP_UG: el.emailRepUg.value.trim(),
       TEL_REP_UG: el.telRepUg.value.trim(),
+      SEI_PROCESSO: (el.introProcSei?.textContent || '').trim(),
 
       DATA_VENCIMENTO_ULTIMO_CRP,
       TIPO_EMISSAO_ULTIMO_CRP,
@@ -1077,12 +1097,10 @@
       FIN_3_2_CRITERIOS_ESTRUTURANTES,
       FIN_3_2_OUTRO_CRITERIO_COMPLEXO,
 
-      FASES_MARCADAS: marcadas,
       FASE_PROGRAMA: faseCompat,
       F41_OPCAO: $('input[name="F41_OPCAO"]:checked')?.value || '',
       F42_LISTA: $$(`#F42_LISTA input[type="checkbox"]:checked`).map(i => i.value),
       F43_LISTA: $$(`#F43_LISTA input[type="checkbox"]:checked`).map(i => i.value),
-      F43_JUST:  $('#F43_JUST')?.value || '',
       F43_PLANO: $('#F43_PLANO')?.value || '',
       F43_INCLUIR: $$('#F43_INCLUIR input[type="checkbox"]:checked').map(i => i.value),
       F44_CRITERIOS:   $$(`#F44_CRITERIOS input[type="checkbox"]:checked`).map(i => i.value),
@@ -1131,7 +1149,6 @@
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
-  
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (warm-up + retries + rotas alternativas) ========= */
   async function gerarBaixarPDF(payload){
     const payloadForPdf = {
@@ -1231,6 +1248,7 @@
     }
   });
 
+  // ——— SUBMIT ———
   const form = $('#solicCrpForm');
   form?.addEventListener('submit', async (ev)=>{
     ev.preventDefault();
@@ -1252,7 +1270,8 @@
     try{
       await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-      await fetchJSON(api('/gerar-solic-crp'), {
+      // ✅ capture a resposta da API
+      const resp = await fetchJSON(api('/gerar-solic-crp'), {
         method:'POST',
         headers: withKey({'Content-Type':'application/json','X-Idempotency-Key':idem}),
         body: JSON.stringify(payload)
@@ -1276,6 +1295,11 @@
         if (el.spanEnteGescon) el.spanEnteGescon.textContent = '';
         if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
 
+        // ✅ usa a resposta da API (se houver) para preencher o nº do processo SEI
+        const procSei = (resp && (resp.proc_sei || resp.PROC_SEI)) || '';
+        if (el.infoProcSei)  el.infoProcSei.textContent  = procSei || '—';
+        if (el.introProcSei) el.introProcSei.textContent = procSei || '—';
+
         if (el.btnNext) el.btnNext.disabled = true;
 
         btn.disabled=false; btn.innerHTML=old;
@@ -1292,6 +1316,7 @@
       btn.disabled=false; btn.innerHTML=old;
     }
   });
+
 
   /* ========= UI helpers ========= */
   function showModal(id){ const mEl=document.getElementById(id); if(!mEl) return; bootstrap.Modal.getOrCreateInstance(mEl).show(); }

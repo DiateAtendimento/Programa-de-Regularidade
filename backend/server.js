@@ -1307,20 +1307,32 @@ const schemaGerarTermo = Joi.object({
   CNPJ_ENTE: Joi.string().pattern(/^\D*\d{14}\D*$/).required(),
   UG: Joi.string().trim().min(1).required(),
   CNPJ_UG: Joi.string().pattern(/^\D*\d{14}\D*$/).required(),
+
   NOME_REP_ENTE: Joi.string().trim().min(2).required(),
   CPF_REP_ENTE: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
   CARGO_REP_ENTE: Joi.string().trim().min(2).required(),
   EMAIL_REP_ENTE: Joi.string().email().allow(''),
+  /* NOVO → telefone do representante do ENTE */
+  TEL_REP_ENTE: Joi.string().allow(''),
+
   NOME_REP_UG: Joi.string().trim().min(2).required(),
   CPF_REP_UG: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
   CARGO_REP_UG: Joi.string().trim().min(2).required(),
   EMAIL_REP_UG: Joi.string().email().allow(''),
+  /* NOVO → telefone do representante da UG */
+  TEL_REP_UG: Joi.string().allow(''),
+
   EMAIL_ENTE: Joi.string().email().allow(''),
   EMAIL_UG: Joi.string().email().allow(''),
+
   CRITERIOS_IRREGULARES: Joi.alternatives().try(
     Joi.array().items(Joi.string().trim()),
     Joi.string().allow('')
   ).optional(),
+
+  /* NOVO → campo adicional */
+  OUTRO_CRITERIO_COMPLEXO: Joi.string().allow(''),
+
   ADESAO_SEM_IRREGULARIDADES: Joi.string().allow(''),
   CELEBRACAO_TERMO_PARCELA_DEBITOS: Joi.string().allow(''),
   REGULARIZACAO_PENDEN_ADMINISTRATIVA: Joi.string().allow(''),
@@ -1330,10 +1342,12 @@ const schemaGerarTermo = Joi.object({
   COMPROMISSO_FIRMADO_ADESAO: Joi.string().allow(''),
   PROVIDENCIA_NECESS_ADESAO: Joi.string().allow(''),
   CONDICAO_VIGENCIA: Joi.string().allow(''),
+
   __snapshot_base: Joi.object().unknown(true).optional(),
   __user_changed_fields: Joi.array().items(Joi.string()).optional(),
   IDEMP_KEY: Joi.string().allow(''),
 }).unknown(true);
+
 
 /* PDF schema do Termo — REMOVIDOS campos do CRP */
 const schemaTermoPdf = Joi.object({
@@ -1794,10 +1808,10 @@ app.post('/api/gerar-termo', async (req, res) => {
 
     const sTermosSheet = await getOrCreateSheet('Termos_registrados', [
       'ENTE','UF','CNPJ_ENTE','EMAIL_ENTE',
-      'NOME_REP_ENTE','CARGO_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE',
+      'NOME_REP_ENTE','CARGO_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
       'UG','CNPJ_UG','EMAIL_UG',
-      'NOME_REP_UG','CARGO_REP_UG','CPF_REP_UG','EMAIL_REP_UG',
-      'CRITERIOS_IRREGULARES',
+      'NOME_REP_UG','CARGO_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
+      'CRITERIOS_IRREGULARES','OUTRO_CRITERIO_COMPLEXO',
       'ADESAO_SEM_IRREGULARIDADES',
       'CELEBRACAO_TERMO_PARCELA_DEBITOS',
       'REGULARIZACAO_PENDEN_ADMINISTRATIVA',
@@ -1811,7 +1825,8 @@ app.post('/api/gerar-termo', async (req, res) => {
       'IDEMP_KEY'
     ]);
     await sTermosSheet.loadHeaderRow();
-    await ensureSheetHasColumns(sTermosSheet, ['IDEMP_KEY']);
+    await ensureSheetHasColumns(sTermosSheet, ['TEL_REP_ENTE','TEL_REP_UG','OUTRO_CRITERIO_COMPLEXO','IDEMP_KEY']);
+
 
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
     const idemBody   = String(p.IDEMP_KEY || '').trim();
@@ -1853,12 +1868,27 @@ app.post('/api/gerar-termo', async (req, res) => {
     await safeAddRow(sTermosSheet, sheetSanObject({
       ENTE: norm(p.ENTE), UF: norm(p.UF),
       CNPJ_ENTE: digits(p.CNPJ_ENTE), EMAIL_ENTE: emailEnteFinal,
-      NOME_REP_ENTE: norm(p.NOME_REP_ENTE), CARGO_REP_ENTE: norm(p.CARGO_REP_ENTE),
-      CPF_REP_ENTE: digits(p.CPF_REP_ENTE), EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE),
-      UG: norm(p.UG), CNPJ_UG: digits(p.CNPJ_UG), EMAIL_UG:   emailUgFinal,
-      NOME_REP_UG: norm(p.NOME_REP_UG), CARGO_REP_UG: norm(p.CARGO_REP_UG),
-      CPF_REP_UG: digits(p.CPF_REP_UG), EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
+
+      NOME_REP_ENTE: norm(p.NOME_REP_ENTE),
+      CARGO_REP_ENTE: norm(p.CARGO_REP_ENTE),
+      CPF_REP_ENTE: digits(p.CPF_REP_ENTE),
+      EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE),
+      /* NOVO */
+      TEL_REP_ENTE: norm(p.TEL_REP_ENTE),
+
+      UG: norm(p.UG), CNPJ_UG: digits(p.CNPJ_UG), EMAIL_UG: emailUgFinal,
+
+      NOME_REP_UG: norm(p.NOME_REP_UG),
+      CARGO_REP_UG: norm(p.CARGO_REP_UG),
+      CPF_REP_UG: digits(p.CPF_REP_UG),
+      EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
+      /* NOVO */
+      TEL_REP_UG: norm(p.TEL_REP_UG),
+
       CRITERIOS_IRREGULARES: criterios.join(', '),
+      /* NOVO */
+      OUTRO_CRITERIO_COMPLEXO: norm(p.OUTRO_CRITERIO_COMPLEXO),
+
       ADESAO_SEM_IRREGULARIDADES: norm(p.ADESAO_SEM_IRREGULARIDADES),
       CELEBRACAO_TERMO_PARCELA_DEBITOS: norm(p.CELEBRACAO_TERMO_PARCELA_DEBITOS),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: norm(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA),
@@ -1868,6 +1898,7 @@ app.post('/api/gerar-termo', async (req, res) => {
       COMPROMISSO_FIRMADO_ADESAO: norm(p.COMPROMISSO_FIRMADO_ADESAO),
       PROVIDENCIA_NECESS_ADESAO: norm(p.PROVIDENCIA_NECESS_ADESAO),
       CONDICAO_VIGENCIA: norm(p.CONDICAO_VIGENCIA),
+
       MES, DATA_TERMO_GERADO: DATA, HORA_TERMO_GERADO: HORA, ANO_TERMO_GERADO: ANO,
       IDEMP_KEY: idemKey
     }), 'Termos:add');

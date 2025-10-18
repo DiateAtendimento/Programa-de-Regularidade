@@ -17,7 +17,6 @@
   <link rel="icon" href="imagens/favicon.png" sizes="16x16" type="image/png">
 
   <link rel="stylesheet" href="styles.css" />
-
 </head>
 <body>
   <!-- BG decorativo -->
@@ -32,7 +31,6 @@
         FORMULÁRIO PARA GERAÇÃO DO TERMO DE <br>SOLICITAÇÃO DE CRP EMERGENCIAL PRÓ-REGULARIDADE RPPS
       </h1>
     </header>
-
     <!-- Stepper -->
     <div id="stepper" class="app-stepper mb-3">
       <div class="step active">1</div><div class="divider"></div>
@@ -74,14 +72,15 @@
               <div class="small">Registro do Termo de Adesão ao Pró-Regularidade RPPS:</div>
               <ul class="mb-0 small">
                 <!-- em #gesconInfoBox, deixe os spans com “—” (só visual) -->
-                <li><strong>Nº da consulta (Gescon):</strong> <span id="N_GESCON">—</span></li>
+                <!-- B) padronizado -->
+                <li><strong>Enviado via Consulta GESCON:</strong> <span id="N_GESCON">—</span></li>
                 <li><strong>Data do encaminhamento:</strong> <span id="DATA_ENC_VIA_GESCON">—</span></li>
                 <li><strong>UF:</strong> <span id="UF_GESCON">—</span></li>
                 <li><strong>Ente:</strong> <span id="ENTE_GESCON">—</span></li>
+                <li><strong>Nº Processo SEI:</strong> <span id="INFO_PROC_SEI">—</span></li>
               </ul>
             </div>
           </section>
-
           <!-- ETAPA 1 -->
           <section class="app-section" data-step="1">
             <!-- BLOCO INTRODUTÓRIO DA ETAPA 1 -->
@@ -92,8 +91,10 @@
               <div class="small">
                 <div class="fw-semibold mb-1">Registro do Termo de Adesão ao Pró-Regularidade RPPS</div>
                 <ul class="mb-0">
-                  <li>Enviado via Consulta Gescon: <span id="intro_N_GESCON">—</span></li>
+                  <!-- B) padronizado -->
+                  <li>Enviado via Consulta GESCON: <span id="intro_N_GESCON">—</span></li>
                   <li>Data do encaminhamento: <span id="intro_DATA_ENC">—</span></li>
+                  <li>Nº Processo SEI: <span id="INTRO_PROC_SEI">—</span></li>
                 </ul>
               </div>
             </div>
@@ -118,7 +119,6 @@
                 </div>
               </div>
             </div>
-
             <div class="row g-3">
               <div class="col-12"><div class="sub-title">1.2 Ente Federativo</div></div>
 
@@ -161,6 +161,13 @@
                     <option value="Sem extrato disponível">Sem extrato disponível</option>
                   </select>
                 </div>
+                <!-- A) novo campo: RPPS em Extinção -->
+                <div class="col-md-6 mt-4 mt-md-0">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="RPPS_EXTINCAO" name="RPPS_EXTINCAO" value="1">
+                    <label class="form-check-label" for="RPPS_EXTINCAO">RPPS em Extinção</label>
+                  </div>
+                </div>
               </div>
 
               <div class="row g-3 mt-2">
@@ -200,6 +207,7 @@
               </div>
             </div>
           </section>
+
           <!-- ETAPA 2 -->
           <section class="app-section" data-step="2">
             <div class="section-head">
@@ -279,6 +287,7 @@
               </div>
             </div>
           </section>
+
           <!-- ETAPA 3 -->
           <section id="secCRP" class="app-section" data-step="3">
             <h2 class="section-title">3. Situação relativa ao CRP</h2>
@@ -289,188 +298,159 @@
               <p class="small text-muted mb-2">Selecione todos os itens apontados como irregulares no extrato.</p>
 
               <div class="d-flex flex-column gap-2" id="grpCRITERIOS">
-              <label class="form-check">
+                <!-- (lista original mantida) -->
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="1-Atendimento à solicitação de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar">
                   <span class="form-check-label">1 - Atendimento à solicitação de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="2-Aplicações Financeiras Resolução CMN – Adequação DAIR e Política">
                   <span class="form-check-label">2 - Aplicações Financeiras (Res. CMN) – Adequação do DAIR e da Política</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="3-Investimentos (objeto de PAP)">
                   <span class="form-check-label">3 - Investimentos (objeto de PAP)</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="4-Atendimento à fiscalização">
                   <span class="form-check-label">4 - Atendimento à fiscalização</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="5-Caráter contributivo – Repasse (objeto de Processo Administrativo Previdenciário)">
                   <span class="form-check-label">5 - Caráter contributivo – Repasse (objeto de Processo Administrativo Previdenciário)</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="6-DPIN – Consistência">
                   <span class="form-check-label">6 - Demonstrativo da Política de Investimentos (DPIN) – Consistência</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="7-DPIN – Encaminhamento">
                   <span class="form-check-label">7 - Demonstrativo da Política de Investimentos (DPIN) – Encaminhamento</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="8-DAIR – Consistência">
                   <span class="form-check-label">8 - Demonstrativo das Aplicações e Investimentos dos Recursos (DAIR) – Consistência</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="9-DAIR – Encaminhamento">
                   <span class="form-check-label">9 - Demonstrativo das Aplicações e Investimentos dos Recursos (DAIR) – Encaminhamento</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="10-DIPR – Consistência e Caráter Contributivo">
                   <span class="form-check-label">10 - Demonstrativo de Informações Previdenciárias e Repasses (DIPR) – Consistência e Caráter Contributivo</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="11-DIPR – Encaminhamento">
                   <span class="form-check-label">11 - Demonstrativo de Informações Previdenciárias e Repasses (DIPR) – Encaminhamento</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="12-Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi">
                   <span class="form-check-label">12 - Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="13-Equilíbrio Financeiro e Atuarial – Encaminhamento NTA, DRAA e resultados das análises">
                   <span class="form-check-label">13 - Equilíbrio Financeiro e Atuarial – Encaminhamento NTA, DRAA e resultados das análises</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="14-Existência e funcionamento de unidade gestora e regime próprio únicos">
                   <span class="form-check-label">14 - Existência e funcionamento de unidade gestora e regime próprio únicos</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="15-Filiação ao RPPS e regras de concessão, cálculo e reajustamento dos benefícios, nos termos do art. 40 da Constituição Federal">
                   <span class="form-check-label">15 - Filiação ao RPPS e regras de concessão, cálculo e reajustamento dos benefícios (art. 40 da CF)</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="16-Instituição do regime de previdência complementar – Aprovação da lei">
                   <span class="form-check-label">16 - Instituição do regime de previdência complementar – Aprovação da lei</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="17-Observância dos limites de contribuição do ente">
                   <span class="form-check-label">17 - Observância dos limites de contribuição do ente</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="18-Observância dos limites de contribuição dos segurados e beneficiários">
                   <span class="form-check-label">18 - Observância dos limites de contribuição dos segurados e beneficiários</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="19-Operacionalização da compensação previdenciária – Termo de Adesão e Contrato com a empresa de tecnologia">
                   <span class="form-check-label">19 - Operacionalização da compensação previdenciária – Termo de Adesão e Contrato com a empresa de tecnologia</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="20-Plano de benefícios integrado apenas por aposentadorias e pensões por morte">
                   <span class="form-check-label">20 - Plano de benefícios integrado apenas por aposentadorias e pensões por morte</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="21-Requisitos para dirigentes, membros titulares dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS">
                   <span class="form-check-label">21 - Requisitos para dirigentes, membros titulares dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS</span>
-              </label>
-
-              <label class="form-check">
+                </label>
+                <label class="form-check">
                   <input class="form-check-input me-2" type="checkbox" name="CRITERIOS_IRREGULARES[]" value="22-Utilização dos recursos previdenciários (objeto de PAP)">
                   <span class="form-check-label">22 - Utilização dos recursos previdenciários (objeto de PAP)</span>
-              </label>
+                </label>
               </div>
             </div>
 
             <hr class="my-3">
 
-            <!-- 3.2 -->
-            <div class="mb-2">
-              <div class="sub-title mb-2">3.2 Adesão sem irregularidades (finalidades)</div>
+            <!-- 3.2 (C: seleção única — já OK) -->
+            <div class="mt-3">
+              <div class="form-label fw-bold">3.2 Motivo principal do pedido de prazo adicional</div>
+              <div class="small text-muted mb-2">Selecione apenas uma alternativa.</div>
 
-              <label class="form-check mb-2">
-                <input id="chkSemIrregularidades" class="form-check-input me-2" type="checkbox" name="ADESAO_SEM_IRREGULARIDADES" value="SIM">
-                <span class="form-check-label">
-                  O RPPS <strong>não apresenta, atualmente, irregularidades</strong> nos critérios do extrato previdenciário, mas adere ao Pró-Regularidade RPPS com a finalidade de:
-                </span>
+              <label class="form-check mb-1">
+                <input class="form-check-input me-2" type="radio" name="OPT_3_2" value="3.2.1">
+                <span class="form-check-label">3.2.1 Manutenção da conformidade</span>
               </label>
 
-              <div id="grpFinalidades" class="card-subblock">
-                <label class="form-check mb-1">
-                  <input class="form-check-input me-2 fin-3-2" type="checkbox" name="MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS" value="SIM">
-                  <span class="form-check-label">Manutenção da conformidade</span>
-                </label>
-                <label class="form-check mb-1">
-                  <input class="form-check-input me-2 fin-3-2" type="checkbox" name="DEFICIT_ATUARIAL" value="SIM">
-                  <span class="form-check-label">Equacionamento de déficit atuarial ou prazos adicionais para implementação</span>
-                </label>
-                <label class="form-check mb-1">
-                  <input class="form-check-input me-2 fin-3-2" type="checkbox" name="CRITERIOS_ESTRUT_ESTABELECIDOS" value="SIM">
-                  <span class="form-check-label">Organização do RPPS conforme critérios estruturantes (inclui art. 40, §20, CF)</span>
-                </label>
-                <label class="form-check">
-                  <input class="form-check-input me-2 fin-3-2" type="checkbox" name="OUTRO_CRITERIO_COMPLEXO" value="SIM">
-                  <span class="form-check-label">Outro critério que apresente (ou possa apresentar) maior complexidade</span>
-                </label>
-              </div>
+              <label class="form-check mb-1">
+                <input class="form-check-input me-2" type="radio" name="OPT_3_2" value="3.2.2">
+                <span class="form-check-label">3.2.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</span>
+              </label>
+
+              <label class="form-check mb-1">
+                <input class="form-check-input me-2" type="radio" name="OPT_3_2" value="3.2.3">
+                <span class="form-check-label">3.2.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</span>
+              </label>
+
+              <label class="form-check mb-1">
+                <input class="form-check-input me-2" type="radio" name="OPT_3_2" value="3.2.4">
+                <span class="form-check-label">3.2.4 Outro critério que apresente (ou possa apresentar) maior complexidade</span>
+              </label>
             </div>
+
           </section>
 
-          <!-- ETAPA 4: Fase do Programa (dinâmica 4.1 a 4.6) -->
+          <!-- ETAPA 4: Fase do Programa (D: radios seleção única) -->
           <section id="secFases" class="app-section" data-step="4">
             <div class="section-head">
               <h2 class="section-title">4. Identificação da Fase do Programa de Regularidade Previdenciária</h2>
-              <p class="small text-muted mb-0">Selecione a fase. Os subitens correspondentes aparecerão abaixo.</p>
+              <p class="small text-muted mb-0">Selecione a fase. Apenas uma pode ser escolhida.</p>
             </div>
 
+            <!-- D: trocados para radios (seleção única) -->
             <div class="form-check">
-              <input class="form-check-input fase-check" type="checkbox" id="fase_41" value="4.1">
+              <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_41" value="4.1">
               <label class="form-check-label" for="fase_41">4.1 Fase Geral/Introdutória – 1º CRP Emergencial</label>
-
             </div>
             <div class="form-check">
-              <input class="form-check-input fase-check" type="checkbox" id="fase_42" value="4.2">
+              <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_42" value="4.2">
               <label class="form-check-label" for="fase_42">4.2 Fase Geral/Introdutória – 2º CRP Emergencial</label>
-
             </div>
             <div class="form-check">
-              <input class="form-check-input fase-check" type="checkbox" id="fase_43" value="4.3">
+              <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_43" value="4.3">
               <label class="form-check-label" for="fase_43">4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</label>
- 
             </div>
             <div class="form-check">
-              <input class="form-check-input fase-check" type="checkbox" id="fase_44" value="4.4">
+              <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_44" value="4.4">
               <label class="form-check-label" for="fase_44">4.4 Fase Específica/Focalizada – 4º CRP Emergencial</label>
-
             </div>
             <div class="form-check">
-              <input class="form-check-input fase-check" type="checkbox" id="fase_45" value="4.5">
+              <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_45" value="4.5">
               <label class="form-check-label" for="fase_45">4.5 Fase Específica/Focalizada – 5º CRP Emergencial</label>
-
             </div>
             <div class="form-check">
-              <input class="form-check-input fase-check" type="checkbox" id="fase_46" value="4.6">
+              <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_46" value="4.6">
               <label class="form-check-label" for="fase_46">4.6 Fase de Manutenção da Conformidade</label>
-
             </div>
           </section>
 
@@ -478,7 +458,7 @@
           <section class="app-section" data-step="5">
             <div class="section-head">
               <h2 class="section-title">5. Justificativas/Informações Adicionais</h2>
-              <p class="small text-muted mb-0">Campo livre para comentários pertinentes à solicitação.</p>
+            <p class="small text-muted mb-0">Campo livre para comentários pertinentes à solicitação.</p>
             </div>
             <textarea id="JUSTIFICATIVAS_GERAIS" class="form-control" rows="4" placeholder="Escreva aqui…"></textarea>
           </section>
@@ -499,7 +479,7 @@
                 <li>Utilize a opção <strong>Gerar formulário</strong> para abrir ou baixar o termo em modo de pré-visualização.</li>
                 <li>Realize a assinatura eletrônica do Termo (a plataforma GOV.BR poderá ser utilizada para assinatura eletrônica).</li>
                 <li>Após a assinatura, clique em <strong>Finalizar</strong> no rodapé para <u>registrar</u> e concluir a tarefa.</li> 
-                <li>Concluído o processo, efetue o envio do termo pelo sistema GESCON RPPS..</li>
+                <li>Concluído o processo, efetue o envio do termo pelo sistema GESCON RPPS.</li>
               </ul>
             </fieldset>
           </section>
@@ -522,6 +502,7 @@
       </div>
     </div>
   </div>
+
   <!-- Modal AVISO INICIAL (igual ao padrão) -->
   <div class="modal fade" id="modalWelcome" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
@@ -564,8 +545,11 @@
           <p>
             O Termo de Solicitação de CRP Emergencial será apensado ao processo eletrônico no SEI para acompanhamento pelo ente federativo do Programa de Regularidade Previdenciária.
           </p>
+          <!-- C) parágrafo normativo atualizado com spans dinâmicos -->
           <p>
-            Para maiores esclarecimentos sobre as condições para emissão de CRP na vigência do Programa de Regularidade Previdenciária consulte o Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022, <em>incluído  pela Portaria MPS nº xx, de xx de outubro de 2025</em>, e a <em>Portaria SRPC nº xx, de xx de setembro de 2025</em>, que detalha todo o fluxo de procedimentos do Programa.
+            Para maiores esclarecimentos sobre as condições para emissão de CRP na vigência do Programa de Regularidade Previdenciária, consulte o Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022,
+            <em>incluído pela Portaria MPS nº <span id="PORTARIA_MPS_INC">—</span></em>, e a
+            <em>Portaria SRPC/MPS nº <span id="PORTARIA_SRPC_B">—</span></em>, que detalha todo o fluxo de procedimentos do Programa.
           </p>
           <p class="mb-0">
             Em caso de dúvidas, o ente deverá comunicar-se com a Coordenação de Atendimento Colaborativo do Departamento dos Regimes Próprios de Previdência Social – DRPPS, pelos telefones <strong>61-2021-5555</strong>, WhatsApp de mesmo número, ou pelo e-mail <strong>programa.regularidade.rpps@previdencia.gov.br</strong>.
@@ -578,7 +562,6 @@
       </div>
     </div>
   </div>
-
   <!-- Modal ATENÇÃO (lista à esquerda) -->
   <div class="modal fade" id="modalAtencao" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -615,68 +598,7 @@
     </div>
   </div>
 
-  <!-- Modal Busca (registro não encontrado) -->
-  <div class="modal fade" id="modalBusca" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-warning">
-          <h5 class="modal-title">Registro não encontrado</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-0">
-            Desculpe, mas não encontramos o registro da consulta do Termo de Adesão ao Programa de Regularidade encaminhada pelo sistema Gescon-RPPS. Caso tenha enviado a consulta, entre em contato com um de nossos analistas pelo telefone <strong>(61) 2021-5555</strong>.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Modal Sucesso -->
-  <div class="modal fade" id="modalSucesso" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-success text-white">
-          <h5 class="modal-title">Formulário gerado</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body d-flex justify-content-center">
-          <div id="lottieSuccess" class="lottie-box"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: “Gerando PDF…” (bloqueia enquanto o PDF é gerado) -->
-  <div class="modal fade" id="modalGerandoPdf" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-brand text-white py-2">
-          <h5 class="modal-title">Gerando PDF…</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-        <div class="modal-body d-flex flex-column align-items-center justify-content-center">
-          <div id="lottieGerandoPdf" class="lottie-loading"></div>
-          <div class="status-msg mt-2">Aguarde, preparando o arquivo…</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Salvando -->
-  <div class="modal fade" id="modalSalvando" tabindex="-1" aria-labelledby="modalSalvandoTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content text-center">
-        <div class="modal-header py-2 bg-brand">
-          <h6 class="modal-title mb-0" id="modalSalvandoTitle">Salvando…</h6>
-        </div>
-        <div class="modal-body py-4">
-          <div id="lottieSalvando" style="height: 120px;"></div>
-          <h5 class="mt-3 mb-1">Aguarde…</h5>
-          <p class="mb-0 text-muted">as informações estão sendo salvas</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- (restante dos modais 4.1 a 4.6 com C: SRPC/MPS dinâmico) -->
   <!-- MODAL 4.1 -->
   <div class="modal fade" id="modalF41" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
@@ -690,7 +612,7 @@
           <div class="card-subblock mt-3" id="blk_41">
             <div class="sub-title">4.1 Fase Geral/Introdutória – 1º CRP Emergencial</div>
             <p class="small text-muted mb-2">
-              <em>(art. 5º, caput, inciso I, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. 15 da Portaria SRPC nº xx/2025)</em>
+              <em>(art. 5º, caput, inciso I, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. <span id="ART_SRPC_41">—</span> da Portaria SRPC/MPS nº <span id="PORTARIA_SRPC">—</span>)</em>
             </p>
             <p class="mb-2">Declaro ter cumprido as seguintes condições:</p>
 
@@ -741,12 +663,13 @@
           <div class="card-subblock mt-3" id="blk_42">
             <div class="sub-title">4.2 Fase Geral/Introdutória – 2º CRP Emergencial</div>
             <p class="small text-muted mb-2">
-              <em>(art. 5º, caput, inciso I, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. 16 da Portaria SRPC nº xx/2025)</em>
+              <em>(art. 5º, caput, inciso I, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. <span id="ART_SRPC_42">—</span> da Portaria SRPC/MPS nº <span id="PORTARIA_SRPC_42">—</span>)</em>
             </p>
             <p class="mb-2">Declaro ter cumprido as seguintes condições:</p>
             <p class="mb-2"><strong>4.2.1</strong>Declaro ter cumprido as seguintes condições, relativas à regularidade nos seguintes critérios do extrato previdenciário:</p>
 
             <div class="d-flex flex-column gap-2" id="F42_LISTA">
+              <!-- (itens mantidos) -->
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Demonstrativo de Informações Previdenciárias e Repasses - DIPR – Encaminhamento"><span class="form-check-label">a) “Demonstrativo de Informações Previdenciárias e Repasses - DIPR – Encaminhamento”.</span></label>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Demonstrativo de Informações Previdenciárias e Repasses - DIPR - Consistência e Caráter Contributivo"><span class="form-check-label">b) “Demonstrativo de Informações Previdenciárias e Repasses - DIPR - Consistência e Caráter Contributivo”.</span></label>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Caráter contributivo - Repasse (objeto de Processo Administrativo Previdenciário)"><span class="form-check-label">c) “Caráter contributivo - Repasse (objeto de Processo Administrativo Previdenciário)”.</span></label>
@@ -754,17 +677,8 @@
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Aplicações Financeiras Resol. CMN - Adequação DAIR e Política Investimentos (objeto de PAP) (após a adesão ao Programa)"><span class="form-check-label">e) “Aplicações Financeiras Resol. CMN - Adequação DAIR e Política Investimentos (objeto de PAP)” (em relação a situações que ocorrerem após a data de adesão).</span></label>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR – Encaminhamento"><span class="form-check-label">f) “Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR – Encaminhamento”.</span></label>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR - Consistência (após a adesão ao Programa)"><span class="form-check-label">g) “Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR - Consistência” (em relação a situações que ocorrerem após a data de adesão).</span></label>
-              <label class="form-check">
-                <input class="form-check-input me-2" type="checkbox"
-                      value="DPIN – Encaminhamento">
-                <span class="form-check-label">h) “Demonstrativo da Política de Investimentos - DPIN - Encaminhamento”.</span>
-              </label>
-              <label class="form-check">
-                <input class="form-check-input me-2" type="checkbox"
-                      value="DPIN – Consistência (pós-adesão)">
-                <span class="form-check-label">i) “Demonstrativo da Política de Investimentos - DPIN – Consistência” (em relação a situações que ocorrerem após a data de adesão).</span>
-              </label>
-
+              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DPIN – Encaminhamento"><span class="form-check-label">h) “Demonstrativo da Política de Investimentos - DPIN - Encaminhamento”.</span></label>
+              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DPIN – Consistência (pós-adesão)"><span class="form-check-label">i) “Demonstrativo da Política de Investimentos - DPIN – Consistência” (em relação a situações que ocorrerem após a data de adesão).</span></label>
             </div>
 
             <p class="small text-muted mt-2 mb-0">
@@ -775,7 +689,8 @@
       </div>
     </div>
   </div>
-  <!-- MODAL 4.3 -->
+
+  <!-- MODAL 4.3 (F: 4.3.11 com toggle) -->
   <div class="modal fade" id="modalF43" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
       <div class="modal-content">
@@ -788,58 +703,51 @@
           <div class="card-subblock mt-3" id="blk_43">
             <div class="sub-title">4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</div>
             <p class="small text-muted mb-2">
-              <em>(art. 5º, caput, inciso II, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. 18 da Portaria SRPC nº xx/2025)</em>
+              <em>(art. 5º, caput, inciso II, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. <span id="ART_SRPC_43">—</span> da Portaria SRPC/MPS nº <span id="PORTARIA_SRPC_43">—</span>)</em>
             </p>
             <p class="mb-2">Declaro ter cumprido as seguintes condições (marque o que se aplica e utilize os campos de justificativas se necessário):</p>
 
             <div class="d-flex flex-column gap-2" id="F43_LISTA">
-              <!-- 4.3.1 -->
+              <!-- (itens mantidos) -->
               <div class="fw-semibold mt-1">4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento:</div>
-              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DIPR - Consistência e Caráter Contributivo"><span class="form-check-label">a) “Demonstrativo de Informações Previdenciárias e Repasses - DIPR - Consistência e Caráter Contributivo”.</span></label>
-              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Caráter contributivo - Repasse (objeto de PAP)"><span class="form-check-label">b) “Caráter contributivo - Repasse (objeto de Processo Administrativo Previdenciário)”.</span></label>
+              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DIPR - Consistência e Caráter Contributivo"><span class="form-check-label">a) “DIPR - Consistência e Caráter Contributivo”.</span></label>
+              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Caráter contributivo - Repasse (objeto de Processo Administrativo Previdenciário)"><span class="form-check-label">b) “Caráter contributivo - Repasse (objeto de PAP)”.</span></label>
 
-              <!-- 4.3.2 -->
               <div class="fw-semibold mt-2">4.3.2 Regularidade quanto à utilização de recursos previdenciários:</div>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Utilização dos recursos previdenciários (objeto de PAP)"><span class="form-check-label">“Utilização dos recursos previdenciários (objeto de PAP)”.</span></label>
 
-              <!-- 4.3.3 -->
               <div class="fw-semibold mt-2">4.3.3 Regularidade quanto à aplicação dos recursos previdenciários no mercado financeiro:</div>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Aplicações Financeiras Resol. CMN - Adequação DAIR e Política Investimentos (objeto de PAP)"><span class="form-check-label">a) “Aplicações Financeiras Resol. CMN - Adequação DAIR e Política Investimentos (objeto de PAP)”.</span></label>
-              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DAIR - Consistência"><span class="form-check-label">b) “Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR – Consistência”.</span></label>
-              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DPIN - Consistência"><span class="form-check-label">c) “Demonstrativo da Política de Investimentos - DPIN - Consistência”.</span></label>
+              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DAIR - Consistência"><span class="form-check-label">b) “DAIR – Consistência”.</span></label>
+              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DPIN - Consistência"><span class="form-check-label">c) “DPIN - Consistência”.</span></label>
 
-              <!-- 4.3.4 -->
               <div class="fw-semibold mt-2">4.3.4 Regularidade quanto aos limites de contribuição (EC 103/2019 e Lei 9.717/1998):</div>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Observância dos limites de contribuição do ente"><span class="form-check-label">a) “Observância dos limites de contribuição do ente”.</span></label>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Observância dos limites de contribuição dos segurados e beneficiários"><span class="form-check-label">b) “Observância dos limites de contribuição dos segurados e beneficiários”.</span></label>
 
-              <!-- 4.3.5 -->
               <div class="fw-semibold mt-2">4.3.5 Regularidade quanto à limitação do rol de benefícios (EC 103/2019):</div>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Plano de benefícios integrado apenas por aposentadorias e pensões por morte"><span class="form-check-label">“Plano de benefícios integrado apenas por aposentadorias e pensões por morte”.</span></label>
 
-              <!-- 4.3.6 -->
               <div class="fw-semibold mt-2">4.3.6 Regularidade quanto à instituição por lei do Regime de Previdência Complementar – RPC:</div>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Instituição do regime de previdência complementar - Aprovação da lei"><span class="form-check-label">“Instituição do regime de previdência complementar - Aprovação da lei”.</span></label>
 
-              <!-- 4.3.7 -->
               <div class="fw-semibold mt-2">4.3.7 Regularidade quanto ao envio de dados e informações do RPPS:</div>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Atendimento à solicitação de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar"><span class="form-check-label">a) “Atendimento à solicitação de legislação, documentos ou informações pela Secretaria de Regime Próprio e Complementar”.</span></label>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Atendimento à fiscalização"><span class="form-check-label">b) “Atendimento à fiscalização”.</span></label>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Equilíbrio Financeiro e Atuarial - Encaminhamento NTA, DRAA e resultados das análises (no que se refere ao envio da NTA e do DRAA)"><span class="form-check-label">c) “Equilíbrio Financeiro e Atuarial - Encaminhamento NTA, DRAA e resultados das análises” (no que se refere ao envio da NTA e do DRAA).</span></label>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi"><span class="form-check-label">d) “Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi”.</span></label>
-              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DPIN – Encaminhamento"><span class="form-check-label">e) “Demonstrativo da Política de Investimentos - DPIN – Encaminhamento”.</span></label>
-              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DAIR – Encaminhamento"><span class="form-check-label">f) “Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR – Encaminhamento”.</span></label>
-              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DIPR – Encaminhamento"><span class="form-check-label">g) “Demonstrativo de Informações Previdenciárias e Repasses - DIPR – Encaminhamento”.</span></label>
+              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DPIN – Encaminhamento"><span class="form-check-label">e) “DPIN – Encaminhamento”.</span></label>
+              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DAIR – Encaminhamento"><span class="form-check-label">f) “DAIR – Encaminhamento”.</span></label>
+              <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="DIPR – Encaminhamento"><span class="form-check-label">g) “DIPR – Encaminhamento”.</span></label>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Envio dos dados e eventos do eSocial relativos a segurados e beneficiários do RPPS"><span class="form-check-label">h) envio dos dados e eventos do eSocial relativos a segurados e beneficiários do RPPS.</span></label>
 
-              <!-- 4.3.8 -->
               <div class="fw-semibold mt-2">4.3.8 Regularidade quanto à operacionalização da compensação previdenciária:</div>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Operacionalização da compensação previdenciária - Termo de Adesão e Contrato com a empresa de tecnologia"><span class="form-check-label">“Operacionalização da compensação previdenciária - Termo de Adesão e Contrato com a empresa de tecnologia”.</span></label>
 
-              <!-- 4.3.9 -->
               <div class="fw-semibold mt-2">4.3.9 Regularidade quanto aos requisitos dos dirigentes e colegiados (art. 8º-B da Lei 9.717/1998):</div>
               <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Requisitos para dirigentes, membros titulares dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS"><span class="form-check-label">“Requisitos para os dirigentes, membros titulares dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS”.</span></label>
             </div>
+
             <!-- 4.3.10 -->
             <div class="mt-3">
               <div class="fw-semibold mb-2">4.3.10 – Em relação à adequação das regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</div>
@@ -872,16 +780,21 @@
               </div>
             </div>
 
-            <!-- 4.3.11 + 4.3.12 -->
+            <!-- 4.3.11 + 4.3.12 (F: toggle para 4.3.11) -->
             <div class="mt-3">
-              <label class="form-label">4.3.11 Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</label>
-              <div class="small text-muted mb-2">a) Critérios do extrato que o ente deseja incluir no Plano de Ação da Fase Específica:</div>
-              <div id="F43_INCLUIR" class="d-flex flex-column gap-2"></div>
-              <div class="small text-muted mt-2 mb-1">b) Justificativas/Informações apresentadas relativas a essa inclusão (anexos podem ser citados abaixo):</div>
-              <textarea id="F43_PLANO" class="form-control" rows="3" placeholder="Justificativas e documentos…"></textarea>
-              <p class="small text-muted mt-2 mb-0">
-                <strong>Obs.:</strong> A solicitação de inclusão no Plano de Ação não se aplica aos seguintes critérios: “DIPR - Consistência e Caráter Contributivo”; “Caráter contributivo - Repasse (objeto de PAP)” e “Utilização dos recursos previdenciários (objeto de PAP)”.
-              </p>
+              <button type="button" id="BTN_TOGGLE_4311" class="btn btn-outline-secondary btn-sm">
+                4.3.11 – Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica
+              </button>
+
+              <div id="WRAP_4311" class="mt-2 d-none">
+                <div class="small text-muted mb-2">a) Critérios do extrato que o ente deseja incluir no Plano de Ação da Fase Específica:</div>
+                <div id="F43_INCLUIR" class="d-flex flex-column gap-2"></div>
+                <div class="small text-muted mt-2 mb-1">b) Justificativas/Informações apresentadas relativas a essa inclusão (anexos podem ser citados abaixo):</div>
+                <textarea id="F43_PLANO" class="form-control" rows="3" placeholder="Justificativas e documentos…"></textarea>
+                <p class="small text-muted mt-2 mb-0">
+                  <strong>Obs.:</strong> A solicitação de inclusão no Plano de Ação não se aplica aos seguintes critérios: “DIPR - Consistência e Caráter Contributivo”; “Caráter contributivo - Repasse (objeto de PAP)” e “Utilização dos recursos previdenciários (objeto de PAP)”.
+                </p>
+              </div>
             </div>
 
             <div class="mt-3">
@@ -917,7 +830,8 @@
       </div>
     </div>
   </div>
-  <!-- MODAL 4.4 (corrigido, sem duplicações) -->
+
+  <!-- MODAL 4.4 -->
   <div class="modal fade" id="modalF44" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
       <div class="modal-content">
@@ -929,7 +843,7 @@
           <div class="card-subblock mt-3" id="blk_44">
             <div class="sub-title">4.4 Fase Específica/Focalizada – 4º CRP Emergencial</div>
             <p class="small text-muted mb-2">
-              <em>(art. 5º, caput, inciso III, do Anexo XVIII da Portaria MTP nº 1.467/2022 e arts. 21 e 22 da Portaria SRPC nº xx/2025)</em>
+              <em>(art. 5º, caput, inciso III, do Anexo XVIII da Portaria MTP nº 1.467/2022 e arts. <span id="ART_SRPC_44">—</span> da Portaria SRPC/MPS nº <span id="PORTARIA_SRPC_44">—</span>)</em>
             </p>
 
             <!-- 4.4.1 Condições -->
@@ -947,7 +861,7 @@
               </div>
             </div>
 
-            <!-- 4.4.2 Finalidades -->
+            <!-- 4.4.2/3/4/5/6 (mantidos) -->
             <div class="mb-2">
               <label class="form-label">4.4.2 Finalidade do(s) Plano(s) de Ação apresentado(s)</label>
               <div class="d-flex flex-column gap-2" id="F44_FINALIDADES">
@@ -959,25 +873,21 @@
               </div>
             </div>
 
-            <!-- 4.4.3 (aparece se marcar 4.4.2 e) -->
             <div class="mb-2 d-none" id="F44_CRIT_WRAP">
               <label class="form-label">4.4.3 Critério(s) do extrato previdenciário objeto do(s) Plano(s) de Ação</label>
               <div id="F44_CRITERIOS" class="d-flex flex-column gap-2"></div>
             </div>
 
-            <!-- 4.4.4 Anexos -->
             <div class="mb-3">
               <label class="form-label" for="F44_ANEXOS">4.4.4 Anexos (obrigatório o encaminhamento de Planos de Ação e documentação comprobatória)</label>
               <textarea id="F44_ANEXOS" class="form-control" rows="3" placeholder="Relacione/descreva os documentos apresentados, um por linha…"></textarea>
             </div>
 
-            <!-- 4.4.5 Descrever Planos -->
             <div class="mb-3">
               <label class="form-label" for="F445_DESC_PLANOS">4.4.5 Descrever sucintamente o(s) Plano(s) de Ação apresentado(s):</label>
               <textarea id="F445_DESC_PLANOS" class="form-control" rows="3"></textarea>
             </div>
 
-            <!-- 4.4.6 Caso já houvesse Plano na fase intermediária -->
             <div class="mb-2">
               <div class="fw-semibold mb-2">4.4.6 Em caso de Plano(s) de Ação que havia sido apresentado na Fase Intermediária:</div>
               <label class="form-label" for="F446_DOCS">a) Comprovação do cumprimento do(s) Plano(s) de Ação (relacione os documentos, um por linha)</label>
@@ -990,7 +900,6 @@
       </div>
     </div>
   </div>
-
 
   <!-- MODAL 4.5 -->
   <div class="modal fade" id="modalF45" tabindex="-1" aria-hidden="true">
@@ -1005,7 +914,7 @@
           <div class="card-subblock mt-3" id="blk_45">
             <div class="sub-title">4.5 Fase Específica/Focalizada – 5º CRP Emergencial</div>
             <p class="small text-muted mb-2">
-              <em>(art. 5º, caput, inciso III, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. 23 da Portaria SRPC nº xx/2025)</em>
+              <em>(art. 5º, caput, inciso III, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. <span id="ART_SRPC_45">—</span> da Portaria SRPC/MPS nº <span id="PORTARIA_SRPC_45">—</span>)</em>
             </p>
 
             <div class="d-flex flex-column gap-2">
@@ -1047,10 +956,10 @@
           <div class="card-subblock mt-3" id="blk_46">
             <div class="sub-title">4.6 Fase de Manutenção da Conformidade</div>
             <p class="small text-muted mb-2">
-              <em>(art. 5º, caput, inciso IV, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. 23 da Portaria SRPC nº xx/2025)</em>
+              <em>(art. 5º, caput, inciso IV, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. <span id="ART_SRPC_46">—</span> da Portaria SRPC/MPS nº <span id="PORTARIA_SRPC_46">—</span>)</em>
             </p>
 
-            <!-- 4.6.1 Condições -->
+            <!-- 4.6.1/2 e complementos (mantidos) -->
             <div class="mb-2">
               <label class="form-label">4.6.1 Declaro ter cumprido as seguintes condições:</label>
               <div class="d-flex flex-column gap-2">
@@ -1082,7 +991,7 @@
                   </div>
                 </div>
 
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Houve melhora na situação financeira e atuarial do RPPS (indicadores ISP-RPPS) – anexos."><span class="form-check-label">d) Houve melhora na situação financeira e atuarial do RPPS com base, entre outros, nos indicadores do ISP-RPPS — anexar comprovações.</span></label>
+                <label class="form-check mt-2"><input class="form-check-input me-2" type="checkbox" value="Houve melhora na situação financeira e atuarial do RPPS (indicadores ISP-RPPS) – anexos."><span class="form-check-label">d) Houve melhora na situação financeira e atuarial do RPPS com base, entre outros, nos indicadores do ISP-RPPS — anexar comprovações.</span></label>
                 <div>
                   <label class="form-label" for="F46_JUST_D">Justificativas (item d)</label>
                   <textarea id="F46_JUST_D" class="form-control" rows="2"></textarea>
@@ -1104,7 +1013,6 @@
               </div>
             </div>
 
-            <!-- 4.6.2 Finalidades -->
             <div class="mb-2">
               <label class="form-label">4.6.2 Finalidade do(s) Plano(s) de Ação apresentado(s)</label>
               <div class="d-flex flex-column gap-2" id="F46_FINALIDADES">
@@ -1116,13 +1024,10 @@
               </div>
             </div>
 
-            <!-- Lista de critérios para a opção f -->
             <div class="mb-2 d-none" id="F462F_WRAP">
               <div id="F462F_CRITERIOS" class="d-flex flex-column gap-2"></div>
             </div>
 
-            <!-- 4.6.3/4.6.4/4.6.5 já existem no seu HTML – mantenha -->
-            <!-- 4.6.6 novos campos -->
             <div class="mb-2">
               <div class="fw-semibold mb-2">4.6.6 Em caso de Plano(s) de Ação em execução ou concluído(s):</div>
               <label class="form-label" for="F466_DOCS">a) Comprovação do cumprimento do(s) Plano(s) de Ação (relacione os documentos, um por linha)</label>
@@ -1137,38 +1042,107 @@
     </div>
   </div>
 
+  <!-- Modal Busca / Sucesso / Gerando PDF / Salvando (mantidos) -->
+  <div class="modal fade" id="modalBusca" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">Registro não encontrado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            Desculpe, mas não encontramos o registro da consulta do Termo de Adesão ao Programa de Regularidade encaminhada pelo sistema Gescon-RPPS. Caso tenha enviado a consulta, entre em contato com um de nossos analistas pelo telefone <strong>(61) 2021-5555</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal Sucesso -->
+  <div class="modal fade" id="modalSucesso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">Formulário gerado</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body d-flex justify-content-center">
+          <div id="lottieSuccess" class="lottie-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: “Gerando PDF…” -->
+  <div class="modal fade" id="modalGerandoPdf" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-brand text-white py-2">
+          <h5 class="modal-title">Gerando PDF…</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body d-flex flex-column align-items-center justify-content-center">
+          <div id="lottieGerandoPdf" class="lottie-loading"></div>
+          <div class="status-msg mt-2">Aguarde, preparando o arquivo…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Salvando -->
+  <div class="modal fade" id="modalSalvando" tabindex="-1" aria-labelledby="modalSalvandoTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center">
+        <div class="modal-header py-2 bg-brand">
+          <h6 class="modal-title mb-0" id="modalSalvandoTitle">Salvando…</h6>
+        </div>
+        <div class="modal-body py-4">
+          <div id="lottieSalvando" style="height: 120px;"></div>
+          <h5 class="mt-3 mb-1">Aguarde…</h5>
+          <p class="mb-0 text-muted">as informações estão sendo salvas</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
-
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+
+  <!-- C) Configuração de normas (preencha quando tiver a numeração correta) -->
+  <script>
+    // Preencha estes valores quando a Portaria e artigos estiverem definidos.
+    // Pode ser sobrescrito por outro script antes do DOMContentLoaded.
+    window.__NORMAS = Object.assign({
+      PORTARIA_SRPC: "—",      // ex.: "123/2025"
+      PORTARIA_SRPC_B: "—",    // ex.: "123/2025" (reutilizado no modal inicial)
+      PORTARIA_MPS_INC: "—",   // ex.: "456/2025"
+      ART_SRPC_41: "—",        // ex.: "15"
+      ART_SRPC_42: "—",        // ex.: "16"
+      ART_SRPC_43: "—",        // ex.: "18"
+      ART_SRPC_44: "—",        // ex.: "21 e 22"
+      ART_SRPC_45: "—",        // ex.: "23"
+      ART_SRPC_46: "—"         // ex.: "23"
+    }, window.__NORMAS || {});
+  </script>
+
   <script>
     window.__API_BASE = '/api';
   </script>
   <script src="solic_crp.js?v=2025-09-26-2" defer></script>
 
-    <script>
+  <!-- JS auxiliar (D, F e normas dinâmicas) -->
+  <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // 2.1 — Garanta que TODOS os modais sejam filhos diretos do <body>
-      // (evita que um container com transform/overflow quebre o posicionamento)
+      // Garantir modais no body
       document.querySelectorAll('.modal').forEach(m => {
-        if (m.parentElement !== document.body) {
-          document.body.appendChild(m);
-        }
+        if (m.parentElement !== document.body) document.body.appendChild(m);
       });
-
-      // 2.2 — Sanitiza e inicializa (caso algo tenha falhado)
       if (window.bootstrap && bootstrap.Modal) {
         document.querySelectorAll('.modal').forEach(m => {
-          bootstrap.Modal.getOrCreateInstance(m, {
-            backdrop: true,
-            keyboard: true,
-            focus: true
-          });
+          bootstrap.Modal.getOrCreateInstance(m, { backdrop: true, keyboard: true, focus: true });
         });
       }
-
-      // 2.3 — (Opcional) Força que qualquer botão data-bs-toggle funcione via JS
       document.addEventListener('click', (ev) => {
         const btn = ev.target.closest('[data-bs-toggle="modal"][data-bs-target]');
         if (!btn) return;
@@ -1177,6 +1151,72 @@
         const modalEl = document.querySelector(sel);
         if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
       });
+
+      // D: fase seleção única (já são radios; opcionalmente, podemos habilitar Next ao marcar)
+      const faseRadios = document.querySelectorAll('input[name="FASE_PROGRAMA"]');
+      const btnNext = document.getElementById('btnNext');
+      faseRadios.forEach(r => r.addEventListener('change', () => {
+        if (btnNext) btnNext.disabled = false;
+      }));
+
+      // F: toggle 4.3.11
+      const btn4311 = document.getElementById('BTN_TOGGLE_4311');
+      const wrap4311 = document.getElementById('WRAP_4311');
+      if (btn4311 && wrap4311) {
+        btn4311.addEventListener('click', () => wrap4311.classList.toggle('d-none'));
+      }
+
+      // 4.4: mostrar campo de legislação se marcar d)
+      const optD = document.getElementById('F441_OPTD');
+      const wrapD = document.getElementById('F441_LEGISLACAO_WRAP');
+      if (optD && wrapD) {
+        optD.addEventListener('change', () => wrapD.classList.toggle('d-none', !optD.checked));
+      }
+
+      // 4.4.2 (e): exibir 4.4.3 critérios
+      const optE = document.getElementById('F442_OPTE');
+      const wrapCrit = document.getElementById('F44_CRIT_WRAP');
+      if (optE && wrapCrit) {
+        optE.addEventListener('change', () => wrapCrit.classList.toggle('d-none', !optE.checked));
+      }
+
+      // 4.3.10: exibir campos conforme A/B
+      const r4310 = document.querySelectorAll('input[name="F4310_OPCAO"]');
+      const wLeg = document.getElementById('F4310_LEGISLACAO_WRAP');
+      const wDocs = document.getElementById('F4310_DOCS_WRAP');
+      const sync4310 = () => {
+        const sel = document.querySelector('input[name="F4310_OPCAO"]:checked')?.value;
+        if (wLeg) wLeg.classList.toggle('d-none', sel !== 'A');
+        if (wDocs) wDocs.classList.toggle('d-none', sel !== 'B');
+      };
+      r4310.forEach(r => r.addEventListener('change', sync4310));
+      sync4310();
+
+      // 4.6.2 (f): exibir critérios quando marcado
+      const optF = document.getElementById('F462F_OPTF');
+      const wrapF = document.getElementById('F462F_WRAP');
+      if (optF && wrapF) {
+        optF.addEventListener('change', () => wrapF.classList.toggle('d-none', !optF.checked));
+      }
+
+      // C) População dinâmica das referências normativas
+      const N = window.__NORMAS || {};
+      const setText = (id, val) => { const el = document.getElementById(id); if (el && typeof val === 'string' && val.trim()) el.textContent = val; };
+      setText('PORTARIA_SRPC', N.PORTARIA_SRPC);
+      setText('PORTARIA_SRPC_B', N.PORTARIA_SRPC_B || N.PORTARIA_SRPC);
+      setText('PORTARIA_MPS_INC', N.PORTARIA_MPS_INC);
+      setText('ART_SRPC_41', N.ART_SRPC_41);
+      setText('ART_SRPC_42', N.ART_SRPC_42);
+      setText('ART_SRPC_43', N.ART_SRPC_43);
+      setText('ART_SRPC_44', N.ART_SRPC_44);
+      setText('ART_SRPC_45', N.ART_SRPC_45);
+      setText('ART_SRPC_46', N.ART_SRPC_46);
+      // Para modais com IDs separados por fase:
+      setText('PORTARIA_SRPC_42', N.PORTARIA_SRPC);
+      setText('PORTARIA_SRPC_43', N.PORTARIA_SRPC);
+      setText('PORTARIA_SRPC_44', N.PORTARIA_SRPC);
+      setText('PORTARIA_SRPC_45', N.PORTARIA_SRPC);
+      setText('PORTARIA_SRPC_46', N.PORTARIA_SRPC);
     });
   </script>
 
