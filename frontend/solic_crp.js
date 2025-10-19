@@ -1255,9 +1255,9 @@
 
     // ORDEM AJUSTADA: tenta primeiro a função Netlify estável
     const tryUrls = [
-      `/.netlify/functions/termo-solic-crp-pdf?template=${tpl}`,
+      `/.netlify/functions/termo-solic-crp-pdf-v2?template=${tpl}`,
       `/api/termo-solic-crp-pdf?template=${tpl}`,
-      `/.netlify/functions/termo-solic-crp-pdf-v2?template=${tpl}`
+      `/.netlify/functions/termo-solic-crp-pdf?template=${tpl}`
     ];
 
     let blob = null;
@@ -1286,7 +1286,8 @@
           const msg = String(e?.message || '').toLowerCase();
           const retriable = (s >= 500) || msg.includes('timeout') || msg.includes('failed') || e.name === 'AbortError';
           dbg('[PDF] falhou em', urlTry, '| status:', s, '| msg:', e && e.message, '| retriable?', retriable);
-          if (!retriable) throw e; // 4xx etc: não adianta insistir
+          // Se for 4xx (ex.: 404), **não** aborta — tenta a próxima URL da lista
+          if (!retriable) continue; 
           await new Promise(r => setTimeout(r, 300 + Math.random()*300)); // jitter entre URLs
         }
       }
