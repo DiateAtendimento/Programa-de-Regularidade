@@ -19,7 +19,6 @@
   })();
 
   const API_DIRECT = '/api';
-  
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
 
   // Rotas que continuam no proxy alternativo (/_api) — para health/diag e consultas específicas
@@ -226,7 +225,6 @@
     if(status && status>=500) return ['Instabilidade no servidor. Tente novamente.'];
     return [fallback];
   }
-
   /* ========= Elementos ========= */
   const el = {
     // etapa 0
@@ -316,7 +314,7 @@
     return d.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3').trim();
   }
 
-  //Captura robusta do CNPJ_UG (sem fallback para zeros)
+  //Captura robusta do CNPJ_UG (sem fallback para zeros) — agora usada na validação e no payload
   function obterCNPJUG() {
     const candidatos = [
       document.getElementById('CNPJ_UG')?.value,
@@ -388,6 +386,7 @@
     };
     [
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
+      'ug_nome','ug_cnpj','ug_email',
       'CPF_REP_ENTE','NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
       'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
       'JUSTIFICATIVAS_GERAIS'
@@ -570,7 +569,6 @@
       return st;
     }catch{ return null; }
   }
-
   /* ========= Stepper fallback ========= */
   let curStep = 0;
 
@@ -916,6 +914,7 @@
       syncUg132();
     }
   }
+
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
   function setupFase4Toggles(){
     const modalByFase = {
@@ -1087,7 +1086,6 @@
       )).join('');
     }
   }
-
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
     const msgs=[];
@@ -1100,9 +1098,13 @@
     if(!el.ente.value.trim()) msgs.push('Ente');
     if(digits(el.cnpjEnte.value).length!==14) msgs.push('CNPJ do Ente');
     if(!isEmail(el.emailEnte.value)) msgs.push('E-mail do Ente');
-    if(!el.ug.value.trim()) msgs.push('Unidade Gestora');
-    if(digits(el.cnpjUg.value).length!==14) msgs.push('CNPJ da UG');
-    if(!isEmail(el.emailUg.value)) msgs.push('E-mail da UG');
+
+    // >>> ALTERADO: usa getter robusto (1.3 OU 1.3.2) — evita “0” na planilha
+    const cnpjUgRobusto = obterCNPJUG();
+    if(!el.ug.value.trim() && !el.ugNome?.value?.trim()) msgs.push('Unidade Gestora');
+    if(!cnpjUgRobusto) msgs.push('CNPJ da UG');
+    const emailUgFinal = (el.emailUg?.value || el.ugEmail?.value || '').trim();
+    if(!isEmail(emailUgFinal)) msgs.push('E-mail da UG');
 
     if(digits(el.cpfRepEnte.value).length!==11) msgs.push('CPF do Rep. do Ente');
     if(!el.nomeRepEnte.value.trim()) msgs.push('Nome do Rep. do Ente');
@@ -1156,7 +1158,17 @@
       (el.tipoAdm?.checked && 'Administrativa') ||
       (el.tipoJud?.checked && 'Judicial') || '';
 
-    return {
+    // >>> NOVO: campos UG consolidados (1.3 OU 1.3.2)
+    const UG_FINAL       = (el.ug?.value || el.ugNome?.value || '').trim();
+    const CNPJ_UG_FINAL  = obterCNPJUG(); // string com 14 dígitos ou null
+    const EMAIL_UG_FINAL = (el.emailUg?.value || el.ugEmail?.value || '').trim();
+
+    if (!CNPJ_UG_FINAL) {
+      // Defesa extra: nunca deixar ir “0”
+      throw new Error('CNPJ_UG inválido/ausente');
+    }
+
+    const obj = {
       HAS_TERMO_ENC_GESCON: el.hasGescon?.value === '1',
       N_GESCON: el.spanNGescon?.textContent || '',
       DATA_ENC_VIA_GESCON: el.spanDataEnc?.textContent || '',
@@ -1166,9 +1178,10 @@
       ENTE: el.ente.value.trim(),
       CNPJ_ENTE: digits(el.cnpjEnte.value),
       EMAIL_ENTE: el.emailEnte.value.trim(),
-      UG: el.ug.value.trim(),
-      CNPJ_UG: digits(el.cnpjUg.value),
-      EMAIL_UG: el.emailUg.value.trim(),
+
+      UG: UG_FINAL,
+      CNPJ_UG: CNPJ_UG_FINAL,
+      EMAIL_UG: EMAIL_UG_FINAL,
 
       CPF_REP_ENTE: digits(el.cpfRepEnte.value),
       NOME_REP_ENTE: el.nomeRepEnte.value.trim(),
@@ -1244,7 +1257,11 @@
 
       IDEMP_KEY: takeIdemKey() || ''
     };
+
+    dbg('[SOLIC-CRP] Payload pronto:', obj);
+    return obj;
   }
+
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
     const payloadForPdf = {
@@ -1258,13 +1275,11 @@
     // aquece serviços gerais (proxy → backend) para evitar cold start
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-
-   // Tenta direto no backend (/api) e mantém o proxy como fallback
+    // Tenta direto no backend (/api) e mantém o proxy como fallback
     const tryUrls = [
       `${API_DIRECT}/termo-solic-crp-pdf`,  // 1ª tentativa (direto)
       `${API_BASE}/termo-solic-crp-pdf`     // 2ª tentativa (proxy antigo)
     ];
-
 
     let blob = null;
     let lastErr = null;
@@ -1314,7 +1329,6 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
-
   /* ========= Ações: Gerar & Submit ========= */
   let gerarBusy=false;
   el.btnGerar?.addEventListener('click', async ()=>{
@@ -1406,6 +1420,7 @@
       btn.disabled=false; btn.innerHTML=old;
     }
   });
+
   /* ========= UI helpers ========= */
   function showModal(id){ const mEl=document.getElementById(id); if(!mEl) return; bootstrap.Modal.getOrCreateInstance(mEl).show(); }
   function initWelcome(){
