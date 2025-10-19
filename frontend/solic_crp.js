@@ -1255,9 +1255,9 @@
 
     // ORDEM AJUSTADA: tenta primeiro a função Netlify estável
     const tryUrls = [
-      `/.netlify/functions/termo-solic-crp-pdf-v2?template=${tpl}`,
-      `/api/termo-solic-crp-pdf?template=${tpl}`,
-      `/.netlify/functions/termo-solic-crp-pdf?template=${tpl}`
+      '/.netlify/functions/termo-solic-crp-pdf-v2',            
+      '/api/termo-solic-crp-pdf',                              
+      '/.netlify/functions/termo-solic-crp-pdf'                
     ];
 
     let blob = null;
@@ -1269,12 +1269,18 @@
         dbg('[PDF] tentando →', urlTry, '(round', round+1, ')');
         try {
           // cada rota ganha tentativas internas com backoff
+          const isV2 = urlTry.includes('termo-solic-crp-pdf-v2');
+          const origin = location.origin.replace(/\/+$/,'');
+          const body = isV2
+            ? { templateUrl: `${origin}/termo_solic_crp_2.html`, data: payloadForPdf }
+            : payloadForPdf;
+
           blob = await fetchBinary(
             urlTry,
             {
               method: 'POST',
               headers: withKey({ 'Content-Type': 'application/json; charset=utf-8' }),
-              body: JSON.stringify(payloadForPdf)
+              body: JSON.stringify(body)
             },
             { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 3 }
           );
