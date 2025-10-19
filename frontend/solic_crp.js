@@ -104,7 +104,6 @@
     const bust = `_ts=${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const sep  = url.includes('?') ? '&' : '?';
     const finalURL = `${url}${sep}${bust}`;
-
     while(true){
       attempt++;
       const ctrl = new AbortController();
@@ -289,7 +288,6 @@
     dots: $$('#stepper .step'),
     navFooter: $('#navFooter')
   };
-
   /* ========= Máscaras ========= */
   function maskCNPJ(v){
     const d = digits(v).slice(0,14);
@@ -456,7 +454,6 @@
 
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
   }
-
   function loadState(){
     try{
       const raw = localStorage.getItem(FORM_STORAGE_KEY);
@@ -692,6 +689,14 @@
         if (el.introProcSei) el.introProcSei.textContent = (procSei || '—');
         if (el.infoProcSei)  el.infoProcSei.textContent  = (procSei || '—');
 
+        // >>> NOVO: preencher também o quadro da etapa 1
+        preencherRegistrosDoTermo({
+          gescon_consulta: nGescon || '—',
+          data_encaminhamento: toDateBR(dataEnc) || '—',
+          processo_sei: procSei || '—'
+        });
+        // <<<
+
         try { await hidratarTermosRegistrados(cnpj); } catch (e) { dbe('hidratarTermosRegistrados falhou (sem bloqueio):', e); }
         if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
         console.groupEnd();
@@ -718,6 +723,14 @@
 
       el.infoDataEncGescon && (el.infoDataEncGescon.textContent = dataEncBR || '—');
       const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = nGescon || '—';
+
+      // >>> NOVO: preencher também o quadro da etapa 1
+      preencherRegistrosDoTermo({
+        gescon_consulta: nGescon || '—',
+        data_encaminhamento: dataEncBR || '—',
+        processo_sei: procSei || '—'
+      });
+      // <<<
 
       dbg('Chamando hidratarTermosRegistrados…');
       await hidratarTermosRegistrados(cnpj);
@@ -748,8 +761,6 @@
       searching = false;
     }
   }
-
-
   async function hidratarTermosRegistrados(cnpj){
     dbg('[hidratarTermosRegistrados] start →', cnpj);
     try{
@@ -1242,8 +1253,9 @@
     const tpl = encodeURIComponent(`${origin}/termo_solic_crp_2.html`);
     // <<<
 
-    // 1ª rota respeita os redirects do netlify.toml; 2ª é fallback direto
+    // ORDEM AJUSTADA: tenta primeiro a função Netlify estável
     const tryUrls = [
+      `/.netlify/functions/termo-solic-crp-pdf?template=${tpl}`,
       `/api/termo-solic-crp-pdf?template=${tpl}`,
       `/.netlify/functions/termo-solic-crp-pdf-v2?template=${tpl}`
     ];
@@ -1411,6 +1423,63 @@
       if (el && window.bootstrap) bootstrap.Modal.getOrCreateInstance(el).show();
     } catch {}
   }
+  // ---------- [ETAPA 1] preencher cabeçalho "Registros do Termo" ----------
+  function preencherRegistrosDoTermo(reg) {
+    const $gescon = document.getElementById('reg-gescon-consulta');
+    const $data   = document.getElementById('reg-data-encam');
+    const $sei    = document.getElementById('reg-proc-sei');
+
+    if ($gescon) $gescon.textContent = reg?.gescon_consulta || '—';
+    if ($data)   $data.textContent   = reg?.data_encaminhamento || '—';
+    if ($sei)    $sei.textContent    = reg?.processo_sei || '—';
+  }
+
+  // chama quando conclui a etapa 0 (após buscar pelo CNPJ)
+  async function afterLookupCnpjEtapa0(payload) {
+    const reg = payload?.registro_termo || {};
+    window.__REGISTRO_TERMO__ = reg;
+    preencherRegistrosDoTermo(reg);
+    copiar_13_para_132();
+  }
+
+  // ---------- [ETAPA 1] copiar 1.3 -> 1.3.2 ----------
+  function copiar_13_para_132() {
+    // 1.3 (Regime RPPS) – campos fonte
+    const ug1_nome = document.querySelector('input[name="rpps_unidade_gestora_nome"]');
+    const ug1_cnpj = document.querySelector('input[name="rpps_unidade_gestora_cnpj"]');
+    const ug1_mail = document.querySelector('input[name="rpps_unidade_gestora_email"]');
+
+    // 1.3.2 (Unidade Gestora - UG) – campos destino
+    const ug2_nome = document.querySelector('input[name="ug_nome"]');
+    const ug2_cnpj = document.querySelector('input[name="ug_cnpj"]');
+    const ug2_mail = document.querySelector('input[name="ug_email"]');
+
+    if (ug1_nome && ug2_nome && !ug2_nome.value) ug2_nome.value = ug1_nome.value || '';
+    if (ug1_cnpj && ug2_cnpj && !ug2_cnpj.value) ug2_cnpj.value = ug1_cnpj.value || '';
+    if (ug1_mail && ug2_mail && !ug2_mail.value) ug2_mail.value = ug1_mail.value || '';
+  }
+
+  // quando usuário muda a "Situação do RPPS" (RPPS / RPPS em Extinção) continuamos espelhando
+  function wireSituacaoEspelhamento() {
+    document.querySelectorAll('input[name="situacao_rpps"]').forEach(radio => {
+      radio.addEventListener('change', copiar_13_para_132);
+    });
+
+    ['rpps_unidade_gestora_nome','rpps_unidade_gestora_cnpj','rpps_unidade_gestora_email']
+      .forEach(name => {
+        const el = document.querySelector(`input[name="${name}"]`);
+        if (el) el.addEventListener('input', copiar_13_para_132);
+      });
+  }
+
+  // Chame isto no seu init()
+  function initEtapa1Bridges() {
+    wireSituacaoEspelhamento();
+    if (window.__REGISTRO_TERMO__) {
+      preencherRegistrosDoTermo(window.__REGISTRO_TERMO__);
+    }
+  }
+
 
   /* ========= Boot ========= */
   function init(){
@@ -1438,6 +1507,10 @@
 
     ensureStepperFallback();
     window.addEventListener('beforeunload', saveState);
+
+    // >>> novo: liga os bridges da etapa 1 (registro do termo + espelhamento 1.3→1.3.2)
+    initEtapa1Bridges();
+    // <<<
   }
 
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); }
