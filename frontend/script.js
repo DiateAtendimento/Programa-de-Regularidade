@@ -840,7 +840,8 @@
   const btnPrev  = $('#btnPrev');
   const btnNext  = $('#btnNext');
   const btnSubmit= $('#btnSubmit');
-  const btnGerar = $('#btnGerarFormulario'); // botão de "Gerar Formulário"
+  const btnGerar = document.getElementById('btnGerarForm')
+               || document.getElementById('btnGerarFormulario');
   const navFooter= $('#navFooter');
   const pesquisaRow = $('#pesquisaRow');
 
@@ -1506,13 +1507,11 @@
         .map(i => i.value).join('; '),
 
       // ——— Carimbos / metadados ———
-      MES: $('#MES').value,
-      DATA_TERMO_GERADO: $('#DATA_SOLIC_GERADA').value,
-      HORA_TERMO_GERADO: $('#HORA_SOLIC_GERADA').value,
-      ANO_TERMO_GERADO: $('#ANO_SOLIC_GERADA').value,
-      __snapshot_base: snapshotBase,
-      __user_changed_fields: Array.from(editedFields),
-      IDEMP_KEY: takeIdemKey() || ''
+      MES: $('#MES')?.value || '',
+      DATA_TERMO_GERADO: $('#DATA_TERMO_GERADO')?.value || $('#DATA_SOLIC_GERADA')?.value || '',
+      HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO')?.value || $('#HORA_SOLIC_GERADA')?.value || '',
+      ANO_TERMO_GERADO:  $('#ANO_TERMO_GERADO')?.value  || $('#ANO_SOLIC_GERADA')?.value  || '',
+
     };
   }
 
