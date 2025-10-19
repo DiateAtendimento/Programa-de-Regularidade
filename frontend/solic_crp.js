@@ -1219,7 +1219,7 @@
     };
   }
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (warm-up + retries + rotas alternativas) ========= */
-  async function gerarBaixarPDF(payload){
+   async function gerarBaixarPDF(payload){
     const payloadForPdf = {
       ...payload,
       HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : '',
@@ -1237,10 +1237,15 @@
       );
     } catch(_) { /* não bloqueia */ }
 
+    // >>> NOVO: força o template do formulário 2
+    const origin = (window.__PUBLIC_URL || window.location?.origin || '').replace(/\/+$/,'');
+    const tpl = encodeURIComponent(`${origin}/termo_solic_crp_2.html`);
+    // <<<
+
     // 1ª rota respeita os redirects do netlify.toml; 2ª é fallback direto
     const tryUrls = [
-      '/api/termo-solic-crp-pdf',
-      '/.netlify/functions/termo-solic-crp-pdf-v2'
+      `/api/termo-solic-crp-pdf?template=${tpl}`,
+      `/.netlify/functions/termo-solic-crp-pdf-v2?template=${tpl}`
     ];
 
     let blob = null;
