@@ -9,27 +9,29 @@
 
   /* ========= Config ========= */
   const API_BASE = (function(){
+    // Se quiser forçar manualmente em produção, defina window.__API_BASE = '/.netlify/functions/api-proxy'
     const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
     if (override) return override;
-    // fallback padrão (Netlify + dev) via proxy
-    return '/api';
+
+    // PADRÃO OFICIAL: usar o proxy que fala com o backend (Render/Express/Puppeteer),
+    // igual ao Formulário 1. Assim o PDF do Form 2 segue o mesmo caminho que já funciona.
+    return '/.netlify/functions/api-proxy';
   })();
 
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
 
-  // Rotas que continuam no proxy (/_api)
+  // Rotas que continuam no proxy alternativo (/_api) — para health/diag e consultas específicas
   function apiRoute(p) {
     const path = p.startsWith('/') ? p : '/' + p;
     if (/^\/(gescon\/termo-enc|termos-registrados)$/i.test(path)) {
-      return '/_api' + path; // usa proxy para essas rotas
+      return '/_api' + path; // usa proxy curto (também aponta ao backend)
     }
-    return api(path); // demais vão para /api
+    return api(path); // demais vão pelo API_BASE
   }
 
   // (opcional) chave para o backend
   const API_KEY = window.__API_KEY || '';
   const withKey = (h = {}) => (API_KEY ? { ...h, 'X-API-Key': API_KEY } : h)
-
 
   // === Warmup/Health do backend ===
   // Verifica /_api/health por até 60s para evitar cold start antes dos POSTs pesados
@@ -91,6 +93,7 @@
   function isGesconNumber(x){
     return /^[SL]\d{6}\/\d{4}$/i.test(String(x).trim());
   }
+
   /* ========= Robust fetch (timeout + retries) ========= */
   const FETCH_TIMEOUT_MS = 120000;
   const FETCH_RETRIES    = 1;
@@ -170,6 +173,7 @@
       }
     }
   }
+
   async function fetchBinary(
     url,
     { method='GET', headers={}, body=null } = {},
@@ -197,7 +201,7 @@
         const m = String(e?.message||'').toLowerCase();
         const isHttp = (e && typeof e.status === 'number');
         const retriable =
-          (isHttp && (e.status===429 || e.status===502 || e.status===503 || e.status===504 || e.status>=500)) || // <— inclui 502
+          (isHttp && (e.status===429 || e.status===502 || e.status===503 || e.status===504 || e.status>=500)) ||
           m.includes('timeout:') || !navigator.onLine || m.includes('failed');
         if(retriable && attempt <= (retries+1)){
           const backoff = Math.min(5000, 400 * Math.pow(2, attempt-1));
@@ -208,7 +212,6 @@
       }
     }
   }
-
 
   function friendlyErrorMessages(err, fallback='Falha ao comunicar com o servidor.'){
     const status = err?.status;
@@ -221,7 +224,6 @@
     if(status && status>=500) return ['Instabilidade no servidor. Tente novamente.'];
     return [fallback];
   }
-
 
   /* ========= Elementos ========= */
   const el = {
@@ -268,7 +270,6 @@
     grpCrit: $('#grpCRITERIOS'),
 
     // etapa 4
-    // (A-D/F) — agora radios (seleção única) e abertura de modais
     faseRadios: $$('input[name="FASE_PROGRAMA"]'),
     blk41: $('#blk_41'), blk42: $('#blk_42'), blk43: $('#blk_43'),
     blk44: $('#blk_44'), blk45: $('#blk_45'), blk46: $('#blk_46'),
@@ -288,6 +289,7 @@
     dots: $$('#stepper .step'),
     navFooter: $('#navFooter')
   };
+
   /* ========= Máscaras ========= */
   function maskCNPJ(v){
     const d = digits(v).slice(0,14);
@@ -341,8 +343,6 @@
     // dispara uma vez na carga
     syncUg132();
   }
-
-
 
   /* ========= Persistência (TTL) ========= */
   function getState(){
@@ -454,6 +454,7 @@
 
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
   }
+
   function loadState(){
     try{
       const raw = localStorage.getItem(FORM_STORAGE_KEY);
@@ -550,6 +551,7 @@
       return st;
     }catch{ return null; }
   }
+
   /* ========= Stepper fallback ========= */
   let curStep = 0;
 
@@ -594,6 +596,7 @@
     curStep = Number.isFinite(st?.step) ? Math.max(0, Math.min(el.sections.length-1, Number(st.step))) : 0;
     render();
   }
+
   /* ========= Modais (Atenção/Erro) ========= */
   function showAtencao(msgs){
     const list = $('#modalAtencaoLista'); if(list){ list.innerHTML = msgs.map(m=>`<li>${m}</li>`).join(''); }
@@ -611,8 +614,10 @@
   $('#modalSucesso')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieSuccess','animacao/confirm-success.json',{loop:false,autoplay:true}));
   $('#modalGerandoPdf')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieGerandoPdf','animacao/gerando-pdf.json',{loop:true,autoplay:true}));
   $('#modalSalvando')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieSalvando','animacao/gerando-pdf.json',{loop:true,autoplay:true}));
+
   /* ========= Gate: Gescon TERMO_ENC_GESCON & Termos_registrados ========= */
   let searching = false;
+
   async function consultarGesconByCnpj(cnpj){
     const body = { cnpj };
     dbg('[consultarGesconByCnpj] >> body:', body);
@@ -637,7 +642,7 @@
     return out;
   }
 
-   async function onPesquisar(ev){
+  async function onPesquisar(ev){
     if (searching) return;
 
     const raw = el.cnpjInput?.value || '';
@@ -683,19 +688,16 @@
         if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
         const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = '—';
 
-        // Preenche o bloco "acima do item 1" (se existir na página)
         if (el.introNGescon) el.introNGescon.textContent = (nGescon || '—');
         if (el.introDataEnc) el.introDataEnc.textContent = (toDateBR(dataEnc) || '—');
         if (el.introProcSei) el.introProcSei.textContent = (procSei || '—');
         if (el.infoProcSei)  el.infoProcSei.textContent  = (procSei || '—');
 
-        // >>> NOVO: preencher também o quadro da etapa 1
         preencherRegistrosDoTermo({
           gescon_consulta: nGescon || '—',
           data_encaminhamento: toDateBR(dataEnc) || '—',
           processo_sei: procSei || '—'
         });
-        // <<<
 
         try { await hidratarTermosRegistrados(cnpj); } catch (e) { dbe('hidratarTermosRegistrados falhou (sem bloqueio):', e); }
         if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
@@ -724,13 +726,11 @@
       el.infoDataEncGescon && (el.infoDataEncGescon.textContent = dataEncBR || '—');
       const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = nGescon || '—';
 
-      // >>> NOVO: preencher também o quadro da etapa 1
       preencherRegistrosDoTermo({
         gescon_consulta: nGescon || '—',
         data_encaminhamento: dataEncBR || '—',
         processo_sei: procSei || '—'
       });
-      // <<<
 
       dbg('Chamando hidratarTermosRegistrados…');
       await hidratarTermosRegistrados(cnpj);
@@ -761,6 +761,7 @@
       searching = false;
     }
   }
+
   async function hidratarTermosRegistrados(cnpj){
     dbg('[hidratarTermosRegistrados] start →', cnpj);
     try{
@@ -896,9 +897,6 @@
       syncUg132();
     }
   }
-
-
-
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
   function setupFase4Toggles(){
     const modalByFase = {
@@ -1070,6 +1068,7 @@
       )).join('');
     }
   }
+
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
     const msgs=[];
@@ -1102,7 +1101,6 @@
     }
     return true;
   }
-
 
   /* ========= Carimbos ========= */
   function fillNowHiddenFields(){
@@ -1164,7 +1162,6 @@
       EMAIL_REP_UG: el.emailRepUg.value.trim(),
       TEL_REP_UG: el.telRepUg.value.trim(),
       SEI_PROCESSO: (el.introProcSei?.textContent || el.infoProcSei?.textContent || '').trim(),
-
 
       DATA_VENCIMENTO_ULTIMO_CRP,
       TIPO_EMISSAO_ULTIMO_CRP,
@@ -1229,58 +1226,39 @@
       IDEMP_KEY: takeIdemKey() || ''
     };
   }
-  /* ========= Fluxo ÚNICO/ROBUSTO de PDF (warm-up + retries + rotas alternativas) ========= */
-   async function gerarBaixarPDF(payload){
+  /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
+  async function gerarBaixarPDF(payload){
     const payloadForPdf = {
       ...payload,
       HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : '',
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
+      // (opcional) Portaria forçada — se você quer padronizar em todos os pontos do template:
+      PORTARIA_SRPC: '2.024/2025'
     };
 
-    // aquece serviços gerais (proxy)
+    // aquece serviços gerais (proxy → backend) para evitar cold start
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-    // aquece explicitamente a função de PDF da Netlify (cold start)
-    try {
-      await fetchJSON('/.netlify/functions/termo-solic-crp-pdf-v2?ping=1',
-        { method: 'GET' },
-        { label: 'warm_pdf_fn', timeout: 4000, retries: 1 }
-      );
-    } catch(_) { /* não bloqueia */ }
-
-    // >>> NOVO: força o template do formulário 2
-    const origin = (window.__PUBLIC_URL || window.location?.origin || '').replace(/\/+$/,'');
-    const tpl = encodeURIComponent(`${origin}/termo_solic_crp_2.html`);
-    // <<<
-
-    // ORDEM AJUSTADA: tenta primeiro a função Netlify estável
+    // Usa SOMENTE o backend (mesmo caminho do Formulário 1)
     const tryUrls = [
-      '/.netlify/functions/termo-solic-crp-pdf-v2',            
-      '/api/termo-solic-crp-pdf',                              
-      '/.netlify/functions/termo-solic-crp-pdf'                
+      `${API_BASE}/termo-solic-crp-pdf`
     ];
 
     let blob = null;
     let lastErr = null;
 
-    // até 2 rodadas em todo o conjunto de URLs (com backoff entre rodadas)
+    // até 2 rodadas no conjunto de URLs (com backoff entre rodadas)
     for (let round = 0; round < 2 && !blob; round++) {
       for (const urlTry of tryUrls) {
         dbg('[PDF] tentando →', urlTry, '(round', round+1, ')');
         try {
-          // cada rota ganha tentativas internas com backoff
-          const isV2 = urlTry.includes('termo-solic-crp-pdf-v2');
-          const origin = location.origin.replace(/\/+$/,'');
-          const body = isV2
-            ? { templateUrl: `${origin}/termo_solic_crp_2.html`, data: payloadForPdf }
-            : payloadForPdf;
-
+          // envia payload puro (o backend sabe qual template usar: termo_solic_crp.html)
           blob = await fetchBinary(
             urlTry,
             {
               method: 'POST',
               headers: withKey({ 'Content-Type': 'application/json; charset=utf-8' }),
-              body: JSON.stringify(body)
+              body: JSON.stringify(payloadForPdf)
             },
             { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 3 }
           );
@@ -1292,8 +1270,7 @@
           const msg = String(e?.message || '').toLowerCase();
           const retriable = (s >= 500) || msg.includes('timeout') || msg.includes('failed') || e.name === 'AbortError';
           dbg('[PDF] falhou em', urlTry, '| status:', s, '| msg:', e && e.message, '| retriable?', retriable);
-          // Se for 4xx (ex.: 404), **não** aborta — tenta a próxima URL da lista
-          if (!retriable) continue; 
+          if (!retriable) continue; // 4xx → tenta próxima URL (se houver)
           await new Promise(r => setTimeout(r, 300 + Math.random()*300)); // jitter entre URLs
         }
       }
@@ -1315,8 +1292,6 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
-
-
 
   /* ========= Ações: Gerar & Submit ========= */
   let gerarBusy=false;
@@ -1409,8 +1384,6 @@
       btn.disabled=false; btn.innerHTML=old;
     }
   });
-
-
   /* ========= UI helpers ========= */
   function showModal(id){ const mEl=document.getElementById(id); if(!mEl) return; bootstrap.Modal.getOrCreateInstance(mEl).show(); }
   function initWelcome(){
@@ -1430,6 +1403,7 @@
       if (el && window.bootstrap) bootstrap.Modal.getOrCreateInstance(el).show();
     } catch {}
   }
+
   // ---------- [ETAPA 1] preencher cabeçalho "Registros do Termo" ----------
   function preencherRegistrosDoTermo(reg) {
     const $gescon = document.getElementById('reg-gescon-consulta');
@@ -1486,7 +1460,6 @@
       preencherRegistrosDoTermo(window.__REGISTRO_TERMO__);
     }
   }
-
 
   /* ========= Boot ========= */
   function init(){
