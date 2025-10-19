@@ -35,13 +35,13 @@
 
 # -------------------------------------------------------
 # API: PDF -> bypass direto ao Render (evita timeout)
+# (não defina headers aqui para não vazar X-API-Key na resposta)
 # -------------------------------------------------------
 [[redirects]]
   from = "/api/termo-solic-crp-pdf"
   to = "https://programa-de-regularidade.onrender.com/api/termo-solic-crp-pdf"
   status = 200
   force = true
-  headers = { X-API-Key = "fprpps_5uP3rL0ng_", Origin = "https://programa-de-regularidade.netlify.app" }
 
 # -------------------------
 # Atalhos sem .html

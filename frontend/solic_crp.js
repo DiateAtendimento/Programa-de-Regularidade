@@ -18,6 +18,8 @@
     return '/.netlify/functions/api-proxy';
   })();
 
+  const API_DIRECT = '/api';
+  
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
 
   // Rotas que continuam no proxy alternativo (/_api) — para health/diag e consultas específicas
@@ -313,6 +315,23 @@
     if(d.length<=10) return d.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3').trim();
     return d.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3').trim();
   }
+
+  //Captura robusta do CNPJ_UG (sem fallback para zeros)
+  function obterCNPJUG() {
+    const candidatos = [
+      document.getElementById('CNPJ_UG')?.value,
+      document.getElementById('ug_cnpj')?.value,
+      el.cnpjUg?.value,
+      el.ugCnpj?.value
+    ].filter(Boolean);
+
+    const limpo = candidatos
+      .map(v => String(v).replace(/\D/g, ''))
+      .find(v => v && v.length === 14);
+
+    return limpo || null;
+  }
+
   function bindMasks(){
     el.cnpjInput?.addEventListener('input', ()=> el.cnpjInput.value = maskCNPJ(el.cnpjInput.value));
     el.cnpjEnte?.addEventListener('input', ()=> el.cnpjEnte.value = maskCNPJ(el.cnpjEnte.value));
@@ -1239,10 +1258,13 @@
     // aquece serviços gerais (proxy → backend) para evitar cold start
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-    // Usa SOMENTE o backend (mesmo caminho do Formulário 1)
+
+   // Tenta direto no backend (/api) e mantém o proxy como fallback
     const tryUrls = [
-      `${API_BASE}/termo-solic-crp-pdf`
+      `${API_DIRECT}/termo-solic-crp-pdf`,  // 1ª tentativa (direto)
+      `${API_BASE}/termo-solic-crp-pdf`     // 2ª tentativa (proxy antigo)
     ];
+
 
     let blob = null;
     let lastErr = null;
