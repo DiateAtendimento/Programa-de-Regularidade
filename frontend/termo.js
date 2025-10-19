@@ -153,7 +153,7 @@
       ul.innerHTML = `
         <li>
           O RPPS <strong>não apresenta, atualmente, irregularidades</strong> nos critérios do extrato previdenciário,
-          mas adere ao Pró-Regularidade RPPS para as outras finalidades nele previstas.
+          mas necessita de prazo adicional para:
         </li>`;
     })();
 

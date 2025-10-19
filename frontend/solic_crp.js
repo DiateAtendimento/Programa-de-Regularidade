@@ -15,7 +15,6 @@
     return '/api';
   })();
 
-  
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
 
   // Rotas que continuam no proxy (/_api)
@@ -30,6 +29,7 @@
   // (opcional) chave para o backend
   const API_KEY = window.__API_KEY || '';
   const withKey = (h = {}) => (API_KEY ? { ...h, 'X-API-Key': API_KEY } : h)
+
 
   // === Warmup/Health do backend ===
   // Verifica /_api/health por até 60s para evitar cold start antes dos POSTs pesados
@@ -243,7 +243,9 @@
     spanEnteGescon: $('#ENTE_GESCON'),
     infoDataEncGescon: $('#infoDataEncGescon'),
     infoProcSei:  $('#INFO_PROC_SEI'),   
-    introProcSei: $('#INTRO_PROC_SEI'),  
+    introNGescon: $('#INTRO_N_GESCON'),
+    introDataEnc: $('#INTRO_DATA_ENC'),
+    introProcSei: $('#INTRO_PROC_SEI'),
 
     // etapa 1
     uf: $('#UF'), ente: $('#ENTE'), cnpjEnte: $('#CNPJ_ENTE'), emailEnte: $('#EMAIL_ENTE'),
@@ -648,9 +650,18 @@
         dbg('Sem registro válido Gescon → desbloqueando fluxo e tentando hidratar termos…');
         el.hasGescon && (el.hasGescon.value = '0');
         if (el.btnNext) el.btnNext.disabled = false;
+
         el.boxGescon && el.boxGescon.classList.add('d-none');
         if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
         const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = '—';
+ 
+        // Preenche o bloco "acima do item 1"
+        if (el.introNGescon) el.introNGescon.textContent = (data.n_gescon || '—');
+        if (el.introDataEnc) el.introDataEnc.textContent = (toDateBR(data.data_enc_via_gescon) || '—');
+        if (el.introProcSei) el.introProcSei.textContent = (data.proc_sei || '—');
+        if (el.infoProcSei) el.infoProcSei.textContent = (data.proc_sei || '—');
+
+
         try { await hidratarTermosRegistrados(cnpj); } catch (e) { dbe('hidratarTermosRegistrados falhou (sem bloqueio):', e); }
         if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
         console.groupEnd();
@@ -800,6 +811,11 @@
         if (/municipal/i.test(esfera)) { if (el.esfMun) el.esfMun.checked = true; if (el.esfEst) el.esfEst.checked = false; }
         else if (/estadual|distrital/i.test(esfera)) { if (el.esfEst) el.esfEst.checked = true; if (el.esfMun) el.esfMun.checked = false; }
       }
+
+      // Fallback: se algum campo da UG ficou vazio, reforça com dados do "Formulário 1"
+      if (!el.ug.value && ente.ug)            el.ug.value      = ente.ug;
+      if (!el.cnpjUg.value && ente.cnpj_ug)   el.cnpjUg.value   = maskCNPJ(ente.cnpj_ug);
+      if (!el.emailUg.value && ente.email_ug) el.emailUg.value  = ente.email_ug;
 
       popularListasFaseComBaseNosCritérios();
       saveState();

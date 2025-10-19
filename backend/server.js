@@ -1072,6 +1072,7 @@ app.post('/api/gescon/termo-enc', async (req, res) => {
       ente:      idxOf('ENTE'),
       n_gescon:  idxOf('N_GESCON'),
       data_enc:  idxOf('DATA_ENC_VIA_GESCON'),
+      proc_sei:  idxOf('PROC_SEI')
     };
 
     if (col.cnpj_ente < 0) {
@@ -1109,7 +1110,8 @@ app.post('/api/gescon/termo-enc', async (req, res) => {
       n_gescon:  cellStr(s, rowHit, col.n_gescon),
       data_enc_via_gescon: normDataEnc.dmy || normDataEnc.raw || '',
       data_enc_via_gescon_iso: normDataEnc.iso,
-      data_enc_via_gescon_dmy: normDataEnc.dmy
+      data_enc_via_gescon_dmy: normDataEnc.dmy,
+      proc_sei:  cellStr(s, rowHit, col.proc_sei)
     };
 
     if (!payload.n_gescon || !payload.uf || !payload.ente || !payload.data_enc_via_gescon) {
@@ -1893,7 +1895,7 @@ app.post('/api/gerar-termo', async (req, res) => {
       CELEBRACAO_TERMO_PARCELA_DEBITOS: norm(p.CELEBRACAO_TERMO_PARCELA_DEBITOS),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: norm(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA),
       DEFICIT_ATUARIAL: norm(p.DEFICIT_ATUARIAL),
-      CRITERIOS_ESTRUT_ESTABELECIDOS: norm(p.CRITERIOS_ESTRUT_ESTABELECIDOS),
+      CRITERIOS_ESTRUT_ESTABELECIDOS: norm(p.CRIETERIOS_ESTRUT_ESTABELECIDOS || p.CRITERIOS_ESTRUT_ESTABELECIDOS), // compat
       MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: norm(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS),
       COMPROMISSO_FIRMADO_ADESAO: norm(p.COMPROMISSO_FIRMADO_ADESAO),
       PROVIDENCIA_NECESS_ADESAO: norm(p.PROVIDENCIA_NECESS_ADESAO),
@@ -1925,6 +1927,7 @@ app.post('/api/gerar-termo', async (req, res) => {
     return res.status(500).json({ error: 'Falha ao registrar o termo.' });
   }
 });
+
 
 /** POST /api/gerar-solic-crp  — IDEMPOTENTE (Solicitação CRP) */
 app.post('/api/gerar-solic-crp', async (req, res) => {
