@@ -223,6 +223,7 @@
     return [fallback];
   }
 
+
   /* ========= Elementos ========= */
   const el = {
     // etapa 0
@@ -242,7 +243,7 @@
     spanUfGescon: $('#UF_GESCON'),
     spanEnteGescon: $('#ENTE_GESCON'),
     infoDataEncGescon: $('#infoDataEncGescon'),
-    infoProcSei:  $('#INFO_PROC_SEI'),   
+    infoProcSei:  $('#INFO_PROC_SEI'),
     introNGescon: $('#INTRO_N_GESCON'),
     introDataEnc: $('#INTRO_DATA_ENC'),
     introProcSei: $('#INTRO_PROC_SEI'),
@@ -250,6 +251,11 @@
     // etapa 1
     uf: $('#UF'), ente: $('#ENTE'), cnpjEnte: $('#CNPJ_ENTE'), emailEnte: $('#EMAIL_ENTE'),
     ug: $('#UG'), cnpjUg: $('#CNPJ_UG'), emailUg: $('#EMAIL_UG'),
+    // >>> adicionados (1.3.2 – espelham 1.3):
+    ugNome:  $('#ug_nome'),
+    ugCnpj:  $('#ug_cnpj'),
+    ugEmail: $('#ug_email'),
+    // <<<
     esfMun: $('#esf_mun'), esfEst: $('#esf_est'),
     infoNumGescon: $('#infoNumGescon'),
 
@@ -283,6 +289,7 @@
     dots: $$('#stepper .step'),
     navFooter: $('#navFooter')
   };
+
   /* ========= Máscaras ========= */
   function maskCNPJ(v){
     const d = digits(v).slice(0,14);
@@ -319,6 +326,26 @@
       if(e.key==='Enter'){ e.preventDefault(); el.btnPesquisar?.click(); }
     });
   }
+
+  // === 1.3 → 1.3.2 (espelhamento automático) ===
+  function syncUg132() {
+    if (!el.ug || !el.cnpjUg || !el.emailUg) return;
+    if (el.ugNome)  el.ugNome.value  = el.ug.value || '';
+    if (el.ugCnpj)  el.ugCnpj.value  = el.cnpjUg.value || '';
+    if (el.ugEmail) el.ugEmail.value = el.emailUg.value || '';
+  }
+  function bindSyncUg132(){
+    ['input','change'].forEach(evt=>{
+      el.ug     && el.ug.addEventListener(evt, syncUg132);
+      el.cnpjUg && el.cnpjUg.addEventListener(evt, syncUg132);
+      el.emailUg&& el.emailUg.addEventListener(evt, syncUg132);
+    });
+    // dispara uma vez na carga
+    syncUg132();
+  }
+
+
+
   /* ========= Persistência (TTL) ========= */
   function getState(){
     try{ return JSON.parse(localStorage.getItem(FORM_STORAGE_KEY) || 'null'); }catch{ return null; }
@@ -613,7 +640,7 @@
     return out;
   }
 
-  async function onPesquisar(ev){
+   async function onPesquisar(ev){
     if (searching) return;
 
     const raw = el.cnpjInput?.value || '';
@@ -640,9 +667,13 @@
       console.timeEnd('[solic_crp] gescon/termo-enc');
       dbg('Resposta gescon/termo-enc:', data);
 
-      let ok = !!(data && data.n_gescon && data.uf && data.ente && data.data_enc_via_gescon);
-      if (ok && !isGesconNumber(data.n_gescon)) {
-        console.warn('Número Gescon com formato inválido:', data.n_gescon);
+      const nGescon = data?.n_gescon || '';
+      let dataEnc   = data?.data_enc_via_gescon ?? data?.data_encaminhamento ?? data?.data_enc ?? data?.data ?? '';
+      const procSei = data?.proc_sei ?? data?.processo_sei ?? '';
+
+      let ok = !!(nGescon && data?.uf && data?.ente && dataEnc);
+      if (ok && !isGesconNumber(nGescon)) {
+        console.warn('Número Gescon com formato inválido:', nGescon);
         ok = false;
       }
 
@@ -654,13 +685,12 @@
         el.boxGescon && el.boxGescon.classList.add('d-none');
         if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
         const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = '—';
- 
-        // Preenche o bloco "acima do item 1"
-        if (el.introNGescon) el.introNGescon.textContent = (data.n_gescon || '—');
-        if (el.introDataEnc) el.introDataEnc.textContent = (toDateBR(data.data_enc_via_gescon) || '—');
-        if (el.introProcSei) el.introProcSei.textContent = (data.proc_sei || '—');
-        if (el.infoProcSei) el.infoProcSei.textContent = (data.proc_sei || '—');
 
+        // Preenche o bloco "acima do item 1" (se existir na página)
+        if (el.introNGescon) el.introNGescon.textContent = (nGescon || '—');
+        if (el.introDataEnc) el.introDataEnc.textContent = (toDateBR(dataEnc) || '—');
+        if (el.introProcSei) el.introProcSei.textContent = (procSei || '—');
+        if (el.infoProcSei)  el.infoProcSei.textContent  = (procSei || '—');
 
         try { await hidratarTermosRegistrados(cnpj); } catch (e) { dbe('hidratarTermosRegistrados falhou (sem bloqueio):', e); }
         if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
@@ -669,28 +699,32 @@
       }
 
       // ✅ registro encontrado
-      const dataEncBR = toDateBR(data.data_enc_via_gescon);
+      const dataEncBR = toDateBR(dataEnc);
       el.hasGescon && (el.hasGescon.value = '1');
       if (el.btnNext) el.btnNext.disabled = false;
 
-      el.spanNGescon && (el.spanNGescon.textContent = data.n_gescon || '');
+      el.spanNGescon && (el.spanNGescon.textContent = nGescon || '');
       el.spanDataEnc && (el.spanDataEnc.textContent = dataEncBR || '');
-      // Preencher o bloco introdutório (Etapa 1)
-      const introNG = document.getElementById('intro_N_GESCON');
-      const introDT = document.getElementById('intro_DATA_ENC');
-      if (introNG) introNG.textContent = data.n_gescon || '—';
-      if (introDT) introDT.textContent = toDateBR(data.data_enc_via_gescon) || '—';
-
       el.spanUfGescon && (el.spanUfGescon.textContent = data.uf || '');
       el.spanEnteGescon && (el.spanEnteGescon.textContent = data.ente || '');
+      el.infoProcSei && (el.infoProcSei.textContent = procSei || '—');
       el.boxGescon?.classList.remove('d-none');
 
+      // Preencher o bloco introdutório (se existir)
+      const introNG = document.getElementById('intro_N_GESCON');
+      const introDT = document.getElementById('intro_DATA_ENC');
+      if (introNG) introNG.textContent = nGescon || '—';
+      if (introDT) introDT.textContent = dataEncBR || '—';
+
       el.infoDataEncGescon && (el.infoDataEncGescon.textContent = dataEncBR || '—');
-      const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = data.n_gescon || '—';
+      const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = nGescon || '—';
 
       dbg('Chamando hidratarTermosRegistrados…');
       await hidratarTermosRegistrados(cnpj);
       dbg('hidratarTermosRegistrados → OK');
+
+      // garante espelhamento 1.3 → 1.3.2 após hidratar
+      syncUg132();
 
       if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
       console.groupEnd();
@@ -714,6 +748,8 @@
       searching = false;
     }
   }
+
+
   async function hidratarTermosRegistrados(cnpj){
     dbg('[hidratarTermosRegistrados] start →', cnpj);
     try{
@@ -732,6 +768,10 @@
       if (ente.ug)      el.ug.value      = ente.ug;
       if (ente.cnpj_ug) el.cnpjUg.value  = maskCNPJ(ente.cnpj_ug);
       if (ente.email_ug)el.emailUg.value = ente.email_ug;
+
+      // >>> NOVO: espelha 1.3 → 1.3.2
+      syncUg132();
+      // <<<
 
       // 2) Responsáveis
       if (resp.ente){
@@ -817,6 +857,11 @@
       if (!el.cnpjUg.value && ente.cnpj_ug)   el.cnpjUg.value   = maskCNPJ(ente.cnpj_ug);
       if (!el.emailUg.value && ente.email_ug) el.emailUg.value  = ente.email_ug;
 
+      // >>> NOVO: Processo SEI visível no quadro do passo 0 (se vier da planilha/API)
+      const procSei = data?.proc_sei ?? data?.PROCESSO_SEI ?? '';
+      if (procSei && el.infoProcSei) el.infoProcSei.textContent = procSei;
+      // <<<
+
       popularListasFaseComBaseNosCritérios();
       saveState();
       dbg('[hidratarTermosRegistrados] done ✓');
@@ -828,14 +873,21 @@
       if (!el.ente.value && el.spanEnteGescon?.textContent) el.ente.value = el.spanEnteGescon.textContent.trim();
       if (!el.cnpjEnte.value) el.cnpjEnte.value = maskCNPJ(cnpj);
 
+      // mantém listas e estado
       popularListasFaseComBaseNosCritérios();
       saveState();
       const introNG = document.getElementById('intro_N_GESCON');
       const introDT = document.getElementById('intro_DATA_ENC');
       if (introNG) introNG.textContent = el.spanNGescon?.textContent || '—';
       if (introDT) introDT.textContent = el.spanDataEnc?.textContent || '—';
+
+      // garante espelhamento
+      syncUg132();
     }
   }
+
+
+
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
   function setupFase4Toggles(){
     const modalByFase = {
@@ -1100,7 +1152,8 @@
       CARGO_REP_UG: el.cargoRepUg.value.trim(),
       EMAIL_REP_UG: el.emailRepUg.value.trim(),
       TEL_REP_UG: el.telRepUg.value.trim(),
-      SEI_PROCESSO: (el.introProcSei?.textContent || '').trim(),
+      SEI_PROCESSO: (el.introProcSei?.textContent || el.infoProcSei?.textContent || '').trim(),
+
 
       DATA_VENCIMENTO_ULTIMO_CRP,
       TIPO_EMISSAO_ULTIMO_CRP,
