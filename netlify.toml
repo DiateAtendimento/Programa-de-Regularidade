@@ -4,7 +4,9 @@
   publish = "."
   functions = "netlify/functions"
 
-# Health/Diag
+# -------------------------
+# Health/Diag (via api-proxy)
+# -------------------------
 [[redirects]]
   from = "/_api/health"
   to = "/.netlify/functions/api-proxy/health"
@@ -15,24 +17,35 @@
   to = "/.netlify/functions/api-proxy/_diag"
   status = 200
 
-# Proxy catch-all
+# -------------------------
+# Proxy catch-all auxiliar
+# -------------------------
 [[redirects]]
   from = "/_api/*"
   to = "/.netlify/functions/api-proxy/:splat"
   status = 200
 
-# Mapear as 2 rotas /api/... para as funções Netlify
-[[redirects]]
-  from = "/api/termo-solic-crp-pdf"
-  to = "/.netlify/functions/termo-solic-crp-pdf-v2"
-  status = 200
-
+# -------------------------------------------------------
+# API: salvar via Function (api-proxy)  -> Render (seguro)
+# -------------------------------------------------------
 [[redirects]]
   from = "/api/gerar-solic-crp"
-  to = "/.netlify/functions/gerar-solic-crp"
+  to = "/.netlify/functions/api-proxy/gerar-solic-crp"
   status = 200
 
+# -------------------------------------------------------
+# API: PDF -> bypass direto ao Render (evita timeout)
+# -------------------------------------------------------
+[[redirects]]
+  from = "/api/termo-solic-crp-pdf"
+  to = "https://programa-de-regularidade.onrender.com/api/termo-solic-crp-pdf"
+  status = 200
+  force = true
+  headers = { X-API-Key = "fprpps_5uP3rL0ng_", Origin = "https://programa-de-regularidade.netlify.app" }
+
+# -------------------------
 # Atalhos sem .html
+# -------------------------
 [[redirects]]
   from = "/form_gera_termo_adesao_1"
   to = "/form_gera_termo_adesao_1.html"
@@ -43,27 +56,22 @@
   to = "/form_gera_termo_solic_crp_2.html"
   status = 200
 
+# -------------------------
 # SPA fallback
+# -------------------------
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Functions config
+# -------------------------
+# Functions config (geral)
+# -------------------------
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["@sparticuz/chromium", "puppeteer-core"]
 
-# >>> aplique o bloco ao NOME REAL da função (com -v2)
-[functions."termo-solic-crp-pdf-v2"]
-  timeout = 30
-  memory  = 3072
-  # garantir que os arquivos estáticos usados no template sejam empacotados
-  included_files = ["**/*.html", "**/*.css", "imagens/**", "animacao/**"]
-
-[functions."gerar-solic-crp"]
-  timeout = 30
-  memory  = 1024
+# (Removidos os blocks específicos "termo-solic-crp-pdf-v2" e "gerar-solic-crp"
+#  pois o PDF agora vai direto ao Render e o salvar usa api-proxy.)
 
 [build.environment]
   NODE_VERSION = "20"
