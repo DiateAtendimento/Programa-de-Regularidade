@@ -9,7 +9,7 @@ const _allow = process.env.CORS_ALLOWLIST || process.env.CORS_ORIGIN_LIST || '';
 const ORIGIN_ALLOWLIST = _allow.split(',').map(s => s.trim()).filter(Boolean);
 
 // Timeout do proxy (ms) — pode ajustar via variável de ambiente
-const PROXY_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS || 120000);
+const PROXY_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS || 180000);
 
 /**
  * Allowlist de paths (SEM o prefixo /api do upstream).
