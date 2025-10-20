@@ -1246,9 +1246,9 @@
 
       try {
         setUGFields({
-          UG:        data.UG        || '',
-          CNPJ_UG:   data.CNPJ_UG   || '',
-          EMAIL_UG:  data.EMAIL_UG  || ''
+          nome:  data.UG        || '',
+          cnpj:  data.CNPJ_UG   || '',
+          email: data.EMAIL_UG  || ''
         });
       } catch {}
 
