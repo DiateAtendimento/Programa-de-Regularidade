@@ -29,7 +29,6 @@
       <p class="term-meta">
         Ente: <strong data-k="ente"></strong> / UF: <strong data-k="uf"></strong> • UG: <strong data-k="ug"></strong>
       </p>
-
       <!-- 1. IDENTIFICAÇÃO -->
       <section class="term-section avoid-break">
         <!-- (3) REFERÊNCIA NORMATIVA ATUALIZADA -->
@@ -55,7 +54,6 @@
         </div>
 
         <h2><br>1. IDENTIFICAÇÃO DO ENTE FEDERATIVO E DA UNIDADE GESTORA</h2>
-
         <h3><span class="label">1.1 Esfera de Governo</span></h3>
         <ul id="opt-1-1">
           <li data-code="1.1.1">1.1.1 RPPS Municipal</li>
@@ -76,7 +74,6 @@
           <div class="field"><span class="label"><strong>1.3.3 E-mail oficial</strong></span><span class="value" data-k="email_ug"></span></div>
         </div>
       </section>
-
       <!-- 2. IDENTIFICAÇÃO DOS RESPONSÁVEIS -->
       <section class="term-section avoid-break">
         <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
@@ -99,7 +96,6 @@
           <div class="field"><span class="label"><strong>2.2.5 Telefone</strong></span><span class="value" data-k="tel_rep_ug"></span></div>
         </div>
       </section>
-
       <!-- 3. SITUAÇÃO RELATIVA AO CRP -->
       <section class="term-section avoid-break">
         <h2>3. SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
@@ -121,7 +117,6 @@
         <h3>3.3 Critério(s) irregular(es) no extrato previdenciário</h3>
         <ul id="criterios-list"></ul>
       </section>
-
       <!-- 4. FASE DO PROGRAMA -->
       <section class="term-section">
         <h2>4. IDENTIFICAÇÃO DA FASE DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
@@ -149,7 +144,6 @@
           <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
           <p data-k="f43_plano"></p>
         </div>
-
         <!-- 4.4 -->
         <div class="avoid-break" id="fase-44" hidden>
           <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
@@ -198,7 +192,6 @@
           <div id="f46-comp-cumpr"></div>
         </div>
       </section>
-
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section">
         <h2>5. JUSTIFICATIVAS / INFORMAÇÕES ADICIONAIS</h2>
@@ -271,7 +264,6 @@
     fillText('SEI_PROCESSO', p.SEI_PROCESSO || p.sei_processo || '');
     /* >>> NOVO: número/ano da Portaria SRPC/MPS injetável */
     fillText('PORTARIA_SRPC', p.PORTARIA_SRPC || p.portaria_srpc || p.PORTARIA_SRPC_MPS || '');
-
     /* ================= 2) Responsáveis ================= */
     fillText('nome_rep_ente',  p.NOME_REP_ENTE || p.nome_rep_ente);
     fillText('cargo_rep_ente', p.CARGO_REP_ENTE || p.cargo_rep_ente);
@@ -288,9 +280,16 @@
     /* ================= 3) CRP ================= */
     fillText('venc_ult_crp', p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
 
-    // 3.2 — motivo do prazo adicional (seleção única)
+    // 3.2 — motivo do prazo adicional (deriva dos flags se OPT_3_2 não vier)
     (function(){
-      const code = (p.OPT_3_2 || p.opt_3_2 || '').trim(); // "3.2.1" | "3.2.2" | "3.2.3" | "3.2.4"
+      let code = (p.OPT_3_2 || p.opt_3_2 || '').trim();
+      if (!code) {
+        const yes = v => String(v||'').toUpperCase() === 'SIM';
+        if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE)) code = '3.2.1';
+        else if (yes(p.FIN_3_2_DEFICIT_ATUARIAL))    code = '3.2.2';
+        else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) code = '3.2.3';
+        else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) code = '3.2.4';
+      }
       const ul = document.querySelector('#opt-3-2');
       if (!ul || !code) return;
       [...ul.children].forEach(li => {
@@ -318,10 +317,10 @@
     switch (faseSel) {
       case '4.1': {
         const it = [];
-        const op = (p.F41_OPCAO || '').toString().toLowerCase();
-        if (/^4\.1\.1/.test(p.F41_OPCAO) || /incluiu/.test(op)) {
+        const v = String(p.F41_OPCAO||'').toLowerCase();
+        if (/^4\.1\.1/.test(p.F41_OPCAO) || /incluiu|incluidos|incluídos/.test(v)) {
           it.push('4.1.1 Incluiu todos os débitos (Cadprev).');
-        } else if (/^4\.1\.2/.test(p.F41_OPCAO) || /não possui|nao possui|regularizad/.test(op)) {
+        } else if (/^4\.1\.2/.test(p.F41_OPCAO) || /não possui|nao possui|regularizad/.test(v)) {
           it.push('4.1.2 Não possui débitos ou já regularizados.');
         }
         liList('#f41-itens', it);
@@ -385,7 +384,7 @@
     fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
 
     /* ================= 6) Assinaturas (data) ================= */
-    const hoje = p.DATA_TERMO_GERADO || p.DATA || '';
+    const hoje = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
     fillText('data_termo', hoje);
 
     /* ================= 1.1 Esfera + legenda de assinatura ================= */
@@ -420,7 +419,7 @@
   document.addEventListener('TERMO_DATA_READY', () => run(window.__TERMO_DATA__ || {}));
   if (window.__TERMO_DATA__) run(window.__TERMO_DATA__);
 })();
-</script>
+  </script>
 
 </body>
 </html>
