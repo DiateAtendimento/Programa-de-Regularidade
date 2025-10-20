@@ -2202,24 +2202,56 @@ app.post('/api/termo-pdf', async (req, res) => {
   }
 });
 
-/** POST /api/termo-solic-crp-pdf — gera PDF do termo_solic_crp.html (com logs e +templates) */
+/** POST /api/termo-solic-crp-pdf — Gera PDF do termo de solicitação (Formulário 2) */
 app.post('/api/termo-solic-crp-pdf', async (req, res) => {
-  const t0 = Date.now();
-  const log = (...a) => { if (DEBUG_PDF) console.log('[PDF-SOLIC]', ...a); };
+  const T0 = Date.now();
+  const log = (...a) => { if (DEBUG_PDF) console.log('[termo-solic-crp-pdf]', ...a); };
 
   try {
-    if (DEBUG_PDF) log('req.body keys =', Object.keys(req.body || {}));
-
     const p = validateOr400(res, schemaTermoSolicPdf, req.body || {});
     if (!p) return;
 
     await withPdfLimiter(async () => {
-      let page; let browser; let triedRestart = false; let loadedFrom = null;
+      let page; let browser; let triedRestart = false;
+
       try {
         const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
         const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
 
-        // ⚠️ ampliar candidatos (inclui os "form_gera_*")
+        // ⚙️ abre browser (com auto-restart se desconectado)
+        try {
+          browser = await getBrowser();
+          page = await browser.newPage();
+        } catch (e) {
+          const msg = String(e?.message || '');
+          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
+            triedRestart = true;
+            try { await browser?.close().catch(()=>{}); } catch(_){}
+            _browserPromise = null;
+            browser = await getBrowser();
+            page = await browser.newPage();
+          } else { throw e; }
+        }
+
+        // ⏱️ timeouts iguais ao form1
+        page.setDefaultNavigationTimeout(90_000);
+        page.setDefaultTimeout(90_000);
+
+        await page.setCacheEnabled(false);
+        await page.setRequestInterception(true);
+        page.on('request', (reqObj) => {
+          const u = reqObj.url();
+          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
+
+          const allowed =
+            (u.startsWith(LOOPBACK_BASE)) ||
+            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
+
+          return allowed ? reqObj.continue() : reqObj.abort();
+        });
+        await page.emulateMediaType('screen');
+
+        // 🔎 Candidatos ampliados (alguns projetos usam os "form_gera_*")
         const CANDIDATES = [
           'termo_solic_crp.html',
           'solic_crp.html',
@@ -2231,47 +2263,20 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
         ];
 
-        log('spin up browser/page…');
-        try { browser = await getBrowser(); page = await browser.newPage(); }
-        catch (e) {
-          const msg = String(e?.message || '');
-          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
-            triedRestart = true;
-            try { await browser?.close().catch(()=>{}); } catch(_){}
-            _browserPromise = null; browser = await getBrowser(); page = await browser.newPage();
-          } else { throw e; }
-        }
+        log('candidatos:', urlsToTry);
 
-        await page.setCacheEnabled(false);
-        await page.setRequestInterception(true);
-        page.on('request', (reqObj) => {
-          const u = reqObj.url();
-          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
-          const allowed =
-            (u.startsWith(LOOPBACK_BASE)) ||
-            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
-          if (!allowed && DEBUG_PDF) log('abort external:', u);
-          return allowed ? reqObj.continue() : reqObj.abort();
-        });
-
-        page.setDefaultNavigationTimeout(90_000);
-        page.setDefaultTimeout(90_000);
-        await page.emulateMediaType('screen');
-
-        log('trying templates:', urlsToTry);
-        let loaded = false; let lastErr = null;
+        // 🚦 navegação
+        let loaded = false; let lastErr = null; let chosenUrl = '';
         for (const u of urlsToTry) {
           try {
-            log('goto →', u);
             await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-            loaded = true; loadedFrom = u; break;
-          } catch (e) {
-            lastErr = e; log('goto fail:', u, e?.message || e);
-          }
+            loaded = true; chosenUrl = u; break;
+          } catch (e) { lastErr = e; }
         }
-        if (!loaded) throw lastErr || new Error('Falha ao carregar template da solicitação');
+        if (!loaded) throw lastErr || new Error('Falha ao carregar template de impressão do Formulário 2');
+        log('navegou em', Date.now() - T0, 'ms →', chosenUrl);
 
-        // sanity check do template
+        // ✅ sanidade do template (tem #pdf-root .term-wrap, não tem form/inputs, e título compatível)
         await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
         const sanity = await page.evaluate(() => {
           const h1 = (document.querySelector('h1.term-title')?.textContent || '').trim();
@@ -2282,28 +2287,30 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           const hasFormControls = !!document.querySelector('form, select, textarea, input');
           return { okTitle, hasPdfRoot, hasFormControls, h1 };
         });
-        log('sanity:', sanity, '| loadedFrom =', loadedFrom);
+        log('sanidade:', sanity);
+
         if (!sanity.hasPdfRoot || sanity.hasFormControls || !sanity.okTitle) {
-          throw new Error('Template inválido p/ impressão');
+          throw new Error('Template inválido para impressão (sem #pdf-root/.term-wrap, com controles, ou título incorreto).');
         }
 
+        // 🔄 normaliza array de critérios
         const payloadForClient = {
           ...p,
           CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
             ? p.CRITERIOS_IRREGULARES
             : String(p.CRITERIOS_IRREGULARES || '')
-                .split(',')
+                .split(/[;,]/)
                 .map(s => s.trim())
                 .filter(Boolean)
         };
 
-        log('inject payload…');
         await page.evaluate((payload) => {
           window.__TERMO_DATA__ = payload;
           document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
         }, payloadForClient);
+        log('dados injetados em', Date.now() - T0, 'ms');
 
-        log('wait ready…');
+        // ⏳ espera rápida pelo “pronto para imprimir”, sem travar se não vier
         await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(() => {});
         await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 30_000 }).catch(() => {});
         await page.evaluate(async () => {
@@ -2312,7 +2319,7 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         });
         await page.emulateMediaType('print');
 
-        // fontes e estilos (mesmo código de antes, mantido)
+        // 🔤 fontes locais (mesma lógica do form1)
         function findFont(candidates){
           const path = require('path'); const fs = require('fs');
           for (const rel of candidates){
@@ -2346,15 +2353,16 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           .term-title { margin-top: 2mm !important; }
         `});
 
+        // 🖼️ header com SVG inline (local)
         const path = require('path'); const fs = require('fs');
-        function inlineSvgLocal(relPath) {
+        const inlineSvgLocal = (rel) => {
           try {
-            const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
+            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/,''));
             const raw = fs.readFileSync(abs, 'utf8');
-            return raw.replace(/<\?xml[^>]*>/g, '').replace(/<!DOCTYPE[^>]*>/g, '')
-              .replace(/\r?\n|\t/g, ' ').replace(/>\s+</g, '><').trim();
+            return raw.replace(/<\?xml[^>]*>/g,'').replace(/<!DOCTYPE[^>]*>/g,'')
+              .replace(/\r?\n|\t/g,' ').replace(/>\s+</g,'><').trim();
           } catch { return ''; }
-        }
+        };
         const svgSec = inlineSvgLocal('imagens/logo-secretaria-complementar.svg');
         const svgMps = inlineSvgLocal('imagens/logo-termo-drpps.svg');
         const headerTemplate = `
@@ -2375,16 +2383,16 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           </div>`;
         const footerTemplate = `<div></div>`;
 
-        log('generating PDF…');
+        // 🖨️ gera PDF
         const pdf = await page.pdf({
           printBackground: true,
           preferCSSPageSize: true,
           displayHeaderFooter: true,
-          headerTemplate,
-          footerTemplate,
+          headerTemplate, footerTemplate,
           margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
         });
         await page.close();
+        log('PDF OK em', Date.now() - T0, 'ms');
 
         const filenameSafe = (p.ENTE || 'termo-solic-crp')
           .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
@@ -2393,18 +2401,18 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="termo-solic-${filenameSafe}.pdf"`);
         res.setHeader('Cache-Control', 'no-store, max-age=0');
         res.send(pdf);
-        log('OK in', (Date.now()-t0)+'ms', '| from', loadedFrom);
       } catch (e) {
-        log('FAIL after', (Date.now()-t0)+'ms', '| err=', e?.message || e);
+        console.error('❌ /api/termo-solic-crp-pdf:', e);
         try { if (page) await page.close(); } catch(_) {}
         res.status(500).json({ error: 'Falha ao gerar PDF' });
       }
     });
   } catch (e) {
-    if (DEBUG_PDF) log('(outer fail)', e?.message || e);
+    console.error('❌ (outer) /api/termo-solic-crp-pdf:', e);
     if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
   }
 });
+
 
 
 /** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */
