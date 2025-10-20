@@ -1218,10 +1218,11 @@
         return;
       }
 
+      // ================== A PARTIR DAQUI É O PREENCHIMENTO ==================
       const data = r.data || {};
       cnpjMissing = !!r.missing;
 
-      // ⬇️ NORMALIZAÇÃO: pega o CNPJ da UG do jeito que vier (planilha/endpoint variam)
+      // 🔧 NORMALIZA o CNPJ da UG (origem varia entre planilhas/endpoints/snapshot)
       const cnpjUgRaw =
         data.CNPJ_UG ||
         data.CNPJ_RPPS ||
@@ -1229,12 +1230,14 @@
         data.__snapshot?.CNPJ_UG ||
         data.__snapshot?.CNPJ_RPPS ||
         '';
-      const cnpjUg = digits(cnpjUgRaw); // só números
+      const cnpjUg = digits(cnpjUgRaw);                 // só dígitos
+      const cnpjUgMasked = cnpjUg ? maskCNPJ(cnpjUg) : '';
 
-      // idem p/ CNPJ do ente (com um fallback leve ao snapshot)
+      // idem para o CNPJ do Ente (com fallback leve para snapshot)
       const cnpjEnte = digits(data.CNPJ_ENTE || data.__snapshot?.CNPJ_ENTE || '');
+      const cnpjEnteMasked = cnpjEnte ? maskCNPJ(cnpjEnte) : '';
 
-      // guardo um snapshot útil para reenvios
+      // guarda um snapshot útil para outros fluxos
       snapshotBase = {
         UF: data.UF, ENTE: data.ENTE, CNPJ_ENTE: cnpjEnte, UG: data.UG, CNPJ_UG: cnpjUg,
         NOME_REP_ENTE: data.__snapshot?.NOME_REP_ENTE || '',
@@ -1250,22 +1253,22 @@
         DATA_VENCIMENTO_ULTIMO_CRP: data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || ''
       };
 
-      // —— preenche 1.2
-      $('#UF').value = data.UF || '';
-      $('#ENTE').value = data.ENTE || '';
-      $('#CNPJ_ENTE').value = cnpjEnte ? maskCNPJ(cnpjEnte) : '';
+      // —— 1.2 Ente
+      $('#UF').value         = data.UF || '';
+      $('#ENTE').value       = data.ENTE || '';
+      $('#CNPJ_ENTE').value  = cnpjEnteMasked;
       $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
 
-      // —— preenche 1.3 (RPPS)
-      $('#UG').value = data.UG || '';
-      $('#CNPJ_UG').value = cnpjUg ? maskCNPJ(cnpjUg) : '';
-      $('#EMAIL_UG').value = data.EMAIL_UG || '';
+      // —— 1.3 RPPS (linha de cima)
+      $('#UG').value         = data.UG || '';
+      $('#CNPJ_UG').value    = cnpjUgMasked;       // ⚠️ usa SEMPRE o normalizado
+      $('#EMAIL_UG').value   = data.EMAIL_UG || '';
 
-      // —— espelha também nos campos “novos” da UG, mantendo compat
+      // —— espelha também nos campos “novos” da UG
       try {
         setUGFields({
           nome:  data.UG || '',
-          cnpj:  cnpjUg,           // << sempre o normalizado
+          cnpj:  cnpjUg,                    // passa dígitos; o helper mascara internamente
           email: data.EMAIL_UG || ''
         });
       } catch {}
@@ -1292,6 +1295,14 @@
 
       cnpjOK = true;
       editedFields.clear();
+
+      // 🔁 reforço: se algum script limpar logo após, reescreve em microtask
+      queueMicrotask(() => {
+        const old = document.getElementById('CNPJ_UG');
+        const neu = document.getElementById('ug_cnpj');
+        if (old && !digits(old.value) && cnpjUgMasked) old.value = cnpjUgMasked;
+        if (neu && !digits(neu.value) && cnpjUgMasked) neu.value = cnpjUgMasked;
+      });
 
       // Avança após fechar o modal de loading
       const loadingEl = elMLS;
