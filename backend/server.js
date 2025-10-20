@@ -1239,11 +1239,13 @@ app.post('/api/termos-registrados', async (req, res) => {
       }
     };
 
+    // normaliza a string de critérios irregulares
     const criteriosStr = (getVal(last,'CRITERIOS_IRREGULARES') || '').toString().trim();
-    const criteriosArr = critériosStr
-      ? critériosStr.split(/[;,]/).map(s => s.trim()).filter(Boolean)
+    const criteriosArr = criteriosStr
+      ? criteriosStr.split(/[;,]/).map(s => s.trim()).filter(Boolean)
       : [];
-// CRP (rápido)
+
+    // CRP (rápido)
     const crpFast = await findCRPByCnpjFast(sCrp, cnpj) || {};
     const tipo = (crpFast.DECISAO_JUDICIAL || '').toString().trim();
     const crpPayload = {

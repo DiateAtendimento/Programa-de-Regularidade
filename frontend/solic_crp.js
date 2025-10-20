@@ -457,15 +457,73 @@
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
   }
 
-  function loadState(){
-    try{
-      const raw = localStorage.getItem(FORM_STORAGE_KEY);
-      if(!raw) return null;
-      const st  = JSON.parse(raw);
-      const now = Date.now();
-      if(st.lastSaved && (now - st.lastSaved > FORM_TTL_MS)){ clearAllState(); return null; }
 
+  // --- MIGRAÇÃO: puxa dados salvos no formulário 1 (rpps-form-v1) ---
+  // Se existir rpps-form-v1 e ainda não houver solic-crp-form-v1, copia o essencial.
+  function migrateFromAdesaoIfNeeded() {
+    try {
+      const DEST_KEY = FORM_STORAGE_KEY;            // 'solic-crp-form-v1'
+      const SRC_KEY  = 'rpps-form-v1';              // usado pelo form 1 (script.js)
+
+      if (localStorage.getItem(DEST_KEY)) return null;   // já existe o destino
+      const raw = localStorage.getItem(SRC_KEY);
+      if (!raw) return null;
+
+      const st   = JSON.parse(raw) || {};
       const vals = st.values || {};
+
+      // Mapeamento dos campos equivalentes entre os formulários
+      const mapped = {
+        UF:           vals.UF,
+        ENTE:         vals.ENTE,
+        CNPJ_ENTE:    vals.CNPJ_ENTE,
+        EMAIL_ENTE:   vals.EMAIL_ENTE,
+
+        // 1.3  ↔  1.3.2 (mantém compatibilidade nos dois conjuntos de ids)
+        UG:           vals.UG || vals.ug_nome,
+        CNPJ_UG:      vals.CNPJ_UG || vals.ug_cnpj,
+        EMAIL_UG:     vals.EMAIL_UG || vals.ug_email,
+
+        ug_nome:      vals.ug_nome || vals.UG,
+        ug_cnpj:      vals.ug_cnpj || vals.CNPJ_UG,
+        ug_email:     vals.ug_email || vals.EMAIL_UG,
+
+        // Situação do RPPS / Esfera (quando existirem)
+        rpps_situacao: vals.rpps_situacao || vals['rpps_situacao'],
+        esf_mun:       !!vals.esf_mun,
+        esf_est:       !!vals.esf_est
+      };
+
+      const next = {
+        step: 1,
+        values: mapped,
+        lastSaved: Date.now(),
+        finalizedAt: 0
+      };
+      localStorage.setItem(DEST_KEY, JSON.stringify(next));
+      return next;
+    } catch (e) {
+      // silencioso por segurança
+      return null;
+    }
+  }
+
+
+  function loadState(){
+  try{
+    let raw = localStorage.getItem(FORM_STORAGE_KEY); // 'solic-crp-form-v1'
+    if (!raw) {
+      // tenta migrar automaticamente do formulário 1
+      const migrated = migrateFromAdesaoIfNeeded();
+      raw = localStorage.getItem(FORM_STORAGE_KEY) || null;
+    }
+    if(!raw) return null;
+
+    const st  = JSON.parse(raw);
+    const now = Date.now();
+    if(st.lastSaved && (now - st.lastSaved > FORM_TTL_MS)){ clearAllState(); return null; }
+
+    const vals = st.values || {};
       // Restaura campos que são arrays (terminam com [])
       Object.entries(vals).forEach(([k,v])=>{
         if (k.endsWith('[]')){
