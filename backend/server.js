@@ -187,7 +187,15 @@ app.use('/api', (req, res, next) => {
 });
 
 app.use(hpp());
-app.use(express.json({ limit: '300kb' }));
+app.use(express.json({ limit: '1mb' }));
+
+// Handler global de erros – evita que exceções “quebrem” o processo durante o PDF
+app.use((err, req, res, _next) => {
+  console.error('🔥 Erro não tratado:', err?.stack || err);
+  if (!res.headersSent) {
+    res.status(500).json({ ok:false, error: 'Falha interna ao processar a solicitação.' });
+  }
+});
 
 /* ───────────── Cache-Control das rotas de API ───────────── */
 app.use('/api', (_req, res, next) => {

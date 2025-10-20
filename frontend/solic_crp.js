@@ -25,14 +25,15 @@
     const end = Date.now() + timeoutMs;
     while (Date.now() < end) {
       try {
-        // usa o proxy curto apenas para o health (mantido para diag)
         const r = await fetchJSON('/_api/health', {}, { label: 'health', timeout: 4000, retries: 0 });
-        if (r && (r.ok || r.status === 'ok')) return true;
-      } catch (_) {}
-      await new Promise(r => setTimeout(r, pollMs));
+          if (r && (r.ok || r.status === 'ok')) return true;
+        } catch (_) {}
+        await new Promise(r => setTimeout(r, pollMs));
+      }
+      return false;
     }
-    return false;
-  }
+
+    
 
   const FORM_STORAGE_KEY = 'solic-crp-form-v1';
   const IDEM_STORE_KEY   = 'rpps-idem-submit:solic-crp';
@@ -1313,10 +1314,15 @@
       PORTARIA_SRPC: '2.024/2025'
     };
 
-    // aquece serviços gerais (proxy → backend) para evitar cold start
+    // 🔥 Aquece o backend/Puppeteer ANTES de pedir o PDF (evita 502/restart)
+    try {
+      await fetchJSON('/_api/warmup', {}, { label: 'warmup', timeout: 8000, retries: 1 });
+    } catch (_) { /* segue se warmup falhar */ }
+
+    // Garante que o serviço está de pé (proxy → backend)
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-    // ► Correção: usar apenas API_BASE (API_DIRECT não existe aqui)
+    // ► Usar apenas API_BASE (via proxy)
     const tryUrls = [
       api('/termo-solic-crp-pdf') // rota do backend via proxy
     ];
@@ -1324,7 +1330,8 @@
     let blob = null;
     let lastErr = null;
 
-    for (let round = 0; round < 2 && !blob; round++) {
+    // 📈 Aumenta os rounds de retry (Render pode reiniciar no cold start)
+    for (let round = 0; round < 3 && !blob; round++) {
       for (const urlTry of tryUrls) {
         dbg('[PDF] tentando →', urlTry, '(round', round+1, ')');
         try {
@@ -1335,7 +1342,8 @@
               headers: withKey({ 'Content-Type': 'application/json; charset=utf-8' }),
               body: JSON.stringify(payloadForPdf)
             },
-            { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 3 }
+            // 🕒 Mais fôlego para carregar fontes/template na 1ª vez
+            { label: 'termo-solic-crp-pdf', timeout: 90000, retries: 3 }
           );
           dbg('[PDF] OK em →', urlTry);
           break;
