@@ -1236,25 +1236,35 @@
         DATA_VENCIMENTO_ULTIMO_CRP: data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || ''
       };
 
+      // Preenche ENTE normalmente
       $('#UF').value = data.UF || '';
       $('#ENTE').value = data.ENTE || '';
       $('#CNPJ_ENTE').value = (data.CNPJ_ENTE ? data.CNPJ_ENTE.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5') : '');
-      $('#UG').value = data.UG || '';
-      $('#CNPJ_UG').value = (data.CNPJ_UG ? data.CNPJ_UG.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5') : '');
       $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
-      $('#EMAIL_UG').value   = data.EMAIL_UG   || '';
 
+      // ✅ Normaliza CNPJ_UG com fallbacks (sem “apagar” o legado)
+      const cnpjUg = digits(
+        data.CNPJ_UG ||
+        data.CNPJ_RPPS ||
+        data.CNPJ_UG_RPPS ||
+        data.__snapshot?.CNPJ_UG ||
+        data.__snapshot?.CNPJ_RPPS ||
+        ''
+      );
+
+      // Deixe setUGFields centralizar escrita + espelhamento.
+      // (Não escrevemos diretamente #UG/#CNPJ_UG/#EMAIL_UG para não zerar quando vier vazio)
       try {
         setUGFields({
-          nome:  data.UG        || '',
-          cnpj:  data.CNPJ_UG   || '',
-          email: data.EMAIL_UG  || ''
+          nome:  data.UG       || '',
+          cnpj:  cnpjUg,
+          email: data.EMAIL_UG || ''
         });
       } catch {}
 
-
+      // Limpa reps (mantém comportamento)
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
-       'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
+      'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
 
       const iso = data.CRP_DATA_VALIDADE_ISO || '';
@@ -1323,6 +1333,7 @@
       updateFooterAlign();
     }
   });
+
 
   /* ========= Busca reps por CPF ========= */
   async function buscarRepByCPF(cpf, target, ev){
