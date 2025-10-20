@@ -9,26 +9,11 @@
 
   /* ========= Config ========= */
   const API_BASE = (function(){
-    // Se quiser forçar manualmente em produção, defina window.__API_BASE = '/.netlify/functions/api-proxy'
+    // permite sobrescrever via window.__API_BASE se quiser
     const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
-    if (override) return override;
-
-    // PADRÃO OFICIAL: usar o proxy que fala com o backend (Render/Express/Puppeteer),
-    // igual ao Formulário 1. Assim o PDF do Form 2 segue o mesmo caminho que já funciona.
-    return '/.netlify/functions/api-proxy';
+    return override || '/.netlify/functions/api-proxy';
   })();
-
-  const API_DIRECT = '/api';
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
-
-  // Rotas que continuam no proxy alternativo (/_api) — para health/diag e consultas específicas
-  function apiRoute(p) {
-    const path = p.startsWith('/') ? p : '/' + p;
-    if (/^\/(gescon\/termo-enc|termos-registrados)$/i.test(path)) {
-      return '/_api' + path; // usa proxy curto (também aponta ao backend)
-    }
-    return api(path); // demais vão pelo API_BASE
-  }
 
   // (opcional) chave para o backend
   const API_KEY = window.__API_KEY || '';
@@ -40,7 +25,7 @@
     const end = Date.now() + timeoutMs;
     while (Date.now() < end) {
       try {
-        // usa o proxy apenas para o health (/_api/health)
+        // usa o proxy curto apenas para o health (mantido para diag)
         const r = await fetchJSON('/_api/health', {}, { label: 'health', timeout: 4000, retries: 0 });
         if (r && (r.ok || r.status === 'ok')) return true;
       } catch (_) {}
@@ -98,7 +83,6 @@
   /* ========= Robust fetch (timeout + retries) ========= */
   const FETCH_TIMEOUT_MS = 120000;
   const FETCH_RETRIES    = 1;
-
   async function fetchJSON(
     url,
     { method='GET', headers={}, body=null } = {},
@@ -225,6 +209,7 @@
     if(status && status>=500) return ['Instabilidade no servidor. Tente novamente.'];
     return [fallback];
   }
+
   /* ========= Elementos ========= */
   const el = {
     // etapa 0
@@ -360,7 +345,6 @@
     // dispara uma vez na carga
     syncUg132();
   }
-
   /* ========= Persistência (TTL) ========= */
   function getState(){
     try{ return JSON.parse(localStorage.getItem(FORM_STORAGE_KEY) || 'null'); }catch{ return null; }
@@ -619,7 +603,6 @@
     const list = $('#modalAtencaoLista'); if(list){ list.innerHTML = msgs.map(m=>`<li>${m}</li>`).join(''); }
     showModal('modalAtencao');
   }
-  // (mantemos APENAS a versão de showErro declarada mais abaixo)
 
   /* ========= Lottie nos modais desta página ========= */
   const lotties = {};
@@ -638,7 +621,7 @@
   async function consultarGesconByCnpj(cnpj){
     const body = { cnpj };
     dbg('[consultarGesconByCnpj] >> body:', body);
-    const out = await fetchJSON(apiRoute('/gescon/termo-enc'), {
+    const out = await fetchJSON(api('/gescon/termo-enc'), {
       method:'POST',
       headers: withKey({'Content-Type':'application/json'}),
       body: JSON.stringify(body)
@@ -650,7 +633,7 @@
   async function consultarTermosRegistrados(cnpj){
     const body = { cnpj };
     dbg('[consultarTermosRegistrados] >> body:', body);
-    const out = await fetchJSON(apiRoute('/termos-registrados'), {
+    const out = await fetchJSON(api('/termos-registrados'), {
       method:'POST',
       headers: withKey({'Content-Type':'application/json'}),
       body: JSON.stringify(body)
@@ -977,7 +960,6 @@
     const critWrap46 = document.getElementById('F462F_WRAP');
     if (optF && critWrap46) optF.addEventListener('change', () => critWrap46.classList.toggle('d-none', !optF.checked));
   }
-
   function validarFaseSelecionada(){
     const f = document.querySelector('input[name="FASE_PROGRAMA"]:checked')?.value || '';
     if(!f) return { ok:false, motivo:'Selecione a fase do Programa (4.1 a 4.6).' };
@@ -1086,6 +1068,7 @@
       )).join('');
     }
   }
+
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
     const msgs=[];
@@ -1268,28 +1251,25 @@
       ...payload,
       HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : '',
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
-      // (opcional) Portaria forçada — se você quer padronizar em todos os pontos do template:
+      // (opcional) Portaria forçada — padronizada
       PORTARIA_SRPC: '2.024/2025'
     };
 
     // aquece serviços gerais (proxy → backend) para evitar cold start
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-    // Tenta direto no backend (/api) e mantém o proxy como fallback
+    // ► Correção: usar apenas API_BASE (API_DIRECT não existe aqui)
     const tryUrls = [
-      `${API_DIRECT}/termo-solic-crp-pdf`,  // 1ª tentativa (direto)
-      `${API_BASE}/termo-solic-crp-pdf`     // 2ª tentativa (proxy antigo)
+      api('/termo-solic-crp-pdf') // rota do backend via proxy
     ];
 
     let blob = null;
     let lastErr = null;
 
-    // até 2 rodadas no conjunto de URLs (com backoff entre rodadas)
     for (let round = 0; round < 2 && !blob; round++) {
       for (const urlTry of tryUrls) {
         dbg('[PDF] tentando →', urlTry, '(round', round+1, ')');
         try {
-          // envia payload puro (o backend sabe qual template usar: termo_solic_crp.html)
           blob = await fetchBinary(
             urlTry,
             {
@@ -1300,19 +1280,19 @@
             { label: 'termo-solic-crp-pdf', timeout: 60000, retries: 3 }
           );
           dbg('[PDF] OK em →', urlTry);
-          break; // saiu do loop de URLs
+          break;
         } catch (e) {
           lastErr = e;
           const s = e && e.status;
           const msg = String(e?.message || '').toLowerCase();
           const retriable = (s >= 500) || msg.includes('timeout') || msg.includes('failed') || e.name === 'AbortError';
           dbg('[PDF] falhou em', urlTry, '| status:', s, '| msg:', e && e.message, '| retriable?', retriable);
-          if (!retriable) continue; // 4xx → tenta próxima URL (se houver)
-          await new Promise(r => setTimeout(r, 300 + Math.random()*300)); // jitter entre URLs
+          if (!retriable) continue;
+          await new Promise(r => setTimeout(r, 300 + Math.random()*300));
         }
       }
       if (!blob) {
-        await new Promise(r => setTimeout(r, 800 + Math.random()*400)); // backoff entre rodadas
+        await new Promise(r => setTimeout(r, 800 + Math.random()*400));
       }
     }
 
@@ -1329,6 +1309,7 @@
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
+
   /* ========= Ações: Gerar & Submit ========= */
   let gerarBusy=false;
   el.btnGerar?.addEventListener('click', async ()=>{
@@ -1374,7 +1355,6 @@
     try{
       await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-      // ✅ capture a resposta da API
       const resp = await fetchJSON(api('/gerar-solic-crp'), {
         method:'POST',
         headers: withKey({'Content-Type':'application/json','X-Idempotency-Key':idem}),

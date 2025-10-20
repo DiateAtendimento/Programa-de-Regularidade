@@ -345,6 +345,15 @@ function sanitizeForSheet(v) {
   return s;
 }
 
+/* ✅ Helper para gravar CNPJ como texto no Sheets (preserva zeros à esquerda) */
+function asSheetCNPJ(v) {
+  const only = (v ?? '').toString().replace(/\D+/g, '');
+  const c14 = only.padStart(14, '0').slice(-14);
+  // força texto no Sheets e preserva zeros à esquerda
+  return `'${c14}`;
+}
+
+
 function sheetSanObject(obj) {
   const out = {};
   for (const [k, v] of Object.entries(obj || {})) {
@@ -387,7 +396,6 @@ async function getOrCreateSheet(title, headerValues){
   });
   return s;
 }
-
 async function ensureSheetHasColumns(sheet, requiredHeaders = []) {
   await sheet.loadHeaderRow();
   const current = sheet.headerValues || [];
@@ -630,7 +638,8 @@ async function findCRPByCnpjFast(sheet, cnpjDigits) {
       d = valCell.value;
     } else if (typeof valCell?.value === 'number') {
       const epoch = new Date(Date.UTC(1899, 11, 30));
-      d = new Date(epoch.getTime() + valCell.value * 86400000);
+      const d2 = new Date(epoch.getTime() + valCell.value * 86400000);
+      d = d2;
     } else {
       d = parseDMYorYMD(valCell?.value || '');
     }
@@ -1231,12 +1240,10 @@ app.post('/api/termos-registrados', async (req, res) => {
     };
 
     const criteriosStr = (getVal(last,'CRITERIOS_IRREGULARES') || '').toString().trim();
-    const criteriosArr = criteriosStr
-      ? criteriosStr.split(/[;,]/).map(s => s.trim()).filter(Boolean)
+    const criteriosArr = critériosStr
+      ? critériosStr.split(/[;,]/).map(s => s.trim()).filter(Boolean)
       : [];
-
-
-    // CRP (rápido)
+// CRP (rápido)
     const crpFast = await findCRPByCnpjFast(sCrp, cnpj) || {};
     const tipo = (crpFast.DECISAO_JUDICIAL || '').toString().trim();
     const crpPayload = {
@@ -1867,9 +1874,10 @@ app.post('/api/gerar-termo', async (req, res) => {
     const emailUgFinal   = isEmail(p.EMAIL_UG)   ? norm(p.EMAIL_UG)
                      : isEmail(p.EMAIL_REP_UG)   ? norm(p.EMAIL_REP_UG)   : '';
 
+    /* ✅ ALTERAÇÃO: gravar CNPJ_* como texto (asSheetCNPJ) */
     await safeAddRow(sTermosSheet, sheetSanObject({
       ENTE: norm(p.ENTE), UF: norm(p.UF),
-      CNPJ_ENTE: digits(p.CNPJ_ENTE), EMAIL_ENTE: emailEnteFinal,
+      CNPJ_ENTE: asSheetCNPJ(p.CNPJ_ENTE), EMAIL_ENTE: emailEnteFinal,
 
       NOME_REP_ENTE: norm(p.NOME_REP_ENTE),
       CARGO_REP_ENTE: norm(p.CARGO_REP_ENTE),
@@ -1878,7 +1886,7 @@ app.post('/api/gerar-termo', async (req, res) => {
       /* NOVO */
       TEL_REP_ENTE: norm(p.TEL_REP_ENTE),
 
-      UG: norm(p.UG), CNPJ_UG: digits(p.CNPJ_UG), EMAIL_UG: emailUgFinal,
+      UG: norm(p.UG), CNPJ_UG: asSheetCNPJ(p.CNPJ_UG), EMAIL_UG: emailUgFinal,
 
       NOME_REP_UG: norm(p.NOME_REP_UG),
       CARGO_REP_UG: norm(p.CARGO_REP_UG),
@@ -1955,10 +1963,11 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
 
     const asCSV = (a) => Array.isArray(a) ? a.join(', ') : String(a||'');
 
+    /* ✅ ALTERAÇÃO: gravar CNPJ_* como texto (asSheetCNPJ) */
     await safeAddRow(s, sheetSanObject({
       ESFERA: p.ESFERA || '',
-      UF: p.UF, ENTE: p.ENTE, CNPJ_ENTE: digits(p.CNPJ_ENTE), EMAIL_ENTE: norm(p.EMAIL_ENTE),
-      UG: p.UG, CNPJ_UG: digits(p.CNPJ_UG), EMAIL_UG: norm(p.EMAIL_UG),
+      UF: p.UF, ENTE: p.ENTE, CNPJ_ENTE: asSheetCNPJ(p.CNPJ_ENTE), EMAIL_ENTE: norm(p.EMAIL_ENTE),
+      UG: p.UG, CNPJ_UG: asSheetCNPJ(p.CNPJ_UG), EMAIL_UG: norm(p.EMAIL_UG),
       NOME_REP_ENTE: p.NOME_REP_ENTE, CPF_REP_ENTE: digits(p.CPF_REP_ENTE), CARGO_REP_ENTE: p.CARGO_REP_ENTE, EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE), TEL_REP_ENTE: norm(p.TEL_REP_ENTE),
       NOME_REP_UG: p.NOME_REP_UG, CPF_REP_UG: digits(p.CPF_REP_UG), CARGO_REP_UG: p.CARGO_REP_UG, EMAIL_REP_UG: norm(p.EMAIL_REP_UG), TEL_REP_UG: norm(p.TEL_REP_UG),
       CRITERIOS_IRREGULARES: criterios.join(', '),
