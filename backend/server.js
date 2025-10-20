@@ -154,6 +154,9 @@ app.use('/api/solic-crp-pdf', rlPdf);
 app.use('/api/gerar-solic-crp', rlWrite);
 app.use('/api/termo-solic-crp-pdf', rlPdf);
 
+app.use(hpp());
+app.use(express.json({ limit: '1mb' }));
+
 app.use(
   ['/api/termo-solic-crp-pdf','/api/solic-crp-pdf','/api/termo-pdf'],
   (req,res,next)=>{
@@ -186,8 +189,7 @@ app.use('/api', (req, res, next) => {
   return REQUIRE_API_KEY ? requireKey(req, res, next) : next();
 });
 
-app.use(hpp());
-app.use(express.json({ limit: '1mb' }));
+
 
 // Handler global de erros – evita que exceções “quebrem” o processo durante o PDF
 app.use((err, req, res, _next) => {
