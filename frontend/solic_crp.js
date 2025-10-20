@@ -1376,6 +1376,7 @@
     URL.revokeObjectURL(url);
   }
 
+
   /* ========= Ações: Gerar & Submit ========= */
   let gerarBusy=false;
   el.btnGerar?.addEventListener('click', async ()=>{
