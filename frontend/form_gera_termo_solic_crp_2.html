@@ -1161,12 +1161,16 @@
     }, window.__NORMAS || {});
   </script>
 
-  <!-- Ajustes de endpoints para casar com solic_crp.js -->
+  <!-- Ajustes de endpoints: chamar direto o Render (evita timeout da Netlify) -->
   <script>
-    window.__API_BASE = '/.netlify/functions/api-proxy';
-    /* Adicionado: o JS usa API_DIRECT para tentativa direta na rota /api */
-    window.__API_DIRECT = '/api';
+    // endpoint público do backend (Render)
+    window.__API_BASE   = 'https://programa-de-regularidade.onrender.com/api';
+    // alguns pontos do solic_crp.js consultam __API_DIRECT primeiro:
+    window.__API_DIRECT = window.__API_BASE;
+    // se o solic_crp.js enviar o header X-API-Key quando __API_KEY existir, defina-a aqui:
+    window.__API_KEY    = 'fprpps_5uP3rL0ng_';
   </script>
+
 
   <script src="solic_crp.js?v=2025-09-26-2" defer></script>
 
