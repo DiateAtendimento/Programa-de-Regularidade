@@ -2333,6 +2333,19 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           throw new Error('Template inválido para impressão (sem #pdf-root/.term-wrap, com controles, ou título incorreto).');
         }
 
+        // 🔁 (Re)injeção tardia — elimina race condition com o template
+        await page.evaluate((payload) => {
+          try {
+            // disponibiliza / atualiza o payload no contexto da página
+            window.__TERMO_DATA__ = payload || {};
+            // dispara o evento consumido pelo script do template
+            document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+          } catch (e) {
+            // segue silencioso
+          }
+        }, payloadForClient);
+
+
         /* =========================================================
            3) (REMOVIDA) Injeção tardia — não é mais necessária aqui
            ========================================================= */

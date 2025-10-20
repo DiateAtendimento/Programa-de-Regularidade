@@ -31,9 +31,7 @@
         await new Promise(r => setTimeout(r, pollMs));
       }
       return false;
-    }
-
-    
+  }
 
   const FORM_STORAGE_KEY = 'solic-crp-form-v1';
   const IDEM_STORE_KEY   = 'rpps-idem-submit:solic-crp';
@@ -1299,6 +1297,26 @@
 
       IDEMP_KEY: takeIdemKey() || ''
     };
+
+    // 1) CRITÉRIOS: garantir chave sem colchetes
+    if (Array.isArray(obj['CRITERIOS_IRREGULARES[]']) && !Array.isArray(obj.CRITERIOS_IRREGULARES)) {
+      obj.CRITERIOS_IRREGULARES = obj['CRITERIOS_IRREGULARES[]'];
+    }
+
+    // 2) CNPJ_UG: garantir valor limpo (14 dígitos)
+    if (!obj.CNPJ_UG) {
+      try {
+        const limpo = String(obj.ug_cnpj || obj.CNPJ_UG || '')
+          .replace(/\D/g,'')
+          .slice(0,14);
+        if (limpo.length === 14) obj.CNPJ_UG = limpo;
+      } catch(_) {}
+    }
+
+    // 3) PORTARIA padronizada (caso não venha do formulário)
+    if (!obj.PORTARIA_SRPC) {
+      obj.PORTARIA_SRPC = '2.024/2025';
+    }
 
     dbg('[SOLIC-CRP] Payload pronto:', obj);
     return obj;
