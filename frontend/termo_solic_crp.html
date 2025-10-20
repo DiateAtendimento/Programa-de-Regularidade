@@ -221,204 +221,204 @@
     </main>
   </div>
   <script>
-(function(){
-  const $  = (s, r=document)=>r.querySelector(s);
-  const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
-
-  function fillText(key, val){
-    const el = document.querySelector('[data-k="'+key+'"]');
-    if (el) el.textContent = val || '';
-  }
-  function escapeHtml(s){
-    return String(s||'').replace(/[&<>"']/g, m => ({
-      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-    }[m]));
-  }
-  function liList(ulSel, items){
-    const ul = $(ulSel); if (!ul) return;
-    ul.innerHTML = (items||[]).filter(Boolean).map(t => '<li>'+escapeHtml(t)+'</li>').join('');
-  }
-  function selectByCode(listSel, code){
-    if(!code) return;
-    const ul = $(listSel); if(!ul) return;
-    const node = ul.querySelector('[data-code="'+code+'"]');
-    if (node) node.innerHTML = '<strong>'+node.textContent+'</strong>';
-  }
-  function show(id, v){ const el = $('#'+id); if (el) el.hidden = !v; }
-  function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
-  const asArr = v => Array.isArray(v) ? v : String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
-
-  function run(payload){
-    const p = payload || {};
-
-    /* ================= 1) Cabeçalho/meta ================= */
-    fillText('ente', p.ENTE || p.ente);
-    fillText('uf', p.UF || p.uf);
-    fillText('ug', p.UG || p.ug);
-    fillText('cnpj_ente', p.CNPJ_ENTE || p.cnpj_ente);
-    fillText('cnpj_ug', p.CNPJ_UG || p.cnpj_ug);
-    fillText('email_ente', p.EMAIL_ENTE || p.email_ente);
-    fillText('email_ug', p.EMAIL_UG || p.email_ug);
-    fillText('N_GESCON', p.N_GESCON || p.n_gescon || '');
-    fillText('DATA_ENC_VIA_GESCON', p.DATA_ENC_VIA_GESCON || p.data_enc_via_gescon || '');
-    fillText('SEI_PROCESSO', p.SEI_PROCESSO || p.sei_processo || '');
-    /* >>> NOVO: número/ano da Portaria SRPC/MPS injetável */
-    fillText('PORTARIA_SRPC', p.PORTARIA_SRPC || p.portaria_srpc || p.PORTARIA_SRPC_MPS || '');
-    /* ================= 2) Responsáveis ================= */
-    fillText('nome_rep_ente',  p.NOME_REP_ENTE || p.nome_rep_ente);
-    fillText('cargo_rep_ente', p.CARGO_REP_ENTE || p.cargo_rep_ente);
-    fillText('cpf_rep_ente',   p.CPF_REP_ENTE || p.cpf_rep_ente);
-    fillText('email_rep_ente', p.EMAIL_REP_ENTE || p.email_rep_ente);
-    fillText('tel_rep_ente',   p.TEL_REP_ENTE || p.tel_rep_ente);
-
-    fillText('nome_rep_ug',  p.NOME_REP_UG || p.nome_rep_ug);
-    fillText('cargo_rep_ug', p.CARGO_REP_UG || p.cargo_rep_ug);
-    fillText('cpf_rep_ug',   p.CPF_REP_UG || p.cpf_rep_ug);
-    fillText('email_rep_ug', p.EMAIL_REP_UG || p.email_rep_ug);
-    fillText('tel_rep_ug',   p.TEL_REP_UG || p.tel_rep_ug);
-
-    /* ================= 3) CRP ================= */
-    fillText('venc_ult_crp', p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
-
-    // 3.2 — motivo do prazo adicional (deriva dos flags se OPT_3_2 não vier)
     (function(){
-      let code = (p.OPT_3_2 || p.opt_3_2 || '').trim();
-      if (!code) {
-        const yes = v => String(v||'').toUpperCase() === 'SIM';
-        if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE)) code = '3.2.1';
-        else if (yes(p.FIN_3_2_DEFICIT_ATUARIAL))    code = '3.2.2';
-        else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) code = '3.2.3';
-        else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) code = '3.2.4';
+      const $  = (s, r=document)=>r.querySelector(s);
+      const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
+
+      function fillText(key, val){
+        const el = document.querySelector('[data-k="'+key+'"]');
+        if (el) el.textContent = val || '';
       }
-      const ul = document.querySelector('#opt-3-2');
-      if (!ul || !code) return;
-      [...ul.children].forEach(li => {
-        if (li.getAttribute('data-code') !== code) li.remove();
-      });
-    })();
-
-    // 3.3 — critérios
-    const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
-      ? p.CRITERIOS_IRREGULARES
-      : String(p.CRITERIOS_IRREGULARES || '').split(',').map(s=>s.trim()).filter(Boolean);
-    liList('#criterios-list', criterios);
-
-    /* ================= 4) Fases (seleção única) ================= */
-    const faseSel = (p.FASE_PROGRAMA || p.fase_programa || '').trim(); // "4.1"..."4.6"
-    fillText('fase_programa', faseSel || '—');
-
-    function showOnlyPhase(code){
-      const ids = { '4.1':'fase-41', '4.2':'fase-42', '4.3':'fase-43', '4.4':'fase-44', '4.5':'fase-45', '4.6':'fase-46' };
-      Object.values(ids).forEach(id => show(id, false));
-      if (ids[code]) show(ids[code], true);
-    }
-    showOnlyPhase(faseSel);
-
-    switch (faseSel) {
-      case '4.1': {
-        const it = [];
-        const v = String(p.F41_OPCAO||'').toLowerCase();
-        if (/^4\.1\.1/.test(p.F41_OPCAO) || /incluiu|incluidos|incluídos/.test(v)) {
-          it.push('4.1.1 Incluiu todos os débitos (Cadprev).');
-        } else if (/^4\.1\.2/.test(p.F41_OPCAO) || /não possui|nao possui|regularizad/.test(v)) {
-          it.push('4.1.2 Não possui débitos ou já regularizados.');
-        }
-        liList('#f41-itens', it);
-        break;
+      function escapeHtml(s){
+        return String(s||'').replace(/[&<>"']/g, m => ({
+          '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+        }[m]));
       }
-      case '4.2': {
-        liList('#f42-itens', asArr(p.F42_LISTA));
-        break;
+      function liList(ulSel, items){
+        const ul = $(ulSel); if (!ul) return;
+        ul.innerHTML = (items||[]).filter(Boolean).map(t => '<li>'+escapeHtml(t)+'</li>').join('');
       }
-      case '4.3': {
-        liList('#f43-itens', asArr(p.F43_LISTA));
-        fillText('f43_just',  p.F43_JUST  || '');
-        fillText('f43_plano', p.F43_PLANO || '');
-        break;
+      function selectByCode(listSel, code){
+        if(!code) return;
+        const ul = $(listSel); if(!ul) return;
+        const node = ul.querySelector('[data-code="'+code+'"]');
+        if (node) node.innerHTML = '<strong>'+node.textContent+'</strong>';
       }
-      case '4.4': {
-        liList('#f44-criterios',   asArr(p.F44_CRITERIOS));
-        liList('#f44-decls',       asArr(p.F44_DECLS));
-        liList('#f44-finalidades', asArr(p.F44_FINALIDADES));
-        const ax = splitLines(p.F44_ANEXOS || '');
-        const box = document.querySelector('#f44-anexos');
-        if (box) box.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
-        break;
-      }
-      case '4.5': {
-        const decls = p.F45_OK451 ? ['4.5.1 Mantida a regularidade das fases anteriores.'] : [];
-        liList('#f45-decls', decls);
-        const d = splitLines(p.F45_DOCS || '');
-        const j = splitLines(p.F45_JUST || '');
-        const docsBox = document.querySelector('#f45-docs');
-        const justBox = document.querySelector('#f45-just');
-        if (docsBox) docsBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
-        if (justBox) justBox.innerHTML = j.length ? '<ul>'+j.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
-        break;
-      }
-      case '4.6': {
-        liList('#f46-criterios',   asArr(p.F46_CRITERIOS));
-        const decls = [];
-        if (Array.isArray(p.F46_DECLS)) decls.push(...p.F46_DECLS);
-        if (p.F46_PROGESTAO) decls.push('Nível Pró-Gestão RPPS: ' + p.F46_PROGESTAO);
-        if (p.F46_PORTE)     decls.push('Grupo de Porte (ISP-RPPS): ' + p.F46_PORTE);
-        if (p.F46_JUST_D)    decls.push('(d) Justificativas: ' + p.F46_JUST_D);
-        if (p.F46_DOCS_D)    decls.push('(d) Documentos: ' + p.F46_DOCS_D);
-        if (p.F46_JUST_E)    decls.push('(e) Justificativas: ' + p.F46_JUST_E);
-        if (p.F46_DOCS_E)    decls.push('(e) Documentos: ' + p.F46_DOCS_E);
-        liList('#f46-decls', decls);
-        liList('#f46-finalidades', asArr(p.F46_FINALIDADES));
-        const ax = splitLines(p.F46_ANEXOS || '');
-        const axBox = document.querySelector('#f46-anexos');
-        if (axBox) axBox.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
-        const jp = document.getElementById('f46-just-planos');
-        const cc = document.getElementById('f46-comp-cumpr');
-        if (jp) jp.textContent = p.F46_JUST_PLANOS || '—';
-        if (cc) cc.textContent = p.F46_COMP_CUMPR || '—';
-        break;
-      }
-      default: break;
-    }
+      function show(id, v){ const el = $('#'+id); if (el) el.hidden = !v; }
+      function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
+      const asArr = v => Array.isArray(v) ? v : String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
 
-    /* ================= 5) Justificativas gerais ================= */
-    fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
+      function run(payload){
+        const p = payload || {};
 
-    /* ================= 6) Assinaturas (data) ================= */
-    const hoje = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
-    fillText('data_termo', hoje);
+        /* ================= 1) Cabeçalho/meta ================= */
+        fillText('ente', p.ENTE || p.ente);
+        fillText('uf', p.UF || p.uf);
+        fillText('ug', p.UG || p.ug);
+        fillText('cnpj_ente', p.CNPJ_ENTE || p.cnpj_ente);
+        fillText('cnpj_ug', p.CNPJ_UG || p.cnpj_ug);
+        fillText('email_ente', p.EMAIL_ENTE || p.email_ente);
+        fillText('email_ug', p.EMAIL_UG || p.email_ug);
+        fillText('N_GESCON', p.N_GESCON || p.n_gescon || '');
+        fillText('DATA_ENC_VIA_GESCON', p.DATA_ENC_VIA_GESCON || p.data_enc_via_gescon || '');
+        fillText('SEI_PROCESSO', p.SEI_PROCESSO || p.sei_processo || '');
+        /* >>> NOVO: número/ano da Portaria SRPC/MPS injetável */
+        fillText('PORTARIA_SRPC', p.PORTARIA_SRPC || p.portaria_srpc || p.PORTARIA_SRPC_MPS || '');
+        /* ================= 2) Responsáveis ================= */
+        fillText('nome_rep_ente',  p.NOME_REP_ENTE || p.nome_rep_ente);
+        fillText('cargo_rep_ente', p.CARGO_REP_ENTE || p.cargo_rep_ente);
+        fillText('cpf_rep_ente',   p.CPF_REP_ENTE || p.cpf_rep_ente);
+        fillText('email_rep_ente', p.EMAIL_REP_ENTE || p.email_rep_ente);
+        fillText('tel_rep_ente',   p.TEL_REP_ENTE || p.tel_rep_ente);
 
-    /* ================= 1.1 Esfera + legenda de assinatura ================= */
-    const esfera = p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || '';
-    selectByCode('#opt-1-1', /estadual|distrital/i.test(esfera) ? '1.1.2' : '1.1.1');
+        fillText('nome_rep_ug',  p.NOME_REP_UG || p.nome_rep_ug);
+        fillText('cargo_rep_ug', p.CARGO_REP_UG || p.cargo_rep_ug);
+        fillText('cpf_rep_ug',   p.CPF_REP_UG || p.cpf_rep_ug);
+        fillText('email_rep_ug', p.EMAIL_REP_UG || p.email_rep_ug);
+        fillText('tel_rep_ug',   p.TEL_REP_UG || p.tel_rep_ug);
 
-    (function(){
-      const sig = document.getElementById('sig-cap-ente');
-      if (sig) {
-        sig.innerHTML = (/estadual|distrit/i.test(esfera))
-          ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
-          : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
-      }
-    })();
+        /* ================= 3) CRP ================= */
+        fillText('venc_ult_crp', p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
 
-    /* ================= Sinaliza pronto ao Puppeteer ================= */
-    try{
-      if (!window.__TERMO_READY_FIRED__) {
-        window.__TERMO_READY_FIRED__ = true;
-        const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-        const maxWait = new Promise(r => setTimeout(r, 1500));
-        Promise.race([fontsReady, maxWait]).finally(() => {
-          requestAnimationFrame(() => {
-            window.__TERMO_PRINT_READY__ = true;
-            document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY'));
+        // 3.2 — motivo do prazo adicional (deriva dos flags se OPT_3_2 não vier)
+        (function(){
+          let code = (p.OPT_3_2 || p.opt_3_2 || '').trim();
+          if (!code) {
+            const yes = v => String(v||'').toUpperCase() === 'SIM';
+            if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE)) code = '3.2.1';
+            else if (yes(p.FIN_3_2_DEFICIT_ATUARIAL))    code = '3.2.2';
+            else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) code = '3.2.3';
+            else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) code = '3.2.4';
+          }
+          const ul = document.querySelector('#opt-3-2');
+          if (!ul || !code) return;
+          [...ul.children].forEach(li => {
+            if (li.getAttribute('data-code') !== code) li.remove();
           });
-        });
-      }
-    }catch(_){}
-  }
+        })();
 
-  document.addEventListener('TERMO_DATA_READY', () => run(window.__TERMO_DATA__ || {}));
-  if (window.__TERMO_DATA__) run(window.__TERMO_DATA__);
-})();
+        // 3.3 — critérios
+        const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
+          ? p.CRITERIOS_IRREGULARES
+          : String(p.CRITERIOS_IRREGULARES || '').split(',').map(s=>s.trim()).filter(Boolean);
+        liList('#criterios-list', criterios);
+
+        /* ================= 4) Fases (seleção única) ================= */
+        const faseSel = (p.FASE_PROGRAMA || p.fase_programa || '').trim(); // "4.1"..."4.6"
+        fillText('fase_programa', faseSel || '—');
+
+        function showOnlyPhase(code){
+          const ids = { '4.1':'fase-41', '4.2':'fase-42', '4.3':'fase-43', '4.4':'fase-44', '4.5':'fase-45', '4.6':'fase-46' };
+          Object.values(ids).forEach(id => show(id, false));
+          if (ids[code]) show(ids[code], true);
+        }
+        showOnlyPhase(faseSel);
+
+        switch (faseSel) {
+          case '4.1': {
+            const it = [];
+            const v = String(p.F41_OPCAO||'').toLowerCase();
+            if (/^4\.1\.1/.test(p.F41_OPCAO) || /incluiu|incluidos|incluídos/.test(v)) {
+              it.push('4.1.1 Incluiu todos os débitos (Cadprev).');
+            } else if (/^4\.1\.2/.test(p.F41_OPCAO) || /não possui|nao possui|regularizad/.test(v)) {
+              it.push('4.1.2 Não possui débitos ou já regularizados.');
+            }
+            liList('#f41-itens', it);
+            break;
+          }
+          case '4.2': {
+            liList('#f42-itens', asArr(p.F42_LISTA));
+            break;
+          }
+          case '4.3': {
+            liList('#f43-itens', asArr(p.F43_LISTA));
+            fillText('f43_just',  p.F43_JUST  || '');
+            fillText('f43_plano', p.F43_PLANO || '');
+            break;
+          }
+          case '4.4': {
+            liList('#f44-criterios',   asArr(p.F44_CRITERIOS));
+            liList('#f44-decls',       asArr(p.F44_DECLS));
+            liList('#f44-finalidades', asArr(p.F44_FINALIDADES));
+            const ax = splitLines(p.F44_ANEXOS || '');
+            const box = document.querySelector('#f44-anexos');
+            if (box) box.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
+            break;
+          }
+          case '4.5': {
+            const decls = p.F45_OK451 ? ['4.5.1 Mantida a regularidade das fases anteriores.'] : [];
+            liList('#f45-decls', decls);
+            const d = splitLines(p.F45_DOCS || '');
+            const j = splitLines(p.F45_JUST || '');
+            const docsBox = document.querySelector('#f45-docs');
+            const justBox = document.querySelector('#f45-just');
+            if (docsBox) docsBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
+            if (justBox) justBox.innerHTML = j.length ? '<ul>'+j.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
+            break;
+          }
+          case '4.6': {
+            liList('#f46-criterios',   asArr(p.F46_CRITERIOS));
+            const decls = [];
+            if (Array.isArray(p.F46_DECLS)) decls.push(...p.F46_DECLS);
+            if (p.F46_PROGESTAO) decls.push('Nível Pró-Gestão RPPS: ' + p.F46_PROGESTAO);
+            if (p.F46_PORTE)     decls.push('Grupo de Porte (ISP-RPPS): ' + p.F46_PORTE);
+            if (p.F46_JUST_D)    decls.push('(d) Justificativas: ' + p.F46_JUST_D);
+            if (p.F46_DOCS_D)    decls.push('(d) Documentos: ' + p.F46_DOCS_D);
+            if (p.F46_JUST_E)    decls.push('(e) Justificativas: ' + p.F46_JUST_E);
+            if (p.F46_DOCS_E)    decls.push('(e) Documentos: ' + p.F46_DOCS_E);
+            liList('#f46-decls', decls);
+            liList('#f46-finalidades', asArr(p.F46_FINALIDADES));
+            const ax = splitLines(p.F46_ANEXOS || '');
+            const axBox = document.querySelector('#f46-anexos');
+            if (axBox) axBox.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
+            const jp = document.getElementById('f46-just-planos');
+            const cc = document.getElementById('f46-comp-cumpr');
+            if (jp) jp.textContent = p.F46_JUST_PLANOS || '—';
+            if (cc) cc.textContent = p.F46_COMP_CUMPR || '—';
+            break;
+          }
+          default: break;
+        }
+
+        /* ================= 5) Justificativas gerais ================= */
+        fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
+
+        /* ================= 6) Assinaturas (data) ================= */
+        const hoje = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
+        fillText('data_termo', hoje);
+
+        /* ================= 1.1 Esfera + legenda de assinatura ================= */
+        const esfera = p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || '';
+        selectByCode('#opt-1-1', /estadual|distrital/i.test(esfera) ? '1.1.2' : '1.1.1');
+
+        (function(){
+          const sig = document.getElementById('sig-cap-ente');
+          if (sig) {
+            sig.innerHTML = (/estadual|distrit/i.test(esfera))
+              ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
+              : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
+          }
+        })();
+
+        /* ================= Sinaliza pronto ao Puppeteer ================= */
+        try{
+          if (!window.__TERMO_READY_FIRED__) {
+            window.__TERMO_READY_FIRED__ = true;
+            const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+            const maxWait = new Promise(r => setTimeout(r, 1500));
+            Promise.race([fontsReady, maxWait]).finally(() => {
+              requestAnimationFrame(() => {
+                window.__TERMO_PRINT_READY__ = true;
+                document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY'));
+              });
+            });
+          }
+        }catch(_){}
+      }
+
+      document.addEventListener('TERMO_DATA_READY', () => run(window.__TERMO_DATA__ || {}));
+      if (window.__TERMO_DATA__) run(window.__TERMO_DATA__);
+    })();
   </script>
 
 </body>
