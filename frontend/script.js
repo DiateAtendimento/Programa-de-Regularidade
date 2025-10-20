@@ -1244,6 +1244,15 @@
       $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
       $('#EMAIL_UG').value   = data.EMAIL_UG   || '';
 
+      try {
+        setUGFields({
+          UG:        data.UG        || '',
+          CNPJ_UG:   data.CNPJ_UG   || '',
+          EMAIL_UG:  data.EMAIL_UG  || ''
+        });
+      } catch {}
+
+
       ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
        'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
       ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
