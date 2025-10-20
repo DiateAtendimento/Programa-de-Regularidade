@@ -2253,10 +2253,48 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         });
         await page.emulateMediaType('screen');
 
-        // 🔎 Candidatos ampliados (alguns projetos usam os "form_gera_*")
+        /* ================================
+           1) PRÉ-INJEÇÃO (antes de navegar)
+           ================================ */
+        const payloadForClient = {
+          ...p,
+          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
+            ? p.CRITERIOS_IRREGULARES
+            : String(p.CRITERIOS_IRREGULARES || '')
+                .split(/[;,]/)
+                .map(s => s.trim())
+                .filter(Boolean)
+        };
+
+        await page.evaluateOnNewDocument((payload) => {
+          try {
+            // disponibiliza cedo o payload
+            window.__TERMO_DATA__ = payload || {};
+
+            // dispara o evento quando o DOM estiver pronto
+            const fire = () => { try { document.dispatchEvent(new CustomEvent('TERMO_DATA_READY')); } catch {} };
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', fire, { once: true });
+            } else {
+              fire();
+            }
+
+            // classes visuais iguais ao form 1
+            document.documentElement.classList.add('pdf-export');
+            document.addEventListener('readystatechange', () => {
+              if (document.readyState === 'complete') {
+                try { document.body && document.body.classList.add('pdf-export'); } catch {}
+              }
+            });
+          } catch {}
+        }, payloadForClient);
+        if (DEBUG_PDF) log('payload pré-injetado (evaluateOnNewDocument)');
+
+        /* ==========================================
+           2) Candidatos — prioriza o template correto
+           ========================================== */
         const CANDIDATES = [
           'termo_solic_crp.html',
-          'solic_crp.html',
           'form_gera_termo_solic_crp_2.html',
           'form_gera_termo_solic_crp.html'
         ];
@@ -2295,22 +2333,9 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           throw new Error('Template inválido para impressão (sem #pdf-root/.term-wrap, com controles, ou título incorreto).');
         }
 
-        // 🔄 normaliza array de critérios
-        const payloadForClient = {
-          ...p,
-          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
-            ? p.CRITERIOS_IRREGULARES
-            : String(p.CRITERIOS_IRREGULARES || '')
-                .split(/[;,]/)
-                .map(s => s.trim())
-                .filter(Boolean)
-        };
-
-        await page.evaluate((payload) => {
-          window.__TERMO_DATA__ = payload;
-          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-        }, payloadForClient);
-        log('dados injetados em', Date.now() - T0, 'ms');
+        /* =========================================================
+           3) (REMOVIDA) Injeção tardia — não é mais necessária aqui
+           ========================================================= */
 
         // ⏳ espera rápida pelo “pronto para imprimir”, sem travar se não vier
         await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(() => {});
@@ -2417,6 +2442,7 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
 
 
 
+
 /** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */
 app.post('/api/solic-crp-pdf', async (req, res) => {
   try {
@@ -2454,8 +2480,8 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
         page.setDefaultTimeout(90_000);
         await page.emulateMediaType('screen');
 
+        // 🔎 Candidatos — prioriza o template correto e remove o legacy ausente
         const CANDIDATES = [
-          'solic_crp.html',
           'termo_solic_crp.html',
           'form_gera_termo_solic_crp_2.html',
           'form_gera_termo_solic_crp.html'
@@ -2464,6 +2490,8 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
           ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
           ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
         ];
+
+        log('candidatos:', urlsToTry);
 
         let loaded = false; let lastErr = null;
         for (const u of urlsToTry) {
