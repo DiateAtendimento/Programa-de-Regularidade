@@ -1151,188 +1151,198 @@
     }
   }
 
-  /* ========= Busca por CNPJ ========= */
-  let searching = false;
-  $('#btnPesquisar')?.addEventListener('click', async (ev)=>{
-    if (searching) return;
+   /* ========= Busca por CNPJ ========= */
+    let searching = false;
+    $('#btnPesquisar')?.addEventListener('click', async (ev)=>{
+      if (searching) return;
 
-    const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
-    if (cnpj.length !== 14) {
-      const el = $('#CNPJ_ENTE_PESQ'); el.classList.add('is-invalid');
-      return showAtencao(['Informe um CNPJ válido.']);
-    }
-
-    const current = digits($('#CNPJ_ENTE')?.value || $('#CNPJ_UG')?.value || '');
-    if (current && current !== cnpj) {
-      clearAllState(); // evita “vazar” dados do rascunho anterior
-    }
-
-    const forceNoCache = !!(ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey));
-    const btn = $('#btnPesquisar');
-
-    try{
-      searching = true;
-      btn?.setAttribute('disabled','disabled');
-      startLoading();
-
-      // ✅ pré-checagem do serviço
-      await waitForService({ timeoutMs: 60000, pollMs: 1500 });
-
-      let r;
-      try {
-        const url = `${API_BASE}/consulta?cnpj=${cnpj}${forceNoCache ? '&nocache=1' : ''}`;
-        r = await fetchJSON(
-          url,
-          {},
-          { label: forceNoCache ? 'consulta-cnpj(nocache)' : 'consulta-cnpj', timeout: 110000, retries: 0 }
-        );
-      } catch (err1) {
-        if (!forceNoCache) {
-          r = await fetchJSON(
-            `${API_BASE}/consulta?cnpj=${cnpj}&nocache=1`,
-            {},
-            { label: 'consulta-cnpj(retry-nocache)', timeout: 110000, retries: 0 }
-          );
-        } else {
-          throw err1;
-        }
+      const cnpj = digits($('#CNPJ_ENTE_PESQ').value||'');
+      if (cnpj.length !== 14) {
+        const el = $('#CNPJ_ENTE_PESQ'); el.classList.add('is-invalid');
+        return showAtencao(['Informe um CNPJ válido.']);
       }
 
-      if (r && r.missing) {
-        cnpjMissing = true;
-        openConfirmAdd({
-          type: 'cnpj',
-          value: cnpj,
-          onYes: () => {
-            clearAllState();
-            resetFormUI();
-            cnpjMissing = true;
-            cnpjOK = true;
-            $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
+      const current = digits($('#CNPJ_ENTE')?.value || $('#CNPJ_UG')?.value || '');
+      if (current && current !== cnpj) {
+        clearAllState(); // evita “vazar” dados do rascunho anterior
+      }
+
+      const forceNoCache = !!(ev && (ev.shiftKey || ev.ctrlKey || ev.metaKey));
+      const btn = $('#btnPesquisar');
+
+      try{
+        searching = true;
+        btn?.setAttribute('disabled','disabled');
+        startLoading();
+
+        // ✅ pré-checagem do serviço
+        await waitForService({ timeoutMs: 60000, pollMs: 1500 });
+
+        let r;
+        try {
+          const url = `${API_BASE}/consulta?cnpj=${cnpj}${forceNoCache ? '&nocache=1' : ''}`;
+          r = await fetchJSON(
+            url,
+            {},
+            { label: forceNoCache ? 'consulta-cnpj(nocache)' : 'consulta-cnpj', timeout: 110000, retries: 0 }
+          );
+        } catch (err1) {
+          if (!forceNoCache) {
+            r = await fetchJSON(
+              `${API_BASE}/consulta?cnpj=${cnpj}&nocache=1`,
+              {},
+              { label: 'consulta-cnpj(retry-nocache)', timeout: 110000, retries: 0 }
+            );
+          } else {
+            throw err1;
+          }
+        }
+
+        if (r && r.missing) {
+          cnpjMissing = true;
+          openConfirmAdd({
+            type: 'cnpj',
+            value: cnpj,
+            onYes: () => {
+              clearAllState();
+              resetFormUI();
+              cnpjMissing = true;
+              cnpjOK = true;
+              $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
+              showStep(1);
+              updateNavButtons();
+              updateFooterAlign();
+              $('#UF')?.focus();
+            }
+          });
+          return;
+        }
+
+        const data = r.data;
+        cnpjMissing = !!r.missing;
+
+        // 🔧 NORMALIZA o CNPJ da UG com fallbacks (planilhas/endpoint variam)
+        const cnpjUgRaw =
+          data.CNPJ_UG ||
+          data.CNPJ_RPPS ||
+          data.CNPJ_UG_RPPS ||
+          data.__snapshot?.CNPJ_UG ||
+          data.__snapshot?.CNPJ_RPPS ||
+          '';
+        const cnpjUg = digits(cnpjUgRaw); // só números
+
+        snapshotBase = {
+          UF: data.UF,
+          ENTE: data.ENTE,
+          CNPJ_ENTE: data.CNPJ_ENTE,
+          UG: data.UG,
+          // ✅ usa o valor normalizado aqui também
+          CNPJ_UG: cnpjUg,
+          NOME_REP_ENTE: data.__snapshot?.NOME_REP_ENTE || '',
+          CPF_REP_ENTE:  data.__snapshot?.CPF_REP_ENTE  || '',
+          TEL_REP_ENTE:  data.__snapshot?.TEL_REP_ENTE  || '',
+          EMAIL_REP_ENTE:data.__snapshot?.EMAIL_REP_ENTE|| '',
+          CARGO_REP_ENTE:data.__snapshot?.CARGO_REP_ENTE|| '',
+          NOME_REP_UG:   data.__snapshot?.NOME_REP_UG   || '',
+          CPF_REP_UG:    data.__snapshot?.CPF_REP_UG    || '',
+          TEL_REP_UG:    data.__snapshot?.TEL_REP_UG    || '',
+          EMAIL_REP_UG:  data.__snapshot?.EMAIL_REP_UG  || '',
+          CARGO_REP_UG:  data.__snapshot?.CARGO_REP_UG  || '',
+          DATA_VENCIMENTO_ULTIMO_CRP: data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || ''
+        };
+
+        // 1.2 Ente
+        $('#UF').value = data.UF || '';
+        $('#ENTE').value = data.ENTE || '';
+        $('#CNPJ_ENTE').value = (data.CNPJ_ENTE ? data.CNPJ_ENTE.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5') : '');
+        $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
+
+        // 1.3 RPPS (UG antiga)
+        $('#UG').value = data.UG || '';
+        // ✅ preenche com o CNPJ normalizado
+        $('#CNPJ_UG').value = cnpjUg ? maskCNPJ(cnpjUg) : '';
+        $('#EMAIL_UG').value   = data.EMAIL_UG   || '';
+
+        // 1.3.2 (UG nova) — mantém espelhamento usando o normalizado
+        try {
+          setUGFields({
+            nome:  data.UG || '',
+            cnpj:  cnpjUg,
+            email: data.EMAIL_UG || ''
+          });
+        } catch {}
+
+        // limpa reps
+        ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
+        'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
+        ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
+
+        const iso = data.CRP_DATA_VALIDADE_ISO || '';
+        const elVenc = $('#DATA_VENCIMENTO_ULTIMO_CRP');
+        if (iso && elVenc) elVenc.value = iso;
+
+        const dj = rmAcc(String(data.CRP_DECISAO_JUDICIAL || ''));
+        const elAdm = $('#em_adm'), elJud = $('#em_jud');
+        if (elAdm && elJud) {
+          elAdm.checked = (dj === 'nao');
+          elJud.checked = (dj === 'sim');
+        }
+
+        autoselectEsferaByEnte(data.ENTE);
+
+        cnpjOK = true;
+        editedFields.clear();
+
+        // Avança após fechar o modal de loading
+        const loadingEl = elMLS;
+        if (loadingEl) {
+          const onceHidden = () => {
+            loadingEl.removeEventListener('hidden.bs.modal', onceHidden);
+            defocusIfInsideModal();
             showStep(1);
             updateNavButtons();
             updateFooterAlign();
             $('#UF')?.focus();
-          }
-        });
-        return;
-      }
-
-      const data = r.data;
-      cnpjMissing = !!r.missing;
-
-      snapshotBase = {
-        UF: data.UF, ENTE: data.ENTE, CNPJ_ENTE: data.CNPJ_ENTE, UG: data.UG, CNPJ_UG: data.CNPJ_UG,
-        NOME_REP_ENTE: data.__snapshot?.NOME_REP_ENTE || '',
-        CPF_REP_ENTE:  data.__snapshot?.CPF_REP_ENTE  || '',
-        TEL_REP_ENTE:  data.__snapshot?.TEL_REP_ENTE  || '',
-        EMAIL_REP_ENTE:data.__snapshot?.EMAIL_REP_ENTE|| '',
-        CARGO_REP_ENTE:data.__snapshot?.CARGO_REP_ENTE|| '',
-        NOME_REP_UG:   data.__snapshot?.NOME_REP_UG   || '',
-        CPF_REP_UG:    data.__snapshot?.CPF_REP_UG    || '',
-        TEL_REP_UG:    data.__snapshot?.TEL_REP_UG    || '',
-        EMAIL_REP_UG:  data.__snapshot?.EMAIL_REP_UG  || '',
-        CARGO_REP_UG:  data.__snapshot?.CARGO_REP_UG  || '',
-        DATA_VENCIMENTO_ULTIMO_CRP: data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || ''
-      };
-
-      // Preenche ENTE normalmente
-      $('#UF').value = data.UF || '';
-      $('#ENTE').value = data.ENTE || '';
-      $('#CNPJ_ENTE').value = (data.CNPJ_ENTE ? data.CNPJ_ENTE.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5') : '');
-      $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
-
-      // ✅ Normaliza CNPJ_UG com fallbacks (sem “apagar” o legado)
-      const cnpjUg = digits(
-        data.CNPJ_UG ||
-        data.CNPJ_RPPS ||
-        data.CNPJ_UG_RPPS ||
-        data.__snapshot?.CNPJ_UG ||
-        data.__snapshot?.CNPJ_RPPS ||
-        ''
-      );
-
-      // Deixe setUGFields centralizar escrita + espelhamento.
-      // (Não escrevemos diretamente #UG/#CNPJ_UG/#EMAIL_UG para não zerar quando vier vazio)
-      try {
-        setUGFields({
-          nome:  data.UG       || '',
-          cnpj:  cnpjUg,
-          email: data.EMAIL_UG || ''
-        });
-      } catch {}
-
-      // Limpa reps (mantém comportamento)
-      ['NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
-      'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
-      ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
-
-      const iso = data.CRP_DATA_VALIDADE_ISO || '';
-      const elVenc = $('#DATA_VENCIMENTO_ULTIMO_CRP');
-      if (iso && elVenc) elVenc.value = iso;
-
-      const dj = rmAcc(String(data.CRP_DECISAO_JUDICIAL || ''));
-      const elAdm = $('#em_adm'), elJud = $('#em_jud');
-      if (elAdm && elJud) {
-        elAdm.checked = (dj === 'nao');
-        elJud.checked = (dj === 'sim');
-      }
-
-      autoselectEsferaByEnte(data.ENTE);
-
-      cnpjOK = true;
-      editedFields.clear();
-
-      // Avança após fechar o modal de loading
-      const loadingEl = elMLS;
-      if (loadingEl) {
-        const onceHidden = () => {
-          loadingEl.removeEventListener('hidden.bs.modal', onceHidden);
-          defocusIfInsideModal();
+          };
+          loadingEl.addEventListener('hidden.bs.modal', onceHidden);
+        } else {
           showStep(1);
           updateNavButtons();
           updateFooterAlign();
           $('#UF')?.focus();
-        };
-        loadingEl.addEventListener('hidden.bs.modal', onceHidden);
-      } else {
-        showStep(1);
+        }
+
+      } catch (err) {
+        const msgs = friendlyErrorMessages(err, 'Não foi possível consultar o CNPJ.');
+        if (err && err.status === 404) {
+          openConfirmAdd({
+            type: 'cnpj',
+            value: cnpj,
+            onYes: () => {
+              clearAllState();
+              resetFormUI();
+              cnpjOK = true;
+              cnpjMissing = true;
+              $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
+              showStep(1);
+              updateNavButtons();
+              updateFooterAlign();
+              $('#UF')?.focus();
+            }
+          });
+        } else {
+          showErro(msgs);
+          cnpjOK = false;
+        }
+      } finally {
+        searching = false;
+        stopLoading();
+        unlockUI();
+        btn?.removeAttribute('disabled');
         updateNavButtons();
         updateFooterAlign();
-        $('#UF')?.focus();
       }
-
-    } catch (err) {
-      const msgs = friendlyErrorMessages(err, 'Não foi possível consultar o CNPJ.');
-      if (err && err.status === 404) {
-        openConfirmAdd({
-          type: 'cnpj',
-          value: cnpj,
-          onYes: () => {
-            clearAllState();
-            resetFormUI();
-            cnpjOK = true;
-            cnpjMissing = true;
-            $('#CNPJ_ENTE').value = maskCNPJ(cnpj);
-            showStep(1);
-            updateNavButtons();
-            updateFooterAlign();
-            $('#UF')?.focus();
-          }
-        });
-      } else {
-        showErro(msgs);
-        cnpjOK = false;
-      }
-    } finally {
-      searching = false;
-      stopLoading();
-      unlockUI();
-      btn?.removeAttribute('disabled');
-      updateNavButtons();
-      updateFooterAlign();
-    }
-  });
+    });
 
 
   /* ========= Busca reps por CPF ========= */
