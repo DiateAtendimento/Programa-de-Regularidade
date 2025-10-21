@@ -2348,6 +2348,70 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           } catch (_) {}
         }, payloadForClient);
 
+        // 💧 Hidratador universal para templates "burros" (sem __TERMO_RUN__/run)
+        await page.evaluate(() => {
+          // Polyfill defensivo para CSS.escape (Chrome antigo já tem, mas só por garantia)
+          if (typeof window.CSS?.escape !== 'function') {
+            window.CSS = window.CSS || {};
+            window.CSS.escape = (s) => String(s).replace(/[^a-zA-Z0-9_\-]/g, (c) =>
+              '\\' + c.codePointAt(0).toString(16) + ' '
+            );
+          }
+
+          const data = window.__TERMO_DATA__ || {};
+          const root = document.querySelector('#pdf-root') || document.body;
+
+          // 1) Preenche por id e por atributos data-*
+          for (const [k, rawV] of Object.entries(data)) {
+            const v = rawV == null ? '' : Array.isArray(rawV) ? rawV.join(', ') : String(rawV);
+
+            // por id exato (#CHAVE)
+            const byId = root.querySelector('#' + CSS.escape(k));
+            if (byId) byId.textContent = v;
+
+            // por data-bind/data-key/data-field/data-fill e name=CHAVE
+            root.querySelectorAll(
+              `[data-bind="${k}"],[data-key="${k}"],[data-field="${k}"],[data-fill="${k}"],[name="${k}"]`
+            ).forEach((el) => {
+              if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+                el.value = v;
+              } else {
+                el.textContent = v;
+              }
+              el.classList.add('filled'); // útil pra CSS
+            });
+
+            // checkmarks: <span data-check="CHAVE" data-value="SIM"> ☐ </span>
+            root.querySelectorAll(`[data-check="${k}"]`).forEach((el) => {
+              const want = el.getAttribute('data-value');
+              const truthy = want
+                ? (Array.isArray(rawV) ? rawV.map(String).includes(want) : String(rawV) === want)
+                : !!rawV;
+              el.textContent = truthy ? '☑' : '☐';
+              el.classList.toggle('checked', truthy);
+            });
+          }
+
+          // 2) Substitui placeholders estilo Mustache {{CHAVE}} no texto
+          const replaceInNodeTexts = (node) => {
+            const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+            const nodes = [];
+            while (walker.nextNode()) nodes.push(walker.currentNode);
+            nodes.forEach((n) => {
+              n.nodeValue = n.nodeValue.replace(/\{\{\s*([A-Z0-9_]+)\s*\}\}/gi, (_, key) => {
+                const val = data[key];
+                return val == null ? '' : (Array.isArray(val) ? val.join(', ') : String(val));
+              });
+            });
+          };
+          replaceInNodeTexts(root);
+
+          // 3) Sinaliza "pronto para imprimir"
+          window.__TERMO_PRINT_READY__ = true;
+          try { document.dispatchEvent(new Event('TERMO_PRINT_READY')); } catch (_) {}
+        });
+
+
         const debug = await page.evaluate(() => ({
           hasRunner: typeof window.__TERMO_RUN__ === 'function' || typeof window.run === 'function',
           keys: Object.keys(window.__TERMO_DATA__ || {}),
