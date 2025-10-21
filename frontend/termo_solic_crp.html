@@ -252,11 +252,18 @@
       const $ = (s, r = document) => r.querySelector(s);
       const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
-      // Fallback global "Não informado" (controlado pelo payload)
+      // Fallback global "Não informado" (agora LIGADO por padrão)
       const __NA_LABEL__ = () =>
         String((window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_LABEL) || 'Não informado');
-      const __NA_ALL__ = () =>
-        !!(window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_ALL);
+
+      // Se o payload trouxer __NA_ALL, obedecemos. Se não trouxer, consideramos TRUE.
+      const __NA_ALL__ = () => {
+        const d = window.__TERMO_DATA__;
+        return (d && Object.prototype.hasOwnProperty.call(d, '__NA_ALL'))
+          ? !!d.__NA_ALL
+          : true; // <- padrão: mostrar "Não informado"
+      };
+
 
       function fillText(key, val) {
         const raw = (val == null) ? '' : String(val);

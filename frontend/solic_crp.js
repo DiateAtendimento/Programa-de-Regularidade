@@ -1326,6 +1326,9 @@
   async function gerarBaixarPDF(payload){
     const payloadForPdf = {
       ...payload,
+      __NA_ALL: true,                 // <- garante fallback "Não informado" no template
+      __NA_LABEL: 'Não informado',
+      
       HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : '',
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
       // (opcional) Portaria forçada — padronizada

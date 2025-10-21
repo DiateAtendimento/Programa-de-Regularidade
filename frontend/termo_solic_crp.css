@@ -90,6 +90,21 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 .page-head .rule, #pdf-root > .rule, .rule{
   display:none !important; height:0 !important; border:0 !important; background:transparent !important;
 }
+/* Evitar que o cabeçalho (logos) seja quebrado e “invada” a próxima página */
+.page-head,
+.logos-wrap,
+.logos-wrap img{
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Em impressão, segurar o bloco do cabeçalho no topo da página */
+@media print{
+  .page-head{
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
 
 /* Logos (tamanho travado para não invadir o título) */
 .logos-wrap{
