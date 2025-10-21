@@ -386,3 +386,77 @@ body.pdf-export .term-meta{
     page-break-before: always;
   }
 }
+
+/* ====== Fallback "Não informado" para QUALQUER data-k vazio ====== */
+[data-k]:empty::after{
+  content: "Não informado";
+  color: var(--muted);
+  opacity: .9;
+}
+
+/* Preserva quebras de linha e espaços em textos livres (ex.: justificativas) */
+p[data-k], li[data-k], span[data-k], div[data-k]{
+  white-space: pre-line; /* \n -> quebra de linha */
+  overflow-wrap: break-word;
+}
+
+/* Ainda vale manter o que você já tinha para .field .value e ULs, sem conflito */
+
+
+/* ====== Cabeçalho 100% à prova de quebra/overlap ====== */
+.page-head{
+  /* cria um novo contexto de formatação para evitar “vazamento” e overflows */
+  display: flow-root;          /* (equivalente moderno de clearfix) */
+  contain: layout paint;       /* isola layout no head */
+  overflow: hidden;
+  /* dá “respiro” suficiente para as logos antes do título */
+  padding-top: 2mm;
+  padding-bottom: 6mm !important;
+  margin-bottom: 6mm !important;
+  /* altura mínima evita que imagens altas “encostem” no título */
+  min-height: 22mm;
+  /* evita que o bloco seja cortado no fim da página */
+  break-inside: avoid;
+  page-break-inside: avoid;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+/* Linha do título nunca colide com o cabeçalho, mesmo em engines headless */
+.term-title{
+  margin-top: 6mm !important;
+  clear: both;                 /* belt-and-suspenders */
+  break-before: avoid;
+  page-break-before: avoid;
+}
+
+/* As logos em uma linha estável, sem wrap inesperado na virada de página */
+.logos-wrap{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6mm;
+  flex-wrap: nowrap;           /* evita quebrar logo em linha seguinte */
+  line-height: 0;
+}
+
+.logos-wrap img{
+  display: block;
+  max-height: 14mm;            /* pode ajustar para 12–16mm se preferir */
+  width: auto;
+  height: auto;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Em impressão, reforça as travas de quebra */
+@media print{
+  .page-head,
+  .logos-wrap,
+  .logos-wrap img{
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
