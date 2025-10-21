@@ -2321,6 +2321,35 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         if (!loaded) throw lastErr || new Error('Falha ao carregar template de impressão do Formulário 2');
         log('navegou em', Date.now() - T0, 'ms →', chosenUrl);
 
+        /* [PATCH 1] Garantir CSS do template carregado (fallback local, evita 404 silencioso) */
+        try {
+          await page.addStyleTag({
+            path: path.join(__dirname, '../frontend/termo_solic_crp.css')
+          });
+          log('css injetado: termo_solic_crp.css');
+        } catch (e) {
+          log('warn: falha ao injetar termo_solic_crp.css →', e?.message || e);
+        }
+
+        /* [PATCH 2] Sanidade mínima do DOM + esperar o “sinal” de pronto para imprimir */
+        await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
+        await page.evaluate(() => new Promise((resolve) => {
+          const finish = async () => {
+            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_){}
+            setTimeout(resolve, 150);
+          };
+          if (window.__TERMO_PRINT_READY__ === true) return void finish();
+          document.addEventListener('TERMO_PRINT_READY', () => finish(), { once: true });
+        }));
+
+        /* [PATCH 3] Forçar modo export (classes) e mídia de impressão */
+        await page.evaluate(() => {
+          document.documentElement.classList.add('pdf-export');
+          document.body && document.body.classList.add('pdf-export');
+        });
+        await page.emulateMediaType('print');
+
+
         // ✅ sanidade do template
         await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
         const sanity = await page.evaluate(() => {
@@ -2617,6 +2646,8 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           </div>`;
         const footerTemplate = `<div></div>`;
 
+        
+
         // 🖨️ gera PDF
         const pdf = await page.pdf({
           printBackground: true,
@@ -2646,8 +2677,6 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
     if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
   }
 });
-
-
 
 
 /** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */

@@ -6,18 +6,23 @@
 /* -------------------- Bases compartilhadas (layout A4 / termo) -------------------- */
 @font-face{
   font-family: 'Rawline'; font-weight: 400; font-style: normal; font-display: swap;
-  src: url('./fonts/rawline-400.ttf') format('truetype');
+  src:
+    url('/fonts/rawline-regular.woff2') format('woff2'),
+    url('/fonts/rawline-regular.woff') format('woff'),
+    url('/fonts/rawline-400.ttf') format('truetype');
 }
 @font-face{
   font-family: 'Rawline'; font-weight: 600; font-style: normal; font-display: swap;
-  src: url('./fonts/rawline-600.ttf') format('truetype');
+  src:
+    url('/fonts/rawline-semibold.woff2') format('woff2'),
+    url('/fonts/rawline-600.ttf') format('truetype');
 }
 @font-face{
   font-family: 'Rawline'; font-weight: 700; font-style: normal; font-display: swap;
-  src: url('./fonts/rawline-700.ttf') format('truetype');
-}
-body{
-  font-family: 'Rawline', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  src:
+    url('/fonts/rawline-bold.woff2') format('woff2'),
+    url('/fonts/rawline-bold.woff') format('woff'),
+    url('/fonts/rawline-700.ttf') format('truetype');
 }
 
 :root{
@@ -208,6 +213,50 @@ body.pdf-export .term-meta{
   border:0 !important; background:transparent !important; box-shadow:none !important; height:0 !important;
 }
 
+/* -------------------- Modal "Gerando PDF…" -------------------- */
+.pdf-modal{
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.pdf-modal--open{ display:flex; }
+.pdf-modal__backdrop{
+  position:absolute; inset:0; background:rgba(2,15,38,.48);
+}
+.pdf-modal__box{
+  position:relative;
+  min-width: 280px;
+  max-width: 92vw;
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 18px 48px rgba(2,22,58,.25), 0 6px 14px rgba(2,22,58,.15);
+  padding:18px 20px;
+}
+.pdf-modal__header{
+  font-weight:700;
+  color:var(--brand);
+  margin-bottom:8px;
+}
+.pdf-modal__body{
+  font-size:14px;
+  color:var(--ink);
+  display:flex; align-items:center; gap:12px;
+}
+.spinner{
+  width:22px; height:22px; border-radius:50%;
+  border:3px solid #e6edf6; border-top-color:#1e40af;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{ to { transform: rotate(360deg); } }
+
+/* Oculta modal em impressão de PDF */
+@media print{
+  .pdf-modal{ display:none !important; }
+}
+
 /* -------------------- Ajustes ESPECÍFICOS do FORMULÁRIO -------------------- */
 
 /* Step 0: alinhar "Próximo" na mesma linha da pesquisa, à direita */
@@ -235,4 +284,3 @@ body.pdf-export .term-meta{
 /* Tamanhos padrão das lotties nos modais deste form */
 .lottie-box{ width: 140px; height: 140px; }
 .lottie-loading{ width: 120px; height:120px; }
-
