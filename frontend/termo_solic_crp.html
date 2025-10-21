@@ -13,8 +13,39 @@
 
   <!-- Estilos oficiais do termo (usa Rawline no PDF) -->
   <link rel="stylesheet" href="/termo_solic_crp.css">
-</head>
 
+  <!-- Ajustes complementares específicos para o PDF -->
+  <style>
+    /* Evitar quebras ruins e permitir controle fino de página */
+    .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+    .page-break  { break-before: page; page-break-before: always; }
+    .break-before{ break-before: page; page-break-before: always; }
+
+    /* Rodapé com logos fixo: impede sobreposição do conteúdo nas logos da página seguinte */
+    @media print {
+      @page { margin: 14mm 12mm 20mm; } /* margem inferior maior p/ caber as logos */
+      body { margin-bottom: 28mm; }     /* reserva espaço visual p/ rodapé fixo */
+      #rodape {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        text-align: center;
+        padding: 4mm 0 0;
+        background: #fff;               /* garante fundo branco sob as logos */
+      }
+      #rodape .logos-wrap {
+        display: inline-flex; gap: 12mm; align-items: center; justify-content: center;
+      }
+      #rodape img { max-height: 16mm; }
+    }
+
+    /* Pequenos ajustes visuais úteis também na tela */
+    .term-title { text-align: center; }
+    .term-meta  { text-align: center; margin-bottom: 8px; }
+    .small      { font-size: 0.92em; }
+    .muted      { opacity: .75; }
+    .mt         { margin-top: 8px; }
+  </style>
+</head>
 <body>
   <div id="pdf-root">
     <main class="term-wrap">
@@ -36,35 +67,13 @@
 
       <!-- 1. IDENTIFICAÇÃO -->
       <section class="term-section avoid-break">
-        <!--
-        (Referência normativa – manter como comentário para consultas)
-        <p class="term-intro small" style="margin-top:4mm; text-align:justify;">
-          O Regime Próprio de Previdência Social (RPPS) abaixo especificado requer a emissão de Certificado de Regularidade Previdenciária,
-          na forma emergencial, para execução do Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social,
-          instituído pelo Ministério da Previdência Social, conforme a <strong>Portaria SRPC/MPS nº <span data-k="PORTARIA_SRPC">—</span></strong>
-          e o previsto no Anexo XVIII da Portaria MTP nº 1.467, de 2 de junho de 2022.
-        </p><br>
-
-        <div class="gescon-breadcrumb small">
-          <span><strong>Enviado via Consulta GESCON:</strong> <span class="text-body" data-k="N_GESCON">—</span></span>
-          <span class="sep">–</span>
-          <span><strong>Data do encaminhamento:</strong> <span class="text-body" data-k="DATA_ENC_VIA_GESCON">—</span></span>
-        </div>
-
-        <div class="gescon-breadcrumb small">
-          <span><strong>Nº Processo SEI (Pró-Regularidade):</strong>
-            <span class="text-body" data-k="SEI_PROCESSO">—</span>
-          </span>
-        </div>
-        -->
-
         <h2><br>1. IDENTIFICAÇÃO DO ENTE FEDERATIVO E DA UNIDADE GESTORA</h2>
 
         <h3><span class="label">1.1 Esfera de Governo</span></h3>
-        <ul id="opt-1-1">
-          <li data-code="1.1.1">1.1.1 RPPS Municipal</li>
-          <li data-code="1.1.2">1.1.2 Estadual/Distrital</li>
-        </ul>
+        <div class="linha">
+          <div class="titulo"></div>
+          <div class="valor" data-esfera></div>
+        </div>
 
         <h3><strong>1.2 Ente Federativo</strong></h3>
         <div class="grid grid-num">
@@ -103,9 +112,8 @@
           <div class="field"><span class="label"><strong>2.2.5 Telefone</strong></span><span class="value" data-k="tel_rep_ug"></span></div>
         </div>
       </section>
-
       <!-- 3. SITUAÇÃO RELATIVA AO CRP -->
-      <section class="term-section avoid-break">
+      <section class="term-section avoid-break page-break" id="sec-3">
         <h2>3. SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
 
         <div class="grid grid-num">
@@ -202,7 +210,6 @@
           <div id="f46-comp-cumpr"></div>
         </div>
       </section>
-
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section avoid-break">
         <h2>5. JUSTIFICATIVAS / INFORMAÇÕES ADICIONAIS</h2>
@@ -235,6 +242,14 @@
     </main>
   </div>
 
+  <!-- Rodapé fixo com logos: evita invasão de conteúdo nas logos na página 2+ -->
+  <footer id="rodape" aria-hidden="true">
+    <div class="logos-wrap">
+      <img src="/imagens/logo-secretaria-complementar.svg" alt="Secretaria" />
+      <img src="/imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" />
+    </div>
+  </footer>
+
   <!-- Modal "Gerando PDF…" (não é impresso; estilizado no CSS) -->
   <div id="pdf-modal" class="pdf-modal" aria-hidden="true">
     <div class="pdf-modal__backdrop"></div>
@@ -246,41 +261,39 @@
       </div>
     </div>
   </div>
-
   <script>
     (function () {
       const $ = (s, r = document) => r.querySelector(s);
       const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
-      // Fallback global "Não informado" (agora LIGADO por padrão)
+      // Fallback global "Não informado" (ligado por padrão)
       const __NA_LABEL__ = () =>
         String((window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_LABEL) || 'Não informado');
 
-      // Se o payload trouxer __NA_ALL, obedecemos. Se não trouxer, consideramos TRUE.
+      // Se o payload trouxer __NA_ALL, obedecemos; senão, TRUE (mostrar "Não informado")
       const __NA_ALL__ = () => {
         const d = window.__TERMO_DATA__;
         return (d && Object.prototype.hasOwnProperty.call(d, '__NA_ALL'))
           ? !!d.__NA_ALL
-          : true; // <- padrão: mostrar "Não informado"
+          : true;
       };
-
 
       function fillText(key, val) {
         const raw = (val == null) ? '' : String(val);
-        const trimmed = raw.trim();              // <- trata "   " como vazio
+        const trimmed = raw.trim();
         const s = trimmed || (__NA_ALL__() ? __NA_LABEL__() : '');
         $$( '[data-k="'+key+'"]' ).forEach(el => { el.textContent = s; });
       }
 
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
-      
+
       function liList(ulSel, items){
         const ul = $(ulSel);
         if (!ul) return;
 
-        const norm = (Array.isArray(items) ? items : String(items||'').split(','))
+        const norm = (Array.isArray(items) ? items : String(items||'').split(/[,;\n]/))
                     .map(s => String(s||'').trim())
-                    .filter(Boolean);           // <- remove strings vazias/espaços
+                    .filter(Boolean);
 
         ul.innerHTML = '';
         if (!norm.length) {
@@ -293,18 +306,17 @@
         });
       }
 
-      function selectByCode(listSel, code){ if(!code) return; const ul=$(listSel); if(!ul) return; const node=ul.querySelector('[data-code="'+code+'"]'); if(node) node.innerHTML='<strong>'+node.textContent+'</strong>'; }
       function show(id, v){ const el=$('#'+id); if(el) el.hidden=!v; }
       function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
       const asArr = v => Array.isArray(v) ? v : String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
 
-      // API mínima do modal (abrir/fechar) — usada pelo fluxo que imprime
+      // Modal PDF (abrir/fechar)
       window.ModalPDF = {
         open(){ $('#pdf-modal')?.classList.add('pdf-modal--open'); },
         close(){ $('#pdf-modal')?.classList.remove('pdf-modal--open'); }
       };
 
-      // Data "dd/mm/aaaa" robusta p/ ambientes headless (sem depender de Intl/timeZone)
+      // Data dd/mm/aaaa robusta
       function hojeBR_robusto(){
         try{
           const s = new Date().toLocaleDateString('pt-BR');
@@ -317,6 +329,12 @@
         return `${dd}/${mm}/${yyyy}`;
       }
 
+      // Esfera 1.1 — normaliza para duas opções fixas
+      function normalizarEsfera(txt){
+        const t = String(txt||'').toLowerCase();
+        if (t.includes('estadual') || t.includes('distrit')) return '1.1.2 Estadual/Distrital';
+        return '1.1.1 RPPS Municipal';
+      }
 
       function run(payload){
         const p = payload || {};
@@ -350,10 +368,9 @@
         /* ===== 3) CRP ===== */
         fillText('venc_ult_crp', p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
 
-        // 3.2 — motivo principal (seleção única)
+        // 3.2 — motivo principal (seleção única → mostra só a escolhida)
         (function () {
           let code = (p.OPT_3_2 || p.opt_3_2 || '').trim();
-
           if (!code) {
             const yes = v => String(v||'').toUpperCase() === 'SIM';
             if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE)) code = '3.2.1';
@@ -361,17 +378,11 @@
             else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) code = '3.2.3';
             else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) code = '3.2.4';
           }
-
           const ul = document.querySelector('#opt-3-2');
           if (!ul) return;
-
           if (code) {
-            // mantém SOMENTE o item escolhido
-            [...ul.children].forEach(li => {
-              if (li.getAttribute('data-code') !== code) li.remove();
-            });
+            [...ul.children].forEach(li => { if (li.getAttribute('data-code') !== code) li.remove(); });
           } else {
-            // nada selecionado → mostra "Não informado"
             ul.innerHTML = '';
             const li = document.createElement('li');
             li.textContent = __NA_LABEL__();
@@ -379,14 +390,14 @@
           }
         })();
 
-
+        // 3.3 — critérios irregulares (lista ou "Não informado")
         const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
-        ? p.CRITERIOS_IRREGULARES
-        : String(p.CRITERIOS_IRREGULARES || '')
-            .split(/[;,]/)                // <— aceita "," ou ";"
-            .map(s=>s.trim())
-            .filter(Boolean);
-
+          ? p.CRITERIOS_IRREGULARES
+          : String(p.CRITERIOS_IRREGULARES || '')
+              .split(/[;,]/)
+              .map(s=>s.trim())
+              .filter(Boolean);
+        liList('#criterios-list', criterios);
 
         /* ===== 4) Fase ===== */
         const faseSel = (p.FASE_PROGRAMA || p.fase_programa || '').trim();
@@ -461,31 +472,29 @@
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
 
         /* ===== 6) Assinaturas (data) ===== */
-        const preferida = (p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '').trim();
-        fillText('data_termo', preferida || hojeBR_robusto());
+        const preferida = (p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '').trim?.() || (p.DATA_TERMO_GERADO ?? p.DATA ?? p.DATA_SOLIC_GERADA ?? '');
+        fillText('data_termo', (String(preferida||'').trim()) || hojeBR_robusto());
 
-
-
-        /* ===== 1.1 Esfera + legenda de assinatura ===== */
-        const esfera = p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || '';
-        
-        selectByCode('#opt-1-1', /estadual|distrital/i.test(esfera) ? '1.1.2' : '1.1.1');
+        /* ===== 7) 1.1 Esfera + legenda assinatura (ente estadual/distrital x municipal) ===== */
+        const esferaTxt = normalizarEsfera(p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || p.fase_esfera);
+        const esferaNode = document.querySelector('[data-esfera]');
+        if (esferaNode) esferaNode.textContent = esferaTxt;
 
         (function(){
           const sig = document.getElementById('sig-cap-ente');
           if (sig) {
-            sig.innerHTML = (/estadual|distrital/i.test(esfera))
+            const isEstDistr = /Estadual\/Distrital/i.test(esferaTxt);
+            sig.innerHTML = isEstDistr
               ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
               : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
 
-            // RE-preenche os <span data-k> injetados agora
+            // Reaplica os spans data-k inseridos agora
             fillText('ente', p.ENTE || p.ente);
             fillText('uf',   p.UF   || p.uf);
           }
         })();
 
-
-        // Sinaliza pronto pro print (aguarda fontes de tela ou timeout curto)
+        // Sinaliza pronto para imprimir (aguarda fontes de tela ou timeout curto)
         try{
           if (!window.__TERMO_READY_FIRED__) {
             window.__TERMO_READY_FIRED__ = true;
@@ -501,10 +510,10 @@
         }catch(_){}
       }
 
-      // expose runner
+      // Expor runner
       window.__TERMO_RUN__ = run;
 
-      // 1) querystring → __TERMO_DATA__ (compatível com termo de adesão)
+      // 1) Querystring → __TERMO_DATA__
       (function injectFromQueryIfPresent(){
         try{
           const qs = new URLSearchParams(window.location.search || '');
@@ -516,7 +525,7 @@
         }catch(_){}
       })();
 
-      // 2) hooks para injeção assíncrona
+      // 2) Hooks de injeção
       if (window.__TERMO_DATA__) { try { run(window.__TERMO_DATA__); } catch {} }
       document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
       document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
@@ -527,7 +536,7 @@
         }
       });
 
-      // 3) polling curto para __TERMO_DATA__ injetado por evaluateOnNewDocument
+      // 3) Polling curto p/ __TERMO_DATA__ injetado por evaluateOnNewDocument
       (function spinWait(maxMs=4000, step=120){
         const t0 = Date.now();
         const iv = setInterval(() => {
