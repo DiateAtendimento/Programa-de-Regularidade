@@ -2290,104 +2290,108 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         }, payloadForClient);
         if (DEBUG_PDF) log('payload pré-injetado (evaluateOnNewDocument)');
 
-      /* ==========================================
-        2) Candidatos — prioriza o template correto
-        ========================================== */
-      const CANDIDATES = [
-        'termo_solic_crp.html',
-        'form_gera_termo_solic_crp_2.html',
-        'form_gera_termo_solic_crp.html'
-      ];
+        /* ==========================================
+          2) Candidatos — prioriza o template correto
+          ========================================== */
+        const CANDIDATES = [
+          'termo_solic_crp.html',
+          'form_gera_termo_solic_crp_2.html',
+          'form_gera_termo_solic_crp.html'
+        ];
 
-      const urlsToTry = [
-        ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
-        ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
-      ];
+        const urlsToTry = [
+          ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
+          ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
+        ];
 
-      log('candidatos:', urlsToTry);
+        log('candidatos:', urlsToTry);
 
 
-      // 🚦 navegação
-      let loaded = false; let lastErr = null; let chosenUrl = '';
-      for (const u of urlsToTry) {
+        // 🚦 navegação
+        let loaded = false; let lastErr = null; let chosenUrl = '';
+        for (const u of urlsToTry) {
+          try {
+            await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+            loaded = true; chosenUrl = u; break;
+          } catch (e) { lastErr = e; }
+        }
+        if (!loaded) throw lastErr || new Error('Falha ao carregar template de impressão do Formulário 2');
+        log('navegou em', Date.now() - T0, 'ms →', chosenUrl);
+
+        // ✅ sanidade do template (tem #pdf-root .term-wrap, não tem form/inputs, e título compatível)
+        await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
+        const sanity = await page.evaluate(() => {
+          const h1 = (document.querySelector('h1.term-title')?.textContent || '').trim();
+          const okTitle =
+            /TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL/i.test(h1) ||
+            /SOLICITAÇÃO DE CRP/i.test(h1);
+          const hasPdfRoot = !!document.querySelector('#pdf-root .term-wrap');
+          const hasFormControls = !!document.querySelector('form, select, textarea, input');
+          return { okTitle, hasPdfRoot, hasFormControls, h1 };
+        });
+        log('sanidade:', sanity);
+        if (!sanity.hasPdfRoot || sanity.hasFormControls || !sanity.okTitle) {
+          throw new Error('Template inválido para impressão (sem #pdf-root/.term-wrap, com controles, ou título incorreto).');
+        }
+
+        /* ============ (Re)injeção de payload ============ */
+        await page.evaluate((payload) => {
+          try {
+            window.__TERMO_DATA__ = payload || {};
+            window.__TERMO_DATA_READY__ = true;
+            // eventos de compatibilidade (se o template escuta)
+            document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+            document.dispatchEvent(new CustomEvent('TERMO_DATA'));
+          } catch (e) {}
+        }, payloadForClient);
+
+        /* ============ Tenta rodar o runner do template, mas NÃO trava se falhar ============ */
         try {
-          await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-          loaded = true; chosenUrl = u; break;
-        } catch (e) { lastErr = e; }
-      }
-      if (!loaded) throw lastErr || new Error('Falha ao carregar template de impressão do Formulário 2');
-      log('navegou em', Date.now() - T0, 'ms →', chosenUrl);
+          await page.evaluate(() => {
+            try {
+              const runner =
+                (typeof window.__TERMO_RUN__ === 'function' && window.__TERMO_RUN__) ||
+                (typeof window.run === 'function' && window.run) ||
+                null;
+              if (runner) runner(window.__TERMO_DATA__ || {});
+            } catch (_inner) {}
+          });
+        } catch (_runnerErr) {
+          log('runner do template falhou/timeout — seguiremos com detecção por conteúdo');
+        }
 
-      // ✅ sanidade do template (tem #pdf-root .term-wrap, não tem form/inputs, e título compatível)
-      await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
-      const sanity = await page.evaluate(() => {
-        const h1 = (document.querySelector('h1.term-title')?.textContent || '').trim();
-        const okTitle =
-          /TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL/i.test(h1) ||
-          /SOLICITAÇÃO DE CRP/i.test(h1);
-        const hasPdfRoot = !!document.querySelector('#pdf-root .term-wrap');
-        const hasFormControls = !!document.querySelector('form, select, textarea, input');
-        return { okTitle, hasPdfRoot, hasFormControls, h1 };
-      });
-      log('sanidade:', sanity);
-      if (!sanity.hasPdfRoot || sanity.hasFormControls || !sanity.okTitle) {
-        throw new Error('Template inválido para impressão (sem #pdf-root/.term-wrap, com controles, ou título incorreto).');
-      }
-      
-      /* ===== PÓS-INJEÇÃO: garante execução do runner do template ===== */
-      await page.evaluate(() => {
-        try {
-          // Se o template já expôs o runner, usa-o; senão tenta "run"
-          const runner =
-            (typeof window.__TERMO_RUN__ === 'function' && window.__TERMO_RUN__) ||
-            (typeof window.run === 'function' && window.run) ||
-            null;
+        /* ============ Aguarda “pronto” por CONTEÚDO (sem depender do template) ============ */
+        /* Critério: algum valor do payload aparece no texto do #pdf-root (ex.: ENTE, CNPJ, SEI, UF). */
+        const keysToProbe = ['ENTE', 'CNPJ_ENTE', 'SEI_PROCESSO', 'UF', 'NOME_REP_ENTE', 'UG'];
 
-          // Dispara um evento extra aceito pelo template
-          try { document.dispatchEvent(new CustomEvent('TERMO_DATA')); } catch (_){}
+        await page.waitForFunction(
+          (probeKeys) => {
+            try {
+              const root = document.querySelector('#pdf-root');
+              if (!root) return false;
+              const text = (root.innerText || '').replace(/\s+/g, ' ').trim();
+              const data = window.__TERMO_DATA__ || {};
+              const values = probeKeys
+                .map(k => data?.[k])
+                .filter(v => (typeof v === 'string' ? v.trim() : v != null))
+                .map(v => String(v).trim())
+                .filter(v => v.length > 0)
+                .slice(0, 6);
+              if (values.length === 0) return false;
+              return values.some(v => text.includes(v));
+            } catch (_) { return false; }
+          },
+          { timeout: 90_000 },
+          keysToProbe
+        );
 
-          if (runner) {
-            runner(window.__TERMO_DATA__ || {});
-          }
-        } catch (_){}
-      });
-
-      /* ============ (Re)injeção + FORÇAR RUN ============ */
-      // mantém a re-injeção
-      await page.evaluate((payload) => {
-        try {
-          // disponibiliza / atualiza o payload no contexto da página
-          window.__TERMO_DATA__ = payload || {};
-          // dispara o evento que o template já escuta
-          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-        } catch (e) {}
-      }, payloadForClient);
-
-      // 👇 FORÇA a execução do run(...) do template, se existir
-      await page.evaluate(() => {
-        try {
-          const runner =
-            (typeof window.__TERMO_RUN__ === 'function' && window.__TERMO_RUN__) ||
-            (typeof window.run === 'function' && window.run) ||
-            null;
-          if (runner) runner(window.__TERMO_DATA__ || {});
-        } catch (_) {}
-      });
-
-      /* Aguarda o sinal de "pronto para imprimir" do template */
-      await page.waitForSelector('#pdf-root', { timeout: 20000 }).catch(()=>{});
-      await page.evaluate(() => new Promise((resolve) => {
-        const finish = async () => {
-          try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_) {}
-          setTimeout(resolve, 150);
-        };
-        if (window.__TERMO_PRINT_READY__ === true) return void finish();
-        document.addEventListener('TERMO_PRINT_READY', () => finish(), { once: true });
-      }));
-      await page.evaluate(() => {
-        document.documentElement.classList.add('pdf-export');
-        document.body.classList.add('pdf-export');
-      });
+        /* ============ Toques finais antes do print ============ */
+        await page.evaluate(async () => {
+          try { if (document?.fonts?.ready) await document.fonts.ready; } catch (_){}
+          document.documentElement.classList.add('pdf-export');
+          document.body.classList.add('pdf-export');
+          try { window.__TERMO_PRINT_READY__ = true; document.dispatchEvent(new Event('TERMO_PRINT_READY')); } catch (_){}
+        });
 
 
 
