@@ -2265,6 +2265,11 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
                 .map(s => s.trim())
                 .filter(Boolean)
         };
+        // Padrão global para campos vazios no PDF
+        // (Se estiver vazio, mostrar "Não informado")
+        payloadForClient.__NA_ALL = true;
+        payloadForClient.__NA_LABEL = 'Não informado';
+
 
         await page.evaluateOnNewDocument((payload) => {
           try {
@@ -2436,11 +2441,19 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
             }
             return '';
           };
+
+          // Padrão "Não informado" (pode ser global ou por elemento)+          const NA_LABEL = String((payload && payload.__NA_LABEL) || 'Não informado');
+          const NA_ALL   = !!(payload && payload.__NA_ALL);
           const setElVal = (el, val) => {
-            const s = String(val ?? '');
-            if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = s;
-            else el.textContent = s;
-            if (s) el.classList.add('filled');
+            const raw = (val == null) ? '' : (Array.isArray(val) ? val.join(', ') : String(val));
+            const wantsNA =
+              NA_ALL ||
+              el.classList?.contains('na-if-empty') ||
+              el.hasAttribute?.('data-na');
+            const out = raw || (wantsNA ? NA_LABEL : '');
+            if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = out;
+            else el.textContent = out;
+            if (out) el.classList?.add('filled');
           };
 
           /* 1) id="CHAVE" (case-insensitive nas chaves do payload) */

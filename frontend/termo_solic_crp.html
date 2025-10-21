@@ -127,7 +127,7 @@
       </section>
 
       <!-- 4. FASE DO PROGRAMA -->
-      <section class="term-section">
+      <section class="term-section avoid-break">
         <h2>4. IDENTIFICAÇÃO DA FASE DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
         <p class="small">Fase selecionada: <strong data-k="fase_programa"></strong></p>
 
@@ -204,10 +204,13 @@
       </section>
 
       <!-- 5. JUSTIFICATIVAS GERAIS -->
-      <section class="term-section">
+      <section class="term-section avoid-break">
         <h2>5. JUSTIFICATIVAS / INFORMAÇÕES ADICIONAIS</h2>
         <p data-k="justificativas_gerais"></p>
       </section>
+
+      <!-- Força página nova antes das assinaturas -->
+      <div class="break-before"></div>
 
       <!-- Assinaturas -->
       <footer class="term-footer">
@@ -249,9 +252,23 @@
       const $ = (s, r = document) => r.querySelector(s);
       const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
-      function fillText(key, val) { $$( '[data-k="'+key+'"]' ).forEach(el => { el.textContent = (val ?? ''); }); }
+      // Fallback global "Não informado" (controlado pelo payload)
+      const __NA_LABEL__ = () =>
+        String((window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_LABEL) || 'Não informado');
+      const __NA_ALL__ = () =>
+        !!(window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_ALL);
+
+      function fillText(key, val) {
+        const raw = (val == null) ? '' : String(val);
+        const s = raw || (__NA_ALL__() ? __NA_LABEL__() : '');
+        $$( '[data-k="'+key+'"]' ).forEach(el => { el.textContent = s; });
+      }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
-      function liList(ulSel, items){ const ul=$(ulSel); if(!ul) return; ul.innerHTML=(items||[]).filter(Boolean).map(t=>'<li>'+escapeHtml(t)+'</li>').join(''); }
+      function liList(ulSel, items){
+        const ul=$(ulSel); if(!ul) return;
+        const list=(items||[]).filter(Boolean).map(t=>'<li>'+escapeHtml(t)+'</li>');
+        ul.innerHTML = list.length ? list.join('') : `<li class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</li>`;
+      }
       function selectByCode(listSel, code){ if(!code) return; const ul=$(listSel); if(!ul) return; const node=ul.querySelector('[data-code="'+code+'"]'); if(node) node.innerHTML='<strong>'+node.textContent+'</strong>'; }
       function show(id, v){ const el=$('#'+id); if(el) el.hidden=!v; }
       function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
@@ -347,7 +364,7 @@
             liList('#f44-finalidades', asArr(p.F44_FINALIDADES));
             const ax = splitLines(p.F44_ANEXOS || '');
             const box = document.querySelector('#f44-anexos');
-            if (box) box.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
+            if (box) box.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             break;
           }
           case '4.5': {
@@ -357,8 +374,8 @@
             const j = splitLines(p.F45_JUST || '');
             const docsBox = document.querySelector('#f45-docs');
             const justBox = document.querySelector('#f45-just');
-            if (docsBox) docsBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
-            if (justBox) justBox.innerHTML = j.length ? '<ul>'+j.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
+            if (docsBox) docsBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+            if (justBox) justBox.innerHTML = j.length ? '<ul>'+j.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             break;
           }
           case '4.6': {
@@ -375,11 +392,11 @@
             liList('#f46-finalidades', asArr(p.F46_FINALIDADES));
             const ax = splitLines(p.F46_ANEXOS || '');
             const axBox = document.querySelector('#f46-anexos');
-            if (axBox) axBox.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : '—';
+            if (axBox) axBox.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             const jp = document.getElementById('f46-just-planos');
             const cc = document.getElementById('f46-comp-cumpr');
-            if (jp) jp.textContent = p.F46_JUST_PLANOS || '—';
-            if (cc) cc.textContent = p.F46_COMP_CUMPR || '—';
+            if (jp) jp.textContent = (p.F46_JUST_PLANOS || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+            if (cc) cc.textContent = (p.F46_COMP_CUMPR || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             break;
           }
         }

@@ -146,7 +146,6 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 /* Não imprimir anotações de tela */
 .no-print { display: none !important; }
 
-
 /* Grid de campos (termo) */
 .grid{
   display:grid;
@@ -287,3 +286,41 @@ body.pdf-export .term-meta{
 /* Tamanhos padrão das lotties nos modais deste form */
 .lottie-box{ width: 140px; height: 140px; }
 .lottie-loading{ width: 120px; height:120px; }
+
+/* -------------------- "Não informado" automático -------------------- */
+/* Campos de valor vazios exibem "Não informado" */
+.field .value:empty::after{
+  content: "Não informado";
+  color: var(--muted);
+  opacity: .9;
+}
+
+/* Listas vazias (critérios, fases etc.) exibem "Não informado" */
+.term-section ul:empty::before,
+#criterios-list:empty::before,
+#f41-itens:empty::before,
+#f42-itens:empty::before,
+#f43-itens:empty::before,
+#f44-criterios:empty::before,
+#f44-decls:empty::before,
+#f44-finalidades:empty::before,
+#f45-decls:empty::before,
+#f45-docs:empty::before,
+#f45-just:empty::before,
+#f46-criterios:empty::before,
+#f46-decls:empty::before,
+#f46-finalidades:empty::before,
+#f46-anexos:empty::before,
+#f46-just-planos:empty:before,
+#f46-comp-cumpr:empty:before{
+  content: "Não informado";
+  color: var(--muted);
+  display: block;
+  padding-left: 0;
+}
+
+/* Utilitário opcional para forçar estilo de "não informado" em qualquer elemento */
+.ni, .not-informed{
+  color: var(--muted) !important;
+  font-style: italic;
+}
