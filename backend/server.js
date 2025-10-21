@@ -2567,7 +2567,7 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
         await page.evaluate(() => new Promise((resolve) => {
           const finish = async () => {
-            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_) {}
+            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_){}
             setTimeout(resolve, 150);
           };
           if (window.__TERMO_PRINT_READY__ === true) return void finish();
@@ -2597,7 +2597,6 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
 
         // 🔤 fontes locais (mesma lógica do form1)
         function findFont(candidates){
-          const path = require('path'); const fs = require('fs');
           for (const rel of candidates){
             const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
             if (fs.existsSync(abs)) {
@@ -2629,8 +2628,7 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           .term-title { margin-top: 2mm !important; }
         `});
 
-        // 🖼️ header com SVG inline (local)
-        const path = require('path'); const fs = require('fs');
+        // 🖼️ header com SVG inline (local) — usa fs/path globais
         const inlineSvgLocal = (rel) => {
           try {
             const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/,''));
@@ -2658,8 +2656,6 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
             <div class="rule"></div>
           </div>`;
         const footerTemplate = `<div></div>`;
-
-        
 
         // 🖨️ gera PDF
         const pdf = await page.pdf({
