@@ -1401,7 +1401,7 @@ const schemaTermoPdf = Joi.object({
   DATA_TERMO_GERADO: Joi.string().allow(''),
 }).unknown(true);
 
-/* === PDF: schema para Termo de Solicitação de CRP Emergencial (agora tolerante a "") === */
+/* === PDF: schema para Termo de Solicitação de CRP Emergencial (inalterado) === */
 const schemaTermoSolicPdf = Joi.object({
   UF: Joi.string().allow(''),
   ENTE: Joi.string().allow(''),
@@ -1450,14 +1450,7 @@ const schemaTermoSolicPdf = Joi.object({
   F46_JUST_PLANOS: Joi.string().allow(''),
   F46_COMP_CUMPR: Joi.string().allow(''),
   JUSTIFICATIVAS_GERAIS: Joi.string().allow(''),
-
-  /* ✅ aceita "", "SIM"/"NAO", 1/0, true/false e faz *coerce* pra boolean */
-  HAS_TERMO_ENC_GESCON: Joi.boolean()
-    .truthy('SIM','S','1',1,true,'true')
-    .falsy('NAO','N','0',0,false,'false','')
-    .default(false)
-    .optional(),
-
+  HAS_TERMO_ENC_GESCON: Joi.alternatives().try(Joi.string(), Joi.number(), Joi.boolean()).optional(),
   N_GESCON: Joi.string().allow(''),
   DATA_ENC_VIA_GESCON: Joi.string().allow(''),
   DATA_SOLIC_GERADA: Joi.string().allow(''),
@@ -1465,7 +1458,6 @@ const schemaTermoSolicPdf = Joi.object({
   DATA_TERMO_GERADO: Joi.string().allow(''),
   HORA_TERMO_GERADO: Joi.string().allow(''),
 }).unknown(true);
-
 
 /* ===== CRP (Solicitação) — Joi Schemas ===== */
 const schemaSolicCrp = Joi.object({
@@ -1960,13 +1952,8 @@ app.post('/api/gerar-termo', async (req, res) => {
 /** POST /api/gerar-solic-crp  — IDEMPOTENTE (Solicitação CRP) */
 app.post('/api/gerar-solic-crp', async (req, res) => {
   try {
-    // normaliza corpo: remove vazio em HAS_TERMO_ENC_GESCON (vira undefined → default false)
-    const body = { ...(req.body || {}) };
-    if (body.HAS_TERMO_ENC_GESCON === '') delete body.HAS_TERMO_ENC_GESCON;
-
-    const p = validateOr400(res, schemaTermoSolicPdf, body);
+    const p = validateOr400(res, schemaSolicCrp, req.body || {});
     if (!p) return;
-
 
     await authSheets();
     const s = await getOrCreateSheet('Solic_CRPs', SOLIC_HEADERS);
@@ -2334,35 +2321,6 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         if (!loaded) throw lastErr || new Error('Falha ao carregar template de impressão do Formulário 2');
         log('navegou em', Date.now() - T0, 'ms →', chosenUrl);
 
-        /* [PATCH 1] Garantir CSS do template carregado (fallback local, evita 404 silencioso) */
-        try {
-          await page.addStyleTag({
-            path: path.join(__dirname, '../frontend/termo_solic_crp.css')
-          });
-          log('css injetado: termo_solic_crp.css');
-        } catch (e) {
-          log('warn: falha ao injetar termo_solic_crp.css →', e?.message || e);
-        }
-
-        /* [PATCH 2] Sanidade mínima do DOM + esperar o “sinal” de pronto para imprimir */
-        await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
-        await page.evaluate(() => new Promise((resolve) => {
-          const finish = async () => {
-            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_){}
-            setTimeout(resolve, 150);
-          };
-          if (window.__TERMO_PRINT_READY__ === true) return void finish();
-          document.addEventListener('TERMO_PRINT_READY', () => finish(), { once: true });
-        }));
-
-        /* [PATCH 3] Forçar modo export (classes) e mídia de impressão */
-        await page.evaluate(() => {
-          document.documentElement.classList.add('pdf-export');
-          document.body && document.body.classList.add('pdf-export');
-        });
-        await page.emulateMediaType('print');
-
-
         // ✅ sanidade do template
         await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
         const sanity = await page.evaluate(() => {
@@ -2567,7 +2525,7 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
         await page.evaluate(() => new Promise((resolve) => {
           const finish = async () => {
-            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_){}
+            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_) {}
             setTimeout(resolve, 150);
           };
           if (window.__TERMO_PRINT_READY__ === true) return void finish();
@@ -2597,6 +2555,7 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
 
         // 🔤 fontes locais (mesma lógica do form1)
         function findFont(candidates){
+          const path = require('path'); const fs = require('fs');
           for (const rel of candidates){
             const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
             if (fs.existsSync(abs)) {
@@ -2628,7 +2587,8 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           .term-title { margin-top: 2mm !important; }
         `});
 
-        // 🖼️ header com SVG inline (local) — usa fs/path globais
+        // 🖼️ header com SVG inline (local)
+        const path = require('path'); const fs = require('fs');
         const inlineSvgLocal = (rel) => {
           try {
             const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/,''));
@@ -2686,6 +2646,8 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
     if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
   }
 });
+
+
 
 
 /** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */
