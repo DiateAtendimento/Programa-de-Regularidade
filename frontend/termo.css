@@ -1,6 +1,6 @@
 /* ======================================================================
-   termo_solic_crp.css — alinhado ao termo.css (A4, margens, tipografia)
-   + correções de modal "Gerando PDF…" e quebras p/ PDF
+   termo.css — A4, margens, tipografia e PDF estável
+   + cabeçalho com logos (reserva real), modal PDF e fallbacks
    ====================================================================== */
 
 /* -------------------- Bases compartilhadas (layout A4 / termo) -------------------- */
@@ -17,6 +17,7 @@
   src:url('./fonts/rawline-700.ttf') format('truetype');
 }
 
+/* Variáveis (inclui reserva de altura do cabeçalho com logos) */
 :root{
   --page-w:210mm;
   --page-h:297mm;
@@ -31,6 +32,9 @@
   /* Modal */
   --modal-backdrop:rgba(15,23,42,.35);
   --modal-border:#cbd5e1;
+
+  /* ajuste fino do cabeçalho com logos (18–26mm) */
+  --header-height:22mm;
 }
 
 *{ box-sizing:border-box; margin:0; padding:0; }
@@ -46,14 +50,12 @@ body{
 /* === PRINT base (Puppeteer) === */
 @page{
   size:A4;
-  /* igual ao termo.css: ajuste L/R para 16mm */
-  margin:18mm 16mm;
+  margin:18mm 16mm; /* margens L/R 16mm */
 }
 html,body{
   -webkit-print-color-adjust:exact !important;
   print-color-adjust:exact !important;
 }
-
 /* Container (preview PDF) */
 #pdf-root{ width:var(--page-w); margin:0 auto; }
 .term-wrap{
@@ -71,43 +73,53 @@ html,body{
 html.pdf-export, body.pdf-export{ background:#fff !important; }
 .pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important; }
 
-/* Cabeçalho */
+/* Cabeçalho blindado (participa do fluxo e reserva espaço real) */
 .page-head{
+  display:flow-root;             /* BFC */
   position:relative;
-  display:block;
-  border:0 !important;
-  padding-top:2mm;
-  padding-bottom:6mm !important;
-  margin-bottom:6mm !important;
+  width:100%;
+  min-height:var(--header-height);
+  margin:0 0 8mm 0;
+  padding:0 0 6mm 0;
+  overflow:hidden;
+  contain:content;
+  break-inside:avoid; page-break-inside:avoid;
 }
 .page-head::after{
   content:"";
   position:absolute; left:0; right:0; bottom:0;
   height:1px; background:var(--rule);
 }
-.page-head .rule, #pdf-root > .rule, .rule{
-  display:none !important; height:0 !important; border:0 !important; background:transparent !important;
-}
 
-/* Logos */
+/* Logos: tamanhos e não-quebra */
 .logos-wrap{
   display:flex; align-items:center; justify-content:center;
-  flex-wrap:wrap; gap:6mm; width:100%; padding-top:0;
+  flex-wrap:wrap; gap:6mm; width:100%;
+  line-height:0;
+  break-inside:avoid; page-break-inside:avoid;
 }
 .logos-wrap img{
-  max-height:14mm; height:auto; width:auto; display:block;
+  display:block; height:auto; width:auto;
+  max-height:14mm; /* 12–16mm */
+  break-inside:avoid; page-break-inside:avoid;
+}
+
+/* Em tela você pode ocultar; no PDF mostramos (se quiser visível sempre, remova o display:none) */
+.logos-wrap{ display:none !important; }
+@media print{
+  .logos-wrap{ display:flex !important; }
 }
 
 /* Título + meta */
 .term-title{
   margin:6mm 0 0 !important;
-  place-self:center;
   text-align:center;
   font-weight:800;
   font-size:16px;
   letter-spacing:.2px;
   line-height:1.28;
   color:var(--brand);
+  clear:both; /* corta qualquer float perdido */
 }
 .term-meta{
   margin:1.2mm 0 5mm !important;
@@ -118,7 +130,6 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 /* PDF: respiros */
 .pdf-export .term-title{ margin-top:4mm !important; }
 .pdf-export .page-head{ margin-bottom:6mm !important; padding-bottom:6mm !important; }
-
 /* Conteúdo */
 .term-section + .term-section{ margin-top:8mm; }
 .term-section h2{
@@ -139,6 +150,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 .note{ font-size:12.6px; color:var(--muted); }
 .small{ font-size:12.2px; color:var(--muted); }
 .strong{ font-weight:700; }
+.no-print{ display:none !important; }
 
 /* Grid de campos */
 .grid{
@@ -189,19 +201,17 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   .term-title{ font-size:18px; }
 }
 
-/* Ajustes finos extra (mantendo padrão do termo.css) */
+/* Ajuste fino extra */
 html.pdf-export .term-meta,
 body.pdf-export .term-meta{
   margin-top:1.2mm !important;
   margin-bottom:4.8mm !important;
 }
 
-/* Linha única garantida (sanitização) */
-.page-head, .page-head::before, .page-head::after, .term-title::before, .term-title::after,
+/* Sanitização de “regras” redundantes */
 .page-head .rule, #pdf-root > .rule, .rule{
-  border:0 !important; background:transparent !important; box-shadow:none !important; height:0 !important;
+  display:none !important; height:0 !important; border:0 !important; background:transparent !important;
 }
-
 /* -------------------- Ajustes ESPECÍFICOS do FORMULÁRIO -------------------- */
 
 /* Step 0: "Próximo" alinhado à direita da pesquisa */
@@ -271,4 +281,66 @@ body.pdf-export .term-meta{
 /* Nunca imprime o modal no PDF */
 @media print{
   .pdf-modal, .pdf-modal *{ display:none !important; }
+}
+/* -------------------- "Não informado" automático (mesmo padrão dos 2 PDFs) -------------------- */
+/* Campos de valor vazios exibem "Não informado" */
+.field .value:empty::after{
+  content:"Não informado";
+  color:var(--muted);
+  opacity:.9;
+}
+
+/* Listas vazias exibem "Não informado" */
+.term-section ul:empty::before{
+  content:"Não informado";
+  color:var(--muted);
+  display:block;
+  padding-left:0;
+}
+
+/* Fallback "Não informado" para QUALQUER [data-k] vazio (ex.: textos livres) */
+[data-k]:empty::after{
+  content:"Não informado";
+  color:var(--muted);
+  opacity:.9;
+}
+
+/* Preserva quebras de linha e espaços em textos livres (ex.: justificativas) */
+p[data-k], li[data-k], span[data-k], div[data-k]{
+  white-space:pre-line; /* \n -> quebra de linha */
+  overflow-wrap:break-word;
+}
+
+/* Utilitário opcional */
+.ni, .not-informed{
+  color:var(--muted) !important;
+  font-style:italic;
+}
+
+/* ===== Regras de mídia impressa (PDF) ===== */
+@media print{
+  .page-head,
+  .logos-wrap,
+  .logos-wrap img{
+    break-inside:avoid;
+    page-break-inside:avoid;
+    break-after:avoid;
+    page-break-after:avoid;
+  }
+
+  .term-title{
+    margin-top:6mm;
+    break-before:avoid;
+    page-break-before:avoid;
+  }
+
+  .break-before{
+    break-before:page;
+    page-break-before:always;
+  }
+
+  .term-section{
+    break-inside:avoid-page;
+    page-break-inside:avoid;
+  }
 }

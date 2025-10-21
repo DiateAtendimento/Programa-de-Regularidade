@@ -14,32 +14,25 @@
   <!-- Estilos oficiais do termo (usa Rawline no PDF) -->
   <link rel="stylesheet" href="/termo_solic_crp.css">
 
-  <!-- Ajustes complementares específicos para o PDF -->
+  <!-- Ajustes complementares específicos -->
   <style>
-    /* Evitar quebras ruins e permitir controle fino de página */
     .avoid-break { break-inside: avoid; page-break-inside: avoid; }
     .page-break  { break-before: page; page-break-before: always; }
     .break-before{ break-before: page; page-break-before: always; }
 
-    /* Rodapé com logos fixo: evita sobreposição do conteúdo nas logos da página seguinte */
+    /* Rodapé com logos fixo para 2+ páginas */
     @media print {
-      @page { margin: 14mm 12mm 26mm; } /* margem inferior maior p/ caber as logos */
-      body { margin-bottom: 36mm; }     /* reserva espaço visual p/ rodapé fixo */
+      @page { margin: 14mm 12mm 26mm; }
+      body { margin-bottom: 36mm; }
       #rodape {
-        position: fixed;
-        bottom: 0; left: 0; right: 0;
-        text-align: center;
-        padding: 3mm 0 0;
-        background: #fff;               /* garante fundo branco sob as logos */
+        position: fixed; bottom: 0; left: 0; right: 0;
+        text-align: center; padding: 3mm 0 0; background: #fff;
       }
-      #rodape .logos-wrap {
-        display: inline-flex; gap: 12mm; align-items: center; justify-content: center;
-      }
-      #rodape img { max-height: 14mm; } /* leve redução p/ dar folga */
-      .term-section { padding-bottom: 4mm; } /* respiro padrão */
+      #rodape .logos-wrap { display: inline-flex; gap: 12mm; align-items: center; justify-content: center; }
+      #rodape img { max-height: 14mm; }
+      .term-section { padding-bottom: 4mm; }
     }
 
-    /* Pequenos ajustes visuais úteis também na tela */
     .term-title { text-align: center; }
     .term-meta  { text-align: center; margin-bottom: 8px; }
     .small      { font-size: 0.92em; }
@@ -244,14 +237,15 @@
     </main>
   </div>
 
-  <!-- Rodapé fixo com logos: evita invasão de conteúdo nas logos na página 2+ -->
+  <!-- Rodapé fixo com logos -->
   <footer id="rodape" aria-hidden="true">
     <div class="logos-wrap">
       <img src="/imagens/logo-secretaria-complementar.svg" alt="Secretaria" />
       <img src="/imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" />
     </div>
   </footer>
-  <!-- Modal "Gerando PDF…" (não é impresso; estilizado no CSS) -->
+
+  <!-- Modal "Gerando PDF…" -->
   <div id="pdf-modal" class="pdf-modal" aria-hidden="true">
     <div class="pdf-modal__backdrop"></div>
     <div class="pdf-modal__box" role="dialog" aria-modal="true" aria-label="Gerando PDF">
@@ -262,63 +256,153 @@
       </div>
     </div>
   </div>
-
   <script>
     (function () {
-      const $ = (s, r = document) => r.querySelector(s);
-      const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+      const $  = (s, r=document) => r.querySelector(s);
+      const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-      // Fallback global "Não informado" (ligado por padrão)
+      /* ===== Fallbacks “Não informado” ===== */
       const __NA_LABEL__ = () =>
         String((window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_LABEL) || 'Não informado');
 
-      // Se o payload trouxer __NA_ALL, obedecemos; senão, TRUE (mostrar "Não informado")
       const __NA_ALL__ = () => {
         const d = window.__TERMO_DATA__;
         return (d && Object.prototype.hasOwnProperty.call(d, '__NA_ALL'))
-          ? !!d.__NA_ALL
-          : true;
+          ? !!d.__NA_ALL : true;
       };
 
-      function fillText(key, val) {
+      function fillText(key, val){
         const raw = (val == null) ? '' : String(val);
         const trimmed = raw.trim();
         const s = trimmed || (__NA_ALL__() ? __NA_LABEL__() : '');
-        $$( '[data-k="'+key+'"]' ).forEach(el => { el.textContent = s; });
+        $$('[data-k="'+key+'"]').forEach(el => { el.textContent = s; });
       }
 
+      /* ===== Utilitários de listas/texto ===== */
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+
+      function asArr(v){
+        if (Array.isArray(v)) return v.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
+        return String(v||'')
+          .split(/[;\n,]/) /* aceita ;, quebra de linha e , */
+          .map(s => s.trim())
+          .filter(Boolean);
+      }
+
+      function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
 
       function liList(ulSel, items){
         const ul = $(ulSel);
         if (!ul) return;
-
-        const norm = (Array.isArray(items) ? items : String(items||'').split(/[,;\n]/))
-                    .map(s => String(s||'').trim())
-                    .filter(Boolean);
-
+        const list = asArr(items);
         ul.innerHTML = '';
-        if (!norm.length) {
-          const li = document.createElement('li'); li.textContent = __NA_LABEL__();
+        if (!list.length){
+          const li = document.createElement('li');
+          li.textContent = __NA_ALL__() ? __NA_LABEL__() : '';
           ul.appendChild(li);
           return;
         }
-        norm.forEach(txt => {
+        list.forEach(txt => {
           const li = document.createElement('li'); li.textContent = txt; ul.appendChild(li);
         });
       }
 
-      function show(id, v){ const el=$('#'+id); if(el) el.hidden=!v; }
-      function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
-      const asArr = v => Array.isArray(v) ? v : String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
+      /* ===== Normalização do payload (Form 2 pode variar chaves) ===== */
+      function normalizePayload(p0){
+        const p = Object.assign({}, p0);
 
-      // Modal PDF (abrir/fechar)
-      window.ModalPDF = {
-        open(){ $('#pdf-modal')?.classList.add('pdf-modal--open'); },
-        close(){ $('#pdf-modal')?.classList.remove('pdf-modal--open'); }
-      };
+        /* Cabeçalho/meta */
+        p.ENTE = p.ENTE ?? p.ente;
+        p.UF   = p.UF   ?? p.uf;
+        p.UG   = p.UG   ?? p.ug;
 
-      // Data dd/mm/aaaa robusta
+        p.CNPJ_ENTE = p.CNPJ_ENTE ?? p.cnpj_ente;
+        p.CNPJ_UG   = p.CNPJ_UG   ?? p.cnpj_ug;
+        p.EMAIL_ENTE= p.EMAIL_ENTE?? p.email_ente;
+        p.EMAIL_UG  = p.EMAIL_UG  ?? p.email_ug;
+
+        p.SEI_PROCESSO = p.SEI_PROCESSO ?? p.sei_processo ?? p.PROC_SEI ?? p.proc_sei ?? '';
+        p.PORTARIA_SRPC= p.PORTARIA_SRPC ?? p.portaria_srpc ?? p.PORTARIA_SRPC_MPS ?? '2.024/2025';
+
+        /* Responsáveis */
+        p.NOME_REP_ENTE  = p.NOME_REP_ENTE  ?? p.nome_rep_ente;
+        p.CARGO_REP_ENTE = p.CARGO_REP_ENTE ?? p.cargo_rep_ente;
+        p.CPF_REP_ENTE   = p.CPF_REP_ENTE   ?? p.cpf_rep_ente;
+        p.EMAIL_REP_ENTE = p.EMAIL_REP_ENTE ?? p.email_rep_ente;
+        p.TEL_REP_ENTE   = p.TEL_REP_ENTE   ?? p.tel_rep_ente;
+
+        p.NOME_REP_UG  = p.NOME_REP_UG  ?? p.nome_rep_ug;
+        p.CARGO_REP_UG = p.CARGO_REP_UG ?? p.cargo_rep_ug;
+        p.CPF_REP_UG   = p.CPF_REP_UG   ?? p.cpf_rep_ug;
+        p.EMAIL_REP_UG = p.EMAIL_REP_UG ?? p.email_rep_ug;
+        p.TEL_REP_UG   = p.TEL_REP_UG   ?? p.tel_rep_ug;
+
+        /* 3.1 */
+        p.venc_ult_crp  = p.venc_ult_crp ?? p.DATA_VENCIMENTO_ULTIMO_CRP ?? '';
+
+        /* 3.2 — motivo principal */
+        p.OPT_3_2 = (p.OPT_3_2 || p.opt_3_2 || '').trim();
+        if (!p.OPT_3_2){
+          const yes = v => String(v||'').toUpperCase() === 'SIM';
+          if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE)) p.OPT_3_2 = '3.2.1';
+          else if (yes(p.FIN_3_2_DEFICIT_ATUARIAL))    p.OPT_3_2 = '3.2.2';
+          else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) p.OPT_3_2 = '3.2.3';
+          else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) p.OPT_3_2 = '3.2.4';
+        }
+
+        /* 3.3 — critérios: aceitar vários nomes */
+        const candCriterios = (
+            p.CRITERIOS_IRREGULARES
+         || p.CRITERIOS_LIST
+         || p.CRIT_IRREGULARES
+         || p.CRITERIOS
+         || p.CODIGOS_CRITERIOS
+         || p.codigos_criterios
+         || ''
+        );
+        p.__CRITERIOS_ARR__ = asArr(candCriterios);
+
+        /* 4 — fase selecionada: aceitar ‘FASE’, ‘fase’, ‘FASE_PROGRAMA’, etc. */
+        p.__FASE_SEL__ = String(
+          p.FASE_PROGRAMA || p.fase_programa || p.FASE || p.fase || ''
+        ).trim();
+
+        /* 4.2–4.6 — listas podem vir como string única */
+        p.F41_OPCAO = p.F41_OPCAO || p.f41_opcao || '';
+
+        p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || '');
+        p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || '');
+
+        p.F44_CRITERIOS   = asArr(p.F44_CRITERIOS   || p.f44_criterios   || p.fase44_criterios   || '');
+        p.F44_DECLS       = asArr(p.F44_DECLS       || p.f44_decls       || p.fase44_decls       || '');
+        p.F44_FINALIDADES = asArr(p.F44_FINALIDADES || p.f44_finalidades || p.fase44_finalidades || '');
+        p.F44_ANEXOS      = p.F44_ANEXOS || p.f44_anexos || p.fase44_anexos || '';
+
+        p.F45_DECLS = asArr(p.F45_DECLS || p.f45_decls || '');
+        p.F45_DOCS  = p.F45_DOCS  || p.f45_docs  || '';
+        p.F45_JUST  = p.F45_JUST  || p.f45_just  || '';
+        p.F45_OK451 = p.F45_OK451 || p.f45_ok451 || false;
+
+        p.F46_CRITERIOS   = asArr(p.F46_CRITERIOS   || p.f46_criterios   || '');
+        p.F46_DECLS       = asArr(p.F46_DECLS       || p.f46_decls       || '');
+        p.F46_FINALIDADES = asArr(p.F46_FINALIDADES || p.f46_finalidades || '');
+        p.F46_ANEXOS      = p.F46_ANEXOS      || p.f46_anexos      || '';
+        p.F46_COMP_CUMPR  = p.F46_COMP_CUMPR  || p.f46_comp_cumpr  || '';
+        p.F46_JUST_PLANOS = p.F46_JUST_PLANOS || p.f46_just_planos || '';
+
+        p.F46_PROGESTAO = p.F46_PROGESTAO || p.f46_progestao;
+        p.F46_PORTE     = p.F46_PORTE     || p.f46_porte;
+        p.F46_JUST_D    = p.F46_JUST_D    || p.f46_just_d;
+        p.F46_DOCS_D    = p.F46_DOCS_D    || p.f46_docs_d;
+        p.F46_JUST_E    = p.F46_JUST_E    || p.f46_just_e;
+        p.F46_DOCS_E    = p.F46_DOCS_E    || p.f46_docs_e;
+
+        /* Datas/assinaturas */
+        p.DATA_TERMO_GERADO = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
+
+        return p;
+      }
+      /* ===== Lógica principal ===== */
       function hojeBR_robusto(){
         try{
           const s = new Date().toLocaleDateString('pt-BR');
@@ -331,56 +415,56 @@
         return `${dd}/${mm}/${yyyy}`;
       }
 
-      // Esfera 1.1 — normaliza para duas opções fixas
       function normalizarEsfera(txt){
         const t = String(txt||'').toLowerCase();
         if (t.includes('estadual') || t.includes('distrit')) return '1.1.2 Estadual/Distrital';
         return '1.1.1 RPPS Municipal';
       }
-      function run(payload){
-        const p = payload || {};
 
-        /* ===== 1) Cabeçalho/meta ===== */
-        fillText('ente', p.ENTE || p.ente);
-        fillText('uf', p.UF || p.uf);
-        fillText('ug', p.UG || p.ug);
-        fillText('cnpj_ente', p.CNPJ_ENTE || p.cnpj_ente);
-        fillText('cnpj_ug', p.CNPJ_UG || p.cnpj_ug);
-        fillText('email_ente', p.EMAIL_ENTE || p.email_ente);
-        fillText('email_ug', p.EMAIL_UG || p.email_ug);
+      function show(id, v){ const el=$('#'+id); if(el) el.hidden=!v; }
+      function showOnlyPhase(code){
+        const ids = { '4.1':'fase-41','4.2':'fase-42','4.3':'fase-43','4.4':'fase-44','4.5':'fase-45','4.6':'fase-46' };
+        Object.values(ids).forEach(id => show(id,false));
+        if (ids[code]) show(ids[code], true);
+      }
+
+      function run(payload){
+        const p = normalizePayload(payload || {});
+
+        /* 1) Cabeçalho/meta */
+        fillText('ente', p.ENTE);
+        fillText('uf',   p.UF);
+        fillText('ug',   p.UG);
+        fillText('cnpj_ente', p.CNPJ_ENTE);
+        fillText('cnpj_ug',   p.CNPJ_UG);
+        fillText('email_ente',p.EMAIL_ENTE);
+        fillText('email_ug',  p.EMAIL_UG);
         fillText('N_GESCON', p.N_GESCON || p.n_gescon || '');
         fillText('DATA_ENC_VIA_GESCON', p.DATA_ENC_VIA_GESCON || p.data_enc_via_gescon || '');
-        fillText('SEI_PROCESSO', p.SEI_PROCESSO || p.sei_processo || '');
-        fillText('PORTARIA_SRPC', p.PORTARIA_SRPC || p.portaria_srpc || p.PORTARIA_SRPC_MPS || '2.024/2025');
+        fillText('SEI_PROCESSO', p.SEI_PROCESSO);
+        fillText('PORTARIA_SRPC', p.PORTARIA_SRPC);
 
-        /* ===== 2) Responsáveis ===== */
-        fillText('nome_rep_ente',  p.NOME_REP_ENTE || p.nome_rep_ente);
-        fillText('cargo_rep_ente', p.CARGO_REP_ENTE || p.cargo_rep_ente);
-        fillText('cpf_rep_ente',   p.CPF_REP_ENTE || p.cpf_rep_ente);
-        fillText('email_rep_ente', p.EMAIL_REP_ENTE || p.email_rep_ente);
-        fillText('tel_rep_ente',   p.TEL_REP_ENTE || p.tel_rep_ente);
+        /* 2) Responsáveis */
+        fillText('nome_rep_ente',  p.NOME_REP_ENTE);
+        fillText('cargo_rep_ente', p.CARGO_REP_ENTE);
+        fillText('cpf_rep_ente',   p.CPF_REP_ENTE);
+        fillText('email_rep_ente', p.EMAIL_REP_ENTE);
+        fillText('tel_rep_ente',   p.TEL_REP_ENTE);
 
-        fillText('nome_rep_ug',  p.NOME_REP_UG || p.nome_rep_ug);
-        fillText('cargo_rep_ug', p.CARGO_REP_UG || p.cargo_rep_ug);
-        fillText('cpf_rep_ug',   p.CPF_REP_UG || p.cpf_rep_ug);
-        fillText('email_rep_ug', p.EMAIL_REP_UG || p.email_rep_ug);
-        fillText('tel_rep_ug',   p.TEL_REP_UG || p.tel_rep_ug);
+        fillText('nome_rep_ug',  p.NOME_REP_UG);
+        fillText('cargo_rep_ug', p.CARGO_REP_UG);
+        fillText('cpf_rep_ug',   p.CPF_REP_UG);
+        fillText('email_rep_ug', p.EMAIL_REP_UG);
+        fillText('tel_rep_ug',   p.TEL_REP_UG);
 
-        /* ===== 3) CRP ===== */
-        fillText('venc_ult_crp', p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
+        /* 3) CRP */
+        fillText('venc_ult_crp', p.venc_ult_crp || '');
 
-        // 3.2 — motivo principal (seleção única → mostra só a escolhida)
+        // 3.2 — motivo principal
         (function () {
-          let code = (p.OPT_3_2 || p.opt_3_2 || '').trim();
-          if (!code) {
-            const yes = v => String(v||'').toUpperCase() === 'SIM';
-            if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE)) code = '3.2.1';
-            else if (yes(p.FIN_3_2_DEFICIT_ATUARIAL))    code = '3.2.2';
-            else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) code = '3.2.3';
-            else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) code = '3.2.4';
-          }
-          const ul = document.querySelector('#opt-3-2');
+          const ul = $('#opt-3-2');
           if (!ul) return;
+          const code = (p.OPT_3_2 || '').trim();
           if (code) {
             [...ul.children].forEach(li => { if (li.getAttribute('data-code') !== code) li.remove(); });
           } else {
@@ -391,23 +475,12 @@
           }
         })();
 
-        // 3.3 — critérios irregulares (lista ou "Não informado")
-        const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
-          ? p.CRITERIOS_IRREGULARES
-          : String(p.CRITERIOS_IRREGULARES || '')
-              .split(/[;,]/)
-              .map(s=>s.trim())
-              .filter(Boolean);
-        liList('#criterios-list', criterios);
+        // 3.3 — critérios irregulares
+        liList('#criterios-list', p.__CRITERIOS_ARR__);
 
-        /* ===== 4) Fase ===== */
-        const faseSel = (p.FASE_PROGRAMA || p.fase_programa || '').trim();
+        /* 4) Fase */
+        const faseSel = p.__FASE_SEL__;
         fillText('fase_programa', faseSel || '—');
-        function showOnlyPhase(code){
-          const ids = { '4.1':'fase-41','4.2':'fase-42','4.3':'fase-43','4.4':'fase-44','4.5':'fase-45','4.6':'fase-46' };
-          Object.values(ids).forEach(id => show(id,false));
-          if (ids[code]) show(ids[code], true);
-        }
         showOnlyPhase(faseSel);
 
         switch (faseSel) {
@@ -419,19 +492,19 @@
             liList('#f41-itens', it);
             break;
           }
-          case '4.2': liList('#f42-itens', asArr(p.F42_LISTA)); break;
+          case '4.2': liList('#f42-itens', p.F42_LISTA); break;
           case '4.3': {
-            liList('#f43-itens', asArr(p.F43_LISTA));
+            liList('#f43-itens', p.F43_LISTA);
             fillText('f43_just',  p.F43_JUST  || '');
             fillText('f43_plano', p.F43_PLANO || '');
             break;
           }
           case '4.4': {
-            liList('#f44-criterios',   asArr(p.F44_CRITERIOS));
-            liList('#f44-decls',       asArr(p.F44_DECLS));
-            liList('#f44-finalidades', asArr(p.F44_FINALIDADES));
+            liList('#f44-criterios',   p.F44_CRITERIOS);
+            liList('#f44-decls',       p.F44_DECLS);
+            liList('#f44-finalidades', p.F44_FINALIDADES);
             const ax = splitLines(p.F44_ANEXOS || '');
-            const box = document.querySelector('#f44-anexos');
+            const box = $('#f44-anexos');
             if (box) box.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             break;
           }
@@ -440,14 +513,14 @@
             liList('#f45-decls', decls);
             const d = splitLines(p.F45_DOCS || '');
             const j = splitLines(p.F45_JUST || '');
-            const docsBox = document.querySelector('#f45-docs');
-            const justBox = document.querySelector('#f45-just');
+            const docsBox = $('#f45-docs');
+            const justBox = $('#f45-just');
             if (docsBox) docsBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             if (justBox) justBox.innerHTML = j.length ? '<ul>'+j.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             break;
           }
           case '4.6': {
-            liList('#f46-criterios',   asArr(p.F46_CRITERIOS));
+            liList('#f46-criterios',   p.F46_CRITERIOS);
             const decls = [];
             if (Array.isArray(p.F46_DECLS)) decls.push(...p.F46_DECLS);
             if (p.F46_PROGESTAO) decls.push('Nível Pró-Gestão RPPS: ' + p.F46_PROGESTAO);
@@ -457,42 +530,35 @@
             if (p.F46_JUST_E)    decls.push('(e) Justificativas: ' + p.F46_JUST_E);
             if (p.F46_DOCS_E)    decls.push('(e) Documentos: ' + p.F46_DOCS_E);
             liList('#f46-decls', decls);
-            liList('#f46-finalidades', asArr(p.F46_FINALIDADES));
+            liList('#f46-finalidades', p.F46_FINALIDADES);
             const ax = splitLines(p.F46_ANEXOS || '');
-            const axBox = document.querySelector('#f46-anexos');
+            const axBox = $('#f46-anexos');
             if (axBox) axBox.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            const jp = document.getElementById('f46-just-planos');
-            const cc = document.getElementById('f46-comp-cumpr');
+            const jp = $('#f46-just-planos');
+            const cc = $('#f46-comp-cumpr');
             if (jp) jp.textContent = (p.F46_JUST_PLANOS || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-            if (cc) cc.textContent = (p.F46_COMP_CUMPR || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+            if (cc) cc.textContent = (p.F46_COMP_CUMPR  || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             break;
           }
         }
 
-        /* ===== 5) Justificativas gerais ===== */
+        /* 5) Justificativas gerais */
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
 
-        /* ===== 6) Assinaturas (data) ===== */
-        const preferida = (p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '').trim?.() || (p.DATA_TERMO_GERADO ?? p.DATA ?? p.DATA_SOLIC_GERADA ?? '');
-        fillText('data_termo', (String(preferida||'').trim()) || hojeBR_robusto());
-
-        // Fallback extra: se ainda ficou vazio (ou "Não informado"), força hoje em dd/mm/aaaa
+        /* 6) Data/assinaturas */
+        const preferida = (p.DATA_TERMO_GERADO || '').trim();
+        fillText('data_termo', preferida || hojeBR_robusto());
         const dataNode = document.querySelector('[data-k="data_termo"]');
-        if (dataNode && !dataNode.textContent.trim()) {
-          dataNode.textContent = hojeBR_robusto();
-        }
+        if (dataNode && !dataNode.textContent.trim()) dataNode.textContent = hojeBR_robusto();
 
-        /* ===== 7) 1.1 Esfera + legenda assinatura ===== */
+        /* 7) Esfera 1.1 + legenda assinatura dinâmica */
         const esferaTxt = normalizarEsfera(p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || p.fase_esfera);
         const esferaNode = document.querySelector('[data-esfera]');
         if (esferaNode) esferaNode.textContent = esferaTxt;
-
-        // Preenche o cabeçalho do 1.1 (mostrará explicitamente 1.1.1 ou 1.1.2)
         const esferaTitulo = document.querySelector('h3 .label');
         if (esferaTitulo) esferaTitulo.textContent = '1.1 Esfera de Governo';
-
         const linhaTitulo = document.querySelector('h3 + .linha .titulo');
-        if (linhaTitulo) linhaTitulo.textContent = esferaTxt;  // ex.: "1.1.1 RPPS Municipal"
+        if (linhaTitulo) linhaTitulo.textContent = esferaTxt;
 
         (function(){
           const sig = document.getElementById('sig-cap-ente');
@@ -501,14 +567,11 @@
             sig.innerHTML = isEstDistr
               ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
               : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
-
-            // Reaplica os spans data-k inseridos agora
-            fillText('ente', p.ENTE || p.ente);
-            fillText('uf',   p.UF   || p.uf);
+            fillText('ente', p.ENTE); fillText('uf', p.UF);
           }
         })();
 
-        // Sinaliza pronto para imprimir (aguarda fontes de tela ou timeout curto)
+        /* Sinalizador “pronto para imprimir” */
         try{
           if (!window.__TERMO_READY_FIRED__) {
             window.__TERMO_READY_FIRED__ = true;
@@ -524,10 +587,16 @@
         }catch(_){}
       }
 
-      // Expor runner
+      /* Modal PDF (abrir/fechar) */
+      window.ModalPDF = {
+        open(){ $('#pdf-modal')?.classList.add('pdf-modal--open'); },
+        close(){ $('#pdf-modal')?.classList.remove('pdf-modal--open'); }
+      };
+
+      /* Exposição pública */
       window.__TERMO_RUN__ = run;
 
-      // 1) Querystring → __TERMO_DATA__
+      /* Injeções de dados */
       (function injectFromQueryIfPresent(){
         try{
           const qs = new URLSearchParams(window.location.search || '');
@@ -539,7 +608,6 @@
         }catch(_){}
       })();
 
-      // 2) Hooks de injeção
       if (window.__TERMO_DATA__) { try { run(window.__TERMO_DATA__); } catch {} }
       document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
       document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
@@ -550,7 +618,7 @@
         }
       });
 
-      // 3) Polling curto p/ __TERMO_DATA__ injetado por evaluateOnNewDocument
+      /* Polling curto para __TERMO_DATA__ injetado via evaluateOnNewDocument */
       (function spinWait(maxMs=4000, step=120){
         const t0 = Date.now();
         const iv = setInterval(() => {
