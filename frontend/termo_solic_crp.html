@@ -21,21 +21,22 @@
     .page-break  { break-before: page; page-break-before: always; }
     .break-before{ break-before: page; page-break-before: always; }
 
-    /* Rodapé com logos fixo: impede sobreposição do conteúdo nas logos da página seguinte */
+    /* Rodapé com logos fixo: evita sobreposição do conteúdo nas logos da página seguinte */
     @media print {
-      @page { margin: 14mm 12mm 20mm; } /* margem inferior maior p/ caber as logos */
-      body { margin-bottom: 28mm; }     /* reserva espaço visual p/ rodapé fixo */
+      @page { margin: 14mm 12mm 26mm; } /* margem inferior maior p/ caber as logos */
+      body { margin-bottom: 36mm; }     /* reserva espaço visual p/ rodapé fixo */
       #rodape {
         position: fixed;
         bottom: 0; left: 0; right: 0;
         text-align: center;
-        padding: 4mm 0 0;
+        padding: 3mm 0 0;
         background: #fff;               /* garante fundo branco sob as logos */
       }
       #rodape .logos-wrap {
         display: inline-flex; gap: 12mm; align-items: center; justify-content: center;
       }
-      #rodape img { max-height: 16mm; }
+      #rodape img { max-height: 14mm; } /* leve redução p/ dar folga */
+      .term-section { padding-bottom: 4mm; } /* respiro padrão */
     }
 
     /* Pequenos ajustes visuais úteis também na tela */
@@ -210,6 +211,7 @@
           <div id="f46-comp-cumpr"></div>
         </div>
       </section>
+
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section avoid-break">
         <h2>5. JUSTIFICATIVAS / INFORMAÇÕES ADICIONAIS</h2>
@@ -249,7 +251,6 @@
       <img src="/imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" />
     </div>
   </footer>
-
   <!-- Modal "Gerando PDF…" (não é impresso; estilizado no CSS) -->
   <div id="pdf-modal" class="pdf-modal" aria-hidden="true">
     <div class="pdf-modal__backdrop"></div>
@@ -261,6 +262,7 @@
       </div>
     </div>
   </div>
+
   <script>
     (function () {
       const $ = (s, r = document) => r.querySelector(s);
@@ -335,7 +337,6 @@
         if (t.includes('estadual') || t.includes('distrit')) return '1.1.2 Estadual/Distrital';
         return '1.1.1 RPPS Municipal';
       }
-
       function run(payload){
         const p = payload || {};
 
@@ -475,10 +476,23 @@
         const preferida = (p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '').trim?.() || (p.DATA_TERMO_GERADO ?? p.DATA ?? p.DATA_SOLIC_GERADA ?? '');
         fillText('data_termo', (String(preferida||'').trim()) || hojeBR_robusto());
 
-        /* ===== 7) 1.1 Esfera + legenda assinatura (ente estadual/distrital x municipal) ===== */
+        // Fallback extra: se ainda ficou vazio (ou "Não informado"), força hoje em dd/mm/aaaa
+        const dataNode = document.querySelector('[data-k="data_termo"]');
+        if (dataNode && !dataNode.textContent.trim()) {
+          dataNode.textContent = hojeBR_robusto();
+        }
+
+        /* ===== 7) 1.1 Esfera + legenda assinatura ===== */
         const esferaTxt = normalizarEsfera(p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || p.fase_esfera);
         const esferaNode = document.querySelector('[data-esfera]');
         if (esferaNode) esferaNode.textContent = esferaTxt;
+
+        // Preenche o cabeçalho do 1.1 (mostrará explicitamente 1.1.1 ou 1.1.2)
+        const esferaTitulo = document.querySelector('h3 .label');
+        if (esferaTitulo) esferaTitulo.textContent = '1.1 Esfera de Governo';
+
+        const linhaTitulo = document.querySelector('h3 + .linha .titulo');
+        if (linhaTitulo) linhaTitulo.textContent = esferaTxt;  // ex.: "1.1.1 RPPS Municipal"
 
         (function(){
           const sig = document.getElementById('sig-cap-ente');
