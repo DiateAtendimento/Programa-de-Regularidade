@@ -2290,14 +2290,17 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         }, payloadForClient);
         if (DEBUG_PDF) log('payload pré-injetado (evaluateOnNewDocument)');
 
-        /* ==========================================
-           2) Candidatos — prioriza o template correto
-           ========================================== */
+        /* =========================
+          2) Candidatos — prioriza o template correto
+          ========================================== */
         const CANDIDATES = [
+          // novo alias pedido + template oficial + fallback de forms (somente se necessário)
+          'solic_crp_2.html',
           'termo_solic_crp.html',
           'form_gera_termo_solic_crp_2.html',
           'form_gera_termo_solic_crp.html'
         ];
+
         const urlsToTry = [
           ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
           ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
@@ -2333,18 +2336,42 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           throw new Error('Template inválido para impressão (sem #pdf-root/.term-wrap, com controles, ou título incorreto).');
         }
 
-        // 🔁 (Re)injeção tardia — elimina race condition com o template
+        /* ============ (Re)injeção + FORÇAR RUN ============ */
+        // mantém a re-injeção
         await page.evaluate((payload) => {
           try {
             // disponibiliza / atualiza o payload no contexto da página
             window.__TERMO_DATA__ = payload || {};
-            // dispara o evento consumido pelo script do template
+            // dispara o evento que o template já escuta
             document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-          } catch (e) {
-            // segue silencioso
-          }
+          } catch (e) {}
         }, payloadForClient);
 
+        // 👇 FORÇA a execução do run(...) do template, se existir
+        await page.evaluate(() => {
+          try {
+            const runner =
+              (typeof window.__TERMO_RUN__ === 'function' && window.__TERMO_RUN__) ||
+              (typeof window.run === 'function' && window.run) ||
+              null;
+            if (runner) runner(window.__TERMO_DATA__ || {});
+          } catch (_) {}
+        });
+
+        /* Aguarda o sinal de "pronto para imprimir" do template */
+        await page.waitForSelector('#pdf-root', { timeout: 20000 }).catch(()=>{});
+        await page.evaluate(() => new Promise((resolve) => {
+          const finish = async () => {
+            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_) {}
+            setTimeout(resolve, 150);
+          };
+          if (window.__TERMO_PRINT_READY__ === true) return void finish();
+          document.addEventListener('TERMO_PRINT_READY', () => finish(), { once: true });
+        }));
+        await page.evaluate(() => {
+          document.documentElement.classList.add('pdf-export');
+          document.body.classList.add('pdf-export');
+        });
 
         /* =========================================================
            3) (REMOVIDA) Injeção tardia — não é mais necessária aqui
