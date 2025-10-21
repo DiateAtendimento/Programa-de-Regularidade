@@ -1401,7 +1401,7 @@ const schemaTermoPdf = Joi.object({
   DATA_TERMO_GERADO: Joi.string().allow(''),
 }).unknown(true);
 
-/* === PDF: schema para Termo de Solicitação de CRP Emergencial (inalterado) === */
+/* === PDF: schema para Termo de Solicitação de CRP Emergencial (agora tolerante a "") === */
 const schemaTermoSolicPdf = Joi.object({
   UF: Joi.string().allow(''),
   ENTE: Joi.string().allow(''),
@@ -1450,7 +1450,14 @@ const schemaTermoSolicPdf = Joi.object({
   F46_JUST_PLANOS: Joi.string().allow(''),
   F46_COMP_CUMPR: Joi.string().allow(''),
   JUSTIFICATIVAS_GERAIS: Joi.string().allow(''),
-  HAS_TERMO_ENC_GESCON: Joi.alternatives().try(Joi.string(), Joi.number(), Joi.boolean()).optional(),
+
+  /* ✅ aceita "", "SIM"/"NAO", 1/0, true/false e faz *coerce* pra boolean */
+  HAS_TERMO_ENC_GESCON: Joi.boolean()
+    .truthy('SIM','S','1',1,true,'true')
+    .falsy('NAO','N','0',0,false,'false','')
+    .default(false)
+    .optional(),
+
   N_GESCON: Joi.string().allow(''),
   DATA_ENC_VIA_GESCON: Joi.string().allow(''),
   DATA_SOLIC_GERADA: Joi.string().allow(''),
@@ -1458,6 +1465,7 @@ const schemaTermoSolicPdf = Joi.object({
   DATA_TERMO_GERADO: Joi.string().allow(''),
   HORA_TERMO_GERADO: Joi.string().allow(''),
 }).unknown(true);
+
 
 /* ===== CRP (Solicitação) — Joi Schemas ===== */
 const schemaSolicCrp = Joi.object({
@@ -1952,8 +1960,13 @@ app.post('/api/gerar-termo', async (req, res) => {
 /** POST /api/gerar-solic-crp  — IDEMPOTENTE (Solicitação CRP) */
 app.post('/api/gerar-solic-crp', async (req, res) => {
   try {
-    const p = validateOr400(res, schemaSolicCrp, req.body || {});
+    // normaliza corpo: remove vazio em HAS_TERMO_ENC_GESCON (vira undefined → default false)
+    const body = { ...(req.body || {}) };
+    if (body.HAS_TERMO_ENC_GESCON === '') delete body.HAS_TERMO_ENC_GESCON;
+
+    const p = validateOr400(res, schemaTermoSolicPdf, body);
     if (!p) return;
+
 
     await authSheets();
     const s = await getOrCreateSheet('Solic_CRPs', SOLIC_HEADERS);
