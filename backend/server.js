@@ -2348,6 +2348,14 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           } catch (_) {}
         }, payloadForClient);
 
+        const debug = await page.evaluate(() => ({
+          hasRunner: typeof window.__TERMO_RUN__ === 'function' || typeof window.run === 'function',
+          keys: Object.keys(window.__TERMO_DATA__ || {}),
+          sample: (window.__TERMO_DATA__ || {}).ENTE || null
+        }));
+        log('debug termo_solic_crp:', debug);
+
+
         /* ===========================================================
           Fallback universal de hidratação + tenta runner do template
           =========================================================== */
