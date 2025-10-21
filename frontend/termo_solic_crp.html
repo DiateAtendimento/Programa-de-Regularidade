@@ -267,15 +267,32 @@
 
       function fillText(key, val) {
         const raw = (val == null) ? '' : String(val);
-        const s = raw || (__NA_ALL__() ? __NA_LABEL__() : '');
+        const trimmed = raw.trim();              // <- trata "   " como vazio
+        const s = trimmed || (__NA_ALL__() ? __NA_LABEL__() : '');
         $$( '[data-k="'+key+'"]' ).forEach(el => { el.textContent = s; });
       }
+
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+      
       function liList(ulSel, items){
-        const ul=$(ulSel); if(!ul) return;
-        const list=(items||[]).filter(Boolean).map(t=>'<li>'+escapeHtml(t)+'</li>');
-        ul.innerHTML = list.length ? list.join('') : `<li class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</li>`;
+        const ul = $(ulSel);
+        if (!ul) return;
+
+        const norm = (Array.isArray(items) ? items : String(items||'').split(','))
+                    .map(s => String(s||'').trim())
+                    .filter(Boolean);           // <- remove strings vazias/espaços
+
+        ul.innerHTML = '';
+        if (!norm.length) {
+          const li = document.createElement('li'); li.textContent = __NA_LABEL__();
+          ul.appendChild(li);
+          return;
+        }
+        norm.forEach(txt => {
+          const li = document.createElement('li'); li.textContent = txt; ul.appendChild(li);
+        });
       }
+
       function selectByCode(listSel, code){ if(!code) return; const ul=$(listSel); if(!ul) return; const node=ul.querySelector('[data-code="'+code+'"]'); if(node) node.innerHTML='<strong>'+node.textContent+'</strong>'; }
       function show(id, v){ const el=$('#'+id); if(el) el.hidden=!v; }
       function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
@@ -412,19 +429,23 @@
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
 
         /* ===== 6) Assinaturas (data) ===== */
-        const hoje = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
-        fillText('data_termo', hoje);
+        const preferida = (p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '').trim();
+        const hojeBR = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        fillText('data_termo', preferida || hojeBR);
+
 
         /* ===== 1.1 Esfera + legenda de assinatura ===== */
         const esfera = p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || '';
         selectByCode('#opt-1-1', /estadual|distrital/i.test(esfera) ? '1.1.2' : '1.1.1');
         (function(){
           const sig = document.getElementById('sig-cap-ente');
-          if (sig) {
-            sig.innerHTML = (/estadual|distrit/i.test(esfera))
-              ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
-              : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
-          }
+          if (!sig) return;
+          const ente = (p.ENTE || p.ente || __NA_LABEL__()).trim();
+          const uf   = (p.UF   || p.uf   || __NA_LABEL__()).trim();
+          const ehEstadual = /estadual|distrital/i.test(p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || '');
+          sig.innerHTML = ehEstadual
+            ? 'Representante legal do Estado/Distrito de ' + escapeHtml(ente) + '/' + escapeHtml(uf)
+            : 'Representante legal do Município de ' + escapeHtml(ente) + '/' + escapeHtml(uf);
         })();
 
         // Sinaliza pronto pro print (aguarda fontes de tela ou timeout curto)
