@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
 
   <!-- Estilos oficiais do termo (usa Rawline no PDF) -->
-  <link rel="stylesheet" href="/termo_solic_crp.css">
+  <link rel="stylesheet" href="./termo_solic_crp.css">
 
   <!-- Ajustes complementares específicos -->
   <style>
@@ -40,16 +40,17 @@
     .mt         { margin-top: 8px; }
   </style>
 </head>
-<body>
-  <div id="pdf-root">
-    <main class="term-wrap">
-      <header class="page-head">
-        <div class="logos-wrap">
-          <img src="/imagens/logo-secretaria-complementar.svg" alt="Secretaria" loading="eager" />
-          <img src="/imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
-        </div>
-      </header>
 
+<body>
+  <!-- Cabeçalho FIXO (anti-sobreposição em 2+ páginas) -->
+  <header class="prp-header" aria-hidden="true">
+    <div class="logos-wrap">
+      <img src="/imagens/logo-secretaria-complementar.svg" alt="Secretaria" loading="eager" />
+      <img src="/imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
+    </div>
+  </header>
+  <div id="pdf-root">
+    <main class="term-wrap prp-content">
       <h1 class="term-title">
         <br>TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL<br>
         PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA<br>
@@ -155,7 +156,6 @@
           <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
           <p data-k="f43_plano"></p>
         </div>
-
         <!-- 4.4 -->
         <div class="avoid-break" id="fase-44" hidden>
           <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
@@ -236,8 +236,7 @@
       </footer>
     </main>
   </div>
-
-  <!-- Rodapé fixo com logos -->
+  <!-- Rodapé fixo com logos (impresso) -->
   <footer id="rodape" aria-hidden="true">
     <div class="logos-wrap">
       <img src="/imagens/logo-secretaria-complementar.svg" alt="Secretaria" />
@@ -256,44 +255,36 @@
       </div>
     </div>
   </div>
+
+  <!-- Script embutido (mantido e INALTERADO em lógica) -->
   <script>
     (function () {
       const $  = (s, r=document) => r.querySelector(s);
       const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
-
       /* ===== Fallbacks “Não informado” ===== */
       const __NA_LABEL__ = () =>
         String((window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_LABEL) || 'Não informado');
-
       const __NA_ALL__ = () => {
         const d = window.__TERMO_DATA__;
         return (d && Object.prototype.hasOwnProperty.call(d, '__NA_ALL'))
           ? !!d.__NA_ALL : true;
       };
-
       function fillText(key, val){
         const raw = (val == null) ? '' : String(val);
         const trimmed = raw.trim();
         const s = trimmed || (__NA_ALL__() ? __NA_LABEL__() : '');
         $$('[data-k="'+key+'"]').forEach(el => { el.textContent = s; });
       }
-
-      /* ===== Utilitários de listas/texto ===== */
+      /* ===== Utilitários ===== */
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
-
       function asArr(v){
         if (Array.isArray(v)) return v.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
         return String(v||'')
-          .split(/[;\n,]/) /* aceita ;, quebra de linha e , */
-          .map(s => s.trim())
-          .filter(Boolean);
+          .split(/[;\n,]/).map(s => s.trim()).filter(Boolean);
       }
-
       function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
-
       function liList(ulSel, items){
-        const ul = $(ulSel);
-        if (!ul) return;
+        const ul = $(ulSel); if (!ul) return;
         const list = asArr(items);
         ul.innerHTML = '';
         if (!list.length){
@@ -306,41 +297,25 @@
           const li = document.createElement('li'); li.textContent = txt; ul.appendChild(li);
         });
       }
-
-      /* ===== Normalização do payload (Form 2 pode variar chaves) ===== */
+      /* ===== Normalização do payload ===== */
       function normalizePayload(p0){
         const p = Object.assign({}, p0);
-
-        /* Cabeçalho/meta */
-        p.ENTE = p.ENTE ?? p.ente;
-        p.UF   = p.UF   ?? p.uf;
-        p.UG   = p.UG   ?? p.ug;
-
-        p.CNPJ_ENTE = p.CNPJ_ENTE ?? p.cnpj_ente;
-        p.CNPJ_UG   = p.CNPJ_UG   ?? p.cnpj_ug;
-        p.EMAIL_ENTE= p.EMAIL_ENTE?? p.email_ente;
-        p.EMAIL_UG  = p.EMAIL_UG  ?? p.email_ug;
-
+        p.ENTE = p.ENTE ?? p.ente; p.UF = p.UF ?? p.uf; p.UG = p.UG ?? p.ug;
+        p.CNPJ_ENTE = p.CNPJ_ENTE ?? p.cnpj_ente; p.CNPJ_UG = p.CNPJ_UG ?? p.cnpj_ug;
+        p.EMAIL_ENTE = p.EMAIL_ENTE ?? p.email_ente; p.EMAIL_UG = p.EMAIL_UG ?? p.email_ug;
         p.SEI_PROCESSO = p.SEI_PROCESSO ?? p.sei_processo ?? p.PROC_SEI ?? p.proc_sei ?? '';
-        p.PORTARIA_SRPC= p.PORTARIA_SRPC ?? p.portaria_srpc ?? p.PORTARIA_SRPC_MPS ?? '2.024/2025';
-
-        /* Responsáveis */
-        p.NOME_REP_ENTE  = p.NOME_REP_ENTE  ?? p.nome_rep_ente;
+        p.PORTARIA_SRPC = p.PORTARIA_SRPC ?? p.portaria_srpc ?? p.PORTARIA_SRPC_MPS ?? '2.024/2025';
+        p.NOME_REP_ENTE = p.NOME_REP_ENTE ?? p.nome_rep_ente;
         p.CARGO_REP_ENTE = p.CARGO_REP_ENTE ?? p.cargo_rep_ente;
-        p.CPF_REP_ENTE   = p.CPF_REP_ENTE   ?? p.cpf_rep_ente;
+        p.CPF_REP_ENTE = p.CPF_REP_ENTE ?? p.cpf_rep_ente;
         p.EMAIL_REP_ENTE = p.EMAIL_REP_ENTE ?? p.email_rep_ente;
-        p.TEL_REP_ENTE   = p.TEL_REP_ENTE   ?? p.tel_rep_ente;
-
-        p.NOME_REP_UG  = p.NOME_REP_UG  ?? p.nome_rep_ug;
+        p.TEL_REP_ENTE = p.TEL_REP_ENTE ?? p.tel_rep_ente;
+        p.NOME_REP_UG = p.NOME_REP_UG ?? p.nome_rep_ug;
         p.CARGO_REP_UG = p.CARGO_REP_UG ?? p.cargo_rep_ug;
-        p.CPF_REP_UG   = p.CPF_REP_UG   ?? p.cpf_rep_ug;
+        p.CPF_REP_UG = p.CPF_REP_UG ?? p.cpf_rep_ug;
         p.EMAIL_REP_UG = p.EMAIL_REP_UG ?? p.email_rep_ug;
-        p.TEL_REP_UG   = p.TEL_REP_UG   ?? p.tel_rep_ug;
-
-        /* 3.1 */
-        p.venc_ult_crp  = p.venc_ult_crp ?? p.DATA_VENCIMENTO_ULTIMO_CRP ?? '';
-
-        /* 3.2 — motivo principal */
+        p.TEL_REP_UG = p.TEL_REP_UG ?? p.tel_rep_ug;
+        p.venc_ult_crp = p.venc_ult_crp ?? p.DATA_VENCIMENTO_ULTIMO_CRP ?? '';
         p.OPT_3_2 = (p.OPT_3_2 || p.opt_3_2 || '').trim();
         if (!p.OPT_3_2){
           const yes = v => String(v||'').toUpperCase() === 'SIM';
@@ -349,60 +324,35 @@
           else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) p.OPT_3_2 = '3.2.3';
           else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) p.OPT_3_2 = '3.2.4';
         }
-
-        /* 3.3 — critérios: aceitar vários nomes */
-        const candCriterios = (
-            p.CRITERIOS_IRREGULARES
-         || p.CRITERIOS_LIST
-         || p.CRIT_IRREGULARES
-         || p.CRITERIOS
-         || p.CODIGOS_CRITERIOS
-         || p.codigos_criterios
-         || ''
-        );
+        const candCriterios = (p.CRITERIOS_IRREGULARES || p.CRITERIOS_LIST || p.CRIT_IRREGULARES || p.CRITERIOS || p.CODIGOS_CRITERIOS || p.codigos_criterios || '');
         p.__CRITERIOS_ARR__ = asArr(candCriterios);
-
-        /* 4 — fase selecionada: aceitar ‘FASE’, ‘fase’, ‘FASE_PROGRAMA’, etc. */
-        p.__FASE_SEL__ = String(
-          p.FASE_PROGRAMA || p.fase_programa || p.FASE || p.fase || ''
-        ).trim();
-
-        /* 4.2–4.6 — listas podem vir como string única */
+        p.__FASE_SEL__ = String(p.FASE_PROGRAMA || p.fase_programa || p.FASE || p.fase || '').trim();
         p.F41_OPCAO = p.F41_OPCAO || p.f41_opcao || '';
-
         p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || '');
         p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || '');
-
         p.F44_CRITERIOS   = asArr(p.F44_CRITERIOS   || p.f44_criterios   || p.fase44_criterios   || '');
         p.F44_DECLS       = asArr(p.F44_DECLS       || p.f44_decls       || p.fase44_decls       || '');
         p.F44_FINALIDADES = asArr(p.F44_FINALIDADES || p.f44_finalidades || p.fase44_finalidades || '');
         p.F44_ANEXOS      = p.F44_ANEXOS || p.f44_anexos || p.fase44_anexos || '';
-
         p.F45_DECLS = asArr(p.F45_DECLS || p.f45_decls || '');
         p.F45_DOCS  = p.F45_DOCS  || p.f45_docs  || '';
         p.F45_JUST  = p.F45_JUST  || p.f45_just  || '';
         p.F45_OK451 = p.F45_OK451 || p.f45_ok451 || false;
-
         p.F46_CRITERIOS   = asArr(p.F46_CRITERIOS   || p.f46_criterios   || '');
         p.F46_DECLS       = asArr(p.F46_DECLS       || p.f46_decls       || '');
         p.F46_FINALIDADES = asArr(p.F46_FINALIDADES || p.f46_finalidades || '');
         p.F46_ANEXOS      = p.F46_ANEXOS      || p.f46_anexos      || '';
         p.F46_COMP_CUMPR  = p.F46_COMP_CUMPR  || p.f46_comp_cumpr  || '';
         p.F46_JUST_PLANOS = p.F46_JUST_PLANOS || p.f46_just_planos || '';
-
         p.F46_PROGESTAO = p.F46_PROGESTAO || p.f46_progestao;
         p.F46_PORTE     = p.F46_PORTE     || p.f46_porte;
         p.F46_JUST_D    = p.F46_JUST_D    || p.f46_just_d;
         p.F46_DOCS_D    = p.F46_DOCS_D    || p.f46_docs_d;
         p.F46_JUST_E    = p.F46_JUST_E    || p.f46_just_e;
         p.F46_DOCS_E    = p.F46_DOCS_E    || p.f46_docs_e;
-
-        /* Datas/assinaturas */
         p.DATA_TERMO_GERADO = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
-
         return p;
       }
-      /* ===== Lógica principal ===== */
       function hojeBR_robusto(){
         try{
           const s = new Date().toLocaleDateString('pt-BR');
@@ -414,97 +364,67 @@
         const yyyy = String(d.getFullYear());
         return `${dd}/${mm}/${yyyy}`;
       }
-
       function normalizarEsfera(txt){
         const t = String(txt||'').toLowerCase();
         if (t.includes('estadual') || t.includes('distrit')) return '1.1.2 Estadual/Distrital';
         return '1.1.1 RPPS Municipal';
       }
-
-      function show(id, v){ const el=$('#'+id); if(el) el.hidden=!v; }
+      function show(id, v){ const el=document.getElementById(id); if(el) el.hidden=!v; }
       function showOnlyPhase(code){
         const ids = { '4.1':'fase-41','4.2':'fase-42','4.3':'fase-43','4.4':'fase-44','4.5':'fase-45','4.6':'fase-46' };
         Object.values(ids).forEach(id => show(id,false));
         if (ids[code]) show(ids[code], true);
       }
-
       function run(payload){
         const p = normalizePayload(payload || {});
-
         /* 1) Cabeçalho/meta */
-        fillText('ente', p.ENTE);
-        fillText('uf',   p.UF);
-        fillText('ug',   p.UG);
-        fillText('cnpj_ente', p.CNPJ_ENTE);
-        fillText('cnpj_ug',   p.CNPJ_UG);
-        fillText('email_ente',p.EMAIL_ENTE);
-        fillText('email_ug',  p.EMAIL_UG);
+        fillText('ente', p.ENTE); fillText('uf', p.UF); fillText('ug', p.UG);
+        fillText('cnpj_ente', p.CNPJ_ENTE); fillText('cnpj_ug', p.CNPJ_UG);
+        fillText('email_ente', p.EMAIL_ENTE); fillText('email_ug', p.EMAIL_UG);
         fillText('N_GESCON', p.N_GESCON || p.n_gescon || '');
         fillText('DATA_ENC_VIA_GESCON', p.DATA_ENC_VIA_GESCON || p.data_enc_via_gescon || '');
-        fillText('SEI_PROCESSO', p.SEI_PROCESSO);
-        fillText('PORTARIA_SRPC', p.PORTARIA_SRPC);
-
+        fillText('SEI_PROCESSO', p.SEI_PROCESSO); fillText('PORTARIA_SRPC', p.PORTARIA_SRPC);
         /* 2) Responsáveis */
         fillText('nome_rep_ente',  p.NOME_REP_ENTE);
         fillText('cargo_rep_ente', p.CARGO_REP_ENTE);
         fillText('cpf_rep_ente',   p.CPF_REP_ENTE);
         fillText('email_rep_ente', p.EMAIL_REP_ENTE);
         fillText('tel_rep_ente',   p.TEL_REP_ENTE);
-
         fillText('nome_rep_ug',  p.NOME_REP_UG);
         fillText('cargo_rep_ug', p.CARGO_REP_UG);
         fillText('cpf_rep_ug',   p.CPF_REP_UG);
         fillText('email_rep_ug', p.EMAIL_REP_UG);
         fillText('tel_rep_ug',   p.TEL_REP_UG);
-
         /* 3) CRP */
         fillText('venc_ult_crp', p.venc_ult_crp || '');
-
-        // 3.2 — motivo principal
-        (function () {
-          const ul = $('#opt-3-2');
-          if (!ul) return;
+        (function(){ const ul = document.getElementById('opt-3-2'); if (!ul) return;
           const code = (p.OPT_3_2 || '').trim();
-          if (code) {
-            [...ul.children].forEach(li => { if (li.getAttribute('data-code') !== code) li.remove(); });
-          } else {
-            ul.innerHTML = '';
-            const li = document.createElement('li');
-            li.textContent = __NA_LABEL__();
-            ul.appendChild(li);
-          }
+          if (code) { [...ul.children].forEach(li => { if (li.getAttribute('data-code') !== code) li.remove(); }); }
+          else { ul.innerHTML = ''; const li = document.createElement('li'); li.textContent = __NA_LABEL__(); ul.appendChild(li); }
         })();
-
-        // 3.3 — critérios irregulares
         liList('#criterios-list', p.__CRITERIOS_ARR__);
-
         /* 4) Fase */
-        const faseSel = p.__FASE_SEL__;
-        fillText('fase_programa', faseSel || '—');
-        showOnlyPhase(faseSel);
-
+        const faseSel = p.__FASE_SEL__; fillText('fase_programa', faseSel || '—'); showOnlyPhase(faseSel);
         switch (faseSel) {
           case '4.1': {
             const it = [];
             const v = String(p.F41_OPCAO||'').toLowerCase();
             if (/^4\.1\.1/.test(p.F41_OPCAO) || /incluiu|incluidos|incluídos/.test(v)) it.push('4.1.1 Incluiu todos os débitos (Cadprev).');
             else if (/^4\.1\.2/.test(p.F41_OPCAO) || /não possui|nao possui|regularizad/.test(v)) it.push('4.1.2 Não possui débitos ou já regularizados.');
-            liList('#f41-itens', it);
-            break;
+            liList('#f41-itens', it); break;
           }
           case '4.2': liList('#f42-itens', p.F42_LISTA); break;
           case '4.3': {
             liList('#f43-itens', p.F43_LISTA);
             fillText('f43_just',  p.F43_JUST  || '');
-            fillText('f43_plano', p.F43_PLANO || '');
-            break;
+            fillText('f43_plano', p.F43_PLANO || ''); break;
           }
           case '4.4': {
             liList('#f44-criterios',   p.F44_CRITERIOS);
             liList('#f44-decls',       p.F44_DECLS);
             liList('#f44-finalidades', p.F44_FINALIDADES);
             const ax = splitLines(p.F44_ANEXOS || '');
-            const box = $('#f44-anexos');
+            const box = document.getElementById('f44-anexos');
             if (box) box.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             break;
           }
@@ -513,8 +433,8 @@
             liList('#f45-decls', decls);
             const d = splitLines(p.F45_DOCS || '');
             const j = splitLines(p.F45_JUST || '');
-            const docsBox = $('#f45-docs');
-            const justBox = $('#f45-just');
+            const docsBox = document.getElementById('f45-docs');
+            const justBox = document.getElementById('f45-just');
             if (docsBox) docsBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             if (justBox) justBox.innerHTML = j.length ? '<ul>'+j.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             break;
@@ -532,34 +452,28 @@
             liList('#f46-decls', decls);
             liList('#f46-finalidades', p.F46_FINALIDADES);
             const ax = splitLines(p.F46_ANEXOS || '');
-            const axBox = $('#f46-anexos');
+            const axBox = document.getElementById('f46-anexos');
             if (axBox) axBox.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            const jp = $('#f46-just-planos');
-            const cc = $('#f46-comp-cumpr');
+            const jp = document.getElementById('f46-just-planos');
+            const cc = document.getElementById('f46-comp-cumpr');
             if (jp) jp.textContent = (p.F46_JUST_PLANOS || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             if (cc) cc.textContent = (p.F46_COMP_CUMPR  || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             break;
           }
         }
-
         /* 5) Justificativas gerais */
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
-
         /* 6) Data/assinaturas */
         const preferida = (p.DATA_TERMO_GERADO || '').trim();
         fillText('data_termo', preferida || hojeBR_robusto());
         const dataNode = document.querySelector('[data-k="data_termo"]');
         if (dataNode && !dataNode.textContent.trim()) dataNode.textContent = hojeBR_robusto();
-
         /* 7) Esfera 1.1 + legenda assinatura dinâmica */
         const esferaTxt = normalizarEsfera(p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || p.fase_esfera);
         const esferaNode = document.querySelector('[data-esfera]');
         if (esferaNode) esferaNode.textContent = esferaTxt;
-        const esferaTitulo = document.querySelector('h3 .label');
-        if (esferaTitulo) esferaTitulo.textContent = '1.1 Esfera de Governo';
-        const linhaTitulo = document.querySelector('h3 + .linha .titulo');
-        if (linhaTitulo) linhaTitulo.textContent = esferaTxt;
-
+        const esferaTitulo = document.querySelector('h3 .label'); if (esferaTitulo) esferaTitulo.textContent = '1.1 Esfera de Governo';
+        const linhaTitulo = document.querySelector('h3 + .linha .titulo'); if (linhaTitulo) linhaTitulo.textContent = esferaTxt;
         (function(){
           const sig = document.getElementById('sig-cap-ente');
           if (sig) {
@@ -570,8 +484,7 @@
             fillText('ente', p.ENTE); fillText('uf', p.UF);
           }
         })();
-
-        /* Sinalizador “pronto para imprimir” */
+        /* pronto para imprimir */
         try{
           if (!window.__TERMO_READY_FIRED__) {
             window.__TERMO_READY_FIRED__ = true;
@@ -586,16 +499,13 @@
           }
         }catch(_){}
       }
-
       /* Modal PDF (abrir/fechar) */
       window.ModalPDF = {
-        open(){ $('#pdf-modal')?.classList.add('pdf-modal--open'); },
-        close(){ $('#pdf-modal')?.classList.remove('pdf-modal--open'); }
+        open(){ document.getElementById('pdf-modal')?.classList.add('pdf-modal--open'); },
+        close(){ document.getElementById('pdf-modal')?.classList.remove('pdf-modal--open'); }
       };
-
       /* Exposição pública */
       window.__TERMO_RUN__ = run;
-
       /* Injeções de dados */
       (function injectFromQueryIfPresent(){
         try{
@@ -607,7 +517,6 @@
           }
         }catch(_){}
       })();
-
       if (window.__TERMO_DATA__) { try { run(window.__TERMO_DATA__); } catch {} }
       document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
       document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
@@ -617,8 +526,6 @@
           try { run(d.payload || {}); } catch {}
         }
       });
-
-      /* Polling curto para __TERMO_DATA__ injetado via evaluateOnNewDocument */
       (function spinWait(maxMs=4000, step=120){
         const t0 = Date.now();
         const iv = setInterval(() => {
@@ -631,6 +538,12 @@
         }, step);
       })();
     })();
+  </script>
+
+  <!-- Força fallback “Não informado” também no preview local -->
+  <script>
+    window.__TERMO_DATA__ = Object.assign({ __NA_ALL: true, __NA_LABEL: 'Não informado' }, window.__TERMO_DATA__ || {});
+    if (window.__TERMO_RUN__) { try { window.__TERMO_RUN__(window.__TERMO_DATA__); } catch {} }
   </script>
 </body>
 </html>

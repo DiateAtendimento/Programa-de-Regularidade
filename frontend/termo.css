@@ -35,6 +35,9 @@
 
   /* ajuste fino do cabeçalho com logos (18–26mm) */
   --header-height:22mm;
+  --header-safe:6mm;                 /* folga extra */
+  --print-top-margin:calc(var(--header-height) + 4mm);
+  --screen-top-padding:calc(var(--header-height) + var(--header-safe));
 }
 
 *{ box-sizing:border-box; margin:0; padding:0; }
@@ -73,7 +76,7 @@ html,body{
 html.pdf-export, body.pdf-export{ background:#fff !important; }
 .pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important; }
 
-/* Cabeçalho blindado (participa do fluxo e reserva espaço real) */
+/* Cabeçalho “no fluxo” (ainda suportado; escondido na impressão quando usamos header fixo) */
 .page-head{
   display:flow-root;             /* BFC */
   position:relative;
@@ -130,6 +133,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 /* PDF: respiros */
 .pdf-export .term-title{ margin-top:4mm !important; }
 .pdf-export .page-head{ margin-bottom:6mm !important; padding-bottom:6mm !important; }
+
 /* Conteúdo */
 .term-section + .term-section{ margin-top:8mm; }
 .term-section h2{
@@ -212,44 +216,23 @@ body.pdf-export .term-meta{
 .page-head .rule, #pdf-root > .rule, .rule{
   display:none !important; height:0 !important; border:0 !important; background:transparent !important;
 }
-/* -------------------- Ajustes ESPECÍFICOS do FORMULÁRIO -------------------- */
 
-/* Step 0: "Próximo" alinhado à direita da pesquisa */
+/* -------------------- Ajustes ESPECÍFICOS do FORMULÁRIO -------------------- */
 #pesquisaRow{ align-items:end; }
 #slotNextStep0{
   margin-left:auto;
   display:flex;
   align-items:end;
 }
-
-/* Resumo/alerta Gescon após a pesquisa */
 #gesconInfoBox{ border-left:4px solid #29a3ff; }
-
-/* Breadcrumb com Nº Gescon + Data (topo da etapa 1) */
-.gescon-breadcrumb{
-  margin:.25rem 0;
-  color:#64748b;
-}
+.gescon-breadcrumb{ margin:.25rem 0; color:#64748b; }
 .gescon-breadcrumb .sep{ margin:0 .5rem; color:#c0c8d2; }
-
-/* Botão Próximo desabilitado */
 #btnNext:disabled{ opacity:.6; cursor:not-allowed; }
-
-/* Tamanhos padrão das lotties nos modais deste form */
 .lottie-box{ width:140px; height:140px; }
 .lottie-loading{ width:120px; height:120px; }
 
-/* -------------------- Modal "Gerando PDF…" (corrigido) -------------------- */
-/* Estrutura esperada no HTML:
-   <div id="pdf-modal" class="pdf-modal">
-     <div class="pdf-modal__backdrop"></div>
-     <div class="pdf-modal__box">
-       <div class="pdf-modal__header">Gerando PDF…</div>
-       <div class="pdf-modal__body">Aguarde, preparando o arquivo.<div class="spinner"></div></div>
-     </div>
-   </div>
-*/
-.pdf-modal{ position:relative; } /* escopo */
+/* -------------------- Modal "Gerando PDF…" -------------------- */
+.pdf-modal{ position:relative; }
 .pdf-modal__backdrop{
   position:fixed; inset:0; background:var(--modal-backdrop);
   display:none; z-index:9998;
@@ -282,36 +265,28 @@ body.pdf-export .term-meta{
 @media print{
   .pdf-modal, .pdf-modal *{ display:none !important; }
 }
-/* -------------------- "Não informado" automático (mesmo padrão dos 2 PDFs) -------------------- */
-/* Campos de valor vazios exibem "Não informado" */
+
+/* -------------------- "Não informado" automático -------------------- */
 .field .value:empty::after{
   content:"Não informado";
   color:var(--muted);
   opacity:.9;
 }
-
-/* Listas vazias exibem "Não informado" */
 .term-section ul:empty::before{
   content:"Não informado";
   color:var(--muted);
   display:block;
   padding-left:0;
 }
-
-/* Fallback "Não informado" para QUALQUER [data-k] vazio (ex.: textos livres) */
 [data-k]:empty::after{
   content:"Não informado";
   color:var(--muted);
   opacity:.9;
 }
-
-/* Preserva quebras de linha e espaços em textos livres (ex.: justificativas) */
 p[data-k], li[data-k], span[data-k], div[data-k]{
-  white-space:pre-line; /* \n -> quebra de linha */
+  white-space:pre-line;
   overflow-wrap:break-word;
 }
-
-/* Utilitário opcional */
 .ni, .not-informed{
   color:var(--muted) !important;
   font-style:italic;
@@ -343,4 +318,42 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
     break-inside:avoid-page;
     page-break-inside:avoid;
   }
+}
+
+/* ===== [FIX HEADER] Cabeçalho fixo em todas as páginas + folga do conteúdo ===== */
+.prp-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6mm;
+  background: #fff;
+  z-index: 9999;
+  border-bottom: 1px solid var(--rule, #d7dee8);
+  padding: 0 10mm;
+}
+.prp-header .logos-wrap {
+  display: flex !important;
+  align-items: center; justify-content: center;
+  gap: 6mm; width: 100%;
+}
+.prp-header img {
+  max-height: 14mm;
+  height: auto; width: auto;
+}
+
+/* Área de conteúdo precisa “dar espaço” para o cabeçalho fixo (preview/em tela) */
+.prp-content {
+  padding-top: var(--screen-top-padding);
+}
+
+/* PDF / impressão: garante que o header continue fixo e o conteúdo respeite a folga via @page */
+@media print {
+  @page { margin-top: var(--print-top-margin); }
+  .prp-header { position: fixed; }
+  .prp-content { padding-top: 0; }
+  /* Se quiser evitar header duplicado quando imprimir, esconda o cabeçalho que está dentro do fluxo: */
+  .page-head{ display:none !important; }
 }

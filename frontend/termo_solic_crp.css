@@ -1,6 +1,6 @@
 /* ======================================================================
    termo_solic_crp.css — padrão visual alinhado ao termo.css
-   + ajustes específicos para o formulário "form_gera_termo_solic_crp_2"
+   + FIX: cabeçalho fixo (todas as páginas) e rodapé fixo sem sobrepor
    ====================================================================== */
 
 /* -------------------- Bases compartilhadas (layout A4 / termo) -------------------- */
@@ -25,7 +25,7 @@
     url('/fonts/rawline-700.ttf') format('truetype');
 }
 
-/* Variáveis (inclui reserva de altura do cabeçalho com logos) */
+/* Variáveis */
 :root{
   --page-w: 210mm;
   --page-h: 297mm;
@@ -37,8 +37,16 @@
   --muted:#475569;
   --rule:#d7dee8;
 
-  /* ajuste fino conforme seu layout real (entre 18mm e 26mm costuma ficar ótimo) */
+  /* altura real das logos no topo */
   --header-height: 22mm;
+  --header-safe: 6mm;                   /* folga extra na tela */
+  --screen-top-padding: calc(var(--header-height) + var(--header-safe));
+  --print-top-margin: calc(var(--header-height) + 4mm);
+
+  /* rodapé fixo */
+  --footer-height: 22mm;                /* altura útil das logos + folga */
+  --screen-bottom-padding: calc(var(--footer-height) + 6mm);
+  --print-bottom-margin: calc(var(--footer-height) + 4mm);
 }
 
 *{ box-sizing:border-box; margin:0; padding:0 }
@@ -50,15 +58,16 @@ body{
   -moz-osx-font-smoothing:grayscale;
 }
 
-/* === PRINT base (usada pelo Puppeteer) === */
+/* === PRINT base (Puppeteer) === */
 @page{
   size: A4;
-  margin: 18mm 16mm;
+  margin: 18mm 16mm;  /* será sobrescrito no @media print */
 }
 html, body{
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
+
 /* Container (preview PDF) */
 #pdf-root{ width:var(--page-w); margin:0 auto; }
 .term-wrap{
@@ -76,17 +85,16 @@ html, body{
 html.pdf-export, body.pdf-export{ background:#fff !important }
 .pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important }
 
-/* Cabeçalho blindado contra quebras/colagens em PDF (Chromium/Puppeteer) */
+/* Cabeçalho “no fluxo” (mantido para preview; oculto na impressão quando usar header fixo) */
 .page-head{
-  /* participa do fluxo e reserva espaço real para as logos */
-  display: flow-root;            /* BFC */
+  display: flow-root;
   position: relative;
   width: 100%;
-  min-height: var(--header-height); /* evita sobreposição de texto às logos */
+  min-height: var(--header-height);
   margin: 0 0 8mm 0;
   padding: 0 0 6mm 0;
-  overflow: hidden;              /* impede “vazamento” das imagens */
-  contain: content;              /* isola o layout (engine headless) */
+  overflow: hidden;
+  contain: content;
   break-inside: avoid; page-break-inside: avoid;
 }
 .page-head::after{
@@ -95,7 +103,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   height:1px; background:var(--rule);
 }
 
-/* Logos: tamanhos e não-quebra */
+/* Logos */
 .logos-wrap{
   display:flex; align-items:center; justify-content:center;
   flex-wrap:wrap; gap:6mm; width:100%;
@@ -105,30 +113,11 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 .logos-wrap img{
   display:block;
   height:auto; width:auto;
-  max-height:14mm;    /* ajuste fino: 12–16mm */
+  max-height:14mm;
   break-inside: avoid; page-break-inside: avoid;
 }
 
-/* Título + meta (termo) */
-.term-title{
-  margin: 6mm 0 0 0 !important;  /* respiro seguro após as logos */
-  place-self:center;
-  text-align:center;
-  font-weight:800;
-  font-size:16px;
-  letter-spacing:.2px;
-  line-height:1.28;
-  color:#0b2240;
-  clear: both;                   /* corta floats residuais se houver */
-}
-.term-meta{
-  margin:1.2mm 0 5mm !important;
-  text-align:center;
-  font-size:12.8px;
-  color:var(--muted);
-}
-
-/* Em tela as logos podem ficar ocultas; no PDF exibimos (se preferir, mantenha visível sempre) */
+/* Em tela pode ocultar; no PDF mostramos */
 .logos-wrap{ display:none !important; }
 @media print{
   .logos-wrap{
@@ -137,9 +126,27 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
     width:100%;
   }
   .logos-wrap img{ max-height:14mm; }
-  .term-title{ margin-top: 4mm !important; }
 }
-/* Conteúdo do termo */
+
+/* Título + meta */
+.term-title{
+  margin: 6mm 0 0 0 !important;
+  text-align:center;
+  font-weight:800;
+  font-size:16px;
+  letter-spacing:.2px;
+  line-height:1.28;
+  color:#0b2240;
+  clear: both;
+}
+.term-meta{
+  margin:1.2mm 0 5mm !important;
+  text-align:center;
+  font-size:12.8px;
+  color:var(--muted);
+}
+
+/* Conteúdo */
 .term-section + .term-section{ margin-top:8mm }
 .term-section h2{
   font-size:15px; font-weight:800; color:var(--brand);
@@ -156,18 +163,16 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 }
 
 /* Notas e variações */
-.note{ font-size:12.6px; color:var(--muted) }
 .small{ font-size:12.2px; color:var(--muted) }
-.strong{ font-weight:700 }
-.no-print { display: none !important; }
+.muted{ color:var(--muted); opacity:.85 }
+.mt{ margin-top:8px }
 
-/* Grid de campos (termo) */
+/* Grid */
 .grid{
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap: 2.4mm 8mm;
 }
-/* grids “numéricos” (1.2 e 1.3) em 3 colunas — usar class="grid grid-num" */
 .grid-num{ grid-template-columns: 1fr 1fr 1fr; }
 
 .field .label{ display:block; font-size:12.2px; color:var(--muted) }
@@ -189,7 +194,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 .avoid-break{ break-inside:avoid; page-break-inside:avoid; }
 .break-before{ break-before:page; page-break-before:always; }
 
-/* Rodapé (Assinaturas) no termo */
+/* Rodapé (assinaturas) */
 .term-footer{
   margin-top:14mm; text-align:center;
   break-inside:avoid; page-break-inside:avoid;
@@ -212,7 +217,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   .term-title{ font-size:18px }
 }
 
-/* Ajustes finos adicionais (mantendo o padrão do termo.css) */
+/* Ajustes finos para PDF */
 html.pdf-export .term-meta,
 body.pdf-export .term-meta{
   margin-top: 1.2mm !important;
@@ -223,33 +228,6 @@ body.pdf-export .term-meta{
 .page-head .rule, #pdf-root > .rule, .rule{
   display:none !important; height:0 !important; border:0 !important; background:transparent !important;
 }
-/* -------------------- Ajustes ESPECÍFICOS do FORMULÁRIO -------------------- */
-
-/* Step 0: alinhar "Próximo" na mesma linha da pesquisa, à direita */
-#pesquisaRow{ align-items: end; }
-#slotNextStep0{
-  margin-left: auto;                /* empurra para a direita */
-  display: flex;
-  align-items: end;
-}
-
-/* Resumo/alerta Gescon após a pesquisa */
-#gesconInfoBox{ border-left: 4px solid #29a3ff; }
-
-/* Breadcrumb com Nº Gescon + Data no topo da etapa 1 */
-.gescon-breadcrumb{
-  margin-top: .25rem;
-  margin-bottom: .25rem;
-  color: #64748b;
-}
-.gescon-breadcrumb .sep{ margin: 0 .5rem; color:#c0c8d2; }
-
-/* Botão Próximo desabilitado (feedback de bloqueio até validar Gescon) */
-#btnNext:disabled{ opacity:.6; cursor:not-allowed; }
-
-/* Tamanhos padrão das lotties nos modais deste form */
-.lottie-box{ width: 140px; height: 140px; }
-.lottie-loading{ width: 120px; height:120px; }
 
 /* -------------------- Modal "Gerando PDF…" -------------------- */
 .pdf-modal{
@@ -289,21 +267,14 @@ body.pdf-export .term-meta{
   animation:spin 0.8s linear infinite;
 }
 @keyframes spin{ to { transform: rotate(360deg); } }
-
-/* Oculta modal em impressão de PDF */
-@media print{
-  .pdf-modal{ display:none !important; }
-}
+@media print{ .pdf-modal{ display:none !important; } }
 
 /* -------------------- "Não informado" automático -------------------- */
-/* Campos de valor vazios exibem "Não informado" */
 .field .value:empty::after{
   content: "Não informado";
   color: var(--muted);
   opacity: .9;
 }
-
-/* Listas vazias (critérios, fases etc.) exibem "Não informado" */
 .term-section ul:empty::before,
 #criterios-list:empty::before,
 #f41-itens:empty::before,
@@ -327,51 +298,82 @@ body.pdf-export .term-meta{
   display: block;
   padding-left: 0;
 }
-
-/* Fallback "Não informado" para QUALQUER [data-k] vazio */
 [data-k]:empty::after{
   content: "Não informado";
   color: var(--muted);
   opacity: .9;
 }
-
-/* Preserva quebras de linha e espaços em textos livres (ex.: justificativas) */
 p[data-k], li[data-k], span[data-k], div[data-k]{
-  white-space: pre-line; /* \n -> quebra de linha */
+  white-space: pre-line;
   overflow-wrap: break-word;
 }
-
-/* Utilitário opcional para forçar estilo de "não informado" em qualquer elemento */
 .ni, .not-informed{
   color: var(--muted) !important;
   font-style: italic;
 }
-/* ===== Regras de mídia impressa (PDF) ===== */
+
+/* ===== [FIX HEADER] Cabeçalho fixo em todas as páginas ===== */
+.prp-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6mm;
+  background: #fff;
+  z-index: 9999;
+  border-bottom: 1px solid var(--rule, #d7dee8);
+  padding: 0 10mm;
+}
+.prp-header .logos-wrap {
+  display: flex !important;
+  align-items: center; justify-content: center;
+  gap: 6mm; width: 100%;
+}
+.prp-header img {
+  max-height: 14mm;
+  height: auto; width: auto;
+}
+
+/* Conteúdo dá espaço para o header e para o footer (preview/em tela) */
+.prp-content {
+  padding-top: var(--screen-top-padding);
+  padding-bottom: var(--screen-bottom-padding);
+}
+
+/* ===== [FIX FOOTER] Rodapé fixo com logos (já existe como #rodape no HTML) ===== */
+#rodape{
+  position: fixed; bottom: 0; left: 0; right: 0;
+  text-align: center; padding: 3mm 0 0; background: #fff;
+  z-index: 9998;  /* atrás do header, à frente do conteúdo */
+  border-top: 1px solid var(--rule);
+}
+#rodape .logos-wrap {
+  display: inline-flex; gap: 12mm; align-items: center; justify-content: center;
+}
+#rodape img { max-height: 14mm; }
+
+/* ===== Impressão (PDF) – margens do @page para respeitar header e footer fixos ===== */
 @media print{
-  .page-head,
-  .logos-wrap,
-  .logos-wrap img{
-    break-inside: avoid;         /* CSS Fragmentation */
-    page-break-inside: avoid;    /* legacy */
-    break-after: avoid;          /* evita que o cabeçalho “abra” a página */
-    page-break-after: avoid;     /* legacy */
-  }
+  /* Reserva topo e base da página para header e footer */
+  @page { margin: var(--print-top-margin) 16mm var(--print-bottom-margin); }
 
-  .term-title{
-    margin-top: 6mm;             /* distância segura após o cabeçalho */
-    break-before: avoid;         /* não inicie nova página entre head e título */
-    page-break-before: avoid;    /* legacy */
-  }
+  .prp-header { position: fixed; }
+  .prp-content { padding-top: 0; padding-bottom: 0; }
 
-  /* Força quebra limpa onde você já colocou o divisor */
-  .break-before{
-    break-before: page;
-    page-break-before: always;
-  }
-
-  /* Reduz risco de colar bloco de texto no topo da página seguinte */
+  /* Garante rodapé fixo e limpa o cabeçalho “no fluxo” */
+  #rodape { position: fixed; bottom: 0; }
+  .page-head{ display:none !important; }
   .term-section{
     break-inside: avoid-page;
     page-break-inside: avoid;
+  }
+  .term-title{
+    margin-top: 6mm;
+    break-before: avoid; page-break-before: avoid;
+  }
+  .break-before{
+    break-before: page; page-break-before: always;
   }
 }

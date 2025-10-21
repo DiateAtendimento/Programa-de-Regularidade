@@ -16,15 +16,16 @@
 </head>
 
 <body>
-  <div id="pdf-root">
-    <main class="term-wrap">
-      <header class="page-head">
-        <div class="logos-wrap">
-          <img src="./imagens/logo-secretaria-complementar.svg" alt="Secretaria" loading="eager" />
-          <img src="./imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
-        </div>
-      </header>
+  <!-- Cabeçalho FIXO (anti-sobreposição em 2+ páginas) -->
+  <header class="prp-header" aria-hidden="true">
+    <div class="logos-wrap">
+      <img src="./imagens/logo-secretaria-complementar.svg" alt="Secretaria" loading="eager" />
+      <img src="./imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
+    </div>
+  </header>
 
+  <div id="pdf-root">
+    <main class="term-wrap prp-content">
       <h1 class="term-title">TERMO DE ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA – PRÓ-REGULARIDADE RPPS</h1>
       <p class="term-meta"><strong>Art. 281-A e Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022</strong></p>
       <p class="term-meta">
@@ -55,7 +56,6 @@
           <div class="field"><span class="label"><strong>1.3.3 E-mail oficial para recebimento de comunicações do Programa</strong></span><span class="value" data-k="email_ug"></span></div>
         </div>
       </section>
-
       <!-- 2. IDENTIFICAÇÃO DOS RESPONSÁVEIS -->
       <section class="term-section avoid-break">
         <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
@@ -89,10 +89,9 @@
           <ul id="finalidades-3-2"><!-- preenchido pelo JS quando ADESAO_SEM_IRREGULARIDADES=SIM --></ul>
         </div>
       </section>
-
       <!-- 4. FINALIDADES INICIAIS -->
       <section class="term-section avoid-break">
-        <h2>4. FINALIDADE(S) INICIAL(IS) DA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
+        <h2>4. FINALIDADE(S) INICIAL(IS) DA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDenciária</h2>
 
         <h3>4.1 Celebração de termos de parcelamento ou reparcelamento de débitos</h3>
         <ul id="opt-4-1">
@@ -159,7 +158,6 @@
           <li data-code="6.2">6.2 Declaração de inexistência (ou já regularizados) até a adesão.</li>
         </ul>
       </section>
-
       <!-- 7. CONDIÇÕES -->
       <section class="term-section">
         <h2>7. CONDIÇÕES DE VIGÊNCIA DO PROGRAMA</h2>
