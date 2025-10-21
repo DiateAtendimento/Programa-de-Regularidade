@@ -403,60 +403,62 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
 /* Ainda vale manter o que você já tinha para .field .value e ULs, sem conflito */
 
 
-/* ====== Cabeçalho 100% à prova de quebra/overlap ====== */
+/* Cabeçalho blindado contra quebras/colagens em PDF (Chromium/Puppeteer) */
 .page-head{
-  /* cria um novo contexto de formatação para evitar “vazamento” e overflows */
-  display: flow-root;          /* (equivalente moderno de clearfix) */
-  contain: layout paint;       /* isola layout no head */
-  overflow: hidden;
-  /* dá “respiro” suficiente para as logos antes do título */
-  padding-top: 2mm;
-  padding-bottom: 6mm !important;
-  margin-bottom: 6mm !important;
-  /* altura mínima evita que imagens altas “encostem” no título */
-  min-height: 22mm;
-  /* evita que o bloco seja cortado no fim da página */
+  /* flow-root cria BFC, evita sobreposição com conteúdo seguinte */
+  display: flow-root;
+  position: relative;
+  width: 100%;
+  margin: 0 0 8mm 0;
+  padding: 0 0 6mm 0;
+  overflow: hidden;       /* impede “vazamento” das imagens */
+  contain: content;       /* isola o layout (engine headless) */
   break-inside: avoid;
   page-break-inside: avoid;
-  break-after: avoid;
-  page-break-after: avoid;
+}
+.page-head::after{
+  content:"";
+  position:absolute; left:0; right:0; bottom:0;
+  height:1px; background:var(--rule);
 }
 
-/* Linha do título nunca colide com o cabeçalho, mesmo em engines headless */
-.term-title{
-  margin-top: 6mm !important;
-  clear: both;                 /* belt-and-suspenders */
-  break-before: avoid;
-  page-break-before: avoid;
-}
-
-/* As logos em uma linha estável, sem wrap inesperado na virada de página */
+/* Logos: tamanhos e não-quebra */
 .logos-wrap{
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6mm;
-  flex-wrap: nowrap;           /* evita quebrar logo em linha seguinte */
-  line-height: 0;
+  display:flex; align-items:center; justify-content:center;
+  flex-wrap:wrap; gap:6mm; width:100%;
+  line-height:0;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
-
 .logos-wrap img{
-  display: block;
-  max-height: 14mm;            /* pode ajustar para 12–16mm se preferir */
-  width: auto;
-  height: auto;
+  display:block;
+  height:auto; width:auto;
+  max-height:14mm;    /* ajuste fino: 12–16mm */
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-/* Em impressão, reforça as travas de quebra */
+/* Garante que o título nunca “suba” sobre o cabeçalho em PDF */
+.term-title{
+  margin: 6mm 0 0 0 !important;
+  clear: both;                  /* corta qualquer float perdido */
+}
+
 @media print{
-  .page-head,
-  .logos-wrap,
-  .logos-wrap img{
-    break-inside: avoid;
-    page-break-inside: avoid;
-    break-after: avoid;
+  .page-head{
+    /* nem abre nem fecha página no meio do cabeçalho */
+    break-before: avoid-page;
+    break-after: avoid-page;
+    page-break-before: avoid;
     page-break-after: avoid;
+  }
+  .term-title{
+    break-before: avoid-page;
+    page-break-before: avoid;
+  }
+  .term-section{
+    /* reduz risco de “colar” bloco de texto no cabeçalho da página seguinte */
+    break-inside: avoid-page;
+    page-break-inside: avoid;
   }
 }

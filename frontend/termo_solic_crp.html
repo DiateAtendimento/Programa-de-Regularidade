@@ -307,7 +307,6 @@
       // Data "dd/mm/aaaa" robusta p/ ambientes headless (sem depender de Intl/timeZone)
       function hojeBR_robusto(){
         try{
-          // tenta usar Intl simples (sem timeZone) — se falhar, cai no manual
           const s = new Date().toLocaleDateString('pt-BR');
           if (s && /\d{2}\/\d{2}\/\d{4}/.test(s)) return s;
         }catch(_){}
@@ -351,9 +350,10 @@
         /* ===== 3) CRP ===== */
         fillText('venc_ult_crp', p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
 
-        // 3.2 — motivo principal (se não vier OPT_3_2, deduz)
+        // 3.2 — motivo principal (seleção única)
         (function () {
           let code = (p.OPT_3_2 || p.opt_3_2 || '').trim();
+
           if (!code) {
             const yes = v => String(v||'').toUpperCase() === 'SIM';
             if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE)) code = '3.2.1';
@@ -361,15 +361,32 @@
             else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) code = '3.2.3';
             else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) code = '3.2.4';
           }
+
           const ul = document.querySelector('#opt-3-2');
-          if (!ul || !code) return;
-          [...ul.children].forEach(li => { if (li.getAttribute('data-code') !== code) li.remove(); });
+          if (!ul) return;
+
+          if (code) {
+            // mantém SOMENTE o item escolhido
+            [...ul.children].forEach(li => {
+              if (li.getAttribute('data-code') !== code) li.remove();
+            });
+          } else {
+            // nada selecionado → mostra "Não informado"
+            ul.innerHTML = '';
+            const li = document.createElement('li');
+            li.textContent = __NA_LABEL__();
+            ul.appendChild(li);
+          }
         })();
 
-        // 3.3 — critérios
-        const criterios = Array.isArray(p.CRITERIOS_IRREGULARES) ? p.CRITERIOS_IRREGULARES
-          : String(p.CRITERIOS_IRREGULARES || '').split(',').map(s=>s.trim()).filter(Boolean);
-        liList('#criterios-list', criterios);
+
+        const criterios = Array.isArray(p.CRITERIOS_IRREGULARES)
+        ? p.CRITERIOS_IRREGULARES
+        : String(p.CRITERIOS_IRREGULARES || '')
+            .split(/[;,]/)                // <— aceita "," ou ";"
+            .map(s=>s.trim())
+            .filter(Boolean);
+
 
         /* ===== 4) Fase ===== */
         const faseSel = (p.FASE_PROGRAMA || p.fase_programa || '').trim();
