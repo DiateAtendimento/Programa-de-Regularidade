@@ -2717,6 +2717,18 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
                 .filter(Boolean)
         };
 
+        // Preenche data_termo no formato BR (timezone Brasília)
+        const now = new Date();
+        try {
+          const fmt = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo' });
+          payloadForClient.data_termo = fmt.format(now);
+        } catch {
+          // fallback simples
+          const d = now.toLocaleDateString('pt-BR');
+          payloadForClient.data_termo = d;
+        }
+
+
         await page.evaluate((payload) => {
           window.__TERMO_DATA__ = payload;
           document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));

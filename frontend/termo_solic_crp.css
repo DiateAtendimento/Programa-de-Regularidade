@@ -49,7 +49,7 @@ body{
 /* === PRINT base (usada pelo Puppeteer) === */
 @page{
   size: A4;
-  margin: 18mm 12mm;
+  margin: 18mm 16mm; 
 }
 html, body{
   -webkit-print-color-adjust: exact !important;
@@ -143,6 +143,9 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 .note{ font-size:12.6px; color:var(--muted) }
 .small{ font-size:12.2px; color:var(--muted) }
 .strong{ font-weight:700 }
+/* Não imprimir anotações de tela */
+.no-print { display: none !important; }
+
 
 /* Grid de campos (termo) */
 .grid{

@@ -36,6 +36,7 @@ const PATH_ALLOWLIST = [
   /^\/gerar-solic-crp$/i,
   /^\/solic-crp-pdf$/i,
   /^\/termo-solic-crp-pdf$/i,
+   /^\/gerar-solic-crp$/i,
   /^\/termo-solic-crp-pdf-v2$/i,
 
   // —— Ferramentas de diagnóstico do próprio proxy ——
