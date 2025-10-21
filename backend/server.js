@@ -2306,7 +2306,6 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
 
         log('candidatos:', urlsToTry);
 
-
         // 🚦 navegação
         let loaded = false; let lastErr = null; let chosenUrl = '';
         for (const u of urlsToTry) {
@@ -2318,7 +2317,62 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         if (!loaded) throw lastErr || new Error('Falha ao carregar template de impressão do Formulário 2');
         log('navegou em', Date.now() - T0, 'ms →', chosenUrl);
 
-        // ✅ sanidade do template (tem #pdf-root .term-wrap, não tem form/inputs, e título compatível)
+        /* ===== injeção ANTES de qualquer script do template ===== */
+        await page.evaluateOnNewDocument(() => {
+          // helper seguro para CSS.escape em navegadores mais antigos
+          if (!window.CSS || typeof window.CSS.escape !== 'function') {
+            window.CSS = window.CSS || {};
+            window.CSS.escape = (s) => String(s).replace(/[^a-zA-Z0-9_\-]/g, '\\$&');
+          }
+
+          // Aplicador universal — preenche por data-* / name / id
+          window.__APPLY_TERMO_DATA__ = (raw) => {
+            const d = Object.assign({}, window.__TERMO_DATA__ || {}, raw || {});
+            try {
+              // normaliza datas (ex.: 2024-10-05 -> 05/10/2024)
+              const fmtDate = (v) => {
+                if (!v) return '';
+                const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                return m ? `${m[3]}/${m[2]}/${m[1]}` : String(v);
+              };
+
+              const setEl = (el, v) => {
+                const tag = (el.tagName || '').toLowerCase();
+                const val = v == null ? '' : v;
+                if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+                  el.value = val;
+                } else {
+                  el.textContent = val;
+                }
+              };
+
+              const fillOne = (k, v) => {
+                const sel = [
+                  `[data-k="${k}"]`,
+                  `[data-key="${k}"]`,
+                  `[data-field="${k}"]`,
+                  `[data-bind="${k}"]`,
+                  `[name="${k}"]`,
+                  `#${CSS.escape(k)}`
+                ].join(',');
+                const nodes = document.querySelectorAll(sel);
+                nodes.forEach((el) => setEl(el, /DATA|DATA_|_DATA|DATA_/.test(k) ? fmtDate(v) : v));
+              };
+
+              Object.keys(d).forEach((k) => fillOne(k, d[k]));
+
+              // sinal para quem quiser reagir depois do preenchimento
+              try { document.dispatchEvent(new CustomEvent('TERMO_AFTER_APPLY')); } catch (_){}
+            } catch (_){}
+          };
+
+          // Escutas para reaplicar quando o template avisar
+          document.addEventListener('TERMO_DATA',      () => window.__APPLY_TERMO_DATA__(), { once:false });
+          document.addEventListener('TERMO_DATA_READY',() => window.__APPLY_TERMO_DATA__(), { once:false });
+          document.addEventListener('DOMContentLoaded',() => window.__APPLY_TERMO_DATA__(), { once:true  });
+        });
+
+        /* ===== sanidade do template ===== */
         await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
         const sanity = await page.evaluate(() => {
           const h1 = (document.querySelector('h1.term-title')?.textContent || '').trim();
@@ -2334,63 +2388,50 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           throw new Error('Template inválido para impressão (sem #pdf-root/.term-wrap, com controles, ou título incorreto).');
         }
 
-        /* ============ (Re)injeção de payload ============ */
+        /* ===== disponibiliza o payload e tenta o runner do template ===== */
         await page.evaluate((payload) => {
           try {
+            // disponibiliza / atualiza o payload no contexto da página
             window.__TERMO_DATA__ = payload || {};
-            window.__TERMO_DATA_READY__ = true;
-            // eventos de compatibilidade (se o template escuta)
-            document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-            document.dispatchEvent(new CustomEvent('TERMO_DATA'));
-          } catch (e) {}
+            // dispara os eventos que o template possa escutar
+            try { document.dispatchEvent(new CustomEvent('TERMO_DATA')); } catch(_){}
+            try { document.dispatchEvent(new CustomEvent('TERMO_DATA_READY')); } catch(_){}
+          } catch (_){}
         }, payloadForClient);
 
-        /* ============ Tenta rodar o runner do template, mas NÃO trava se falhar ============ */
-        try {
-          await page.evaluate(() => {
-            try {
-              const runner =
-                (typeof window.__TERMO_RUN__ === 'function' && window.__TERMO_RUN__) ||
-                (typeof window.run === 'function' && window.run) ||
-                null;
-              if (runner) runner(window.__TERMO_DATA__ || {});
-            } catch (_inner) {}
-          });
-        } catch (_runnerErr) {
-          log('runner do template falhou/timeout — seguiremos com detecção por conteúdo');
-        }
+        // 1ª tentativa: se o template expôs runner, use-o
+        await page.evaluate(() => {
+          try {
+            const runner =
+              (typeof window.__TERMO_RUN__ === 'function' && window.__TERMO_RUN__) ||
+              (typeof window.run === 'function' && window.run) ||
+              null;
+            if (runner) runner(window.__TERMO_DATA__ || {});
+          } catch (_){}
+        });
 
-        /* ============ Aguarda “pronto” por CONTEÚDO (sem depender do template) ============ */
-        /* Critério: algum valor do payload aparece no texto do #pdf-root (ex.: ENTE, CNPJ, SEI, UF). */
-        const keysToProbe = ['ENTE', 'CNPJ_ENTE', 'SEI_PROCESSO', 'UF', 'NOME_REP_ENTE', 'UG'];
+        // 2ª tentativa (fallback): aplica no DOM mesmo sem runner
+        await page.evaluate(() => {
+          try { if (typeof window.__APPLY_TERMO_DATA__ === 'function') window.__APPLY_TERMO_DATA__(); } catch(_){}
+        });
 
-        await page.waitForFunction(
-          (probeKeys) => {
-            try {
-              const root = document.querySelector('#pdf-root');
-              if (!root) return false;
-              const text = (root.innerText || '').replace(/\s+/g, ' ').trim();
-              const data = window.__TERMO_DATA__ || {};
-              const values = probeKeys
-                .map(k => data?.[k])
-                .filter(v => (typeof v === 'string' ? v.trim() : v != null))
-                .map(v => String(v).trim())
-                .filter(v => v.length > 0)
-                .slice(0, 6);
-              if (values.length === 0) return false;
-              return values.some(v => text.includes(v));
-            } catch (_) { return false; }
-          },
-          { timeout: 90_000 },
-          keysToProbe
-        );
+        /* ===== espera “pronto para imprimir” ===== */
+        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
+        await page.evaluate(() => new Promise((resolve) => {
+          const finish = async () => {
+            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_){}
+            setTimeout(resolve, 150);
+          };
+          if (window.__TERMO_PRINT_READY__ === true) return void finish();
+          document.addEventListener('TERMO_PRINT_READY', () => finish(), { once: true });
+          // segurança: se ninguém emitir, ainda assim finaliza depois de ~800ms
+          setTimeout(finish, 800);
+        }));
 
-        /* ============ Toques finais antes do print ============ */
-        await page.evaluate(async () => {
-          try { if (document?.fonts?.ready) await document.fonts.ready; } catch (_){}
+        // marca classes para CSS de exportação
+        await page.evaluate(() => {
           document.documentElement.classList.add('pdf-export');
           document.body.classList.add('pdf-export');
-          try { window.__TERMO_PRINT_READY__ = true; document.dispatchEvent(new Event('TERMO_PRINT_READY')); } catch (_){}
         });
 
 
