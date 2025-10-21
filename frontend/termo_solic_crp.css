@@ -339,3 +339,50 @@ body.pdf-export .term-meta{
   color: var(--muted) !important;
   font-style: italic;
 }
+
+/* ===== Cabeçalho à prova de quebra ===== */
+.page-head{
+  display:block;
+  width:100%;
+  margin: 0 0 8mm 0;         /* dá folga pro título e evita colar */
+  padding: 0;
+  overflow: hidden;          /* evita fuga de conteúdo pra fora */
+  contain: content;          /* isola layout: ajuda em engines headless */
+}
+
+.logos-wrap{
+  display:flex;
+  align-items:center;
+  gap: 8mm;
+  line-height: 0;            /* remove “gap” de baseline de img */
+}
+
+.logos-wrap img{
+  display:block;             /* sem inline-gap */
+  max-height: 18mm;          /* padroniza o conjunto de logos */
+  width:auto;                /* mantém proporção */
+}
+
+/* ===== Regras de mídia impressa (PDF) ===== */
+@media print{
+  .page-head,
+  .logos-wrap,
+  .logos-wrap img{
+    break-inside: avoid;         /* CSS Fragmentation */
+    page-break-inside: avoid;    /* legacy */
+    break-after: avoid;          /* não deixa o cabeçalho “abrir” a página */
+    page-break-after: avoid;     /* legacy */
+  }
+
+  .term-title{
+    margin-top: 6mm;             /* distância segura após o cabeçalho */
+    break-before: avoid;         /* não inicie nova página entre head e título */
+    page-break-before: avoid;    /* legacy */
+  }
+
+  /* força quebra limpa onde você já colocou o divisor */
+  .break-before{
+    break-before: page;
+    page-break-before: always;
+  }
+}

@@ -304,6 +304,21 @@
         close(){ $('#pdf-modal')?.classList.remove('pdf-modal--open'); }
       };
 
+      // Data "dd/mm/aaaa" robusta p/ ambientes headless (sem depender de Intl/timeZone)
+      function hojeBR_robusto(){
+        try{
+          // tenta usar Intl simples (sem timeZone) — se falhar, cai no manual
+          const s = new Date().toLocaleDateString('pt-BR');
+          if (s && /\d{2}\/\d{2}\/\d{4}/.test(s)) return s;
+        }catch(_){}
+        const d = new Date();
+        const dd = String(d.getDate()).padStart(2,'0');
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const yyyy = String(d.getFullYear());
+        return `${dd}/${mm}/${yyyy}`;
+      }
+
+
       function run(payload){
         const p = payload || {};
 
@@ -430,23 +445,28 @@
 
         /* ===== 6) Assinaturas (data) ===== */
         const preferida = (p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '').trim();
-        const hojeBR = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-        fillText('data_termo', preferida || hojeBR);
+        fillText('data_termo', preferida || hojeBR_robusto());
+
 
 
         /* ===== 1.1 Esfera + legenda de assinatura ===== */
         const esfera = p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || '';
+        
         selectByCode('#opt-1-1', /estadual|distrital/i.test(esfera) ? '1.1.2' : '1.1.1');
+
         (function(){
           const sig = document.getElementById('sig-cap-ente');
-          if (!sig) return;
-          const ente = (p.ENTE || p.ente || __NA_LABEL__()).trim();
-          const uf   = (p.UF   || p.uf   || __NA_LABEL__()).trim();
-          const ehEstadual = /estadual|distrital/i.test(p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || '');
-          sig.innerHTML = ehEstadual
-            ? 'Representante legal do Estado/Distrito de ' + escapeHtml(ente) + '/' + escapeHtml(uf)
-            : 'Representante legal do Município de ' + escapeHtml(ente) + '/' + escapeHtml(uf);
+          if (sig) {
+            sig.innerHTML = (/estadual|distrital/i.test(esfera))
+              ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
+              : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
+
+            // RE-preenche os <span data-k> injetados agora
+            fillText('ente', p.ENTE || p.ente);
+            fillText('uf',   p.UF   || p.uf);
+          }
         })();
+
 
         // Sinaliza pronto pro print (aguarda fontes de tela ou timeout curto)
         try{
