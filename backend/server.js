@@ -2421,48 +2421,88 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
 
 
         /* ===========================================================
-          Fallback universal de hidratação + tenta runner do template
+          Fallback universal de hidratação (com suporte a data-k case-insensitive)
+          + tenta runner do template
           =========================================================== */
         await page.evaluate((payload) => {
-          const safe = (v) => (v === null || v === undefined) ? '' : String(v);
+          const root = document.querySelector('#pdf-root') || document.body;
 
-          // 1) Hidratação por atributos comuns
-          const mapAttrs = ['data-k','data-key','data-field','data-name','data-bind'];
-          for (const attr of mapAttrs) {
-            document.querySelectorAll(`[${attr}]`).forEach(el => {
-              const k = el.getAttribute(attr)?.trim();
-              if (!k) return;
-              if (k in payload) el.textContent = safe(payload[k]);
-            });
-          }
+          const asStr = (v) => Array.isArray(v) ? v.join(', ') : (v ?? '');
+          const getVal = (data, key) => {
+            if (!key) return '';
+            const cands = [key, key.toUpperCase(), key.toLowerCase()];
+            for (const k of cands) {
+              if (Object.prototype.hasOwnProperty.call(data, k)) return asStr(data[k]);
+            }
+            return '';
+          };
+          const setElVal = (el, val) => {
+            const s = String(val ?? '');
+            if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = s;
+            else el.textContent = s;
+            if (s) el.classList.add('filled');
+          };
 
-          // 2) Hidratação por ID (id igual ao nome da chave)
-          Object.keys(payload).forEach(k => {
-            const el = document.getElementById(k);
-            if (el) el.textContent = safe(payload[k]);
+          /* 1) id="CHAVE" (case-insensitive nas chaves do payload) */
+          Object.keys(payload || {}).forEach((k) => {
+            const el = root.querySelector('#' + (window.CSS?.escape ? CSS.escape(k) : k));
+            if (el) setElVal(el, getVal(payload, k));
           });
 
-          // 3) Substituição de placeholders {{CHAVE}} em textos
-          const replacePlaceholders = (node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-              const original = node.nodeValue || '';
-              const replaced = original.replace(/\{\{\s*([A-Z0-9_]+)\s*\}\}/g, (_, key) => {
-                return (key in payload) ? safe(payload[key]) : '';
-              });
-              if (replaced !== original) node.nodeValue = replaced;
-              return;
-            }
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              node.childNodes.forEach(replacePlaceholders);
-            }
-          };
-          replacePlaceholders(document.body);
+          /* 2) name="CHAVE" */
+          root.querySelectorAll('[name]').forEach((el) => {
+            const key = el.getAttribute('name')?.trim();
+            if (!key) return;
+            const val = getVal(payload, key);
+            if (val !== '') setElVal(el, val);
+          });
 
-          // 4) Dispara eventos que o template possa escutar
+          /* 3) data-bind / data-key / data-field / data-fill  */
+          ['data-bind','data-key','data-field','data-fill'].forEach((attr) => {
+            root.querySelectorAll(`[${attr}]`).forEach((el) => {
+              const key = el.getAttribute(attr)?.trim();
+              if (!key) return;
+              const val = getVal(payload, key);
+              if (val !== '') setElVal(el, val);
+            });
+          });
+
+          /* 4) ✅ data-k="..." (NOVO: case-insensitive + inputs/textarea) */
+          root.querySelectorAll('[data-k]').forEach((el) => {
+            const key = el.getAttribute('data-k')?.trim();
+            if (!key) return;
+            const val = getVal(payload, key);
+            if (val !== '') setElVal(el, val);
+          });
+
+          /* 5) Checkmarks: <span data-check="CHAVE" data-value="SIM">☐</span> */
+          root.querySelectorAll('[data-check]').forEach((el) => {
+            const key = el.getAttribute('data-check')?.trim();
+            const want = el.getAttribute('data-value');
+            const rawV = getVal(payload, key);
+            const truthy = want
+              ? (Array.isArray(payload[key]) ? payload[key].map(String).includes(want) : String(rawV) === want)
+              : !!rawV;
+            el.textContent = truthy ? '☑' : '☐';
+            el.classList.toggle('checked', truthy);
+          });
+
+          /* 6) Placeholders {{CHAVE}} no texto (case-insensitive nas chaves) */
+          const replaceInNodeTexts = (node) => {
+            const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+            const nodes = [];
+            while (walker.nextNode()) nodes.push(walker.currentNode);
+            nodes.forEach((n) => {
+              n.nodeValue = String(n.nodeValue || '').replace(/\{\{\s*([A-Z0-9_]+)\s*\}\}/gi, (_, key) => getVal(payload, key));
+            });
+          };
+          replaceInNodeTexts(root);
+
+          /* 7) Dispara eventos que o template possa escutar */
           try { document.dispatchEvent(new CustomEvent('TERMO_DATA')); } catch (_){}
           try { document.dispatchEvent(new CustomEvent('TERMO_DATA_READY')); } catch (_){}
 
-          // 5) Tenta rodar o runner do próprio template, se existir
+          /* 8) Runner do template, se existir */
           try {
             const runner =
               (typeof window.__TERMO_RUN__ === 'function' && window.__TERMO_RUN__) ||
@@ -2471,7 +2511,13 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
             if (runner) runner(payload);
           } catch (_) {}
 
+          /* 9) Sinaliza pronto p/ imprimir (caso o template não o faça) */
+          if (!window.__TERMO_PRINT_READY__) {
+            window.__TERMO_PRINT_READY__ = true;
+            try { document.dispatchEvent(new Event('TERMO_PRINT_READY')); } catch {}
+          }
         }, payloadForClient);
+
 
         /* ==================================
           Espera o "pronto para imprimir"
