@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Termo de Solicitação de CRP Emergencial</title>
 
-  <!-- Fonte apenas para PREVIEW em tela -->
+  <!-- Fonte apenas para PREVIEW em tela (o PDF usa Rawline do CSS local) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-        rel="stylesheet" media="screen">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
 
   <!-- Estilos oficiais do termo (usa Rawline no PDF) -->
   <link rel="stylesheet" href="./termo_solic_crp.css">
@@ -24,14 +24,20 @@
           <img src="./imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
         </div>
       </header>
-      <h1 class="term-title"><br>TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL<br>PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA<br></h1>
+
+      <h1 class="term-title">
+        <br>TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL<br>
+        PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA<br>
+      </h1>
 
       <p class="term-meta">
         Ente: <strong data-k="ente"></strong> / UF: <strong data-k="uf"></strong> • UG: <strong data-k="ug"></strong>
       </p>
+
       <!-- 1. IDENTIFICAÇÃO -->
       <section class="term-section avoid-break">
-        <!-- (3) REFERÊNCIA NORMATIVA ATUALIZADA -->
+        <!--
+        (Referência normativa – manter como comentário para consultas)
         <p class="term-intro small" style="margin-top:4mm; text-align:justify;">
           O Regime Próprio de Previdência Social (RPPS) abaixo especificado requer a emissão de Certificado de Regularidade Previdenciária,
           na forma emergencial, para execução do Programa de Regularidade Previdenciária dos Regimes Próprios de Previdência Social,
@@ -39,21 +45,21 @@
           e o previsto no Anexo XVIII da Portaria MTP nº 1.467, de 2 de junho de 2022.
         </p><br>
 
-        <!-- (1) RÓTULO AJUSTADO -->
         <div class="gescon-breadcrumb small">
           <span><strong>Enviado via Consulta GESCON:</strong> <span class="text-body" data-k="N_GESCON">—</span></span>
           <span class="sep">–</span>
           <span><strong>Data do encaminhamento:</strong> <span class="text-body" data-k="DATA_ENC_VIA_GESCON">—</span></span>
         </div>
 
-        <!-- SEI no cabeçalho -->
         <div class="gescon-breadcrumb small">
           <span><strong>Nº Processo SEI (Pró-Regularidade):</strong>
             <span class="text-body" data-k="SEI_PROCESSO">—</span>
           </span>
         </div>
+        -->
 
         <h2><br>1. IDENTIFICAÇÃO DO ENTE FEDERATIVO E DA UNIDADE GESTORA</h2>
+
         <h3><span class="label">1.1 Esfera de Governo</span></h3>
         <ul id="opt-1-1">
           <li data-code="1.1.1">1.1.1 RPPS Municipal</li>
@@ -74,6 +80,7 @@
           <div class="field"><span class="label"><strong>1.3.3 E-mail oficial</strong></span><span class="value" data-k="email_ug"></span></div>
         </div>
       </section>
+
       <!-- 2. IDENTIFICAÇÃO DOS RESPONSÁVEIS -->
       <section class="term-section avoid-break">
         <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
@@ -96,6 +103,7 @@
           <div class="field"><span class="label"><strong>2.2.5 Telefone</strong></span><span class="value" data-k="tel_rep_ug"></span></div>
         </div>
       </section>
+
       <!-- 3. SITUAÇÃO RELATIVA AO CRP -->
       <section class="term-section avoid-break">
         <h2>3. SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
@@ -117,6 +125,7 @@
         <h3>3.3 Critério(s) irregular(es) no extrato previdenciário</h3>
         <ul id="criterios-list"></ul>
       </section>
+
       <!-- 4. FASE DO PROGRAMA -->
       <section class="term-section">
         <h2>4. IDENTIFICAÇÃO DA FASE DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
@@ -144,6 +153,7 @@
           <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
           <p data-k="f43_plano"></p>
         </div>
+
         <!-- 4.4 -->
         <div class="avoid-break" id="fase-44" hidden>
           <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
@@ -192,6 +202,7 @@
           <div id="f46-comp-cumpr"></div>
         </div>
       </section>
+
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section">
         <h2>5. JUSTIFICATIVAS / INFORMAÇÕES ADICIONAIS</h2>
@@ -220,18 +231,37 @@
       </footer>
     </main>
   </div>
+
+  <!-- Modal "Gerando PDF…" (não é impresso; estilizado no CSS) -->
+  <div id="pdf-modal" class="pdf-modal" aria-hidden="true">
+    <div class="pdf-modal__backdrop"></div>
+    <div class="pdf-modal__box" role="dialog" aria-modal="true" aria-label="Gerando PDF">
+      <div class="pdf-modal__header">Gerando PDF…</div>
+      <div class="pdf-modal__body">
+        <p>Aguarde, preparando o arquivo.</p>
+        <div class="spinner" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
       const $ = (s, r = document) => r.querySelector(s);
       const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
-      function fillText(key, val) { $$('[data-k="'+key+'"]').forEach(el => { el.textContent = (val ?? ''); }); }
+      function fillText(key, val) { $$( '[data-k="'+key+'"]' ).forEach(el => { el.textContent = (val ?? ''); }); }
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
       function liList(ulSel, items){ const ul=$(ulSel); if(!ul) return; ul.innerHTML=(items||[]).filter(Boolean).map(t=>'<li>'+escapeHtml(t)+'</li>').join(''); }
       function selectByCode(listSel, code){ if(!code) return; const ul=$(listSel); if(!ul) return; const node=ul.querySelector('[data-code="'+code+'"]'); if(node) node.innerHTML='<strong>'+node.textContent+'</strong>'; }
       function show(id, v){ const el=$('#'+id); if(el) el.hidden=!v; }
       function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
       const asArr = v => Array.isArray(v) ? v : String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
+
+      // API mínima do modal (abrir/fechar) — usada pelo fluxo que imprime
+      window.ModalPDF = {
+        open(){ $('#pdf-modal')?.classList.add('pdf-modal--open'); },
+        close(){ $('#pdf-modal')?.classList.remove('pdf-modal--open'); }
+      };
 
       function run(payload){
         const p = payload || {};
@@ -373,7 +403,7 @@
           }
         })();
 
-        // sinaliza pronto pro print
+        // Sinaliza pronto pro print (aguarda fontes de tela ou timeout curto)
         try{
           if (!window.__TERMO_READY_FIRED__) {
             window.__TERMO_READY_FIRED__ = true;
@@ -429,6 +459,5 @@
       })();
     })();
   </script>
-
 </body>
 </html>

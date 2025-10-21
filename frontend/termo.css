@@ -1,26 +1,61 @@
-/* ===== termo.css =========================================================
-   Estilos do Termo de Adesão (A4) — visual unificado e ajustes para pdf-export
-======================================================================== */
+/* ======================================================================
+   termo_solic_crp.css — alinhado ao termo.css (A4, margens, tipografia)
+   + correções de modal "Gerando PDF…" e quebras p/ PDF
+   ====================================================================== */
+
+/* -------------------- Bases compartilhadas (layout A4 / termo) -------------------- */
+@font-face{
+  font-family:'Rawline'; font-weight:400; font-style:normal; font-display:swap;
+  src:url('./fonts/rawline-400.ttf') format('truetype');
+}
+@font-face{
+  font-family:'Rawline'; font-weight:600; font-style:normal; font-display:swap;
+  src:url('./fonts/rawline-600.ttf') format('truetype');
+}
+@font-face{
+  font-family:'Rawline'; font-weight:700; font-style:normal; font-display:swap;
+  src:url('./fonts/rawline-700.ttf') format('truetype');
+}
 
 :root{
-  --page-w: 210mm;
-  --page-h: 297mm;
-  --pad: 15mm;
-  --content-w: calc(var(--page-w) - 2 * var(--pad));
+  --page-w:210mm;
+  --page-h:297mm;
+  --pad:15mm;
+  --content-w:calc(var(--page-w) - 2 * var(--pad));
+
   --brand:#0b2240;
   --ink:#23272f;
   --muted:#475569;
   --rule:#d7dee8;
+
+  /* Modal */
+  --modal-backdrop:rgba(15,23,42,.35);
+  --modal-border:#cbd5e1;
 }
 
-*{ box-sizing:border-box; margin:0; padding:0 }
-html,body{ height:100%; background:#eef3f9 }
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+html{ background:#eef3f9; }
 body{
-  font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  font-family:'Rawline',system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
 
-/* Container (preview) */
+/* === PRINT base (Puppeteer) === */
+@page{
+  size:A4;
+  /* igual ao termo.css: ajuste L/R para 16mm */
+  margin:18mm 16mm;
+}
+html,body{
+  -webkit-print-color-adjust:exact !important;
+  print-color-adjust:exact !important;
+}
+
+/* Container (preview PDF) */
+#pdf-root{ width:var(--page-w); margin:0 auto; }
 .term-wrap{
   position:relative;
   width:var(--content-w);
@@ -32,59 +67,60 @@ body{
 }
 
 /* Modo exportação (PDF) */
-.pdf-export .logos-wrap{ display:none !important }
-html.pdf-export, body.pdf-export{ background:#fff !important }
-.pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important }
+.pdf-export .logos-wrap{ display:none !important; }
+html.pdf-export, body.pdf-export{ background:#fff !important; }
+.pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important; }
 
 /* Cabeçalho */
 .page-head{
   position:relative;
-  display:grid;
-  grid-template-rows:auto;
+  display:block;
   border:0 !important;
-  padding-bottom:3.5mm;
-  margin-bottom:5mm;
+  padding-top:2mm;
+  padding-bottom:6mm !important;
+  margin-bottom:6mm !important;
 }
 .page-head::after{
   content:"";
-  position:absolute;
-  left:0; right:0; bottom:0;
-  height:1px;
-  background:var(--rule);
+  position:absolute; left:0; right:0; bottom:0;
+  height:1px; background:var(--rule);
 }
-.page-head .rule,
-#pdf-root > .rule,
-.rule{
-  display:none !important;
-  height:0 !important;
-  border:0 !important;
-  background:transparent !important;
+.page-head .rule, #pdf-root > .rule, .rule{
+  display:none !important; height:0 !important; border:0 !important; background:transparent !important;
 }
+
+/* Logos */
 .logos-wrap{
   display:flex; align-items:center; justify-content:center;
-  flex-wrap:wrap; gap:1mm 6mm; width:100%; padding-top:0;
+  flex-wrap:wrap; gap:6mm; width:100%; padding-top:0;
+}
+.logos-wrap img{
+  max-height:14mm; height:auto; width:auto; display:block;
 }
 
 /* Título + meta */
 .term-title{
-  margin:2mm 0 0 !important;
+  margin:6mm 0 0 !important;
   place-self:center;
   text-align:center;
   font-weight:800;
   font-size:16px;
   letter-spacing:.2px;
   line-height:1.28;
-  color:#0b2240;
+  color:var(--brand);
 }
 .term-meta{
   margin:1.2mm 0 5mm !important;
   text-align:center;
-  font-size:12.8px;
-  color:var(--muted);
+  font-size:12.8px; color:var(--muted);
 }
 
+/* PDF: respiros */
+.pdf-export .term-title{ margin-top:4mm !important; }
+.pdf-export .page-head{ margin-bottom:6mm !important; padding-bottom:6mm !important; }
+
 /* Conteúdo */
-.term-section + .term-section{ margin-top:8mm }
+.term-section + .term-section{ margin-top:8mm; }
 .term-section h2{
   font-size:15px; font-weight:800; color:var(--brand);
   margin-bottom:3mm; letter-spacing:.2px;
@@ -94,42 +130,40 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   font-size:13.6px; font-weight:700; color:var(--ink);
   margin-top:3.5mm; margin-bottom:1.2mm;
 }
-.term-section p,
-.term-section li{
+.term-section p, .term-section li{
   font-size:13.2px; line-height:1.48; text-align:justify; text-justify:inter-word;
   hyphens:auto; overflow-wrap:break-word; orphans:2; widows:2;
 }
 
-.note{ font-size:12.6px; color:var(--muted) }
-.small{ font-size:12.2px; color:var(--muted) }
-.strong{ font-weight:700 }
+/* Notas e variações */
+.note{ font-size:12.6px; color:var(--muted); }
+.small{ font-size:12.2px; color:var(--muted); }
+.strong{ font-weight:700; }
 
-/* Grid */
+/* Grid de campos */
 .grid{
   display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2.4mm 8mm;
+  grid-template-columns:1fr 1fr;
+  gap:2.4mm 8mm;
 }
-.field .label{ display:block; font-size:12.2px; color:var(--muted) }
-.field .value{ display:block; font-size:13.4px; margin-top:.6mm }
+.grid-num{ grid-template-columns:1fr 1fr 1fr; }
+.field .label{ display:block; font-size:12.2px; color:var(--muted); }
+.field .value{ display:block; font-size:13.4px; margin-top:.6mm; }
 
-/* Listas com recuo “numerado” */
+/* Listas com recuo numerado */
 .term-section ul{ list-style:none; margin:2mm 0 0 0; padding-left:0; }
 .term-section li{ margin:1.6mm 0; padding-left:6mm; text-indent:-6mm; }
 
-/* Valores sem negrito */
-[data-k], #finalidades-iniciais{ font-weight:400 }
-
-/* E-mails nowrap */
+/* Campos que não devem quebrar */
 [data-k="email_ente"],
 [data-k="email_ug"],
 [data-k="email_rep_ente"],
-[data-k="email_rep_ug"]{ white-space:nowrap }
+[data-k="email_rep_ug"]{ white-space:nowrap; }
 
 /* Regras de quebra */
 .term-section{ break-inside:auto; page-break-inside:auto; }
-.avoid-break{ break-inside:auto; page-break-inside:auto; }
 .keep-together{ break-inside:avoid-page; page-break-inside:avoid; }
+.avoid-break{ break-inside:avoid; page-break-inside:avoid; }
 .break-before{ break-before:page; page-break-before:always; }
 
 /* Rodapé (Assinaturas) */
@@ -138,7 +172,6 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   break-inside:avoid; page-break-inside:avoid;
   padding-top:10mm;
 }
-.footer-force-break{ break-before:page; page-break-before:always; }
 .place-date{ margin:10mm 0 6mm; font-size:13.2px; }
 .signature-block{ margin-top:12mm; }
 .signature-line{
@@ -149,77 +182,93 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 
 /* Responsivo (preview) */
 @media (max-width:980px){
-  .term-wrap{ width:100%; border-radius:10px }
+  #pdf-root{ width:100%; }
+  .term-wrap{ width:100%; border-radius:10px; }
 }
 @media (max-width:720px){
-  .term-title{ font-size:18px }
+  .term-title{ font-size:18px; }
 }
 
-/* Impressão (preview navegador) */
-@media print{
-  @page{ size:A4 portrait; margin:0 }
-  html,body{ background:#fff }
-  .term-wrap{ width:var(--content-w); margin:0; box-shadow:none !important }
-}
-
-/* ===== Garantias de LINHA ÚNICA e espaçamentos ===== */
-.page-head{ border:0 !important; padding-bottom:0 !important; margin-bottom:8mm !important; }
-.page-head::after{ content:none !important; }
-.page-head .rule, .rule{ display:none !important; height:0 !important; border:0 !important; background:transparent !important; }
-
-.page-head + .term-title{ position:relative; margin-top:0 !important; }
-.page-head + .term-title::before{
-  content:"";
-  position:absolute;
-  left:0; right:0;
-  top:-6mm;
-  height:1px;
-  background:var(--rule);
-  display:block;
-}
-.term-meta{ margin-top:2mm !important; margin-bottom:5mm !important; }
-
-.page-head,
-.page-head::before,
-.page-head::after,
-.term-title::before,
-.term-title::after,
-.page-head .rule,
-#pdf-root > .rule,
-.rule{
-  border:0 !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  height:0 !important;
-}
-.page-head .rule,
-#pdf-root > .rule,
-.rule{ display:none !important; }
-.page-head::before,
-.term-title::before,
-.term-title::after{ content:none !important; }
-
-.page-head{ position:relative; padding-bottom:3.5mm !important; margin-bottom:5mm !important; }
-.page-head::after{
-  content:"";
-  position:absolute;
-  left:0; right:0; bottom:0;
-  height:1px;
-  background:var(--rule);
-}
-.term-title{ margin-top:2mm !important; }
-.term-meta{  margin-top:1.2mm !important; margin-bottom:5mm !important; }
-
-/* ====== pdf-export: BLOCO CANÔNICO ÚNICO ====== */
-html.pdf-export .page-head,
-body.pdf-export .page-head{
-  padding-bottom: 3mm !important;
-  margin-bottom: 2.2mm !important;
-}
-html.pdf-export .term-title,
-body.pdf-export .term-title{ margin-top: 0.8mm !important; }
+/* Ajustes finos extra (mantendo padrão do termo.css) */
 html.pdf-export .term-meta,
 body.pdf-export .term-meta{
-  margin-top: 1.2mm !important;
-  margin-bottom: 4.8mm !important;
+  margin-top:1.2mm !important;
+  margin-bottom:4.8mm !important;
+}
+
+/* Linha única garantida (sanitização) */
+.page-head, .page-head::before, .page-head::after, .term-title::before, .term-title::after,
+.page-head .rule, #pdf-root > .rule, .rule{
+  border:0 !important; background:transparent !important; box-shadow:none !important; height:0 !important;
+}
+
+/* -------------------- Ajustes ESPECÍFICOS do FORMULÁRIO -------------------- */
+
+/* Step 0: "Próximo" alinhado à direita da pesquisa */
+#pesquisaRow{ align-items:end; }
+#slotNextStep0{
+  margin-left:auto;
+  display:flex;
+  align-items:end;
+}
+
+/* Resumo/alerta Gescon após a pesquisa */
+#gesconInfoBox{ border-left:4px solid #29a3ff; }
+
+/* Breadcrumb com Nº Gescon + Data (topo da etapa 1) */
+.gescon-breadcrumb{
+  margin:.25rem 0;
+  color:#64748b;
+}
+.gescon-breadcrumb .sep{ margin:0 .5rem; color:#c0c8d2; }
+
+/* Botão Próximo desabilitado */
+#btnNext:disabled{ opacity:.6; cursor:not-allowed; }
+
+/* Tamanhos padrão das lotties nos modais deste form */
+.lottie-box{ width:140px; height:140px; }
+.lottie-loading{ width:120px; height:120px; }
+
+/* -------------------- Modal "Gerando PDF…" (corrigido) -------------------- */
+/* Estrutura esperada no HTML:
+   <div id="pdf-modal" class="pdf-modal">
+     <div class="pdf-modal__backdrop"></div>
+     <div class="pdf-modal__box">
+       <div class="pdf-modal__header">Gerando PDF…</div>
+       <div class="pdf-modal__body">Aguarde, preparando o arquivo.<div class="spinner"></div></div>
+     </div>
+   </div>
+*/
+.pdf-modal{ position:relative; } /* escopo */
+.pdf-modal__backdrop{
+  position:fixed; inset:0; background:var(--modal-backdrop);
+  display:none; z-index:9998;
+}
+.pdf-modal__box{
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  min-width:360px; max-width:92vw;
+  background:#fff; border:1px solid var(--modal-border); border-radius:10px;
+  box-shadow:0 20px 60px rgba(2,6,23,.25);
+  display:none; z-index:9999;
+}
+.pdf-modal__header{
+  background:var(--brand); color:#fff;
+  padding:10px 14px; border-radius:10px 10px 0 0;
+  font-weight:700;
+}
+.pdf-modal__body{ padding:14px; font-size:11pt; color:var(--ink); }
+.pdf-modal--open .pdf-modal__backdrop,
+.pdf-modal--open .pdf-modal__box{ display:block; }
+
+/* Spinner */
+.spinner{
+  width:42px; height:42px; border-radius:50%;
+  border:4px solid #e2e8f0; border-top-color:var(--brand);
+  margin-top:6px; animation:spin .9s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* Nunca imprime o modal no PDF */
+@media print{
+  .pdf-modal, .pdf-modal *{ display:none !important; }
 }
