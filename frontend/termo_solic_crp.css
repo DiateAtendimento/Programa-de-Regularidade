@@ -1,143 +1,117 @@
 /* ======================================================================
-   termo_solic_crp.css — padrão visual alinhado ao termo.css
-   + FIX: cabeçalho fixo (todas as páginas) e rodapé fixo sem sobrepor
+   CSS unificado para termo.html e termo_solic_crp.html
+   — Layout A4 estável para PDF, com cabeçalho fixo em todas as páginas.
+   — Sem regras específicas de formulário/app.
    ====================================================================== */
 
-/* -------------------- Bases compartilhadas (layout A4 / termo) -------------------- */
+/* -------------------- Fontes (PDF usa Rawline) -------------------- */
 @font-face{
-  font-family: 'Rawline'; font-weight: 400; font-style: normal; font-display: swap;
-  src:
-    url('/fonts/rawline-regular.woff2') format('woff2'),
-    url('/fonts/rawline-regular.woff') format('woff'),
-    url('/fonts/rawline-400.ttf') format('truetype');
+  font-family:'Rawline'; font-weight:400; font-style:normal; font-display:swap;
+  src:url('./fonts/rawline-400.ttf') format('truetype');
 }
 @font-face{
-  font-family: 'Rawline'; font-weight: 600; font-style: normal; font-display: swap;
-  src:
-    url('/fonts/rawline-semibold.woff2') format('woff2'),
-    url('/fonts/rawline-600.ttf') format('truetype');
+  font-family:'Rawline'; font-weight:600; font-style:normal; font-display:swap;
+  src:url('./fonts/rawline-600.ttf') format('truetype');
 }
 @font-face{
-  font-family: 'Rawline'; font-weight: 700; font-style: normal; font-display: swap;
-  src:
-    url('/fonts/rawline-bold.woff2') format('woff2'),
-    url('/fonts/rawline-bold.woff') format('woff'),
-    url('/fonts/rawline-700.ttf') format('truetype');
+  font-family:'Rawline'; font-weight:700; font-style:normal; font-display:swap;
+  src:url('./fonts/rawline-700.ttf') format('truetype');
 }
 
-/* Variáveis */
+/* -------------------- Variáveis visuais -------------------- */
 :root{
-  --page-w: 210mm;
-  --page-h: 297mm;
-  --pad: 15mm;
-  --content-w: calc(var(--page-w) - 2 * var(--pad));
-
   --brand:#0b2240;
   --ink:#23272f;
   --muted:#475569;
   --rule:#d7dee8;
 
-  /* altura real das logos no topo */
-  --header-height: 22mm;
-  --header-safe: 6mm;                   /* folga extra na tela */
-  --screen-top-padding: calc(var(--header-height) + var(--header-safe));
-  --print-top-margin: calc(var(--header-height) + 4mm);
+  /* Cabeçalho */
+  --header-height:22mm;    /* altura efetiva do cabeçalho com logos */
+  --header-gap:6mm;        /* respiro interno entre logos e bordas */
 
-  /* rodapé fixo */
-  --footer-height: 22mm;                /* altura útil das logos + folga */
-  --screen-bottom-padding: calc(var(--footer-height) + 6mm);
-  --print-bottom-margin: calc(var(--footer-height) + 4mm);
+  /* Modal */
+  --modal-backdrop:rgba(15,23,42,.35);
+  --modal-border:#cbd5e1;
 }
 
-*{ box-sizing:border-box; margin:0; padding:0 }
-html,body{ height:100%; background:#eef3f9 }
+/* -------------------- Base -------------------- */
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+html{ background:#eef3f9; }
 body{
-  font-family:'Rawline',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  font-family:'Rawline',system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   color:var(--ink);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
 }
+html,body{
+  -webkit-print-color-adjust:exact !important;
+  print-color-adjust:exact !important;
+}
 
-/* === PRINT base (Puppeteer) === */
+/* -------------------- Página (A4) -------------------- */
+/* IMPORTANTE: usar valores numéricos estáticos no @page (sem var()) para compatibilidade. */
+/* A margem superior já inclui espaço suficiente para o cabeçalho fixo (22mm + folga). */
 @page{
-  size: A4;
-  margin: 18mm 16mm;  /* será sobrescrito no @media print */
-}
-html, body{
-  -webkit-print-color-adjust: exact !important;
-  print-color-adjust: exact !important;
+  size:A4;
+  margin:30mm 16mm 20mm 16mm; /* top right bottom left */
 }
 
-/* Container (preview PDF) */
-#pdf-root{ width:var(--page-w); margin:0 auto; }
+/* -------------------- Container (preview em tela) -------------------- */
+#pdf-root{ width:210mm; margin:0 auto; }
 .term-wrap{
   position:relative;
-  width:var(--content-w);
-  padding:var(--pad);
+  width:calc(210mm - 2*16mm);
+  padding:15mm;
   margin:0 auto 2rem;
   background:#fff;
   border-radius:12px;
   box-shadow:0 24px 50px rgba(2,22,58,.12), 0 8px 18px rgba(2,22,58,.07);
 }
 
-/* Modo exportação (PDF) */
-.pdf-export .logos-wrap{ display:none !important }
-html.pdf-export, body.pdf-export{ background:#fff !important }
-.pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important }
+/* Modo exportação (quando o app/tarefas aplicarem a classe) */
+html.pdf-export, body.pdf-export{ background:#fff !important; }
+.pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important; }
 
-/* Cabeçalho “no fluxo” (mantido para preview; oculto na impressão quando usar header fixo) */
-.page-head{
-  display: flow-root;
-  position: relative;
-  width: 100%;
-  min-height: var(--header-height);
-  margin: 0 0 8mm 0;
-  padding: 0 0 6mm 0;
-  overflow: hidden;
-  contain: content;
-  break-inside: avoid; page-break-inside: avoid;
-}
-.page-head::after{
-  content:"";
-  position:absolute; left:0; right:0; bottom:0;
-  height:1px; background:var(--rule);
-}
-
-/* Logos */
-.logos-wrap{
+/* -------------------- Cabeçalho fixo (todas as páginas) -------------------- */
+.prp-header{
+  position:fixed;
+  top:0; left:0; right:0;
+  height:var(--header-height);
+  background:#fff;
+  border-bottom:1px solid var(--rule);
+  z-index:9999;
   display:flex; align-items:center; justify-content:center;
-  flex-wrap:wrap; gap:6mm; width:100%;
+  padding:0 10mm;
+}
+.prp-header .logos-wrap{
+  display:flex;
+  align-items:center; justify-content:center;
+  gap:6mm; width:100%;
   line-height:0;
-  break-inside: avoid; page-break-inside: avoid;
 }
-.logos-wrap img{
-  display:block;
-  height:auto; width:auto;
-  max-height:14mm;
-  break-inside: avoid; page-break-inside: avoid;
+.prp-header img{
+  display:block; height:auto; width:auto;
+  max-height:14mm; /* ajuste fino se mudar a arte */
 }
 
-/* Em tela pode ocultar; no PDF mostramos */
-.logos-wrap{ display:none !important; }
+/* Em tela: empurrar o conteúdo pra baixo do header fixo */
+.prp-content{ padding-top:calc(var(--header-height) + var(--header-gap)); }
+
+/* Em PDF: o @page já tem a margem de topo para dar espaço; retiramos o padding extra */
 @media print{
-  .logos-wrap{
-    display:flex !important;
-    align-items:center; justify-content:center; gap:6mm;
-    width:100%;
-  }
-  .logos-wrap img{ max-height:14mm; }
+  .prp-content{ padding-top:0; }
 }
 
-/* Título + meta */
+/* -------------------- Título + meta -------------------- */
 .term-title{
-  margin: 6mm 0 0 0 !important;
+  margin:6mm 0 0 !important;
   text-align:center;
   font-weight:800;
   font-size:16px;
   letter-spacing:.2px;
   line-height:1.28;
-  color:#0b2240;
-  clear: both;
+  color:var(--brand);
 }
 .term-meta{
   margin:1.2mm 0 5mm !important;
@@ -146,8 +120,8 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   color:var(--muted);
 }
 
-/* Conteúdo */
-.term-section + .term-section{ margin-top:8mm }
+/* -------------------- Seções / Tipografia -------------------- */
+.term-section + .term-section{ margin-top:8mm; }
 .term-section h2{
   font-size:15px; font-weight:800; color:var(--brand);
   margin-bottom:3mm; letter-spacing:.2px;
@@ -161,40 +135,36 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
   font-size:13.2px; line-height:1.48; text-align:justify; text-justify:inter-word;
   hyphens:auto; overflow-wrap:break-word; orphans:2; widows:2;
 }
+.small{ font-size:12.2px; color:var(--muted); }
+.note{ font-size:12.6px; color:var(--muted); }
 
-/* Notas e variações */
-.small{ font-size:12.2px; color:var(--muted) }
-.muted{ color:var(--muted); opacity:.85 }
-.mt{ margin-top:8px }
-
-/* Grid */
+/* -------------------- Grid de campos -------------------- */
 .grid{
   display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2.4mm 8mm;
+  grid-template-columns:1fr 1fr;
+  gap:2.4mm 8mm;
 }
-.grid-num{ grid-template-columns: 1fr 1fr 1fr; }
+.grid-num{ grid-template-columns:1fr 1fr 1fr; }
+.field .label{ display:block; font-size:12.2px; color:var(--muted); }
+.field .value{ display:block; font-size:13.4px; margin-top:.6mm; }
 
-.field .label{ display:block; font-size:12.2px; color:var(--muted) }
-.field .value{ display:block; font-size:13.4px; margin-top:.6mm }
-
-/* Listas com recuo “numerado” */
+/* -------------------- Listas -------------------- */
 .term-section ul{ list-style:none; margin:2mm 0 0 0; padding-left:0; }
 .term-section li{ margin:1.6mm 0; padding-left:6mm; text-indent:-6mm; }
 
-/* E-mails não quebram no meio */
+/* -------------------- Não quebrar certos conteúdos -------------------- */
 [data-k="email_ente"],
 [data-k="email_ug"],
 [data-k="email_rep_ente"],
-[data-k="email_rep_ug"]{ white-space:nowrap }
+[data-k="email_rep_ug"]{ white-space:nowrap; }
 
-/* Regras de quebra */
+/* -------------------- Regras de quebra -------------------- */
 .term-section{ break-inside:auto; page-break-inside:auto; }
 .keep-together{ break-inside:avoid-page; page-break-inside:avoid; }
 .avoid-break{ break-inside:avoid; page-break-inside:avoid; }
 .break-before{ break-before:page; page-break-before:always; }
 
-/* Rodapé (assinaturas) */
+/* -------------------- Rodapé (Assinaturas) -------------------- */
 .term-footer{
   margin-top:14mm; text-align:center;
   break-inside:avoid; page-break-inside:avoid;
@@ -208,172 +178,73 @@ html.pdf-export, body.pdf-export{ background:#fff !important }
 }
 .signature-caption{ font-size:13.2px; color:var(--muted); margin-bottom:0; }
 
-/* Responsivo (preview) */
+/* -------------------- Responsivo (preview em tela) -------------------- */
 @media (max-width:980px){
-  #pdf-root{ width:100% }
-  .term-wrap{ width:100%; border-radius:10px }
+  #pdf-root{ width:100%; }
+  .term-wrap{ width:100%; border-radius:10px; }
 }
 @media (max-width:720px){
-  .term-title{ font-size:18px }
+  .term-title{ font-size:18px; }
 }
 
-/* Ajustes finos para PDF */
-html.pdf-export .term-meta,
-body.pdf-export .term-meta{
-  margin-top: 1.2mm !important;
-  margin-bottom: 4.8mm !important;
-}
-
-/* Sanitização de linhas (evita “regras” duplicadas) */
-.page-head .rule, #pdf-root > .rule, .rule{
-  display:none !important; height:0 !important; border:0 !important; background:transparent !important;
-}
-
-/* -------------------- Modal "Gerando PDF…" -------------------- */
-.pdf-modal{
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.pdf-modal--open{ display:flex; }
+/* -------------------- Modal "Gerando PDF…" (opcional) -------------------- */
+.pdf-modal{ position:relative; }
 .pdf-modal__backdrop{
-  position:absolute; inset:0; background:rgba(2,15,38,.48);
+  position:fixed; inset:0; background:var(--modal-backdrop);
+  display:none; z-index:9998;
 }
 .pdf-modal__box{
-  position:relative;
-  min-width: 280px;
-  max-width: 92vw;
-  background:#fff;
-  border-radius:12px;
-  box-shadow:0 18px 48px rgba(2,22,58,.25), 0 6px 14px rgba(2,22,58,.15);
-  padding:18px 20px;
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  min-width:360px; max-width:92vw;
+  background:#fff; border:1px solid var(--modal-border); border-radius:10px;
+  box-shadow:0 20px 60px rgba(2,6,23,.25);
+  display:none; z-index:9999;
 }
 .pdf-modal__header{
+  background:var(--brand); color:#fff;
+  padding:10px 14px; border-radius:10px 10px 0 0;
   font-weight:700;
-  color:var(--brand);
-  margin-bottom:8px;
 }
-.pdf-modal__body{
-  font-size:14px;
-  color:var(--ink);
-  display:flex; align-items:center; gap:12px;
-}
-.spinner{
-  width:22px; height:22px; border-radius:50%;
-  border:3px solid #e6edf6; border-top-color:#1e40af;
-  animation:spin 0.8s linear infinite;
-}
-@keyframes spin{ to { transform: rotate(360deg); } }
-@media print{ .pdf-modal{ display:none !important; } }
+.pdf-modal__body{ padding:14px; font-size:11pt; color:var(--ink); }
+.pdf-modal--open .pdf-modal__backdrop,
+.pdf-modal--open .pdf-modal__box{ display:block; }
 
-/* -------------------- "Não informado" automático -------------------- */
-.field .value:empty::after{
-  content: "Não informado";
-  color: var(--muted);
-  opacity: .9;
+/* Spinner */
+.spinner{
+  width:42px; height:42px; border-radius:50%;
+  border:4px solid #e2e8f0; border-top-color:var(--brand);
+  margin-top:6px; animation:spin .9s linear infinite;
 }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* Nunca imprime o modal no PDF */
+@media print{ .pdf-modal, .pdf-modal *{ display:none !important; } }
+
+/* -------------------- Fallbacks de “Não informado” -------------------- */
+.field .value:empty::after,
 .term-section ul:empty::before,
-#criterios-list:empty::before,
-#f41-itens:empty::before,
-#f42-itens:empty::before,
-#f43-itens:empty::before,
-#f44-criterios:empty::before,
-#f44-decls:empty::before,
-#f44-finalidades:empty::before,
-#f44-anexos:empty::before,
-#f45-decls:empty::before,
-#f45-docs:empty::before,
-#f45-just:empty::before,
-#f46-criterios:empty::before,
-#f46-decls:empty::before,
-#f46-finalidades:empty::before,
-#f46-anexos:empty::before,
-#f46-just-planos:empty::before,
-#f46-comp-cumpr:empty::before{
-  content: "Não informado";
-  color: var(--muted);
-  display: block;
-  padding-left: 0;
-}
 [data-k]:empty::after{
-  content: "Não informado";
-  color: var(--muted);
-  opacity: .9;
+  content:"Não informado";
+  color:var(--muted);
+  opacity:.9;
 }
 p[data-k], li[data-k], span[data-k], div[data-k]{
-  white-space: pre-line;
-  overflow-wrap: break-word;
+  white-space:pre-line;
+  overflow-wrap:break-word;
 }
 .ni, .not-informed{
-  color: var(--muted) !important;
-  font-style: italic;
+  color:var(--muted) !important;
+  font-style:italic;
 }
 
-/* ===== [FIX HEADER] Cabeçalho fixo em todas as páginas ===== */
-.prp-header {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: var(--header-height);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6mm;
-  background: #fff;
-  z-index: 9999;
-  border-bottom: 1px solid var(--rule, #d7dee8);
-  padding: 0 10mm;
-}
-.prp-header .logos-wrap {
-  display: flex !important;
-  align-items: center; justify-content: center;
-  gap: 6mm; width: 100%;
-}
-.prp-header img {
-  max-height: 14mm;
-  height: auto; width: auto;
-}
-
-/* Conteúdo dá espaço para o header e para o footer (preview/em tela) */
-.prp-content {
-  padding-top: var(--screen-top-padding);
-  padding-bottom: var(--screen-bottom-padding);
-}
-
-/* ===== [FIX FOOTER] Rodapé fixo com logos (já existe como #rodape no HTML) ===== */
-#rodape{
-  position: fixed; bottom: 0; left: 0; right: 0;
-  text-align: center; padding: 3mm 0 0; background: #fff;
-  z-index: 9998;  /* atrás do header, à frente do conteúdo */
-  border-top: 1px solid var(--rule);
-}
-#rodape .logos-wrap {
-  display: inline-flex; gap: 12mm; align-items: center; justify-content: center;
-}
-#rodape img { max-height: 14mm; }
-
-/* ===== Impressão (PDF) – margens do @page para respeitar header e footer fixos ===== */
+/* -------------------- Regras específicas de impressão -------------------- */
 @media print{
-  /* Reserva topo e base da página para header e footer */
-  @page { margin: var(--print-top-margin) 16mm var(--print-bottom-margin); }
-
-  .prp-header { position: fixed; }
-  .prp-content { padding-top: 0; padding-bottom: 0; }
-
-  /* Garante rodapé fixo e limpa o cabeçalho “no fluxo” */
-  #rodape { position: fixed; bottom: 0; }
-  .page-head{ display:none !important; }
-  .term-section{
-    break-inside: avoid-page;
-    page-break-inside: avoid;
-  }
+  /* evitar que o título ou o cabeçalho quebrem estranhamente */
   .term-title{
-    margin-top: 6mm;
-    break-before: avoid; page-break-before: avoid;
+    margin-top:6mm;
+    break-before:avoid; page-break-before:avoid;
   }
-  .break-before{
-    break-before: page; page-break-before: always;
+  .term-section{
+    break-inside:avoid-page; page-break-inside:avoid;
   }
 }

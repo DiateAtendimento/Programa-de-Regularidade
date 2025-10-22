@@ -45,8 +45,8 @@
   <!-- Cabeçalho FIXO (anti-sobreposição em 2+ páginas) -->
   <header class="prp-header" aria-hidden="true">
     <div class="logos-wrap">
-      <img src="/imagens/logo-secretaria-complementar.svg" alt="Secretaria" loading="eager" />
-      <img src="/imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
+      <img src="./imagens/logo-secretaria-complementar.svg" alt="Secretaria" loading="eager" />
+      <img src="./imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
     </div>
   </header>
   <div id="pdf-root">
@@ -155,6 +155,7 @@
           <p data-k="f43_just"></p>
           <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
           <p data-k="f43_plano"></p>
+          
         </div>
         <!-- 4.4 -->
         <div class="avoid-break" id="fase-44" hidden>
@@ -167,6 +168,13 @@
 
           <p class="small mt"><strong>4.4.3 Finalidade do(s) Plano(s) de Ação:</strong></p>
           <ul id="f44-finalidades"></ul>
+          <p class="small mt"><strong>4.4.1(d) Legislação:</strong> <span data-k="f441_legislacao"></span></p>
+
+          <p class="small mt"><strong>4.4.6 Documentos:</strong></p>
+          <div id="f446-docs"></div>
+
+          <p class="small mt"><strong>4.4.6 Execução/Resultados:</strong></p>
+          <div id="f446-exec"></div>
 
           <p class="small mt"><strong>4.4.4 Anexos:</strong></p>
           <div id="f44-anexos"></div>
@@ -190,6 +198,16 @@
 
           <p class="small mt"><strong>4.6.2 Declarações e informações:</strong></p>
           <ul id="f46-decls"></ul>
+
+          <p class="small mt"><strong>4.6.2(f) Critérios:</strong></p>
+          <ul id="f462f-criterios"></ul>
+
+          <p class="small mt"><strong>Documentos adicionais (4.6):</strong></p>
+          <div id="f466-docs"></div>
+
+          <p class="small mt"><strong>Execução/Resultados adicionais (4.6):</strong></p>
+          <div id="f466-exec"></div>
+
 
           <p class="small mt"><strong>4.6.3 Finalidade do(s) Plano(s) de Ação:</strong></p>
           <ul id="f46-finalidades"></ul>
@@ -366,8 +384,9 @@
       }
       function normalizarEsfera(txt){
         const t = String(txt||'').toLowerCase();
-        if (t.includes('estadual') || t.includes('distrit')) return '1.1.2 Estadual/Distrital';
-        return '1.1.1 RPPS Municipal';
+        if (t.includes('estadual') || t.includes('distrit')) return '1.1.2 RPPS Estadual/Distrital';
+        if (t.includes('municip')) return '1.1.1 RPPS Municipal';
+        return (typeof __NA_ALL__==='function' && __NA_ALL__()) ? __NA_LABEL__() : '—';
       }
       function show(id, v){ const el=document.getElementById(id); if(el) el.hidden=!v; }
       function showOnlyPhase(code){
@@ -418,6 +437,20 @@
             liList('#f43-itens', p.F43_LISTA);
             fillText('f43_just',  p.F43_JUST  || '');
             fillText('f43_plano', p.F43_PLANO || ''); break;
+            // 4.3.10 (opção + textos, se existirem)
+            (function(){
+              const box = document.getElementById('f4310'); if(!box) return;
+              const items = [];
+              if (p.F4310_OPCAO)       items.push('Opção: ' + p.F4310_OPCAO);
+              if (p.F4310_LEGISLACAO)  items.push('Legislação: ' + p.F4310_LEGISLACAO);
+              if (p.F4310_DOCS)        items.push('Docs: ' + p.F4310_DOCS);
+              liList('#f4310', items);
+            })();
+
+            // 4.3.11 (checkboxes marcados para inclusão)
+            liList('#f43-incluir', p.F43_INCLUIR);
+            
+            break;
           }
           case '4.4': {
             liList('#f44-criterios',   p.F44_CRITERIOS);
@@ -426,6 +459,20 @@
             const ax = splitLines(p.F44_ANEXOS || '');
             const box = document.getElementById('f44-anexos');
             if (box) box.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+
+            // 4.4.1(d) legislação
+            fillText('f441_legislacao', p.F441_LEGISLACAO || '');
+
+            // 4.4.6 docs/execução
+            (function(){
+              const d = splitLines(p.F446_DOCS || '');
+              const e = splitLines(p.F446_EXEC_RES || '');
+              const dBox = document.getElementById('f446-docs');
+              const eBox = document.getElementById('f446-exec');
+              if (dBox) dBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
+              if (eBox) eBox.innerHTML = e.length ? '<ul>'+e.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
+            })();
+            
             break;
           }
           case '4.5': {
@@ -458,7 +505,23 @@
             const cc = document.getElementById('f46-comp-cumpr');
             if (jp) jp.textContent = (p.F46_JUST_PLANOS || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             if (cc) cc.textContent = (p.F46_COMP_CUMPR  || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+            
+
+            // 4.6.2(f) – critérios
+            liList('#f462f-criterios', p.F462F_CRITERIOS);
+
+            // Documentos/Execução adicionais (campos F466_*)
+            (function(){
+              const d = splitLines(p.F466_DOCS || '');
+              const e = splitLines(p.F466_EXEC_RES || '');
+              const dBox = document.getElementById('f466-docs');
+              const eBox = document.getElementById('f466-exec');
+              if (dBox) dBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
+              if (eBox) eBox.innerHTML = e.length ? '<ul>'+e.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
+            })();
+
             break;
+
           }
         }
         /* 5) Justificativas gerais */
@@ -473,7 +536,6 @@
         const esferaNode = document.querySelector('[data-esfera]');
         if (esferaNode) esferaNode.textContent = esferaTxt;
         const esferaTitulo = document.querySelector('h3 .label'); if (esferaTitulo) esferaTitulo.textContent = '1.1 Esfera de Governo';
-        const linhaTitulo = document.querySelector('h3 + .linha .titulo'); if (linhaTitulo) linhaTitulo.textContent = esferaTxt;
         (function(){
           const sig = document.getElementById('sig-cap-ente');
           if (sig) {

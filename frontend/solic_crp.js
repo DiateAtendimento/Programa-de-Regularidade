@@ -25,13 +25,14 @@
     const end = Date.now() + timeoutMs;
     while (Date.now() < end) {
       try {
-        const r = await fetchJSON('/_api/health', {}, { label: 'health', timeout: 4000, retries: 0 });
-          if (r && (r.ok || r.status === 'ok')) return true;
-        } catch (_) {}
-        await new Promise(r => setTimeout(r, pollMs));
-      }
-      return false;
+        const r = await fetchJSON(api('/_api/health'), {}, { label: 'health', timeout: 4000, retries: 0 });
+        if (r && (r.ok || r.status === 'ok')) return true;
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, pollMs));
+    }
+    return false;
   }
+
 
   const FORM_STORAGE_KEY = 'solic-crp-form-v1';
   const IDEM_STORE_KEY   = 'rpps-idem-submit:solic-crp';
@@ -1178,10 +1179,8 @@
       (el.esfMun?.checked ? 'RPPS Municipal' :
       (el.esfEst?.checked ? 'Estadual/Distrital' : ''));
 
-    // fase (seleção única)
     const faseCompat = document.querySelector('input[name="FASE_PROGRAMA"]:checked')?.value || '';
 
-    // 3.2
     const ADESAO_SEM_IRREGULARIDADES =
       $('#chkSemIrregularidades')?.checked ? 'SIM' : '';
     const FIN_3_2_MANUTENCAO_CONFORMIDADE =
@@ -1198,7 +1197,7 @@
       (el.tipoAdm?.checked && 'Administrativa') ||
       (el.tipoJud?.checked && 'Judicial') || '';
 
-    // >>> NOVO: campos UG consolidados (1.3 OU 1.3.2)
+    // UG consolidados (1.3 OU 1.3.2)
     const UG_FINAL       = (el.ug?.value || el.ugNome?.value || '').trim();
     const CNPJ_UG_FINAL  = obterCNPJUG(); // string com 14 dígitos ou null
     const EMAIL_UG_FINAL = (el.emailUg?.value || el.ugEmail?.value || '').trim();
@@ -1298,22 +1297,7 @@
       IDEMP_KEY: takeIdemKey() || ''
     };
 
-    // 1) CRITÉRIOS: garantir chave sem colchetes
-    if (Array.isArray(obj['CRITERIOS_IRREGULARES[]']) && !Array.isArray(obj.CRITERIOS_IRREGULARES)) {
-      obj.CRITERIOS_IRREGULARES = obj['CRITERIOS_IRREGULARES[]'];
-    }
-
-    // 2) CNPJ_UG: garantir valor limpo (14 dígitos)
-    if (!obj.CNPJ_UG) {
-      try {
-        const limpo = String(obj.ug_cnpj || obj.CNPJ_UG || '')
-          .replace(/\D/g,'')
-          .slice(0,14);
-        if (limpo.length === 14) obj.CNPJ_UG = limpo;
-      } catch(_) {}
-    }
-
-    // 3) PORTARIA padronizada (caso não venha do formulário)
+    // PORTARIA padronizada (caso não venha do formulário)
     if (!obj.PORTARIA_SRPC) {
       obj.PORTARIA_SRPC = '2.024/2025';
     }
@@ -1321,6 +1305,7 @@
     dbg('[SOLIC-CRP] Payload pronto:', obj);
     return obj;
   }
+
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
@@ -1337,7 +1322,7 @@
 
     // 🔥 Aquece o backend/Puppeteer ANTES de pedir o PDF (evita 502/restart)
     try {
-      await fetchJSON('/_api/warmup', {}, { label: 'warmup', timeout: 8000, retries: 1 });
+      await fetchJSON(api('/_api/warmup'), {}, { label: 'warmup', timeout: 8000, retries: 1 });
     } catch (_) { /* segue se warmup falhar */ }
 
     // Garante que o serviço está de pé (proxy → backend)
@@ -1394,7 +1379,7 @@
       .toLowerCase();
     a.href = url; a.download = `solic-crp-${enteSlug}.pdf`;
     document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
+    setTimeout(()=> URL.revokeObjectURL(url), 0);
   }
 
 
@@ -1569,6 +1554,7 @@
   /* ========= Boot ========= */
   function init(){
     bindMasks();
+    bindSyncUg132(); 
     el.btnPesquisar?.addEventListener('click', onPesquisar, false);
     setupFase4Toggles();
     bindCondicionais();
@@ -1600,5 +1586,41 @@
 
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); }
   else{ init(); }
+
+  // ---- Fail-safe + Watcher: garante preenchimento dos campos F4.3 ----
+  (function(){
+    const KEYS = ['f43_plano','f43_just','justificativas_gerais']; // <- inclui justificativas_gerais
+
+    function getVal(k){
+      return (window.__TERMO_DATA__?.[k] ?? '').toString().trim() || 'Não informado';
+    }
+    function setVal(el, v){
+      if (el.matches('input, textarea, select')) {
+        el.value = v;
+        el.dispatchEvent(new Event('input',  { bubbles:true }));
+        el.dispatchEvent(new Event('change', { bubbles:true }));
+      } else {
+        el.textContent = v;
+      }
+    }
+    function fill(){
+      KEYS.forEach(k=>{
+        const v = getVal(k);
+        document.querySelectorAll(`[data-k="${k}"]`).forEach(el=>{
+          const cur = el.matches('input,textarea,select') ? (el.value || '') : (el.textContent || '');
+          if (cur.trim() !== v) setVal(el, v);
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fill); else fill();
+    document.addEventListener('TERMO_DATA', fill);
+    document.addEventListener('TERMO_DATA_READY', fill);
+
+    const mo = new MutationObserver(()=> fill());
+    mo.observe(document.body, { subtree:true, childList:true, characterData:true });
+
+    window.__killTermoWatcher = () => mo.disconnect();
+  })();
 
 })();
