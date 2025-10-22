@@ -577,5 +577,24 @@
     window.__TERMO_DATA__ = Object.assign({ __NA_ALL: true, __NA_LABEL: 'Não informado' }, window.__TERMO_DATA__ || {});
     if (window.__TERMO_RUN__) { try { window.__TERMO_RUN__(window.__TERMO_DATA__); } catch {} }
   </script>
+
+  <script>
+  // Se o backend já colocou window.__TERMO_DATA__, forçamos a renderização:
+  (function () {
+    function fire() {
+      try {
+        // garante que quem está ouvindo rode agora
+        document.dispatchEvent(new Event('TERMO_DATA_READY'));
+      } catch (e) {}
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fire);
+    } else {
+      fire();
+    }
+  })();
+</script>
+
 </body>
 </html>

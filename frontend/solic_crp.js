@@ -1216,9 +1216,14 @@
     const EMAIL_UG_FINAL = (el.emailUg?.value || el.ugEmail?.value || '').trim();
 
     if (!CNPJ_UG_FINAL) {
-      // Defesa extra: nunca deixar ir “0”
-      throw new Error('CNPJ_UG inválido/ausente');
+      if (window.__DEBUG_SOLIC_CRP__) {
+        // Em dev, deixa vazio para cair no "Não informado" do template
+        // Em produção, mantenha a exceção.
+      } else {
+        throw new Error('CNPJ_UG inválido/ausente');
+      }
     }
+
 
     const obj = {
       HAS_TERMO_ENC_GESCON: el.hasGescon?.value === '1',
@@ -1319,11 +1324,62 @@
     return obj;
   }
 
+  // === Compat converter → transforma os campos granulares do form 2
+  //     nas chaves que o template termo_solic_crp.html espera ===
+  function makeSolicCrpCompatFields(p) {
+    // 4.1 (até 60 / até 300) a partir de F41_OPCAO
+    let CELEBRACAO_TERMO_PARCELA_DEBITOS = '';
+    if (p.F41_OPCAO === '4.1.1') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.1 – até 60 parcelas';
+    if (p.F41_OPCAO === '4.1.2') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.2 – até 300 parcelas';
+
+    // 4.2 regularização administrativa (mapeia lista marcada → string com códigos)
+    const f42 = Array.isArray(p.F42_LISTA) ? p.F42_LISTA : [];
+    const REGULARIZACAO_PENDEN_ADMINISTRATIVA = f42.join('; '); // ex.: "4.2.1; 4.2.2"
+
+    // 4.3 déficit atuarial (idem)
+    const f43 = Array.isArray(p.F43_LISTA) ? p.F43_LISTA : [];
+    let DEFICIT_ATUARIAL = f43.join('; ');
+    if (!DEFICIT_ATUARIAL && (p.F43_PLANO || p.F43_DESC_PLANOS)) {
+      // se usuário descreveu mas não ticonou, ao menos marca 4.3 genericamente
+      DEFICIT_ATUARIAL = '4.3';
+    }
+
+    // 4.4 critérios estruturantes
+    const f44c = Array.isArray(p.F44_CRITERIOS) ? p.F44_CRITERIOS : [];
+    const CRITERIOS_ESTRUT_ESTABELECIDOS = f44c.join('; ');
+
+    // 4.6 Manutenção da conformidade
+    const man = Array.isArray(p.F46_CRITERIOS) ? p.F46_CRITERIOS : [];
+    const MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS = man.join('; ');
+
+    // Etapas 5–7 (se existirem campos textuais no teu form; senão ficam vazios)
+    const COMPROMISSO_FIRMADO_ADESAO = String(p.F45_JUST || '').trim();
+    const PROVIDENCIA_NECESS_ADESAO  = String(p.F45_DOCS || '').trim();
+    const CONDICAO_VIGENCIA          = String(p.F46_JUST_PLANOS || '').trim();
+
+    // Data “que o template usa”
+    const DATA_TERMO_GERADO = p.DATA_SOLIC_GERADA || p.DATA || '';
+
+    return {
+      CELEBRACAO_TERMO_PARCELA_DEBITOS,
+      REGULARIZACAO_PENDEN_ADMINISTRATIVA,
+      DEFICIT_ATUARIAL,
+      CRITERIOS_ESTRUT_ESTABELECIDOS,
+      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS,
+      COMPROMISSO_FIRMADO_ADESAO,
+      PROVIDENCIA_NECESS_ADESAO,
+      CONDICAO_VIGENCIA,
+      DATA_TERMO_GERADO,
+      // também mantenho ESFERA, pois o render usa (ele já vem de p.ESFERA)
+      ESFERA: p.ESFERA || ''
+    };
+  }
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
     const payloadForPdf = {
       ...payload,
+      ...makeSolicCrpCompatFields(payload),
       __NA_ALL: true,                 // <- garante fallback "Não informado" no template
       __NA_LABEL: 'Não informado',
       
