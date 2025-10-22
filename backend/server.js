@@ -2122,8 +2122,10 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     format: 'A4',
     printBackground: true,
     preferCSSPageSize: true,
-    displayHeaderFooter: false,
-    margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' },
+    displayHeaderFooter: false
+    // Sem 'margin': respeita o @page do CSS (topo 30mm).
+    // Se preferir manter aqui, use top >= 30mm:
+    // margin: { top: '32mm', right: '16mm', bottom: '20mm', left: '16mm' },
   });
 
   await page.close();

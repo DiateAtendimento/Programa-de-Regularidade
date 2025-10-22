@@ -85,11 +85,13 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   padding:0 10mm;
 }
 .prp-header .logos-wrap{
-  display:flex;
-  align-items:center; justify-content:center;
-  gap:6mm; width:100%;
-  line-height:0;
-  flex-wrap:wrap;            /* evita “apertar” o conteúdo */
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  gap:6mm; 
+  width:100%; 
+  line-height:0; 
+  flex-wrap:wrap;
 }
 .prp-header img{
   display:block; height:auto; width:auto;
@@ -252,3 +254,5 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
     break-inside:avoid-page; page-break-inside:avoid;
   }
 }
+
+@media print { #rodape { display:none } }
