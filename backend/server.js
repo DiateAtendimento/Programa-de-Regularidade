@@ -2102,9 +2102,21 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     .term-wrap { box-shadow:none !important; border-radius:0 !important; margin:0 !important; }
   `});
 
-  try { await page.waitForSelector('#pdf-root', { timeout: 20000 }); } catch {}
-  try { await page.evaluate(() => document.fonts && document.fonts.ready); } catch {}
-  await page.waitForTimeout(150);
+  // aguarda o container do PDF (ou o body como fallback)
+  try { await page.waitForSelector('#pdf-root', { timeout: 20000 }); }
+  catch (_) { try { await page.waitForSelector('body', { timeout: 5000 }); } catch {} }
+
+  // aguarda fontes carregarem de fato (nas versões novas do Puppeteer)
+  try {
+    await page.evaluate(async () => {
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+    });
+  } catch {}
+
+  // pequeno respiro pro layout assentar (substitui page.waitForTimeout)
+  await new Promise(resolve => setTimeout(resolve, 150));
 
   const pdf = await page.pdf({
     format: 'A4',
