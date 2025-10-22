@@ -117,6 +117,7 @@ app.use(helmet.contentSecurityPolicy({
     frameAncestors: ["'none'"],
     baseUri: ["'self'"],
     formAction: ["'self'"],
+    
   },
 }));
 // Referrer-Policy + COOP
@@ -190,14 +191,6 @@ app.use('/api', (req, res, next) => {
 });
 
 
-
-// Handler global de erros – evita que exceções “quebrem” o processo durante o PDF
-app.use((err, req, res, _next) => {
-  console.error('🔥 Erro não tratado:', err?.stack || err);
-  if (!res.headersSent) {
-    res.status(500).json({ ok:false, error: 'Falha interna ao processar a solicitação.' });
-  }
-});
 
 /* ───────────── Cache-Control das rotas de API ───────────── */
 app.use('/api', (_req, res, next) => {
@@ -2056,18 +2049,24 @@ app.post('/api/termo-pdf', async (req, res) => {
         const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6','5.7','5.8']
           .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
 
-
         const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
         const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
 
-        try { browser = await getBrowser(); page = await browser.newPage(); }
-        catch (e) {
+        // Abre/reabre browser de forma resiliente
+        try {
+          browser = await getBrowser();
+          page = await browser.newPage();
+        } catch (e) {
           const msg = String(e?.message || '');
           if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
             triedRestart = true;
             try { await browser?.close().catch(()=>{}); } catch(_){}
-            _browserPromise = null; browser = await getBrowser(); page = await browser.newPage();
-          } else { throw e; }
+            _browserPromise = null;
+            browser = await getBrowser();
+            page = await browser.newPage();
+          } else {
+            throw e;
+          }
         }
 
         await page.setCacheEnabled(false);
@@ -2087,18 +2086,7 @@ app.post('/api/termo-pdf', async (req, res) => {
         page.setDefaultTimeout(90_000);
         await page.emulateMediaType('screen');
 
-        const urlsToTry = [
-          `${LOOPBACK_BASE}/termo.html`
-        ];
-        if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/termo.html`);
-
-        let loaded = false; let lastErr = null;
-        for (const u of urlsToTry) {
-          try { await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 }); loaded = true; break; }
-          catch (e) { lastErr = e; }
-        }
-        if (!loaded) throw lastErr || new Error('Falha ao carregar termo.html');
-
+        // ========= PRÉ-INJEÇÃO (ANTES DA NAVEGAÇÃO) =========
         const toArr = (val) => Array.isArray(val)
           ? val
           : String(val || '')
@@ -2113,14 +2101,55 @@ app.post('/api/termo-pdf', async (req, res) => {
           COMP_CODES: compCodes
         };
 
+        await page.evaluateOnNewDocument((payload) => {
+          try {
+            // Dados disponíveis desde o primeiro tick
+            window.__TERMO_DATA__ = payload || {};
 
-        await page.evaluate((payload) => {
-          window.__TERMO_DATA__ = payload;
-          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+            // Sinalizações para CSS
+            document.documentElement.classList.add('pdf-export');
+            document.addEventListener('readystatechange', () => {
+              if (document.readyState === 'complete') {
+                try { document.body && document.body.classList.add('pdf-export'); } catch {}
+              }
+            });
+
+            // Notifica templates que ouvem eventos de "dados prontos"
+            const fire = () => {
+              try {
+                document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+                // opcional: alguns templates escutam esse também
+                document.dispatchEvent(new Event('TERMO_PRINT_READY'));
+              } catch {}
+            };
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', fire, { once: true });
+            } else {
+              fire();
+            }
+          } catch {}
         }, payloadForClient);
 
-        if (DEBUG_PDF) console.log('📤 dados injetados no template');
+        // ========= NAVEGAÇÃO =========
+        const urlsToTry = [
+          `${LOOPBACK_BASE}/termo.html`
+        ];
+        if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/termo.html`);
 
+        let loaded = false; let lastErr = null;
+        for (const u of urlsToTry) {
+          try {
+            await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+            loaded = true;
+            break;
+          } catch (e) { lastErr = e; }
+        }
+        if (!loaded) throw lastErr || new Error('Falha ao carregar termo.html');
+
+        // ⚠️ NÃO é mais necessário injetar dados aqui (já foi via evaluateOnNewDocument)
+        if (DEBUG_PDF) console.log('📤 dados pré-injetados no template (evaluateOnNewDocument)');
+
+        // Aguarda fonte/DOM prontos
         await page.waitForSelector('#pdf-root', { timeout: 20000 }).catch(()=>{});
         await page.evaluate(() => new Promise((resolve) => {
           const finish = async () => {
@@ -2130,11 +2159,14 @@ app.post('/api/termo-pdf', async (req, res) => {
           if (window.__TERMO_PRINT_READY__ === true) return void finish();
           document.addEventListener('TERMO_PRINT_READY', () => finish(), { once: true });
         }));
+
+        // (reforço — já adicionamos via evaluateOnNewDocument; manter não faz mal)
         await page.evaluate(() => {
           document.documentElement.classList.add('pdf-export');
           document.body.classList.add('pdf-export');
         });
 
+        // ========= FONTES EMBUTIDAS (opcional) =========
         function findFont(candidates){
           for (const rel of candidates){
             const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
@@ -2142,8 +2174,14 @@ app.post('/api/termo-pdf', async (req, res) => {
           }
           return null;
         }
-        const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf','fonts/rawline-400.woff2','fonts/rawline-400.woff','fonts/rawline-400.ttf']);
-        const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf','fonts/rawline-700.woff2','fonts/rawline-700.woff','fonts/rawline-700.ttf']);
+        const rawline400 = findFont([
+          'fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf',
+          'fonts/rawline-400.woff2','fonts/rawline-400.woff','fonts/rawline-400.ttf'
+        ]);
+        const rawline700 = findFont([
+          'fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf',
+          'fonts/rawline-700.woff2','fonts/rawline-700.woff','fonts/rawline-700.ttf'
+        ]);
 
         let fontCSS = '';
         if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
@@ -2154,39 +2192,27 @@ app.post('/api/termo-pdf', async (req, res) => {
           ${fontCSS}
           html, body, #pdf-root { background:#ffffff !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .page-head .logos-wrap { display: none !important; }
+          /* evita esconder header do DOM (mantemos o cabeçalho do template) */
+          /* .page-head .logos-wrap { display: none !important; }  <-- não usar */
           .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
           .term-title { margin-top: 2mm !important; }
         `});
 
-        const svgSec = inlineSvg('imagens/logo-secretaria-complementar.svg');
-        const svgMps = inlineSvg('imagens/logo-termo-drpps.svg');
-        const headerTemplate = `
-          <style>
-            .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6mm 12mm 4mm; }
-            .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
-            .pdf-header .logo-sec svg { height: 19mm; width:auto; }
-            .pdf-header .logo-mps svg { height: 20mm; width:auto; }
-            .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
-            .date, .title, .url, .pageNumber, .totalPages { display:none; }
-          </style>
-          <div class="pdf-header">
-            <div class="logos">
-              <div class="logo-sec">${svgSec}</div>
-              <div class="logo-mps">${svgMps}</div>
-            </div>
-            <div class="rule"></div>
-          </div>`;
-        const footerTemplate = `<div></div>`;
-
+        // ========= GERAÇÃO DO PDF =========
         const pdf = await page.pdf({
-          printBackground: true, preferCSSPageSize: true, displayHeaderFooter: true,
-          headerTemplate, footerTemplate, margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
+          format: 'A4',
+          printBackground: true,
+          preferCSSPageSize: true,
+          displayHeaderFooter: false, // sem headerTemplate/footerTemplate
+          margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' }
         });
+
         await page.close();
 
         const filenameSafe = (p.ENTE || 'termo-adesao')
-          .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
+          .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+          .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-')
+          .replace(/(^-|-$)/g,'').toLowerCase();
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="termo-${filenameSafe}.pdf"`);
@@ -2203,6 +2229,7 @@ app.post('/api/termo-pdf', async (req, res) => {
     if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
   }
 });
+
 
 /** POST /api/termo-solic-crp-pdf — Gera PDF do termo de solicitação (Formulário 2) */
 app.post('/api/termo-solic-crp-pdf', async (req, res) => {
@@ -2634,9 +2661,12 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
         const pdf = await page.pdf({
           printBackground: true,
           preferCSSPageSize: true,
-          displayHeaderFooter: true,
-          headerTemplate, footerTemplate,
-          margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
+          displayHeaderFooter: false,
+          // sem headerTemplate/footerTemplate
+          margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' },
+          preferCSSPageSize: true,
+          printBackground: true
+
         });
         await page.close();
         log('PDF OK em', Date.now() - T0, 'ms');
@@ -2660,7 +2690,12 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
   }
 });
 
-
+app.use((err, req, res, _next) => {
+  console.error('🔥 Erro não tratado:', err?.stack || err);
+  if (!res.headersSent) {
+    res.status(500).json({ ok:false, error: 'Falha interna ao processar a solicitação.' });
+  }
+});
 
 
 /** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */
@@ -2699,6 +2734,8 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
         page.setDefaultNavigationTimeout(90_000);
         page.setDefaultTimeout(90_000);
         await page.emulateMediaType('screen');
+
+        
 
         // 🔎 Candidatos — prioriza o template correto e remove o legacy ausente
         const CANDIDATES = [
@@ -2819,10 +2856,12 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
         const pdf = await page.pdf({
           printBackground: true,
           preferCSSPageSize: true,
-          displayHeaderFooter: true,
-          headerTemplate,
-          footerTemplate,
-          margin: { top: '38mm', right: '0mm', bottom: '12mm', left: '0mm' }
+          displayHeaderFooter: false,
+          // sem headerTemplate/footerTemplate
+          margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' },
+          preferCSSPageSize: true,
+          printBackground: true
+
         });
         await page.close();
 
