@@ -242,7 +242,6 @@
     </div>
   </div>
 
-  
 
   <!-- Script embutido (mantido e INALTERADO em lógica) -->
   <script>
@@ -406,7 +405,7 @@
           case '4.3': {
             liList('#f43-itens', p.F43_LISTA);
             fillText('f43_just',  p.F43_JUST  || '');
-            fillText('f43_plano', p.F43_PLANO || ''); break;
+            fillText('f43_plano', p.F43_PLANO || ''); 
             // 4.3.10 (opção + textos, se existirem)
             (function(){
               const box = document.getElementById('f4310'); if(!box) return;
@@ -577,7 +576,6 @@
   <!-- Força fallback “Não informado” também no preview local -->
   <script>
     window.__TERMO_DATA__ = Object.assign({ __NA_ALL: true, __NA_LABEL: 'Não informado' }, window.__TERMO_DATA__ || {});
-    if (window.__TERMO_RUN__) { try { window.__TERMO_RUN__(window.__TERMO_DATA__); } catch {} }
   </script>
 
   <script>
@@ -597,7 +595,6 @@
     }
   })();
 </script>
-<script src="./termo_solic_crp.js"></script>
 
 </body>
 </html>
