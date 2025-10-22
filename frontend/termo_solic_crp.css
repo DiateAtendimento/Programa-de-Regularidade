@@ -26,8 +26,8 @@
   --rule:#d7dee8;
 
   /* Cabeçalho */
-  --header-height:22mm;    /* altura efetiva do cabeçalho com logos */
-  --header-gap:6mm;        /* respiro interno entre logos e bordas */
+  --header-height:1mm;    /* altura efetiva do cabeçalho com logos */
+  --header-gap:0mm;        /* respiro interno entre logos e bordas */
 
   /* Modal */
   --modal-backdrop:rgba(15,23,42,.35);
@@ -83,6 +83,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   z-index:9999;
   display:flex; align-items:center; justify-content:center;
   padding:0 10mm;
+  display: none;
 }
 .prp-header .logos-wrap{
   display:flex; 
@@ -102,11 +103,12 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 
 
 /* Em tela: empurrar o conteúdo pra baixo do header fixo */
-.prp-content{ padding-top:calc(var(--header-height) + var(--header-gap)); }
+.prp-content{ padding-top:calc(var(--header-height) + var(--header-gap));}
 
 /* Em PDF: o @page já tem a margem de topo para dar espaço; retiramos o padding extra */
 @media print{
   .prp-content{ padding-top:0; }
+
 }
 
 /* -------------------- Título + meta -------------------- */
@@ -256,3 +258,4 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
 }
 
 @media print { #rodape { display:none } }
+

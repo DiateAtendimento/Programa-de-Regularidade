@@ -2089,10 +2089,11 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   // Abre o template exato
   let ok = false, lastErr = null;
   for (const u of urls) {
-    try { await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 120_000 }); ok = true; break; }
+    try { await page.goto(u, { waitUntil: 'networkidle0', timeout: 120_000 }); ok = true; break; }
     catch (e) { lastErr = e; }
   }
   if (!ok) { try { await page.close(); } catch {} throw lastErr || new Error(`Falha ao carregar ${templateFile}`); }
+
 
   // Respeita layout de impressão do template
   await page.emulateMediaType('print');
@@ -2105,6 +2106,24 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   // aguarda o container do PDF (ou o body como fallback)
   try { await page.waitForSelector('#pdf-root', { timeout: 20000 }); }
   catch (_) { try { await page.waitForSelector('body', { timeout: 5000 }); } catch {} }
+
+  // === ESPERA ATIVA: garante que os campos foram preenchidos pelo template ===
+  // escolhemos 'ente' como “sinal” – ajuste se preferir outro data-k crítico
+  try {
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-k="ente"]');
+      return !!el && el.textContent && el.textContent.trim().length > 0;
+    }, { timeout: 8000 });
+  } catch (_) {
+    // não derruba; segue adiante
+  }
+
+  // (aqui já existe o teu page.pdf(...))
+  const pdfBuffer = await page.pdf({
+    format: 'A4',
+    printBackground: true,
+    margin: { top: '10mm', right: '10mm', bottom: '12mm', left: '12mm' }
+  });
 
   // aguarda fontes carregarem de fato (nas versões novas do Puppeteer)
   try {
