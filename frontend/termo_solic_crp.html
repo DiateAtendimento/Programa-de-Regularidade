@@ -553,11 +553,13 @@
       document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
       document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
       window.addEventListener('message', (ev) => {
-        const d = ev && ev.data;
-        if (d && (d.type === 'TERMO_DATA' || d.type === 'TERMO_DATA_READY')) {
-          try { run(d.payload || {}); } catch {}
-        }
-      });
+          const d = ev && ev.data;
+          if (!d) return;
+          // aceita os tipos que o gerador pode enviar
+          if (d.type === 'TERMO_DATA' || d.type === 'TERMO_DATA_READY' || d.type === 'TERMO_PREVIEW_DATA') {
+            try { run(d.payload || {}); } catch (_) {}
+          }
+        });
       (function spinWait(maxMs=4000, step=120){
         const t0 = Date.now();
         const iv = setInterval(() => {
