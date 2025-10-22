@@ -738,9 +738,9 @@
       }
 
       if (!ok) {
-        dbg('Sem registro válido Gescon → desbloqueando fluxo e tentando hidratar termos…');
+        dbg('Sem registro válido Gescon → BLOQUEIA fluxo e exibe orientação…');
         el.hasGescon && (el.hasGescon.value = '0');
-        if (el.btnNext) el.btnNext.disabled = false;
+        if (el.btnNext) el.btnNext.disabled = true; // ← não deixa avançar
 
         el.boxGescon && el.boxGescon.classList.add('d-none');
         if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
@@ -757,8 +757,12 @@
           processo_sei: procSei || '—'
         });
 
-        try { await hidratarTermosRegistrados(cnpj); } catch (e) { dbe('hidratarTermosRegistrados falhou (sem bloqueio):', e); }
-        if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
+        // pode hidratar a tela, mas sem avançar passo
+        try { await hidratarTermosRegistrados(cnpj); } catch (e) { dbe('hidratarTermosRegistrados falhou:', e); }
+
+        // mostra o modal com a mensagem exigida
+        showModal('modalGesconNaoEncontrado');
+
         console.groupEnd();
         return;
       }
@@ -782,7 +786,10 @@
       if (introDT) introDT.textContent = dataEncBR || '—';
 
       el.infoDataEncGescon && (el.infoDataEncGescon.textContent = dataEncBR || '—');
-      const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = nGescon || '—';
+      {
+        const infoNum = document.getElementById('infoNumGescon');
+        if (infoNum) infoNum.textContent = nGescon || '—';
+      }
 
       preencherRegistrosDoTermo({
         gescon_consulta: nGescon || '—',
@@ -803,14 +810,19 @@
     } catch (err) {
       dbe('Erro na pesquisa do CNPJ:', { status: err?.status, message: err?.message, response: err?.response });
       if (err && err.status === 404) {
-        dbg('CNPJ não localizado no Gescon → desbloqueando fluxo e tentando hidratar…');
+        dbg('CNPJ não localizado no Gescon → BLOQUEIA fluxo e exibe orientação…');
         el.hasGescon && (el.hasGescon.value = '0');
-        if (el.btnNext) el.btnNext.disabled = false;
+        if (el.btnNext) el.btnNext.disabled = true; // ← bloqueado
+
         el.boxGescon && el.boxGescon.classList.add('d-none');
         if (el.infoDataEncGescon) el.infoDataEncGescon.textContent = '—';
         const infoNum = document.getElementById('infoNumGescon'); if (infoNum) infoNum.textContent = '—';
+
         try { await hidratarTermosRegistrados(cnpj); } catch (e) {}
-        if (curStep === 0) { curStep = 1; window.__renderStepper?.(); }
+
+        // abre o modal com a mensagem pedida e não avança
+        showModal('modalGesconNaoEncontrado');
+
       } else {
         showErro(friendlyErrorMessages(err, 'Falha ao consultar informações.'));
       }
@@ -819,6 +831,7 @@
       searching = false;
     }
   }
+
 
   async function hidratarTermosRegistrados(cnpj){
     dbg('[hidratarTermosRegistrados] start →', cnpj);
