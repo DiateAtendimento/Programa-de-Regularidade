@@ -2089,13 +2089,15 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   // Abre o template exato
   let ok = false, lastErr = null;
   for (const u of urls) {
-    try { await page.goto(u, { waitUntil: 'networkidle0', timeout: 120_000 }); ok = true; break; }
-    catch (e) { lastErr = e; }
+    try {
+      // 1) espere a rede realmente “assentar”
+      await page.goto(u, { waitUntil: 'networkidle0', timeout: 120_000 });
+      ok = true; break;
+    } catch (e) { lastErr = e; }
   }
   if (!ok) { try { await page.close(); } catch {} throw lastErr || new Error(`Falha ao carregar ${templateFile}`); }
 
-
-  // Respeita layout de impressão do template
+  // 2) respeita layout de impressão (já existe no seu código)
   await page.emulateMediaType('print');
   await page.addStyleTag({ content: `
     html, body, #pdf-root { background:#fff !important; }
@@ -2103,49 +2105,39 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     .term-wrap { box-shadow:none !important; border-radius:0 !important; margin:0 !important; }
   `});
 
-  // aguarda o container do PDF (ou o body como fallback)
+  // 3) container presente
   try { await page.waitForSelector('#pdf-root', { timeout: 20000 }); }
   catch (_) { try { await page.waitForSelector('body', { timeout: 5000 }); } catch {} }
 
-  // === ESPERA ATIVA: garante que os campos foram preenchidos pelo template ===
-  // escolhemos 'ente' como “sinal” – ajuste se preferir outro data-k crítico
+  // 4) aguarde SINAL de preenchimento (qualquer campo-chave com texto)
   try {
     await page.waitForFunction(() => {
       const el = document.querySelector('[data-k="ente"]');
-      return !!el && el.textContent && el.textContent.trim().length > 0;
+      return !!el && !!(el.textContent || '').trim();
     }, { timeout: 8000 });
   } catch (_) {
-    // não derruba; segue adiante
+    // não falhe por isso; segue — mas na prática já terá preenchido
   }
 
-  // (aqui já existe o teu page.pdf(...))
-  const pdfBuffer = await page.pdf({
-    format: 'A4',
-    printBackground: true,
-    margin: { top: '10mm', right: '10mm', bottom: '12mm', left: '12mm' }
-  });
-
-  // aguarda fontes carregarem de fato (nas versões novas do Puppeteer)
+  // 5) opcionalmente, também espere o flag do próprio template (se existir)
   try {
-    await page.evaluate(async () => {
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      }
-    });
+    await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 5000 });
+  } catch (_) {}
+
+  // 6) fontes carregadas (já tinha)
+  try {
+    await page.evaluate(async () => { if (document.fonts?.ready) await document.fonts.ready; });
   } catch {}
 
-  // pequeno respiro pro layout assentar (substitui page.waitForTimeout)
-  await new Promise(resolve => setTimeout(resolve, 150));
-
+  // 7) pequeno respiro e GERA
+  await new Promise(r => setTimeout(r, 120));
   const pdf = await page.pdf({
     format: 'A4',
     printBackground: true,
     preferCSSPageSize: true,
     displayHeaderFooter: false
-    // Sem 'margin': respeita o @page do CSS (topo 30mm).
-    // Se preferir manter aqui, use top >= 30mm:
-    // margin: { top: '32mm', right: '16mm', bottom: '20mm', left: '16mm' },
   });
+
 
   await page.close();
 
