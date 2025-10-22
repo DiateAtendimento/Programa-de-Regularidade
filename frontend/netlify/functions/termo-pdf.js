@@ -44,7 +44,7 @@ router.post('/pdf/termo', async (req, res) => {
     log('Status navegação', { status: resp?.status?.() });
 
     // 4) Garante mídia e fonte
-    await page.emulateMediaType('screen');
+    await page.emulateMediaType('print');
 
     // 5) Verifica se realmente renderizou conteúdo
     const bodySize = await page.evaluate(() => {
@@ -60,8 +60,8 @@ router.post('/pdf/termo', async (req, res) => {
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      preferCSSPageSize: true,
-      margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' }
+      preferCSSPageSize: true
+      // Sem 'margin': usa o @page do CSS (30mm topo) e evita sobreposição.
     });
 
     const dt = Date.now() - t0;

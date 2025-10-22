@@ -89,11 +89,15 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   align-items:center; justify-content:center;
   gap:6mm; width:100%;
   line-height:0;
+  flex-wrap:wrap;            /* evita “apertar” o conteúdo */
 }
 .prp-header img{
   display:block; height:auto; width:auto;
-  max-height:14mm; /* ajuste fino se mudar a arte */
+  max-height:14mm;            /* altura controlada */
+  max-width:45%;              /* evita que 1 logo ocupe largura demais */
+  object-fit:contain;
 }
+
 
 /* Em tela: empurrar o conteúdo pra baixo do header fixo */
 .prp-content{ padding-top:calc(var(--header-height) + var(--header-gap)); }
