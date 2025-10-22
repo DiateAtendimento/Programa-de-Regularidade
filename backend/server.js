@@ -2037,190 +2037,111 @@ function inlineFont(relPath) {
   } catch { return null; }
 }
 
+// === Helper único: renderiza um template HTML em PDF preservando o layout do template ===
+async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallback }) {
+  const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
+  const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
+  const urls = [
+    `${LOOPBACK_BASE}/${templateFile}`,
+    ...(PUBLIC_BASE ? [`${PUBLIC_BASE}/${templateFile}`] : []),
+  ];
+
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+
+  await page.setCacheEnabled(false);
+  await page.setRequestInterception(true);
+  page.on('request', (reqObj) => {
+    const u = reqObj.url();
+    if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
+    const allowed = u.startsWith(LOOPBACK_BASE) || (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
+    return allowed ? reqObj.continue() : reqObj.abort();
+  });
+
+  page.setDefaultNavigationTimeout(120_000);
+  page.setDefaultTimeout(120_000);
+
+  // Pré-injeção: dados disponíveis antes de o template carregar
+  await page.evaluateOnNewDocument((data) => {
+    try {
+      window.__TERMO_DATA__ = data || {};
+      const fire = () => {
+        try {
+          document.dispatchEvent(new CustomEvent('TERMO_DATA'));
+          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+          document.dispatchEvent(new Event('TERMO_PRINT_READY'));
+        } catch {}
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fire, { once: true });
+      } else {
+        fire();
+      }
+      document.documentElement.classList.add('pdf-export');
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState === 'complete') {
+          try { document.body && document.body.classList.add('pdf-export'); } catch {}
+        }
+      });
+    } catch {}
+  }, payload || {});
+
+  // Abre o template exato
+  let ok = false, lastErr = null;
+  for (const u of urls) {
+    try { await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 120_000 }); ok = true; break; }
+    catch (e) { lastErr = e; }
+  }
+  if (!ok) { try { await page.close(); } catch {} throw lastErr || new Error(`Falha ao carregar ${templateFile}`); }
+
+  // Respeita layout de impressão do template
+  await page.emulateMediaType('print');
+  await page.addStyleTag({ content: `
+    html, body, #pdf-root { background:#fff !important; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .term-wrap { box-shadow:none !important; border-radius:0 !important; margin:0 !important; }
+  `});
+
+  try { await page.waitForSelector('#pdf-root', { timeout: 20000 }); } catch {}
+  try { await page.evaluate(() => document.fonts && document.fonts.ready); } catch {}
+  await page.waitForTimeout(150);
+
+  const pdf = await page.pdf({
+    format: 'A4',
+    printBackground: true,
+    preferCSSPageSize: true,
+    displayHeaderFooter: false,
+    margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' },
+  });
+
+  await page.close();
+
+  const fname = (payload?.ENTE || filenameFallback || 'documento')
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-')
+    .replace(/(^-|-$)/g,'').toLowerCase();
+
+  return { buffer: pdf, filename: `${fname}.pdf` };
+}
+
+// === /api/termo-pdf — usa exatamente frontend/termo.html ===
 app.post('/api/termo-pdf', async (req, res) => {
   try {
     const p = validateOr400(res, schemaTermoPdf, req.body || {});
     if (!p) return;
-
     await withPdfLimiter(async () => {
-      let page; let browser; let triedRestart = false;
       try {
-        const compAgg = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
-        const compCodes = ['5.1','5.2','5.3','5.4','5.5','5.6','5.7','5.8']
-          .filter(code => new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`).test(compAgg));
-
-        const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
-        const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
-
-        // Abre/reabre browser de forma resiliente
-        try {
-          browser = await getBrowser();
-          page = await browser.newPage();
-        } catch (e) {
-          const msg = String(e?.message || '');
-          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
-            triedRestart = true;
-            try { await browser?.close().catch(()=>{}); } catch(_){}
-            _browserPromise = null;
-            browser = await getBrowser();
-            page = await browser.newPage();
-          } else {
-            throw e;
-          }
-        }
-
-        await page.setCacheEnabled(false);
-        await page.setRequestInterception(true);
-        page.on('request', (reqObj) => {
-          const u = reqObj.url();
-          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
-
-          const allowed =
-            (u.startsWith(LOOPBACK_BASE)) ||
-            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
-
-          return allowed ? reqObj.continue() : reqObj.abort();
+        const { buffer, filename } = await gerarPdfDoTemplateSimples({
+          templateFile: 'termo.html',
+          payload: p,
+          filenameFallback: 'termo-adesao'
         });
-
-        page.setDefaultNavigationTimeout(90_000);
-        page.setDefaultTimeout(90_000);
-        await page.emulateMediaType('screen');
-
-        // ========= PRÉ-INJEÇÃO (ANTES DA NAVEGAÇÃO) =========
-        const toArr = (val) => Array.isArray(val)
-          ? val
-          : String(val || '')
-              .split(/[;,]/)           // ; ou ,
-              .map(s => s.trim())
-              .filter(Boolean);
-
-        const payloadForClient = {
-          ...p,
-          ESFERA: p.ESFERA || '',
-          CRITERIOS_IRREGULARES: toArr(p.CRITERIOS_IRREGULARES),
-          COMP_CODES: compCodes
-        };
-
-        await page.evaluateOnNewDocument((payload) => {
-          try {
-            // Dados disponíveis desde o primeiro tick
-            window.__TERMO_DATA__ = payload || {};
-
-            // Sinalizações para CSS
-            document.documentElement.classList.add('pdf-export');
-            document.addEventListener('readystatechange', () => {
-              if (document.readyState === 'complete') {
-                try { document.body && document.body.classList.add('pdf-export'); } catch {}
-              }
-            });
-
-            // Notifica templates que ouvem eventos de "dados prontos"
-            const fire = () => {
-              try {
-                document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-                // opcional: alguns templates escutam esse também
-                document.dispatchEvent(new Event('TERMO_PRINT_READY'));
-              } catch {}
-            };
-            if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', fire, { once: true });
-            } else {
-              fire();
-            }
-          } catch {}
-        }, payloadForClient);
-
-        // ========= NAVEGAÇÃO =========
-        const urlsToTry = [
-          `${LOOPBACK_BASE}/termo.html`
-        ];
-        if (PUBLIC_BASE) urlsToTry.push(`${PUBLIC_BASE}/termo.html`);
-
-        let loaded = false; let lastErr = null;
-        for (const u of urlsToTry) {
-          try {
-            await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-            loaded = true;
-            break;
-          } catch (e) { lastErr = e; }
-        }
-        if (!loaded) throw lastErr || new Error('Falha ao carregar termo.html');
-
-        // ⚠️ NÃO é mais necessário injetar dados aqui (já foi via evaluateOnNewDocument)
-        if (DEBUG_PDF) console.log('📤 dados pré-injetados no template (evaluateOnNewDocument)');
-
-        // Aguarda fonte/DOM prontos
-        await page.waitForSelector('#pdf-root', { timeout: 20000 }).catch(()=>{});
-        await page.evaluate(() => new Promise((resolve) => {
-          const finish = async () => {
-            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_) {}
-            setTimeout(resolve, 150);
-          };
-          if (window.__TERMO_PRINT_READY__ === true) return void finish();
-          document.addEventListener('TERMO_PRINT_READY', () => finish(), { once: true });
-        }));
-
-        // (reforço — já adicionamos via evaluateOnNewDocument; manter não faz mal)
-        await page.evaluate(() => {
-          document.documentElement.classList.add('pdf-export');
-          document.body.classList.add('pdf-export');
-        });
-
-        // ========= FONTES EMBUTIDAS (opcional) =========
-        function findFont(candidates){
-          for (const rel of candidates){
-            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
-            if (fs.existsSync(abs)) return inlineFont(rel);
-          }
-          return null;
-        }
-        const rawline400 = findFont([
-          'fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf',
-          'fonts/rawline-400.woff2','fonts/rawline-400.woff','fonts/rawline-400.ttf'
-        ]);
-        const rawline700 = findFont([
-          'fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf',
-          'fonts/rawline-700.woff2','fonts/rawline-700.woff','fonts/rawline-700.ttf'
-        ]);
-
-        let fontCSS = '';
-        if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
-        if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
-        fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
-
-        await page.addStyleTag({ content: `
-          ${fontCSS}
-          html, body, #pdf-root { background:#ffffff !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          /* evita esconder header do DOM (mantemos o cabeçalho do template) */
-          /* .page-head .logos-wrap { display: none !important; }  <-- não usar */
-          .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
-          .term-title { margin-top: 2mm !important; }
-        `});
-
-        // ========= GERAÇÃO DO PDF =========
-        const pdf = await page.pdf({
-          format: 'A4',
-          printBackground: true,
-          preferCSSPageSize: true,
-          displayHeaderFooter: false, // sem headerTemplate/footerTemplate
-          margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' }
-        });
-
-        await page.close();
-
-        const filenameSafe = (p.ENTE || 'termo-adesao')
-          .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-          .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-')
-          .replace(/(^-|-$)/g,'').toLowerCase();
-
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="termo-${filenameSafe}.pdf"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Cache-Control', 'no-store, max-age=0');
-        res.send(pdf);
+        res.send(buffer);
       } catch (e) {
         console.error('❌ /api/termo-pdf:', e);
-        try { if (page) await page.close(); } catch(_) {}
         res.status(500).json({ error: 'Falha ao gerar PDF' });
       }
     });
@@ -2230,457 +2151,27 @@ app.post('/api/termo-pdf', async (req, res) => {
   }
 });
 
-
-/** POST /api/termo-solic-crp-pdf — Gera PDF do termo de solicitação (Formulário 2) */
+// === /api/termo-solic-crp-pdf — usa exatamente frontend/termo_solic_crp.html ===
 app.post('/api/termo-solic-crp-pdf', async (req, res) => {
-  const T0 = Date.now();
-  const log = (...a) => { if (DEBUG_PDF) console.log('[termo-solic-crp-pdf]', ...a); };
-
   try {
     const p = validateOr400(res, schemaTermoSolicPdf, req.body || {});
     if (!p) return;
 
+    const payload = { __NA_ALL: true, __NA_LABEL: 'Não informado', ...p };
+
     await withPdfLimiter(async () => {
-      let page; let browser; let triedRestart = false;
-
       try {
-        const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
-        const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
-
-        // ⚙️ abre browser (com auto-restart se desconectado)
-        try {
-          browser = await getBrowser();
-          page = await browser.newPage();
-        } catch (e) {
-          const msg = String(e?.message || '');
-          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
-            triedRestart = true;
-            try { await browser?.close().catch(()=>{}); } catch(_){}
-            _browserPromise = null;
-            browser = await getBrowser();
-            page = await browser.newPage();
-          } else { throw e; }
-        }
-
-        // ⏱️ timeouts iguais ao form1
-        page.setDefaultNavigationTimeout(90_000);
-        page.setDefaultTimeout(90_000);
-
-        await page.setCacheEnabled(false);
-        await page.setRequestInterception(true);
-        page.on('request', (reqObj) => {
-          const u = reqObj.url();
-          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
-
-          const allowed =
-            (u.startsWith(LOOPBACK_BASE)) ||
-            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
-
-          return allowed ? reqObj.continue() : reqObj.abort();
+        const { buffer, filename } = await gerarPdfDoTemplateSimples({
+          templateFile: 'termo_solic_crp.html',
+          payload,
+          filenameFallback: 'termo-solic-crp'
         });
-        await page.emulateMediaType('screen');
-
-        /* ================================
-           1) PRÉ-INJEÇÃO (antes de navegar)
-           ================================ */
-        const payloadForClient = {
-          ...p,
-          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
-            ? p.CRITERIOS_IRREGULARES
-            : String(p.CRITERIOS_IRREGULARES || '')
-                .split(/[;,]/)
-                .map(s => s.trim())
-                .filter(Boolean)
-        };
-        // Padrão global para campos vazios no PDF
-        // (Se estiver vazio, mostrar "Não informado")
-        payloadForClient.__NA_ALL = true;
-        payloadForClient.__NA_LABEL = 'Não informado';
-
-
-        await page.evaluateOnNewDocument((payload) => {
-          try {
-            // disponibiliza cedo o payload
-            window.__TERMO_DATA__ = payload || {};
-
-            // dispara o evento quando o DOM estiver pronto
-            const fire = () => { try { document.dispatchEvent(new CustomEvent('TERMO_DATA_READY')); } catch {} };
-            if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', fire, { once: true });
-            } else {
-              fire();
-            }
-
-            // classes visuais iguais ao form 1
-            document.documentElement.classList.add('pdf-export');
-            document.addEventListener('readystatechange', () => {
-              if (document.readyState === 'complete') {
-                try { document.body && document.body.classList.add('pdf-export'); } catch {}
-              }
-            });
-          } catch {}
-        }, payloadForClient);
-        if (DEBUG_PDF) log('payload pré-injetado (evaluateOnNewDocument)');
-
-        /* ==========================================
-          2) Candidatos — prioriza o template correto
-          ========================================== */
-        const CANDIDATES = [
-          'termo_solic_crp.html',
-          'form_gera_termo_solic_crp_2.html',
-          'form_gera_termo_solic_crp.html'
-        ];
-
-        const urlsToTry = [
-          ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
-          ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
-        ];
-
-        log('candidatos:', urlsToTry);
-
-        // ⏱️ aumente um pouco os timeouts de navegação/execução
-        page.setDefaultNavigationTimeout(120_000);
-        page.setDefaultTimeout(60_000);
-
-        // 🚦 navegação
-        let loaded = false; let lastErr = null; let chosenUrl = '';
-        for (const u of urlsToTry) {
-          try {
-            await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 120_000 });
-            loaded = true; chosenUrl = u; break;
-          } catch (e) { lastErr = e; }
-        }
-        if (!loaded) throw lastErr || new Error('Falha ao carregar template de impressão do Formulário 2');
-        log('navegou em', Date.now() - T0, 'ms →', chosenUrl);
-
-        // ✅ sanidade do template
-        await page.waitForSelector('#pdf-root .term-wrap', { timeout: 20_000 }).catch(() => {});
-        const sanity = await page.evaluate(() => {
-          const h1 = (document.querySelector('h1.term-title')?.textContent || '').trim();
-          const okTitle =
-            /TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL/i.test(h1) ||
-            /SOLICITAÇÃO DE CRP/i.test(h1);
-          const hasPdfRoot = !!document.querySelector('#pdf-root .term-wrap');
-          const hasFormControls = !!document.querySelector('form, select, textarea, input');
-          return { okTitle, hasPdfRoot, hasFormControls, h1 };
-        });
-        log('sanidade:', sanity);
-        if (!sanity.hasPdfRoot || sanity.hasFormControls || !sanity.okTitle) {
-          throw new Error('Template inválido para impressão (sem #pdf-root/.term-wrap, com controles, ou título incorreto).');
-        }
-
-        /* ===========================================================
-          PRÉ-INJEÇÃO: deixa o payload global antes de qualquer script
-          =========================================================== */
-        await page.evaluateOnNewDocument((payload) => {
-          try {
-            window.__TERMO_DATA__ = payload || {};
-            document.dispatchEvent(new CustomEvent('TERMO_DATA'));
-            document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-          } catch (_) {}
-        }, payloadForClient);
-
-        // 💧 Hidratador universal para templates "burros" (sem __TERMO_RUN__/run)
-        await page.evaluate(() => {
-          // Polyfill defensivo para CSS.escape (Chrome antigo já tem, mas só por garantia)
-          if (typeof window.CSS?.escape !== 'function') {
-            window.CSS = window.CSS || {};
-            window.CSS.escape = (s) => String(s).replace(/[^a-zA-Z0-9_\-]/g, (c) =>
-              '\\' + c.codePointAt(0).toString(16) + ' '
-            );
-          }
-
-          const data = window.__TERMO_DATA__ || {};
-          const root = document.querySelector('#pdf-root') || document.body;
-
-          // 1) Preenche por id e por atributos data-*
-          for (const [k, rawV] of Object.entries(data)) {
-            const v = rawV == null ? '' : Array.isArray(rawV) ? rawV.join(', ') : String(rawV);
-
-            // por id exato (#CHAVE)
-            const byId = root.querySelector('#' + CSS.escape(k));
-            if (byId) byId.textContent = v;
-
-            // por data-bind/data-key/data-field/data-fill e name=CHAVE
-            root.querySelectorAll(
-              `[data-bind="${k}"],[data-key="${k}"],[data-field="${k}"],[data-fill="${k}"],[name="${k}"]`
-            ).forEach((el) => {
-              if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-                el.value = v;
-              } else {
-                el.textContent = v;
-              }
-              el.classList.add('filled'); // útil pra CSS
-            });
-
-            // checkmarks: <span data-check="CHAVE" data-value="SIM"> ☐ </span>
-            root.querySelectorAll(`[data-check="${k}"]`).forEach((el) => {
-              const want = el.getAttribute('data-value');
-              const truthy = want
-                ? (Array.isArray(rawV) ? rawV.map(String).includes(want) : String(rawV) === want)
-                : !!rawV;
-              el.textContent = truthy ? '☑' : '☐';
-              el.classList.toggle('checked', truthy);
-            });
-          }
-
-          // 2) Substitui placeholders estilo Mustache {{CHAVE}} no texto
-          const replaceInNodeTexts = (node) => {
-            const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-            const nodes = [];
-            while (walker.nextNode()) nodes.push(walker.currentNode);
-            nodes.forEach((n) => {
-              n.nodeValue = n.nodeValue.replace(/\{\{\s*([A-Z0-9_]+)\s*\}\}/gi, (_, key) => {
-                const val = data[key];
-                return val == null ? '' : (Array.isArray(val) ? val.join(', ') : String(val));
-              });
-            });
-          };
-          replaceInNodeTexts(root);
-
-          // 3) Sinaliza "pronto para imprimir"
-          window.__TERMO_PRINT_READY__ = true;
-          try { document.dispatchEvent(new Event('TERMO_PRINT_READY')); } catch (_) {}
-        });
-
-
-        const debug = await page.evaluate(() => ({
-          hasRunner: typeof window.__TERMO_RUN__ === 'function' || typeof window.run === 'function',
-          keys: Object.keys(window.__TERMO_DATA__ || {}),
-          sample: (window.__TERMO_DATA__ || {}).ENTE || null
-        }));
-        log('debug termo_solic_crp:', debug);
-
-
-        /* ===========================================================
-          Fallback universal de hidratação (com suporte a data-k case-insensitive)
-          + tenta runner do template
-          =========================================================== */
-        await page.evaluate((payload) => {
-          const root = document.querySelector('#pdf-root') || document.body;
-
-          const asStr = (v) => Array.isArray(v) ? v.join(', ') : (v ?? '');
-          const getVal = (data, key) => {
-            if (!key) return '';
-            const cands = [key, key.toUpperCase(), key.toLowerCase()];
-            for (const k of cands) {
-              if (Object.prototype.hasOwnProperty.call(data, k)) return asStr(data[k]);
-            }
-            return '';
-          };
-
-          // Padrão "Não informado" (pode ser global ou por elemento)+          const NA_LABEL = String((payload && payload.__NA_LABEL) || 'Não informado');
-          const NA_ALL   = !!(payload && payload.__NA_ALL);
-          const setElVal = (el, val) => {
-            const raw = (val == null) ? '' : (Array.isArray(val) ? val.join(', ') : String(val));
-            const wantsNA =
-              NA_ALL ||
-              el.classList?.contains('na-if-empty') ||
-              el.hasAttribute?.('data-na');
-            const out = raw || (wantsNA ? NA_LABEL : '');
-            if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = out;
-            else el.textContent = out;
-            if (out) el.classList?.add('filled');
-          };
-
-          /* 1) id="CHAVE" (case-insensitive nas chaves do payload) */
-          Object.keys(payload || {}).forEach((k) => {
-            const el = root.querySelector('#' + (window.CSS?.escape ? CSS.escape(k) : k));
-            if (el) setElVal(el, getVal(payload, k));
-          });
-
-          /* 2) name="CHAVE" */
-          root.querySelectorAll('[name]').forEach((el) => {
-            const key = el.getAttribute('name')?.trim();
-            if (!key) return;
-            const val = getVal(payload, key);
-            if (val !== '') setElVal(el, val);
-          });
-
-          /* 3) data-bind / data-key / data-field / data-fill  */
-          ['data-bind','data-key','data-field','data-fill'].forEach((attr) => {
-            root.querySelectorAll(`[${attr}]`).forEach((el) => {
-              const key = el.getAttribute(attr)?.trim();
-              if (!key) return;
-              const val = getVal(payload, key);
-              if (val !== '') setElVal(el, val);
-            });
-          });
-
-          /* 4) ✅ data-k="..." (NOVO: case-insensitive + inputs/textarea) */
-          root.querySelectorAll('[data-k]').forEach((el) => {
-            const key = el.getAttribute('data-k')?.trim();
-            if (!key) return;
-            const val = getVal(payload, key);
-            if (val !== '') setElVal(el, val);
-          });
-
-          /* 5) Checkmarks: <span data-check="CHAVE" data-value="SIM">☐</span> */
-          root.querySelectorAll('[data-check]').forEach((el) => {
-            const key = el.getAttribute('data-check')?.trim();
-            const want = el.getAttribute('data-value');
-            const rawV = getVal(payload, key);
-            const truthy = want
-              ? (Array.isArray(payload[key]) ? payload[key].map(String).includes(want) : String(rawV) === want)
-              : !!rawV;
-            el.textContent = truthy ? '☑' : '☐';
-            el.classList.toggle('checked', truthy);
-          });
-
-          /* 6) Placeholders {{CHAVE}} no texto (case-insensitive nas chaves) */
-          const replaceInNodeTexts = (node) => {
-            const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-            const nodes = [];
-            while (walker.nextNode()) nodes.push(walker.currentNode);
-            nodes.forEach((n) => {
-              n.nodeValue = String(n.nodeValue || '').replace(/\{\{\s*([A-Z0-9_]+)\s*\}\}/gi, (_, key) => getVal(payload, key));
-            });
-          };
-          replaceInNodeTexts(root);
-
-          /* 7) Dispara eventos que o template possa escutar */
-          try { document.dispatchEvent(new CustomEvent('TERMO_DATA')); } catch (_){}
-          try { document.dispatchEvent(new CustomEvent('TERMO_DATA_READY')); } catch (_){}
-
-          /* 8) Runner do template, se existir */
-          try {
-            const runner =
-              (typeof window.__TERMO_RUN__ === 'function' && window.__TERMO_RUN__) ||
-              (typeof window.run === 'function' && window.run) ||
-              null;
-            if (runner) runner(payload);
-          } catch (_) {}
-
-          /* 9) Sinaliza pronto p/ imprimir (caso o template não o faça) */
-          if (!window.__TERMO_PRINT_READY__) {
-            window.__TERMO_PRINT_READY__ = true;
-            try { document.dispatchEvent(new Event('TERMO_PRINT_READY')); } catch {}
-          }
-        }, payloadForClient);
-
-
-        /* ==================================
-          Espera o "pronto para imprimir"
-          ================================== */
-        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(()=>{});
-        await page.evaluate(() => new Promise((resolve) => {
-          const finish = async () => {
-            try { if (document?.fonts?.ready) await document.fonts.ready; } catch(_) {}
-            setTimeout(resolve, 150);
-          };
-          if (window.__TERMO_PRINT_READY__ === true) return void finish();
-          document.addEventListener('TERMO_PRINT_READY', () => finish(), { once: true });
-        }));
-
-        // sinaliza modo PDF (seletor CSS)
-        await page.evaluate(() => {
-          document.documentElement.classList.add('pdf-export');
-          document.body.classList.add('pdf-export');
-        });
-
-
-
-        /* =========================================================
-           3) (REMOVIDA) Injeção tardia — não é mais necessária aqui
-           ========================================================= */
-
-        // ⏳ espera rápida pelo “pronto para imprimir”, sem travar se não vier
-        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(() => {});
-        await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 30_000 }).catch(() => {});
-        await page.evaluate(async () => {
-          try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch {}
-          await new Promise(r => requestAnimationFrame(() => setTimeout(r, 150)));
-        });
-        await page.emulateMediaType('print');
-
-        // 🔤 fontes locais (mesma lógica do form1)
-        function findFont(candidates){
-          const path = require('path'); const fs = require('fs');
-          for (const rel of candidates){
-            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
-            if (fs.existsSync(abs)) {
-              try{
-                const buf = fs.readFileSync(abs);
-                const b64 = buf.toString('base64');
-                const ext = path.extname(abs).toLowerCase();
-                const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : ext === '.ttf' ? 'font/ttf' : 'application/octet-stream';
-                const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
-                return `url(data:${mime};base64,${b64}) format('${fmt}')`;
-              }catch{ return null; }
-            }
-          }
-          return null;
-        }
-        const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf']);
-        const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf']);
-        let fontCSS = '';
-        if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
-        if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
-        fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
-
-        await page.addStyleTag({ content: `
-          ${fontCSS}
-          html, body, #pdf-root { background:#ffffff !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .page-head .logos-wrap { display: none !important; }
-          .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
-          .term-title { margin-top: 2mm !important; }
-        `});
-
-        // 🖼️ header com SVG inline (local)
-        const path = require('path'); const fs = require('fs');
-        const inlineSvgLocal = (rel) => {
-          try {
-            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/,''));
-            const raw = fs.readFileSync(abs, 'utf8');
-            return raw.replace(/<\?xml[^>]*>/g,'').replace(/<!DOCTYPE[^>]*>/g,'')
-              .replace(/\r?\n|\t/g,' ').replace(/>\s+</g,'><').trim();
-          } catch { return ''; }
-        };
-        const svgSec = inlineSvgLocal('imagens/logo-secretaria-complementar.svg');
-        const svgMps = inlineSvgLocal('imagens/logo-termo-drpps.svg');
-        const headerTemplate = `
-          <style>
-            .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6mm 12mm 4mm; }
-            .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
-            .pdf-header .logo-sec svg { height: 19mm; width:auto; }
-            .pdf-header .logo-mps svg { height: 20mm; width:auto; }
-            .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
-            .date, .title, .url, .pageNumber, .totalPages { display:none; }
-          </style>
-          <div class="pdf-header">
-            <div class="logos">
-              <div class="logo-sec">${svgSec}</div>
-              <div class="logo-mps">${svgMps}</div>
-            </div>
-            <div class="rule"></div>
-          </div>`;
-        const footerTemplate = `<div></div>`;
-
-        // 🖨️ gera PDF
-        const pdf = await page.pdf({
-          printBackground: true,
-          preferCSSPageSize: true,
-          displayHeaderFooter: false,
-          // sem headerTemplate/footerTemplate
-          margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' },
-          preferCSSPageSize: true,
-          printBackground: true
-
-        });
-        await page.close();
-        log('PDF OK em', Date.now() - T0, 'ms');
-
-        const filenameSafe = (p.ENTE || 'termo-solic-crp')
-          .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
-
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="termo-solic-${filenameSafe}.pdf"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Cache-Control', 'no-store, max-age=0');
-        res.send(pdf);
+        res.send(buffer);
       } catch (e) {
         console.error('❌ /api/termo-solic-crp-pdf:', e);
-        try { if (page) await page.close(); } catch(_) {}
         res.status(500).json({ error: 'Falha ao gerar PDF' });
       }
     });
@@ -2690,6 +2181,7 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
   }
 });
 
+
 app.use((err, req, res, _next) => {
   console.error('🔥 Erro não tratado:', err?.stack || err);
   if (!res.headersSent) {
@@ -2698,183 +2190,26 @@ app.use((err, req, res, _next) => {
 });
 
 
-/** POST /api/solic-crp-pdf — gera PDF da solicitação CRP */
 app.post('/api/solic-crp-pdf', async (req, res) => {
   try {
     const p = validateOr400(res, schemaSolicCrpPdf, req.body || {});
     if (!p) return;
 
+    const payload = { __NA_ALL: true, __NA_LABEL: 'Não informado', ...p };
+
     await withPdfLimiter(async () => {
-      let page; let browser; let triedRestart = false;
       try {
-        const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
-        const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
-
-        try { browser = await getBrowser(); page = await browser.newPage(); } 
-        catch (e) {
-          const msg = String(e?.message || '');
-          if (!triedRestart && /Target closed|Browser is closed|WebSocket is not open|TargetCloseError/i.test(msg)) {
-            triedRestart = true;
-            try { await browser?.close().catch(()=>{}); } catch(_){}
-            _browserPromise = null; browser = await getBrowser(); page = await browser.newPage();
-          } else { throw e; }
-        }
-
-        await page.setCacheEnabled(false);
-        await page.setRequestInterception(true);
-        page.on('request', (reqObj) => {
-          const u = reqObj.url();
-          if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
-          const allowed =
-            (u.startsWith(LOOPBACK_BASE)) ||
-            (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
-          return allowed ? reqObj.continue() : reqObj.abort();
+        const { buffer, filename } = await gerarPdfDoTemplateSimples({
+          templateFile: 'termo_solic_crp.html',
+          payload,
+          filenameFallback: 'termo-solic-crp'
         });
-
-        page.setDefaultNavigationTimeout(90_000);
-        page.setDefaultTimeout(90_000);
-        await page.emulateMediaType('screen');
-
-        
-
-        // 🔎 Candidatos — prioriza o template correto e remove o legacy ausente
-        const CANDIDATES = [
-          'termo_solic_crp.html',
-          'form_gera_termo_solic_crp_2.html',
-          'form_gera_termo_solic_crp.html'
-        ];
-        const urlsToTry = [
-          ...CANDIDATES.map(n => `${LOOPBACK_BASE}/${n}`),
-          ...(PUBLIC_BASE ? CANDIDATES.map(n => `${PUBLIC_BASE}/${n}`) : [])
-        ];
-
-        log('candidatos:', urlsToTry);
-
-        let loaded = false; let lastErr = null;
-        for (const u of urlsToTry) {
-          try { await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 90_000 }); loaded = true; break; }
-          catch (e) { lastErr = e; }
-        }
-        if (!loaded) throw lastErr || new Error('Falha ao carregar solic_crp.html');
-
-        const payloadForClient = {
-          ...p,
-          CRITERIOS_IRREGULARES: Array.isArray(p.CRITERIOS_IRREGULARES)
-            ? p.CRITERIOS_IRREGULARES
-            : String(p.CRITERIOS_IRREGULARES || '')
-                .split(',')
-                .map(s => s.trim())
-                .filter(Boolean)
-        };
-
-        // Preenche data_termo no formato BR (timezone Brasília)
-        const now = new Date();
-        try {
-          const fmt = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo' });
-          payloadForClient.data_termo = fmt.format(now);
-        } catch {
-          // fallback simples
-          const d = now.toLocaleDateString('pt-BR');
-          payloadForClient.data_termo = d;
-        }
-
-
-        await page.evaluate((payload) => {
-          window.__TERMO_DATA__ = payload;
-          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-        }, payloadForClient);
-
-        await page.waitForSelector('#pdf-root', { timeout: 20_000 }).catch(() => {});
-        await page.evaluate(() => new Promise((ok) => {
-          if (window.__TERMO_PRINT_READY__ === true) return ok();
-          document.addEventListener('TERMO_PRINT_READY', () => ok(), { once: true });
-          setTimeout(ok, 1500);
-        }));
-
-        function findFont(candidates){
-          const path = require('path'); const fs = require('fs');
-          for (const rel of candidates){
-            const abs = path.join(__dirname, '../frontend', rel.replace(/^\/+/, ''));
-            if (fs.existsSync(abs)) {
-              try{
-                const buf = fs.readFileSync(abs);
-                const b64 = buf.toString('base64');
-                const ext = path.extname(abs).toLowerCase();
-                const mime = ext === '.woff2' ? 'font/woff2' : ext === '.woff' ? 'font/woff' : ext === '.ttf' ? 'font/ttf' : 'application/octet-stream';
-                const fmt  = ext === '.woff2' ? 'woff2' : ext === '.woff' ? 'woff' : 'truetype';
-                return `url(data:${mime};base64,${b64}) format('${fmt}')`;
-              }catch{ return null; }
-            }
-          }
-          return null;
-        }
-        const rawline400 = findFont(['fonts/rawline-regular.woff2','fonts/rawline-regular.woff','fonts/rawline-regular.ttf']);
-        const rawline700 = findFont(['fonts/rawline-bold.woff2','fonts/rawline-bold.woff','fonts/rawline-bold.ttf']);
-        let fontCSS = '';
-        if (rawline400) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:400;src:${rawline400};font-display:swap;}`;
-        if (rawline700) fontCSS += `@font-face{font-family:'Rawline';font-style:normal;font-weight:700;src:${rawline700};font-display:swap;}`;
-        fontCSS += `body{font-family:'Rawline', Inter, Arial, sans-serif;}`;
-
-        await page.addStyleTag({ content: `
-          ${fontCSS}
-          html, body, #pdf-root { background:#ffffff !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .page-head .logos-wrap { display: none !important; }
-          .term-wrap { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
-          .term-title { margin-top: 2mm !important; }
-        `});
-
-        const path = require('path'); const fs = require('fs');
-        function inlineSvgLocal(relPath) {
-          try {
-            const abs = path.join(__dirname, '../frontend', relPath.replace(/^\/+/,''));
-            const raw = fs.readFileSync(abs, 'utf8');
-            return raw.replace(/<\?xml[^>]*>/g, '').replace(/<!DOCTYPE[^>]*>/g, '')
-              .replace(/\r?\n|\t/g, ' ').replace(/>\s+</g, '><').trim();
-          } catch { return ''; }
-        }
-        const svgSec = inlineSvgLocal('imagens/logo-secretaria-complementar.svg');
-        const svgMps = inlineSvgLocal('imagens/logo-termo-drpps.svg');
-        const headerTemplate = `
-          <style>
-            .pdf-header { font-family: Inter, Arial, sans-serif; width: 100%; padding: 6mm 12mm 4mm; }
-            .pdf-header .logos { display:flex; align-items:center; justify-content:center; gap:16mm; }
-            .pdf-header .logo-sec svg { height: 19mm; width:auto; }
-            .pdf-header .logo-mps svg { height: 20mm; width:auto; }
-            .pdf-header .rule { margin:4mm 0 0; height:0; border-bottom:1.3px solid #d7dee8; width:100%; }
-            .date, .title, .url, .pageNumber, .totalPages { display:none; }
-          </style>
-          <div class="pdf-header">
-            <div class="logos">
-              <div class="logo-sec">${svgSec}</div>
-              <div class="logo-mps">${svgMps}</div>
-            </div>
-            <div class="rule"></div>
-          </div>`;
-        const footerTemplate = `<div></div>`;
-
-        const pdf = await page.pdf({
-          printBackground: true,
-          preferCSSPageSize: true,
-          displayHeaderFooter: false,
-          // sem headerTemplate/footerTemplate
-          margin: { top: '12mm', right: '10mm', bottom: '12mm', left: '10mm' },
-          preferCSSPageSize: true,
-          printBackground: true
-
-        });
-        await page.close();
-
-        const filenameSafe = (p.ENTE || 'termo-solic-crp')
-          .normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/(^-|-$)/g,'').toLowerCase();
-
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="termo-solic-${filenameSafe}.pdf"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Cache-Control', 'no-store, max-age=0');
-        res.send(pdf);
+        res.send(buffer);
       } catch (e) {
         console.error('❌ /api/solic-crp-pdf:', e);
-        try { if (page) await page.close(); } catch(_) {}
         res.status(500).json({ error: 'Falha ao gerar PDF' });
       }
     });
