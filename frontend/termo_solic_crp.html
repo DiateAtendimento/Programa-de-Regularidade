@@ -20,18 +20,6 @@
     .page-break  { break-before: page; page-break-before: always; }
     .break-before{ break-before: page; page-break-before: always; }
 
-    /* Rodapé com logos fixo para 2+ páginas */
-    @media print {
-      @page { margin: 14mm 12mm 26mm; }
-      body { margin-bottom: 36mm; }
-      #rodape {
-        position: fixed; bottom: 0; left: 0; right: 0;
-        text-align: center; padding: 3mm 0 0; background: #fff;
-      }
-      #rodape .logos-wrap { display: inline-flex; gap: 12mm; align-items: center; justify-content: center; }
-      #rodape img { max-height: 14mm; }
-      .term-section { padding-bottom: 4mm; }
-    }
 
     .term-title { text-align: center; }
     .term-meta  { text-align: center; margin-bottom: 8px; }
