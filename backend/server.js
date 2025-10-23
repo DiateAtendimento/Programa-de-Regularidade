@@ -190,6 +190,7 @@ app.use('/api', (req, res, next) => {
   return REQUIRE_API_KEY ? requireKey(req, res, next) : next();
 });
 
+app.get('/api/_api/health', (_req, res) => res.json({ ok: true }));
 
 
 /* ───────────── Cache-Control das rotas de API ───────────── */
@@ -2095,6 +2096,156 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     } catch (e) { lastErr = e; }
   }
   if (!ok) { try { await page.close(); } catch {} throw lastErr || new Error(`Falha ao carregar ${templateFile}`); }
+  
+  // 2.1) Preenche o DOM com o payload (sem depender de JS externo)
+  await page.evaluate((raw) => {
+    // Normaliza chaves em snake_case minúsculo
+    const normKey = (s) => String(s || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+      .replace(/[^\p{L}\p{N}]+/gu, '_')
+      .replace(/_+/g,'_')
+      .replace(/^_+|_+$/g,'');
+
+    const flat = {};
+    const walk = (obj, prefix='') => {
+      if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+        for (const [k, v] of Object.entries(obj)) walk(v, prefix ? `${prefix}.${k}` : k);
+      } else {
+        // junta com '_' (ex.: etapas.passo1.campo → etapas_passo1_campo)
+        const fk = normKey((prefix || '').replace(/\./g,'_'));
+        flat[fk] = (obj == null) ? '' : String(obj);
+      }
+    };
+    walk(raw);
+
+    const NA_LABEL = String(raw.__NA_LABEL || '').trim() || '';
+    const useNA = !!raw.__NA_ALL;
+
+    // --- ALIASES (antes de preencher [data-k]) ---
+    flat['ente']           = flat['ente']           || flat['__snapshot_ente'] || flat['nome'] || flat['ente_nome'];
+    flat['uf']             = flat['uf']             || flat['__snapshot_uf'];
+    flat['ug']             = flat['ug']             || flat['__snapshot_ug'];
+
+    flat['cnpj_ente']      = flat['cnpj_ente']      || flat['cnpj'] || flat['__snapshot_cnpj_ente'];
+    flat['cnpj_ug']        = flat['cnpj_ug']        || flat['__snapshot_cnpj_ug'];
+
+    flat['email_ente']     = flat['email_ente']     || flat['__snapshot_email_ente'] || flat['email'];
+    flat['email_ug']       = flat['email_ug']       || flat['__snapshot_email_ug'];
+
+    flat['nome_rep_ente']  = flat['nome_rep_ente']  || flat['__snapshot_nome_rep_ente']  || flat['responsaveis_ente_nome'];
+    flat['cargo_rep_ente'] = flat['cargo_rep_ente'] || flat['__snapshot_cargo_rep_ente'] || flat['responsaveis_ente_cargo'];
+    flat['cpf_rep_ente']   = flat['cpf_rep_ente']   || flat['__snapshot_cpf_rep_ente']   || flat['responsaveis_ente_cpf'];
+    flat['email_rep_ente'] = flat['email_rep_ente'] || flat['__snapshot_email_rep_ente'];
+    flat['tel_rep_ente']   = flat['tel_rep_ente']   || flat['__snapshot_tel_rep_ente']   || flat['responsaveis_ente_telefone'];
+
+    flat['nome_rep_ug']    = flat['nome_rep_ug']    || flat['__snapshot_nome_rep_ug']    || flat['responsaveis_ug_nome'];
+    flat['cargo_rep_ug']   = flat['cargo_rep_ug']   || flat['__snapshot_cargo_rep_ug']   || flat['responsaveis_ug_cargo'];
+    flat['cpf_rep_ug']     = flat['cpf_rep_ug']     || flat['__snapshot_cpf_rep_ug']     || flat['responsaveis_ug_cpf'];
+    flat['email_rep_ug']   = flat['email_rep_ug']   || flat['__snapshot_email_rep_ug'];
+    flat['tel_rep_ug']     = flat['tel_rep_ug']     || flat['__snapshot_tel_rep_ug']     || flat['responsaveis_ug_telefone'];
+
+    // Data do último CRP (vários nomes possíveis)
+    flat['venc_ult_crp']   = flat['venc_ult_crp']   || flat['crp_data_validade_dmy'] || flat['data_vencimento_ultimo_crp'] || flat['crp_data_validade_iso'];
+
+    // Esfera
+    flat['esfera']         = flat['esfera']         || flat['esfera_sugerida'];
+
+    // Preenche elementos simples [data-k]
+    document.querySelectorAll('[data-k]').forEach((el) => {
+      const want = normKey(el.getAttribute('data-k'));
+      const v = flat[want];
+      el.textContent = (v && v.trim()) ? v : (useNA ? NA_LABEL : '');
+    });
+
+    // Esfera (pode vir como ESFERA ou ESFERA_SUGERIDA)
+    const esferaEl = document.querySelector('[data-esfera]');
+    if (esferaEl) {
+      const v = flat['esfera'] || flat['esfera_sugerida'] || '';
+      esferaEl.textContent = v || (useNA ? NA_LABEL : '');
+    }
+
+    // 3.2 Motivo principal (F41/F42/F43… mapeado por FASE_PROGRAMA)
+    const fase = (flat['fase_programa'] || '').trim();
+    for (const id of ['fase-41','fase-42','fase-43','fase-44','fase-45','fase-46']) {
+      const sec = document.getElementById(id);
+      if (sec) sec.hidden = true;
+    }
+    if (fase) {
+      const idShow = `fase-${fase.replace('.', '')}`;
+      const sec = document.getElementById(idShow);
+      if (sec) sec.hidden = false;
+    }
+
+    // 3.2 (ul#opt-3-2) – marca apenas a opção selecionada se existir F41_OPCAO
+    const opt = (flat['f41_opcao'] || flat['f4310_opcao'] || '').trim();
+    const ulOpt = document.getElementById('opt-3-2');
+    if (ulOpt) {
+      ulOpt.querySelectorAll('li').forEach(li => {
+        const code = (li.getAttribute('data-code') || '').trim();
+        li.style.display = (!opt || code.endsWith(opt)) ? '' : 'none';
+      });
+    }
+
+    // Listas dinâmicas (criterios, f41-itens, f42-itens, f43-itens, etc.)
+    const fillList = (ulId, arrOrCsv) => {
+      const el = document.getElementById(ulId);
+      if (!el) return;
+      el.innerHTML = '';
+      const rawVal = Array.isArray(arrOrCsv) ? arrOrCsv : String(arrOrCsv || '').split(/[;,]/);
+      const items = rawVal.map(s => String(s || '').trim()).filter(Boolean);
+      if (!items.length) {
+        if (useNA && NA_LABEL) el.innerHTML = `<li>${NA_LABEL}</li>`;
+        return;
+      }
+      for (const it of items) {
+        const li = document.createElement('li'); li.textContent = it; el.appendChild(li);
+      }
+    };
+
+    // 3.3
+    fillList('criterios-list', flat['f44_criterios'] || flat['criterios_irregulares']);
+
+    // Fases
+    fillList('f41-itens', flat['f41_lista'] || flat['f41_itens']);
+    fillList('f42-itens', flat['f42_lista']);
+    fillList('f43-itens', flat['f43_lista']);
+    fillList('f44-criterios', flat['f44_criterios']);
+    fillList('f44-decls', flat['f44_decls']);
+    fillList('f44-finalidades', flat['f44_finalidades']);
+    fillList('f45-decls', flat['f45_decls']);
+    fillList('f46-finalidades', flat['f46_finalidades']);
+
+    // 4.4.6 blocos de texto (docs/exec) – aceitam CSV quebrado em linhas
+    const fillBlockCsv = (id, v) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const parts = Array.isArray(v) ? v : String(v || '').split(/[;,\n]/);
+      const items = parts.map(s => String(s || '').trim()).filter(Boolean);
+      if (!items.length) { el.textContent = useNA ? NA_LABEL : ''; return; }
+      el.innerHTML = '';
+      for (const it of items) { const p = document.createElement('p'); p.textContent = it; el.appendChild(p); }
+    };
+    fillBlockCsv('f446-docs', flat['f446_docs']);
+    fillBlockCsv('f446-exec', flat['f446_exec_res']);
+    fillBlockCsv('f45-docs',  flat['f45_docs']);
+    fillBlockCsv('f45-just',  flat['f45_just']);
+    fillBlockCsv('f44-anexos',flat['f44_anexos']);
+
+    // Flags específicas mostradas em spans simples
+    const setText = (sel, v) => {
+      const el = document.querySelector(sel);
+      if (el) el.textContent = (v && String(v).trim()) ? String(v) : (useNA ? NA_LABEL : '');
+    };
+    setText('[data-k="f43_just"]',  flat['f43_just']);
+    setText('[data-k="f43_plano"]', flat['f43_plano']);
+    setText('[data-k="f441_legislacao"]', flat['f441_legislacao']);
+    setText('[data-k="fase_programa"]', fase);
+
+    // Marca pronto p/ imprimir (se alguém estiver esperando)
+    window.__TERMO_PRINT_READY__ = true;
+  }, payload);
 
   // 3) Forçar mídia de impressão
   await page.emulateMediaType('print');
@@ -2124,6 +2275,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   const fname = (filenameFallback || 'termo');
   return { buffer: pdf, filename: `${fname}.pdf` };
 }
+
 
 
 // === /api/termo-pdf — usa exatamente frontend/termo.html ===
