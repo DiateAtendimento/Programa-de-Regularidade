@@ -2037,7 +2037,7 @@ function inlineFont(relPath) {
   } catch { return null; }
 }
 
-// === Helper único: renderiza um template HTML em PDF preservando o layout do template ===
+// === Helper: renderiza um template HTML com payload em PDF (usa window.__TERMO_DATA__) ===
 async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallback }) {
   const LOOPBACK_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
   const PUBLIC_BASE = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
@@ -2049,7 +2049,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   const browser = await getBrowser();
   const page = await browser.newPage();
 
-  await page.setCacheEnabled(false);
+  // Só permite loopback e PUBLIC_URL (bloqueia qualquer outra origem)
   await page.setRequestInterception(true);
   page.on('request', (reqObj) => {
     const u = reqObj.url();
@@ -2061,7 +2061,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   page.setDefaultNavigationTimeout(120_000);
   page.setDefaultTimeout(120_000);
 
-  // Pré-injeção: dados disponíveis antes de o template carregar
+  // 1) INJETAR payload *antes* do template carregar
   await page.evaluateOnNewDocument((data) => {
     try {
       window.__TERMO_DATA__ = data || {};
@@ -2086,68 +2086,45 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     } catch {}
   }, payload || {});
 
-  // Abre o template exato
+  // 2) Abrir o template
   let ok = false, lastErr = null;
   for (const u of urls) {
     try {
-      // 1) espere a rede realmente “assentar”
       await page.goto(u, { waitUntil: 'networkidle0', timeout: 120_000 });
       ok = true; break;
     } catch (e) { lastErr = e; }
   }
   if (!ok) { try { await page.close(); } catch {} throw lastErr || new Error(`Falha ao carregar ${templateFile}`); }
 
-  // 2) respeita layout de impressão (já existe no seu código)
+  // 3) Forçar mídia de impressão
   await page.emulateMediaType('print');
-  await page.addStyleTag({ content: `
-    html, body, #pdf-root { background:#fff !important; }
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .term-wrap { box-shadow:none !important; border-radius:0 !important; margin:0 !important; }
-  `});
 
-  // 3) container presente
-  try { await page.waitForSelector('#pdf-root', { timeout: 20000 }); }
-  catch (_) { try { await page.waitForSelector('body', { timeout: 5000 }); } catch {} }
-
-  // 4) aguarde SINAL de preenchimento (qualquer campo-chave com texto)
+  // 4) (opcional) aguardar preenchimento mínimo
   try {
     await page.waitForFunction(() => {
       const el = document.querySelector('[data-k="ente"]');
       return !!el && !!(el.textContent || '').trim();
     }, { timeout: 8000 });
-  } catch (_) {
-    // não falhe por isso; segue — mas na prática já terá preenchido
-  }
-
-  // 5) opcionalmente, também espere o flag do próprio template (se existir)
-  try {
-    await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 5000 });
-  } catch (_) {}
-
-  // 6) fontes carregadas (já tinha)
-  try {
-    await page.evaluate(async () => { if (document.fonts?.ready) await document.fonts.ready; });
   } catch {}
 
-  // 7) pequeno respiro e GERA
-  await new Promise(r => setTimeout(r, 120));
+  // 5) Também aguarda o flag do template, se existir
+  try { await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 5000 }); } catch {}
+
+  // 6) Gera o PDF
   const pdf = await page.pdf({
-    format: 'A4',
     printBackground: true,
     preferCSSPageSize: true,
-    displayHeaderFooter: false
+    margin: { top: '8mm', bottom: '12mm', left: '8mm', right: '8mm' }
   });
 
+  // 7) Fecha a página (browser compartilhado)
+  try { await page.close(); } catch {}
 
-  await page.close();
-
-  const fname = (payload?.ENTE || filenameFallback || 'documento')
-    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-    .replace(/[^\w\-]+/g,'-').replace(/-+/g,'-')
-    .replace(/(^-|-$)/g,'').toLowerCase();
-
+  // Define um nome de arquivo simples se não vier nada do payload
+  const fname = (filenameFallback || 'termo');
   return { buffer: pdf, filename: `${fname}.pdf` };
 }
+
 
 // === /api/termo-pdf — usa exatamente frontend/termo.html ===
 app.post('/api/termo-pdf', async (req, res) => {
@@ -2192,7 +2169,7 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
           filenameFallback: 'termo-solic-crp'
         });
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
         res.setHeader('Cache-Control', 'no-store, max-age=0');
         res.send(buffer);
       } catch (e) {

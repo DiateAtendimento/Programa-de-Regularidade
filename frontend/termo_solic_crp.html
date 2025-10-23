@@ -573,28 +573,34 @@
     })();
   </script>
 
+
   <!-- Força fallback “Não informado” também no preview local -->
   <script>
     window.__TERMO_DATA__ = Object.assign({ __NA_ALL: true, __NA_LABEL: 'Não informado' }, window.__TERMO_DATA__ || {});
   </script>
 
   <script>
-  // Se o backend já colocou window.__TERMO_DATA__, forçamos a renderização:
-  (function () {
-    function fire() {
-      try {
-        // garante que quem está ouvindo rode agora
-        document.dispatchEvent(new Event('TERMO_DATA_READY'));
-      } catch (e) {}
-    }
+    // Se o backend já colocou window.__TERMO_DATA__, renderiza e dispara os eventos esperados pelo gerador de PDF
+    (function () {
+      function fire() {
+        try {
+          document.dispatchEvent(new CustomEvent('TERMO_DATA'));
+          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
+          // Sinaliza "pronto para imprimir" (o servidor espera isso)
+          setTimeout(function () {
+            window.__TERMO_PRINT_READY__ = true;
+            document.dispatchEvent(new Event('TERMO_PRINT_READY'));
+          }, 0);
+        } catch (e) {}
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fire);
+      } else {
+        fire();
+      }
+    })();
+  </script>
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', fire);
-    } else {
-      fire();
-    }
-  })();
-</script>
 
 </body>
 </html>

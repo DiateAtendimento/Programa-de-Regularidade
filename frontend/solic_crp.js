@@ -79,7 +79,6 @@
   function isGesconNumber(x){
     return /^[SL]\d{6}\/\d{4}$/i.test(String(x).trim());
   }
-
   /* ========= Robust fetch (timeout + retries) ========= */
   const FETCH_TIMEOUT_MS = 120000;
   const FETCH_RETRIES    = 1;
@@ -209,7 +208,6 @@
     if(status && status>=500) return ['Instabilidade no servidor. Tente novamente.'];
     return [fallback];
   }
-
   /* ========= Elementos ========= */
   const el = {
     // etapa 0
@@ -507,8 +505,6 @@
       return null;
     }
   }
-
-
   function loadState(){
   try{
     let raw = localStorage.getItem(FORM_STORAGE_KEY); // 'solic-crp-form-v1'
@@ -672,7 +668,6 @@
   $('#modalSucesso')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieSuccess','animacao/confirm-success.json',{loop:false,autoplay:true}));
   $('#modalGerandoPdf')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieGerandoPdf','animacao/gerando-pdf.json',{loop:true,autoplay:true}));
   $('#modalSalvando')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieSalvando','animacao/gerando-pdf.json',{loop:true,autoplay:true}));
-
   /* ========= Gate: Gescon TERMO_ENC_GESCON & Termos_registrados ========= */
   let searching = false;
 
@@ -831,8 +826,6 @@
       searching = false;
     }
   }
-
-
   async function hidratarTermosRegistrados(cnpj){
     dbg('[hidratarTermosRegistrados] start →', cnpj);
     try{
@@ -968,7 +961,6 @@
       syncUg132();
     }
   }
-
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
   function setupFase4Toggles(){
     const modalByFase = {
@@ -1139,7 +1131,6 @@
       )).join('');
     }
   }
-
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
     const msgs=[];
@@ -1374,7 +1365,6 @@
       ESFERA: p.ESFERA || ''
     };
   }
-
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
     const payloadForPdf = {
@@ -1397,49 +1387,22 @@
     // Garante que o serviço está de pé (proxy → backend)
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-    // ► Usar apenas API_BASE (via proxy)
     const tryUrls = [
       api('/termo-solic-crp-pdf') // rota do backend via proxy
     ];
 
-    let blob = null;
-    let lastErr = null;
+    // ⇩ novo bloco simples (substitui todo o trecho de retries)
+    const blob = await fetchBinary(
+      tryUrls[0],
+      {
+        method: 'POST',
+        headers: withKey({ 'Content-Type': 'application/json; charset=utf-8' }),
+        body: JSON.stringify(payloadForPdf)
+      },
+      { label: 'termo-solic-crp-pdf', timeout: 90000, retries: 3 }
+    );
 
-    // 📈 Aumenta os rounds de retry (Render pode reiniciar no cold start)
-    for (let round = 0; round < 3 && !blob; round++) {
-      for (const urlTry of tryUrls) {
-        dbg('[PDF] tentando →', urlTry, '(round', round+1, ')');
-        try {
-          blob = await fetchBinary(
-            urlTry,
-            {
-              method: 'POST',
-              headers: withKey({ 'Content-Type': 'application/json; charset=utf-8' }),
-              body: JSON.stringify(payloadForPdf)
-            },
-            // 🕒 Mais fôlego para carregar fontes/template na 1ª vez
-            { label: 'termo-solic-crp-pdf', timeout: 90000, retries: 3 }
-          );
-          dbg('[PDF] OK em →', urlTry);
-          break;
-        } catch (e) {
-          lastErr = e;
-          const s = e && e.status;
-          const msg = String(e?.message || '').toLowerCase();
-          const retriable = (s >= 500) || msg.includes('timeout') || msg.includes('failed') || e.name === 'AbortError';
-          dbg('[PDF] falhou em', urlTry, '| status:', s, '| msg:', e && e.message, '| retriable?', retriable);
-          if (!retriable) continue;
-          await new Promise(r => setTimeout(r, 300 + Math.random()*300));
-        }
-      }
-      if (!blob) {
-        await new Promise(r => setTimeout(r, 800 + Math.random()*400));
-      }
-    }
-
-    if (!blob) throw lastErr || new Error('Falha ao gerar PDF (todas as rotas tentadas)');
-
-    // download do PDF
+    // download do PDF (igual ao seu)
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const enteSlug = String(payload.ENTE || 'solic-crp')
@@ -1449,6 +1412,7 @@
     a.href = url; a.download = `solic-crp-${enteSlug}.pdf`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=> URL.revokeObjectURL(url), 0);
+
   }
 
 
