@@ -81,14 +81,27 @@
       <section class="term-section avoid-break">
         <h2>3. SITUAÇÃO RELATIVA AO CRP</h2>
 
-        <h3>3.1 Critério(s) irregular(es) no extrato previdenciário</h3>
+        <h3>3.1 Data de vencimento do último CRP</h3>
+        <p><strong><span data-k="crp_venc"></span></strong></p>
+
+        <h3>3.2 Tipo de emissão do último CRP</h3>
+        <p><strong><span data-k="crp_tipo"></span></strong></p>
+
+        <h3>3.3 Critério(s) atualmente irregular(es) no extrato previdenciário</h3>
         <ul id="criterios-list"><!-- preenchido pelo JS --></ul>
 
-        <h3>3.2 Adesão sem irregularidades (quando aplicável)</h3>
+        <h3>3.4 Solicitação de Prazo Adicional</h3>
+        <p>
+          <strong><span data-k="prazo_adicional_flag"></span></strong>
+          <span class="d-block" data-k="prazo_adicional_just"></span>
+        </p>
+
+        <h3>3.5 Adesão sem irregularidades (quando aplicável)</h3>
         <div id="blk-3-2-adesao">
           <ul id="finalidades-3-2"><!-- preenchido pelo JS quando ADESAO_SEM_IRREGULARIDADES=SIM --></ul>
         </div>
       </section>
+
       <!-- 4. FINALIDADES INICIAIS -->
       <section class="term-section avoid-break">
         <h2>4. FINALIDADE(S) INICIAL(IS) DA ADESÃO AO PROGRAMA DE REGULARIDADE PREVIDenciária</h2>

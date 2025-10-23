@@ -384,7 +384,9 @@
     [
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
       'CPF_REP_ENTE','NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
-      'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG'
+      'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG', 'DATA_VENCIMENTO_ULTIMO_CRP',
+      'TIPO_EMISSAO_ULTIMO_CRP', 'PRAZO_ADICIONAL_SOLICITADO','PRAZO_ADICIONAL_JUST'
+
     ].forEach(id => { const el = document.getElementById(id); if (el) data.values[id] = el.value; });
 
     data.values['em_adm'] = !!document.getElementById('em_adm')?.checked;
@@ -404,7 +406,8 @@
       'eq_implano','eq_prazos','eq_plano_alt',
       'org_ugu','org_outros',
       'man_cert','man_melhoria','man_acomp',
-      'DECL_CIENCIA'
+      'DECL_CIENCIA',
+      'PRAZO_ADICIONAL_SOLICITADO'
     ].forEach(id => {
       const el = document.getElementById(id);
       if (el) data.values[id] = !!el.checked;
@@ -1120,7 +1123,8 @@
     // 6. Providências (grupo)
     'grpPROVIDENCIAS',
     // 7. Condições
-    'DECL_CIENCIA'
+    'DECL_CIENCIA',
+    'PRAZO_ADICIONAL_SOLICITADO'
   ];
 
   trackIds.forEach(id=>{
@@ -1259,39 +1263,30 @@
       $('#CNPJ_ENTE').value  = cnpjEnteMasked;
       $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
 
-      // —— 1.3 RPPS (linha de cima)
-      $('#UG').value         = data.UG || '';
-      $('#CNPJ_UG').value    = cnpjUgMasked;       // ⚠️ usa SEMPRE o normalizado
-      $('#EMAIL_UG').value   = data.EMAIL_UG || '';
+     // ====== [NOVO] 3.1 e 3.2 do CRP ======
+    const elVencDate = document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP');
+    const elTipoEmis = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP');
 
-      // —— espelha também nos campos “novos” da UG
-      try {
-        setUGFields({
-          nome:  data.UG || '',
-          cnpj:  cnpjUg,                    // passa dígitos; o helper mascara internamente
-          email: data.EMAIL_UG || ''
-        });
-      } catch {}
+    // 1) Data de vencimento
+    const vencISO =
+      data.DATA_VENCIMENTO_ULTIMO_CRP ||            // da planilha (sua nova coluna)
+      data.CRP_DATA_VALIDADE_ISO ||                 // fallback API
+      (snapshotBase?.DATA_VENCIMENTO_ULTIMO_CRP || '');
+    if (elVencDate) elVencDate.value = (vencISO || '').slice(0,10);
 
-      // limpa reps anteriores
-      [
-        'NOME_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE','CARGO_REP_ENTE',
-        'NOME_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG','CARGO_REP_UG'
-      ].forEach(id=>{ const el = $('#'+id); if(el){ el.value=''; neutral(el); } });
+    // 2) Tipo de emissão
+    let tipo = (data.TIPO_EMISSAO_ULTIMO_CRP || '').trim();
+    if (!tipo) {
+      // fallback: inferir do campo CRP_DECISAO_JUDICIAL (sim/nao)
+      const dj = (String(data.CRP_DECISAO_JUDICIAL || '')).trim().toLowerCase();
+      if (dj === 'sim') tipo = 'Judicial';
+      else if (dj === 'nao') tipo = 'Administrativa';
+    }
+    if (elTipoEmis) elTipoEmis.value = tipo;
 
-      // CRP / decisão judicial
-      const iso = data.CRP_DATA_VALIDADE_ISO || '';
-      const elVenc = $('#DATA_VENCIMENTO_ULTIMO_CRP');
-      if (iso && elVenc) elVenc.value = iso;
+    // (mantém o restante)
+    autoselectEsferaByEnte(data.ENTE);
 
-      const dj = rmAcc(String(data.CRP_DECISAO_JUDICIAL || ''));
-      const elAdm = $('#em_adm'), elJud = $('#em_jud');
-      if (elAdm && elJud) {
-        elAdm.checked = (dj === 'nao');
-        elJud.checked = (dj === 'sim');
-      }
-
-      autoselectEsferaByEnte(data.ENTE);
 
       cnpjOK = true;
       editedFields.clear();
@@ -1514,12 +1509,25 @@
       TEL_REP_UG:   $('#TEL_REP_UG').value.trim(),
       
       // ——— ETAPA 3 ———
+      // 3.1 Critérios irregulares (já existia)
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked')
         .map(i => i.value).join('; '),
 
-      // 3.2 (a planilha só pede estes dois flags)
+      // 3.2 Adesão sem irregularidades (flag que você já usava)
       ADESAO_SEM_IRREGULARIDADES:
         (document.querySelector('input[name="ADESAO_SEM_IRREGULARIDADES"]')?.checked ? 'SIM' : ''),
+
+      // 3.1/3.2 – NOVOS CAMPOS PARA O TERMO (vêm dos inputs adicionados na Etapa 3)
+      //    • DATA_VENCIMENTO_ULTIMO_CRP (input type="date")
+      //    • TIPO_EMISSAO_ULTIMO_CRP (select/text)
+      crp_venc: (document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP')?.value || ''),
+      crp_tipo: (document.getElementById('TIPO_EMISSAO_ULTIMO_CRP')?.value || ''),
+
+      // 3.4 Solicitação de Prazo Adicional (checkbox + justificativa)
+      prazo_adicional_flag:
+        (document.getElementById('PRAZO_ADICIONAL_SOLICITADO')?.checked ? 'Solicitado' : 'Não solicitado'),
+      prazo_adicional_just:
+        (document.getElementById('PRAZO_ADICIONAL_JUST')?.value || ''),
 
       // ——— ETAPA 4 ——— (use exatamente os nomes das colunas)
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300')
@@ -1553,7 +1561,6 @@
       DATA_TERMO_GERADO: $('#DATA_TERMO_GERADO')?.value || $('#DATA_SOLIC_GERADA')?.value || '',
       HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO')?.value || $('#HORA_SOLIC_GERADA')?.value || '',
       ANO_TERMO_GERADO:  $('#ANO_TERMO_GERADO')?.value  || $('#ANO_SOLIC_GERADA')?.value  || '',
-
     };
   }
 
