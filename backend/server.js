@@ -1697,6 +1697,8 @@ async function findSolicByIdemKey(sheet, idemKey) {
 
 /* ====== Removidos campos CRP dos headers da Solic_CRPs ====== */
 const SOLIC_HEADERS = [
+  'DATA_VENC_ULTIMO_CRP',       // 3.1
+  'TIPO_EMISSAO_ULTIMO_CRP',    // 3.2
   'ESFERA','UF','ENTE','CNPJ_ENTE','EMAIL_ENTE',
   'UG','CNPJ_UG','EMAIL_UG',
   'NOME_REP_ENTE','CPF_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
@@ -1971,6 +1973,8 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
 
     /* ✅ ALTERAÇÃO: gravar CNPJ_* como texto (asSheetCNPJ) */
     await safeAddRow(s, sheetSanObject({
+      DATA_VENC_ULTIMO_CRP: p.DATA_VENC_ULTIMO_CRP || p.CRP_DATA_VALIDADE_DMY || p.CRP_DATA_VALIDADE_ISO || '',
+      TIPO_EMISSAO_ULTIMO_CRP: p.TIPO_EMISSAO_ULTIMO_CRP || '',
       ESFERA: p.ESFERA || '',
       UF: p.UF, ENTE: p.ENTE, CNPJ_ENTE: asSheetCNPJ(p.CNPJ_ENTE), EMAIL_ENTE: norm(p.EMAIL_ENTE),
       UG: p.UG, CNPJ_UG: asSheetCNPJ(p.CNPJ_UG), EMAIL_UG: norm(p.EMAIL_UG),
@@ -2147,7 +2151,18 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     flat['tel_rep_ug']     = flat['tel_rep_ug']     || flat['__snapshot_tel_rep_ug']     || flat['responsaveis_ug_telefone'];
 
     // Data do último CRP (vários nomes possíveis)
-    flat['venc_ult_crp']   = flat['venc_ult_crp']   || flat['crp_data_validade_dmy'] || flat['data_vencimento_ultimo_crp'] || flat['crp_data_validade_iso'];
+    flat['venc_ult_crp']   = flat['venc_ult_crp']
+                          || flat['data_venc_ultimo_crp']
+                          || flat['crp_data_validade_dmy']
+                          || flat['crp_data_validade_iso']
+                          || flat['data_venc'];
+
+    // Tipo de emissão do último CRP
+    flat['tipo_emissao_ult_crp'] = flat['tipo_emissao_ult_crp']
+                                || flat['tipo_emissao_ultimo_crp']
+                                || flat['crp_tipo']
+                                || flat['tipo']; // quando vier de /termos-registrados
+
 
     // Esfera
     flat['esfera']         = flat['esfera']         || flat['esfera_sugerida'];
@@ -2180,7 +2195,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
 
     // 3.2 (ul#opt-3-2) – marca apenas a opção selecionada se existir F41_OPCAO
     const opt = (flat['f41_opcao'] || flat['f4310_opcao'] || '').trim();
-    const ulOpt = document.getElementById('opt-3-2');
+    const ulOpt = document.getElementById('opt-3-4'); // agora 3.4
     if (ulOpt) {
       ulOpt.querySelectorAll('li').forEach(li => {
         const code = (li.getAttribute('data-code') || '').trim();

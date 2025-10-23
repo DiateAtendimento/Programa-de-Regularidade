@@ -9,6 +9,8 @@ export const schemaSolicCrp = z.object({
   SEI_PROCESSO: z.string().optional().default(""),
 
   // 1) Ente / UG
+  DATA_VENC_ULTIMO_CRP: Joi.string().allow(''),              // 3.1
+  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().valid('Administrativa','Judicial','').allow(''), // 3.2
   ESFERA: z.enum(["RPPS Municipal","Estadual/Distrital"]),
   UF: z.string().min(2),
   ENTE: z.string().min(2),

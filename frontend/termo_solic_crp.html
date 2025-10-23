@@ -86,23 +86,38 @@
       <section class="term-section avoid-break page-break" id="sec-3">
         <h2>3. SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
 
+        <!-- 3.1 -->
         <div class="grid grid-num">
-          <div class="field"><span class="label"><strong>3.1 Data de vencimento do último CRP</strong></span><span class="value" data-k="venc_ult_crp"></span></div>
+          <div class="field">
+            <span class="label"><strong>3.1 Data de vencimento do último CRP</strong></span>
+            <span class="value" data-k="venc_ult_crp"></span>
+          </div>
         </div>
 
-        <!-- 3.2 — motivo do prazo adicional (seleção única) -->
-        <h3>3.2 Motivo principal do pedido de prazo adicional</h3>
-        <p class="small no-print">Será exibida apenas a alternativa selecionada no formulário.</p>
-        <ul id="opt-3-2">
-          <li data-code="3.2.1"><strong>3.2.1 Manutenção da conformidade</strong></li>
-          <li data-code="3.2.2"><strong>3.2.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</strong></li>
-          <li data-code="3.2.3"><strong>3.2.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</strong></li>
-          <li data-code="3.2.4"><strong>3.2.4 Outro critério que apresente (ou possa apresentar) maior complexidade</strong></li>
-        </ul>
+        <!-- 3.2 -->
+        <div class="grid grid-num">
+          <div class="field">
+            <span class="label"><strong>3.2 Tipo de emissão do último CRP</strong></span>
+            <span class="value" data-k="tipo_emissao_ult_crp"></span>
+          </div>
+        </div>
 
-        <h3>3.3 Critério(s) irregular(es) no extrato previdenciário</h3>
+        <!-- 3.3 -->
+        <h3>3.3 Critério(s) atualmente irregular(es) no extrato previdenciário</h3>
+        <p class="small">Selecione todos os itens apontados como irregulares no extrato.</p>
         <ul id="criterios-list"></ul>
+
+        <!-- 3.4 -->
+        <h3>3.4 Solicitação de Prazo Adicional</h3>
+        <p class="small no-print">Será exibida apenas a alternativa selecionada no formulário.</p>
+        <ul id="opt-3-4">
+          <li data-code="3.4.1"><strong>3.4.1 Manutenção da conformidade</strong></li>
+          <li data-code="3.4.2"><strong>3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</strong></li>
+          <li data-code="3.4.3"><strong>3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</strong></li>
+          <li data-code="3.4.4"><strong>3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade</strong></li>
+        </ul>
       </section>
+
 
       <!-- 4. FASE DO PROGRAMA -->
       <section class="term-section avoid-break">
@@ -287,44 +302,75 @@
       /* ===== Normalização do payload ===== */
       function normalizePayload(p0){
         const p = Object.assign({}, p0);
+
+        // ===== Mapeamentos básicos
         p.ENTE = p.ENTE ?? p.ente; p.UF = p.UF ?? p.uf; p.UG = p.UG ?? p.ug;
         p.CNPJ_ENTE = p.CNPJ_ENTE ?? p.cnpj_ente; p.CNPJ_UG = p.CNPJ_UG ?? p.cnpj_ug;
         p.EMAIL_ENTE = p.EMAIL_ENTE ?? p.email_ente; p.EMAIL_UG = p.EMAIL_UG ?? p.email_ug;
         p.SEI_PROCESSO = p.SEI_PROCESSO ?? p.sei_processo ?? p.PROC_SEI ?? p.proc_sei ?? '';
         p.PORTARIA_SRPC = p.PORTARIA_SRPC ?? p.portaria_srpc ?? p.PORTARIA_SRPC_MPS ?? '2.024/2025';
+
         p.NOME_REP_ENTE = p.NOME_REP_ENTE ?? p.nome_rep_ente;
         p.CARGO_REP_ENTE = p.CARGO_REP_ENTE ?? p.cargo_rep_ente;
-        p.CPF_REP_ENTE = p.CPF_REP_ENTE ?? p.cpf_rep_ente;
+        p.CPF_REP_ENTE   = p.CPF_REP_ENTE   ?? p.cpf_rep_ente;
         p.EMAIL_REP_ENTE = p.EMAIL_REP_ENTE ?? p.email_rep_ente;
-        p.TEL_REP_ENTE = p.TEL_REP_ENTE ?? p.tel_rep_ente;
+        p.TEL_REP_ENTE   = p.TEL_REP_ENTE   ?? p.tel_rep_ente;
+
         p.NOME_REP_UG = p.NOME_REP_UG ?? p.nome_rep_ug;
         p.CARGO_REP_UG = p.CARGO_REP_UG ?? p.cargo_rep_ug;
-        p.CPF_REP_UG = p.CPF_REP_UG ?? p.cpf_rep_ug;
+        p.CPF_REP_UG   = p.CPF_REP_UG   ?? p.cpf_rep_ug;
         p.EMAIL_REP_UG = p.EMAIL_REP_UG ?? p.email_rep_ug;
-        p.TEL_REP_UG = p.TEL_REP_UG ?? p.tel_rep_ug;
-        p.venc_ult_crp = p.venc_ult_crp ?? p.DATA_VENCIMENTO_ULTIMO_CRP ?? '';
+        p.TEL_REP_UG   = p.TEL_REP_UG   ?? p.tel_rep_ug;
+
+        // ===== (3.1 e 3.2) Prefill a partir de p.crp / p.CRP
+        const crp = p.crp || p.CRP || {};
+        // 3.1
+        p.DATA_VENC_ULTIMO_CRP = p.DATA_VENC_ULTIMO_CRP
+          ?? crp.data_venc
+          ?? crp.DATA_VALIDADE_DMY
+          ?? crp.DATA_VALIDADE_ISO
+          ?? '';
+        // 3.2
+        p.TIPO_EMISSAO_ULTIMO_CRP = p.TIPO_EMISSAO_ULTIMO_CRP
+          ?? crp.tipo
+          ?? (crp.DECISAO_JUDICIAL ? 'Judicial'
+                : ((crp.DATA_VALIDADE_DMY || crp.DATA_VALIDADE_ISO || crp.data_venc) ? 'Administrativa' : ''));
+        // Mantém compat anterior do 3.1 no template (data-k="venc_ult_crp")
+        p.venc_ult_crp = p.venc_ult_crp
+          ?? p.DATA_VENC_ULTIMO_CRP
+          ?? p.DATA_VENCIMENTO_ULTIMO_CRP
+          ?? '';
+
+        // ===== 3.2 (opção textual antiga, se usada)
         p.OPT_3_2 = (p.OPT_3_2 || p.opt_3_2 || '').trim();
         if (!p.OPT_3_2){
           const yes = v => String(v||'').toUpperCase() === 'SIM';
-          if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE)) p.OPT_3_2 = '3.2.1';
-          else if (yes(p.FIN_3_2_DEFICIT_ATUARIAL))    p.OPT_3_2 = '3.2.2';
+          if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE))   p.OPT_3_2 = '3.2.1';
+          else if (yes(p.FIN_3_2_DEFICIT_ATUARIAL))     p.OPT_3_2 = '3.2.2';
           else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) p.OPT_3_2 = '3.2.3';
           else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) p.OPT_3_2 = '3.2.4';
         }
+
+        // ===== Critérios irregulares (3.3)
         const candCriterios = (p.CRITERIOS_IRREGULARES || p.CRITERIOS_LIST || p.CRIT_IRREGULARES || p.CRITERIOS || p.CODIGOS_CRITERIOS || p.codigos_criterios || '');
         p.__CRITERIOS_ARR__ = asArr(candCriterios);
+
+        // ===== Fase / demais campos
         p.__FASE_SEL__ = String(p.FASE_PROGRAMA || p.fase_programa || p.FASE || p.fase || '').trim();
         p.F41_OPCAO = p.F41_OPCAO || p.f41_opcao || '';
         p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || '');
         p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || '');
+
         p.F44_CRITERIOS   = asArr(p.F44_CRITERIOS   || p.f44_criterios   || p.fase44_criterios   || '');
         p.F44_DECLS       = asArr(p.F44_DECLS       || p.f44_decls       || p.fase44_decls       || '');
         p.F44_FINALIDADES = asArr(p.F44_FINALIDADES || p.f44_finalidades || p.fase44_finalidades || '');
         p.F44_ANEXOS      = p.F44_ANEXOS || p.f44_anexos || p.fase44_anexos || '';
+
         p.F45_DECLS = asArr(p.F45_DECLS || p.f45_decls || '');
         p.F45_DOCS  = p.F45_DOCS  || p.f45_docs  || '';
         p.F45_JUST  = p.F45_JUST  || p.f45_just  || '';
         p.F45_OK451 = p.F45_OK451 || p.f45_ok451 || false;
+
         p.F46_CRITERIOS   = asArr(p.F46_CRITERIOS   || p.f46_criterios   || '');
         p.F46_DECLS       = asArr(p.F46_DECLS       || p.f46_decls       || '');
         p.F46_FINALIDADES = asArr(p.F46_FINALIDADES || p.f46_finalidades || '');
@@ -337,9 +383,12 @@
         p.F46_DOCS_D    = p.F46_DOCS_D    || p.f46_docs_d;
         p.F46_JUST_E    = p.F46_JUST_E    || p.f46_just_e;
         p.F46_DOCS_E    = p.F46_DOCS_E    || p.f46_docs_e;
+
         p.DATA_TERMO_GERADO = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
+
         return p;
       }
+
       function hojeBR_robusto(){
         try{
           const s = new Date().toLocaleDateString('pt-BR');
@@ -363,8 +412,10 @@
         Object.values(ids).forEach(id => show(id,false));
         if (ids[code]) show(ids[code], true);
       }
+      // segunda função
       function run(payload){
         const p = normalizePayload(payload || {});
+
         /* 1) Cabeçalho/meta */
         fillText('ente', p.ENTE); fillText('uf', p.UF); fillText('ug', p.UG);
         fillText('cnpj_ente', p.CNPJ_ENTE); fillText('cnpj_ug', p.CNPJ_UG);
@@ -372,25 +423,43 @@
         fillText('N_GESCON', p.N_GESCON || p.n_gescon || '');
         fillText('DATA_ENC_VIA_GESCON', p.DATA_ENC_VIA_GESCON || p.data_enc_via_gescon || '');
         fillText('SEI_PROCESSO', p.SEI_PROCESSO); fillText('PORTARIA_SRPC', p.PORTARIA_SRPC);
+
         /* 2) Responsáveis */
         fillText('nome_rep_ente',  p.NOME_REP_ENTE);
         fillText('cargo_rep_ente', p.CARGO_REP_ENTE);
         fillText('cpf_rep_ente',   p.CPF_REP_ENTE);
         fillText('email_rep_ente', p.EMAIL_REP_ENTE);
         fillText('tel_rep_ente',   p.TEL_REP_ENTE);
+
         fillText('nome_rep_ug',  p.NOME_REP_UG);
         fillText('cargo_rep_ug', p.CARGO_REP_UG);
         fillText('cpf_rep_ug',   p.CPF_REP_UG);
         fillText('email_rep_ug', p.EMAIL_REP_UG);
         fillText('tel_rep_ug',   p.TEL_REP_UG);
+
         /* 3) CRP */
+        // 3.1
         fillText('venc_ult_crp', p.venc_ult_crp || '');
-        (function(){ const ul = document.getElementById('opt-3-2'); if (!ul) return;
+        // 3.2 (NOVA: tipo de emissão — Administrativa/Judicial)
+        fillText('tipo_emissao_ultimo_crp', p.TIPO_EMISSAO_ULTIMO_CRP || '');
+
+        // 3.2 (opção antiga "motivo principal", se usar ul#opt-3-2)
+        (function(){
+          const ul = document.getElementById('opt-3-2'); if (!ul) return;
           const code = (p.OPT_3_2 || '').trim();
-          if (code) { [...ul.children].forEach(li => { if (li.getAttribute('data-code') !== code) li.remove(); }); }
-          else { ul.innerHTML = ''; const li = document.createElement('li'); li.textContent = __NA_LABEL__(); ul.appendChild(li); }
+          if (code) {
+            [...ul.children].forEach(li => { if (li.getAttribute('data-code') !== code) li.remove(); });
+          } else {
+            ul.innerHTML = '';
+            const li = document.createElement('li');
+            li.textContent = __NA_LABEL__();
+            ul.appendChild(li);
+          }
         })();
+
+        // 3.3
         liList('#criterios-list', p.__CRITERIOS_ARR__);
+
         /* 4) Fase */
         const faseSel = p.__FASE_SEL__; fillText('fase_programa', faseSel || '—'); showOnlyPhase(faseSel);
         switch (faseSel) {
@@ -399,40 +468,38 @@
             const v = String(p.F41_OPCAO||'').toLowerCase();
             if (/^4\.1\.1/.test(p.F41_OPCAO) || /incluiu|incluidos|incluídos/.test(v)) it.push('4.1.1 Incluiu todos os débitos (Cadprev).');
             else if (/^4\.1\.2/.test(p.F41_OPCAO) || /não possui|nao possui|regularizad/.test(v)) it.push('4.1.2 Não possui débitos ou já regularizados.');
-            liList('#f41-itens', it); break;
+            liList('#f41-itens', it);
+            break;
           }
           case '4.2': liList('#f42-itens', p.F42_LISTA); break;
           case '4.3': {
             liList('#f43-itens', p.F43_LISTA);
             fillText('f43_just',  p.F43_JUST  || '');
-            fillText('f43_plano', p.F43_PLANO || ''); 
-            // 4.3.10 (opção + textos, se existirem)
+            fillText('f43_plano', p.F43_PLANO || '');
+
             (function(){
               const box = document.getElementById('f4310'); if(!box) return;
               const items = [];
-              if (p.F4310_OPCAO)       items.push('Opção: ' + p.F4310_OPCAO);
-              if (p.F4310_LEGISLACAO)  items.push('Legislação: ' + p.F4310_LEGISLACAO);
-              if (p.F4310_DOCS)        items.push('Docs: ' + p.F4310_DOCS);
+              if (p.F4310_OPCAO)      items.push('Opção: ' + p.F4310_OPCAO);
+              if (p.F4310_LEGISLACAO) items.push('Legislação: ' + p.F4310_LEGISLACAO);
+              if (p.F4310_DOCS)       items.push('Docs: ' + p.F4310_DOCS);
               liList('#f4310', items);
             })();
 
-            // 4.3.11 (checkboxes marcados para inclusão)
             liList('#f43-incluir', p.F43_INCLUIR);
-            
             break;
           }
           case '4.4': {
             liList('#f44-criterios',   p.F44_CRITERIOS);
             liList('#f44-decls',       p.F44_DECLS);
             liList('#f44-finalidades', p.F44_FINALIDADES);
+
             const ax = splitLines(p.F44_ANEXOS || '');
             const box = document.getElementById('f44-anexos');
             if (box) box.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
 
-            // 4.4.1(d) legislação
             fillText('f441_legislacao', p.F441_LEGISLACAO || '');
 
-            // 4.4.6 docs/execução
             (function(){
               const d = splitLines(p.F446_DOCS || '');
               const e = splitLines(p.F446_EXEC_RES || '');
@@ -441,7 +508,6 @@
               if (dBox) dBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
               if (eBox) eBox.innerHTML = e.length ? '<ul>'+e.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
             })();
-            
             break;
           }
           case '4.5': {
@@ -466,20 +532,20 @@
             if (p.F46_JUST_E)    decls.push('(e) Justificativas: ' + p.F46_JUST_E);
             if (p.F46_DOCS_E)    decls.push('(e) Documentos: ' + p.F46_DOCS_E);
             liList('#f46-decls', decls);
+
             liList('#f46-finalidades', p.F46_FINALIDADES);
+
             const ax = splitLines(p.F46_ANEXOS || '');
             const axBox = document.getElementById('f46-anexos');
             if (axBox) axBox.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+
             const jp = document.getElementById('f46-just-planos');
             const cc = document.getElementById('f46-comp-cumpr');
             if (jp) jp.textContent = (p.F46_JUST_PLANOS || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             if (cc) cc.textContent = (p.F46_COMP_CUMPR  || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-            
 
-            // 4.6.2(f) – critérios
             liList('#f462f-criterios', p.F462F_CRITERIOS);
 
-            // Documentos/Execução adicionais (campos F466_*)
             (function(){
               const d = splitLines(p.F466_DOCS || '');
               const e = splitLines(p.F466_EXEC_RES || '');
@@ -488,23 +554,25 @@
               if (dBox) dBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
               if (eBox) eBox.innerHTML = e.length ? '<ul>'+e.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
             })();
-
             break;
-
           }
         }
+
         /* 5) Justificativas gerais */
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
+
         /* 6) Data/assinaturas */
         const preferida = (p.DATA_TERMO_GERADO || '').trim();
         fillText('data_termo', preferida || hojeBR_robusto());
         const dataNode = document.querySelector('[data-k="data_termo"]');
         if (dataNode && !dataNode.textContent.trim()) dataNode.textContent = hojeBR_robusto();
+
         /* 7) Esfera 1.1 + legenda assinatura dinâmica */
         const esferaTxt = normalizarEsfera(p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || p.fase_esfera);
         const esferaNode = document.querySelector('[data-esfera]');
         if (esferaNode) esferaNode.textContent = esferaTxt;
-        const esferaTitulo = document.querySelector('h3 .label'); if (esferaTitulo) esferaTitulo.textContent = '1.1 Esfera de Governo';
+        const esferaTitulo = document.querySelector('h3 .label');
+        if (esferaTitulo) esferaTitulo.textContent = '1.1 Esfera de Governo';
         (function(){
           const sig = document.getElementById('sig-cap-ente');
           if (sig) {
@@ -515,6 +583,7 @@
             fillText('ente', p.ENTE); fillText('uf', p.UF);
           }
         })();
+
         /* pronto para imprimir */
         try{
           if (!window.__TERMO_READY_FIRED__) {
@@ -530,6 +599,7 @@
           }
         }catch(_){}
       }
+
       /* Modal PDF (abrir/fechar) */
       window.ModalPDF = {
         open(){ document.getElementById('pdf-modal')?.classList.add('pdf-modal--open'); },
