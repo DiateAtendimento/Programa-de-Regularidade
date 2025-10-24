@@ -385,7 +385,7 @@
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
       'CPF_REP_ENTE','NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
       'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG', 'DATA_VENCIMENTO_ULTIMO_CRP',
-      'TIPO_EMISSAO_ULTIMO_CRP', 'PRAZO_ADICIONAL_SOLICITADO','PRAZO_ADICIONAL_JUST'
+      'TIPO_EMISSAO_ULTIMO_CRP', 'PRAZO_ADICIONAL_SOLICITADO'
 
     ].forEach(id => { const el = document.getElementById(id); if (el) data.values[id] = el.value; });
 
@@ -963,6 +963,7 @@
         {id:'EMAIL_REP_UG', type:'email', label:'E-mail do Rep. da UG'}
       ]
     };
+
     const checkField = (id,type)=>{
       const el = document.getElementById(id); if(!el) return true;
       const v = el.value||'';
@@ -979,6 +980,7 @@
 
     if (s<=3) {
       (reqAll[s]||[]).forEach(o => { if(!checkField(o.id,o.type)) msgs.push(o.label); });
+
       if (s === 1) {
         const grp = $$('input[name="ESFERA_GOVERNO[]"]');
         let ok = false;
@@ -1000,20 +1002,39 @@
         const semIrreg = (window.__sec3__?.isSemIrreg() === true);
         const hasFinal = (window.__sec3__?.hasAlgumaFinalidade() === true);
 
-        // COMPORTAMENTO: só AVISAR e bloquear apenas a primeira tentativa
+        // bloqueia só na 1ª tentativa; depois libera (conforme sua lógica)
         if (!(cOK || (semIrreg && hasFinal))) {
           if (!allowSkipStep3) {
             showAtencao(['Verifique se foram assinalados todos os critérios irregulares do extrato previdenciário (item 3.1) ou marque “Sem irregularidades” e selecione ao menos uma finalidade (3.2).']);
-            return false; // bloqueia apenas nesta 1ª tentativa; ao clicar OK, a flag libera
+            return false;
           }
-          // se o usuário já clicou OK uma vez, deixamos passar
         }
       }
+    }
+
+    // ——— NOVO: validações para 5, 6 e 7 ———
+    if (s === 5) {
+      const comps = Array.from(document.querySelectorAll('input[name="COMPROMISSOS[]"]'));
+      // regra “marcar todos” (ajuste aqui se quiser “pelo menos 1”)
+      const okAll = (comps.length > 0) && comps.every(i => i.checked);
+      if (!okAll) msgs.push('Marque todos os itens da seção 5 (Compromissos).');
+    }
+
+    if (s === 6) {
+      const provs = Array.from(document.querySelectorAll('input[name="PROVIDENCIAS[]"]')).filter(i=>i.checked);
+      if (provs.length !== 1) msgs.push('Selecione exatamente 1 item na seção 6 (Providências iniciais).');
+    }
+
+    if (s === 7) {
+      const conds = Array.from(document.querySelectorAll('input[name="CONDICOES[]"]'));
+      const okAll = (conds.length > 0) && conds.every(i => i.checked);
+      if (!okAll) msgs.push('Marque todos os itens da seção 7 (Condições de vigência).');
     }
 
     if (msgs.length){ showAtencao(msgs); return false; }
     return true;
   }
+
 
   /* ========= Navegação: botão Próximo (com trava anticlique duplo) ========= */
   let navBusy = false;
@@ -1486,6 +1507,21 @@
 
   // ======== payload ========
   function buildPayload(){
+    // --- CRP (3.1/3.2): nomes finais + flags SIM/NAO ---
+    const dataCRP  = (document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP')?.value || '');
+    const tipoCRP  = (document.getElementById('TIPO_EMISSAO_ULTIMO_CRP')?.value || '');
+    const prazoAdi = (document.getElementById('PRAZO_ADICIONAL_SOLICITADO')?.checked ? 'SIM' : 'NAO');
+
+    // --- (Opcional recomendado) Flags SIM/NAO para as “finalidades” da Etapa 4 ---
+    const F = {
+      parc: [document.getElementById('parc60'), document.getElementById('parc300')],
+      reg:  [document.getElementById('reg_sem_jud'), document.getElementById('reg_com_jud'), document.getElementById('reg_litigios')],
+      def:  [document.getElementById('eq_implano'), document.getElementById('eq_prazos'), document.getElementById('eq_plano_alt')],
+      org:  [document.getElementById('org_ugu'), document.getElementById('org_outros')],
+      man:  [document.getElementById('man_cert'), document.getElementById('man_melhoria'), document.getElementById('man_acomp'), document.getElementById('man_evolucao'), document.getElementById('man_acomp_atuarial')],
+    };
+    const anyChecked = arr => (arr || []).some(i => i && i.checked === true);
+
     return {
       ENTE: $('#ENTE').value.trim(),
       UF: $('#UF').value.trim(),
@@ -1509,27 +1545,18 @@
       TEL_REP_UG:   $('#TEL_REP_UG').value.trim(),
       
       // ——— ETAPA 3 ———
-      // 3.1 Critérios irregulares (já existia)
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked')
         .map(i => i.value).join('; '),
 
-      // 3.2 Adesão sem irregularidades (flag que você já usava)
       ADESAO_SEM_IRREGULARIDADES:
         (document.querySelector('input[name="ADESAO_SEM_IRREGULARIDADES"]')?.checked ? 'SIM' : ''),
 
-      // 3.1/3.2 – NOVOS CAMPOS PARA O TERMO (vêm dos inputs adicionados na Etapa 3)
-      //    • DATA_VENCIMENTO_ULTIMO_CRP (input type="date")
-      //    • TIPO_EMISSAO_ULTIMO_CRP (select/text)
-      crp_venc: (document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP')?.value || ''),
-      crp_tipo: (document.getElementById('TIPO_EMISSAO_ULTIMO_CRP')?.value || ''),
+      // ——— Nomes finais padronizados (no lugar de crp_venc/crp_tipo/prazo_adicional_flag) ———
+      DATA_VENCIMENTO_ULTIMO_CRP: dataCRP,
+      TIPO_EMISSAO_ULTIMO_CRP:    tipoCRP,
+      PRAZO_ADICIONAL_FLAG:       prazoAdi, // SIM/NAO
 
-      // 3.4 Solicitação de Prazo Adicional (checkbox + justificativa)
-      prazo_adicional_flag:
-        (document.getElementById('PRAZO_ADICIONAL_SOLICITADO')?.checked ? 'Solicitado' : 'Não solicitado'),
-      prazo_adicional_just:
-        (document.getElementById('PRAZO_ADICIONAL_JUST')?.value || ''),
-
-      // ——— ETAPA 4 ——— (use exatamente os nomes das colunas)
+      // ——— ETAPA 4 ——— (mantém descritivos)
       CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300')
         .filter(i => i.checked).map(i => i.value).join('; '),
 
@@ -1540,13 +1567,20 @@
       DEFICIT_ATUARIAL: $$('input#eq_implano, input#eq_prazos, input#eq_plano_alt')
         .filter(i => i.checked).map(i => i.value).join('; '),
 
-      CRITERIOS_ESTRUTABELECIDOS: undefined, // (evita erro de digitação)
+      // (removido campo com typo CRITERIOS_ESTRUTABELECIDOS)
       CRITERIOS_ESTRUT_ESTABELECIDOS: $$('input#org_ugu, input#org_outros')
         .filter(i => i.checked).map(i => i.value).join('; '),
 
       MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$(
         'input#man_cert, input#man_melhoria, input#man_acomp, input#man_evolucao, input#man_acomp_atuarial'
       ).filter(i => i.checked).map(i => i.value).join('; '),
+
+      // ——— (Opcional recomendado) Flags SIM/NAO espelho das finalidades ———
+      CELEBRACAO_TERMO_PARCELA_DEBITOS_FLAG:          anyChecked(F.parc) ? 'SIM' : 'NAO',
+      REGULARIZACAO_PENDEN_ADMINISTRATIVA_FLAG:       anyChecked(F.reg)  ? 'SIM' : 'NAO',
+      DEFICIT_ATUARIAL_FLAG:                           anyChecked(F.def)  ? 'SIM' : 'NAO',
+      CRITERIOS_ESTRUT_ESTABELECIDOS_FLAG:             anyChecked(F.org)  ? 'SIM' : 'NAO',
+      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS_FLAG:      anyChecked(F.man)  ? 'SIM' : 'NAO',
 
       // ——— ETAPAS 5–7 ———
       COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked')

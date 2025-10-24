@@ -64,7 +64,12 @@
     setTextAll('email_rep_ug', p.EMAIL_REP_UG || '');
 
     // Data do termo (Etapa 7/registro)
-    setTextAll('data_termo',   fmtDataBR(p.DATA_TERMO_GERADO || ''));
+    setTextAll('data_termo', fmtDataBR(p.DATA_TERMO_GERADO || ''));
+
+    // ===== Etapa 3 – CRP (campos diretos) =====
+    setTextAll('crp_venc', fmtDataBR(p.crp_venc || ''));           // 3.1
+    setTextAll('crp_tipo', (p.crp_tipo || '').trim());             // 3.2
+    setTextAll('prazo_adicional_flag', (p.prazo_adicional_flag || '').trim()); // 3.4 (sem justificativa)
 
     // 1.1 – Esfera de Governo (usa p.ESFERA quando existir; senão, heurística pelo ENTE)
     (function(){
@@ -133,7 +138,6 @@
       });
     })();
 
-
     // 3.2 – Adesão sem irregularidades (apenas a frase única)
     (function(){
       const box = document.getElementById('blk-3-2-adesao');
@@ -157,7 +161,6 @@
         </li>`;
     })();
 
-
     // ===== Etapa 4 – FINALIDADES =====
     const finsTxt = [
       p.CELEBRACAO_TERMO_PARCELA_DEBITOS,
@@ -169,12 +172,12 @@
 
     // 4.1 – até 60 OU até 300 (se/quando existir no HTML)
     (function(){
+      const src = String(p.CELEBRACAO_TERMO_PARCELA_DEBITOS || '').toLowerCase();
       const codes = [];
-      if (/sessenta|60\b/.test(finsTxt)) codes.push('4.1.0'); // ex.: data-code do item 60
-      if (/trezent|300\b|parcelament|reparcelament/.test(finsTxt)) codes.push('4.1.1');
+      if (/sessenta|60\b/.test(src)) codes.push('4.1.0'); // só funciona se existir <li data-code="4.1.0"> no termo.html
+      if (/trezent|300\b|parcelament|reparcelament/.test(src)) codes.push('4.1.1');
       filterBy('opt-4-1', codes);
     })();
-
 
     // 4.2 – regularização administrativa (3 itens)
     (function(){
@@ -229,32 +232,42 @@
 
     // ===== Etapa 5 – Compromissos (5.1 a 5.8) =====
     (function(){
-      const src = String(p.COMPROMISSO_FIRMADO_ADESAO || '');
+      const src = String(p.COMPROMISSO_FIRMADO_ADESAO || '').toLowerCase();
       const codes = [];
+      // palavras-chave (quando vier sem “5.x”)
+      if (/repasses|parcelas/.test(src))                                                     codes.push('5.1');
+      if (/envio de documentos|art\.?\s*241|atendimento às solicita[cç][oõ]es/.test(src))   codes.push('5.2');
+      if (/recursos previdenci[aá]rios.*finalidades legais|lei\s*9\.?796/.test(src))        codes.push('5.3');
+      if (/aplica[cç][aã]o dos recursos|cmn|pol[ií]tica de investimentos/.test(src))        codes.push('5.4');
+      if (/adequ[aá]o.*legisla[cç][aã]o|ec\s*103/.test(src))                                 codes.push('5.5');
+      if (/cumprimento.*planos? de a[cç][aã]o/.test(src))                                    codes.push('5.6');
+      if (/equil[ií]brio financeiro e atuarial|sustentabilidade/.test(src))                  codes.push('5.7');
+      if (/governan[çc]a/.test(src))                                                         codes.push('5.8');
+      // fallback se vier “5.x” explícito
       ['5.1','5.2','5.3','5.4','5.5','5.6','5.7','5.8'].forEach(code=>{
         const re = new RegExp(`(^|\\D)${code.replace('.','\\.')}(\\D|$)`);
-        if (re.test(src)) codes.push(code);
+        if (re.test(src) && !codes.includes(code)) codes.push(code);
       });
       filterBy('opt-5', codes);
     })();
 
     // ===== Etapa 6 – Providências (6.1/6.2) =====
     (function(){
-      const src = String(p.PROVIDENCIA_NECESS_ADESAO || '');
+      const src = String(p.PROVIDENCIA_NECESS_ADESAO || '').toLowerCase();
       const codes = [];
-      if (/6\.?1\b|inclus[aã]o|cadprev/i.test(src)) codes.push('6.1');
-      if (/6\.?2\b|inexist[eê]ncia|j[aá]\s*regulariz/i.test(src)) codes.push('6.2');
+      if (/6\.?1\b|inclus[aã]o|cadprev/.test(src)) codes.push('6.1');
+      if (/6\.?2\b|inexist[eê]ncia|j[aá]\s*regulariz/.test(src)) codes.push('6.2');
       filterBy('opt-6', codes);
     })();
 
     // ===== Etapa 7 – Condições (7.1–7.4) =====
     (function(){
-      const src = String(p.CONDICAO_VIGENCIA || '');
+      const src = String(p.CONDICAO_VIGENCIA || '').toLowerCase();
       const codes = [];
-      if (/7\.?1\b|condi[cç][oõ]es.*compromissos|atendimento/i.test(src)) codes.push('7.1');
-      if (/7\.?2\b|planos?\s*de\s*a[cç][aã]o/i.test(src))                codes.push('7.2');
-      if (/7\.?3\b|art\.\s*7\b|anexo\s*xvii|parcelament/i.test(src))     codes.push('7.3');
-      if (/7\.?4\b|n[aã]o\s+ingresso\s+com\s+a[cç][aã]o|judicial/i.test(src)) codes.push('7.4');
+      if (/7\.?1\b|condi[cç][oõ]es.*compromissos|atendimento/.test(src)) codes.push('7.1');
+      if (/7\.?2\b|planos?\s*de\s*a[cç][aã]o/.test(src))                codes.push('7.2');
+      if (/7\.?3\b|art\.\s*7\b|anexo\s*xvii|parcelament/.test(src))     codes.push('7.3');
+      if (/7\.?4\b|n[aã]o\s+ingresso\s+com\s+a[cç][aã]o|judicial/.test(src)) codes.push('7.4');
       filterBy('opt-7', codes);
     })();
 
@@ -276,6 +289,7 @@
       }
     } catch (_) {}
   }
+
 
   // ========= Fluxo 1: Preview (postMessage) =========
   window.addEventListener('message', (ev) => {
