@@ -1507,96 +1507,153 @@
 
   // ======== payload ========
   function buildPayload(){
-    // --- CRP (3.1/3.2): nomes finais + flags SIM/NAO ---
-    const dataCRP  = (document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP')?.value || '');
-    const tipoCRP  = (document.getElementById('TIPO_EMISSAO_ULTIMO_CRP')?.value || '');
-    const prazoAdi = (document.getElementById('PRAZO_ADICIONAL_SOLICITADO')?.checked ? 'SIM' : 'NAO');
+  // --- Helpers locais ---
+  const anyChecked = arr => (arr || []).some(i => i && i.checked === true);
+  const takeCodesFromChecked = (selector, rx=/^\s*([0-9]+\.[0-9]+)\b/) => {
+    const list = $$(`${selector}:checked`);
+    const out = [];
+    list.forEach(i => {
+      const txt = String(i.value || '').trim();
+      const m = txt.match(rx);
+      if (m && m[1]) out.push(m[1]);
+    });
+    return out;
+  };
 
-    // --- (Opcional recomendado) Flags SIM/NAO para as “finalidades” da Etapa 4 ---
-    const F = {
-      parc: [document.getElementById('parc60'), document.getElementById('parc300')],
-      reg:  [document.getElementById('reg_sem_jud'), document.getElementById('reg_com_jud'), document.getElementById('reg_litigios')],
-      def:  [document.getElementById('eq_implano'), document.getElementById('eq_prazos'), document.getElementById('eq_plano_alt')],
-      org:  [document.getElementById('org_ugu'), document.getElementById('org_outros')],
-      man:  [document.getElementById('man_cert'), document.getElementById('man_melhoria'), document.getElementById('man_acomp'), document.getElementById('man_evolucao'), document.getElementById('man_acomp_atuarial')],
-    };
-    const anyChecked = arr => (arr || []).some(i => i && i.checked === true);
+  // --- CRP (3.1/3.2): nomes finais + flags SIM/NAO ---
+  const dataCRP  = (document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP')?.value || '');
+  const tipoCRP  = (document.getElementById('TIPO_EMISSAO_ULTIMO_CRP')?.value || '');
+  const prazoAdi = (document.getElementById('PRAZO_ADICIONAL_SOLICITADO')?.checked ? 'SIM' : 'NAO');
 
-    return {
-      ENTE: $('#ENTE').value.trim(),
-      UF: $('#UF').value.trim(),
-      CNPJ_ENTE: digits($('#CNPJ_ENTE').value),
-      EMAIL_ENTE: emailFinal('EMAIL_ENTE','EMAIL_REP_ENTE'),
+  // --- Flags “finalidades” da Etapa 4 (para espelho SIM/NAO) ---
+  const F = {
+    parc: [document.getElementById('parc60'), document.getElementById('parc300')],
+    reg:  [document.getElementById('reg_sem_jud'), document.getElementById('reg_com_jud'), document.getElementById('reg_litigios')],
+    def:  [document.getElementById('eq_implano'), document.getElementById('eq_prazos'), document.getElementById('eq_plano_alt')],
+    org:  [document.getElementById('org_ugu'), document.getElementById('org_outros')],
+    man:  [document.getElementById('man_cert'), document.getElementById('man_melhoria'), document.getElementById('man_acomp'), document.getElementById('man_evolucao'), document.getElementById('man_acomp_atuarial')],
+  };
 
-      NOME_REP_ENTE: $('#NOME_REP_ENTE').value.trim(),
-      CARGO_REP_ENTE: $('#CARGO_REP_ENTE').value.trim(),
-      CPF_REP_ENTE: digits($('#CPF_REP_ENTE').value),
-      EMAIL_REP_ENTE: $('#EMAIL_REP_ENTE').value.trim(),
-      TEL_REP_ENTE: $('#TEL_REP_ENTE').value.trim(),
+  // --- Códigos selecionados (4.*, 5.*, 6.*, 7.*) ---
+  const SELECTED_CODES = new Set();
 
-      UG: $('#UG').value.trim(),
-      CNPJ_UG: digits($('#CNPJ_UG').value),
-      EMAIL_UG: emailFinal('EMAIL_UG','EMAIL_REP_UG'),
+  // 4.1
+  if (document.getElementById('parc60')?.checked)  SELECTED_CODES.add('4.1.0');
+  if (document.getElementById('parc300')?.checked) SELECTED_CODES.add('4.1.1');
+  // 4.2
+  if (document.getElementById('reg_sem_jud')?.checked)  SELECTED_CODES.add('4.2.1');
+  if (document.getElementById('reg_com_jud')?.checked)  SELECTED_CODES.add('4.2.2');
+  if (document.getElementById('reg_litigios')?.checked) SELECTED_CODES.add('4.2.3');
+  // 4.3
+  if (document.getElementById('eq_implano')?.checked)   SELECTED_CODES.add('4.3.1');
+  if (document.getElementById('eq_prazos')?.checked)    SELECTED_CODES.add('4.3.2');
+  if (document.getElementById('eq_plano_alt')?.checked) SELECTED_CODES.add('4.3.3');
+  // 4.4
+  if (document.getElementById('org_ugu')?.checked)    SELECTED_CODES.add('4.4.1');
+  if (document.getElementById('org_outros')?.checked) SELECTED_CODES.add('4.4.2');
+  // 4.5
+  if (document.getElementById('adeq_leg')?.checked)   SELECTED_CODES.add('4.5');
+  // 4.6
+  if (document.getElementById('man_cert')?.checked)           SELECTED_CODES.add('4.6.1');
+  if (document.getElementById('man_melhoria')?.checked)       SELECTED_CODES.add('4.6.2');
+  if (document.getElementById('man_acomp')?.checked)          SELECTED_CODES.add('4.6.3');
+  if (document.getElementById('man_evolucao')?.checked)       SELECTED_CODES.add('4.6.4');
+  if (document.getElementById('man_acomp_atuarial')?.checked) SELECTED_CODES.add('4.6.5');
 
-      NOME_REP_UG: $('#NOME_REP_UG').value.trim(),
-      CARGO_REP_UG: $('#CARGO_REP_UG').value.trim(),
-      CPF_REP_UG: digits($('#CPF_REP_UG').value),
-      EMAIL_REP_UG: $('#EMAIL_REP_UG').value.trim(),
-      TEL_REP_UG:   $('#TEL_REP_UG').value.trim(),
-      
-      // ——— ETAPA 3 ———
-      CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked')
-        .map(i => i.value).join('; '),
+  // 5.* a partir do texto (ex.: "5.1 Manter...")
+  takeCodesFromChecked('input[name="COMPROMISSOS[]"]').forEach(c => SELECTED_CODES.add(c));
+  // 6.* (ex.: "6.1 ...", "6.2 ...")
+  takeCodesFromChecked('input[name="PROVIDENCIAS[]"]').forEach(c => SELECTED_CODES.add(c));
+  // 7.* (ex.: "7.1 ...")
+  takeCodesFromChecked('input[name="CONDICOES[]"]').forEach(c => SELECTED_CODES.add(c));
 
-      ADESAO_SEM_IRREGULARIDADES:
-        (document.querySelector('input[name="ADESAO_SEM_IRREGULARIDADES"]')?.checked ? 'SIM' : ''),
+  // --- Esfera de Governo (1.1) ---
+  const ESFERA_COD =
+    document.getElementById('esf_est')?.checked ? '1.1.2' :
+    document.getElementById('esf_mun')?.checked ? '1.1.1' : '';
 
-      // ——— Nomes finais padronizados (no lugar de crp_venc/crp_tipo/prazo_adicional_flag) ———
-      DATA_VENCIMENTO_ULTIMO_CRP: dataCRP,
-      TIPO_EMISSAO_ULTIMO_CRP:    tipoCRP,
-      PRAZO_ADICIONAL_FLAG:       prazoAdi, // SIM/NAO
+  // --- Payload final ---
+  const payload = {
+    ENTE: $('#ENTE').value.trim(),
+    UF: $('#UF').value.trim(),
+    CNPJ_ENTE: digits($('#CNPJ_ENTE').value),
+    EMAIL_ENTE: emailFinal('EMAIL_ENTE','EMAIL_REP_ENTE'),
 
-      // ——— ETAPA 4 ——— (mantém descritivos)
-      CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300')
-        .filter(i => i.checked).map(i => i.value).join('; '),
+    NOME_REP_ENTE: $('#NOME_REP_ENTE').value.trim(),
+    CARGO_REP_ENTE: $('#CARGO_REP_ENTE').value.trim(),
+    CPF_REP_ENTE: digits($('#CPF_REP_ENTE').value),
+    EMAIL_REP_ENTE: $('#EMAIL_REP_ENTE').value.trim(),
+    TEL_REP_ENTE: $('#TEL_REP_ENTE').value.trim(),
 
-      REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$(
-        'input#reg_sem_jud, input#reg_com_jud, input#reg_litigios'
-      ).filter(i => i.checked).map(i => i.value).join('; '),
+    UG: $('#UG').value.trim(),
+    CNPJ_UG: digits($('#CNPJ_UG').value),
+    EMAIL_UG: emailFinal('EMAIL_UG','EMAIL_REP_UG'),
 
-      DEFICIT_ATUARIAL: $$('input#eq_implano, input#eq_prazos, input#eq_plano_alt')
-        .filter(i => i.checked).map(i => i.value).join('; '),
+    NOME_REP_UG: $('#NOME_REP_UG').value.trim(),
+    CARGO_REP_UG: $('#CARGO_REP_UG').value.trim(),
+    CPF_REP_UG: digits($('#CPF_REP_UG').value),
+    EMAIL_REP_UG: $('#EMAIL_REP_UG').value.trim(),
+    TEL_REP_UG:   $('#TEL_REP_UG').value.trim(),
+    
+    // ——— ETAPA 3 ———
+    CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked')
+      .map(i => i.value).join('; '),
 
-      // (removido campo com typo CRITERIOS_ESTRUTABELECIDOS)
-      CRITERIOS_ESTRUT_ESTABELECIDOS: $$('input#org_ugu, input#org_outros')
-        .filter(i => i.checked).map(i => i.value).join('; '),
+    ADESAO_SEM_IRREGULARIDADES:
+      (document.querySelector('input[name="ADESAO_SEM_IRREGULARIDADES"]')?.checked ? 'SIM' : ''),
 
-      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$(
-        'input#man_cert, input#man_melhoria, input#man_acomp, input#man_evolucao, input#man_acomp_atuarial'
-      ).filter(i => i.checked).map(i => i.value).join('; '),
+    // ——— Nomes padronizados (compat com termo.js) ———
+    DATA_VENCIMENTO_ULTIMO_CRP: dataCRP,
+    TIPO_EMISSAO_ULTIMO_CRP:    tipoCRP,
+    PRAZO_ADICIONAL_FLAG:       prazoAdi, // SIM/NAO
 
-      // ——— (Opcional recomendado) Flags SIM/NAO espelho das finalidades ———
-      CELEBRACAO_TERMO_PARCELA_DEBITOS_FLAG:          anyChecked(F.parc) ? 'SIM' : 'NAO',
-      REGULARIZACAO_PENDEN_ADMINISTRATIVA_FLAG:       anyChecked(F.reg)  ? 'SIM' : 'NAO',
-      DEFICIT_ATUARIAL_FLAG:                           anyChecked(F.def)  ? 'SIM' : 'NAO',
-      CRITERIOS_ESTRUT_ESTABELECIDOS_FLAG:             anyChecked(F.org)  ? 'SIM' : 'NAO',
-      MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS_FLAG:      anyChecked(F.man)  ? 'SIM' : 'NAO',
+    // ——— ETAPA 4 ——— (mantém descritivos)
+    CELEBRACAO_TERMO_PARCELA_DEBITOS: $$('input#parc60, input#parc300')
+      .filter(i => i.checked).map(i => i.value).join('; '),
 
-      // ——— ETAPAS 5–7 ———
-      COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked')
-        .map(i => i.value).join('; '),
-      PROVIDENCIA_NECESS_ADESAO: $$('input[name="PROVIDENCIAS[]"]:checked')
-        .map(i => i.value).join('; '),
-      CONDICAO_VIGENCIA: $$('input[name="CONDICOES[]"]:checked')
-        .map(i => i.value).join('; '),
+    REGULARIZACAO_PENDEN_ADMINISTRATIVA: $$(
+      'input#reg_sem_jud, input#reg_com_jud, input#reg_litigios'
+    ).filter(i => i.checked).map(i => i.value).join('; '),
 
-      // ——— Carimbos / metadados ———
-      MES: $('#MES')?.value || '',
-      DATA_TERMO_GERADO: $('#DATA_TERMO_GERADO')?.value || $('#DATA_SOLIC_GERADA')?.value || '',
-      HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO')?.value || $('#HORA_SOLIC_GERADA')?.value || '',
-      ANO_TERMO_GERADO:  $('#ANO_TERMO_GERADO')?.value  || $('#ANO_SOLIC_GERADA')?.value  || '',
-    };
+    DEFICIT_ATUARIAL: $$('input#eq_implano, input#eq_prazos, input#eq_plano_alt')
+      .filter(i => i.checked).map(i => i.value).join('; '),
+
+    CRITERIOS_ESTRUT_ESTABELECIDOS: $$('input#org_ugu, input#org_outros')
+      .filter(i => i.checked).map(i => i.value).join('; '),
+
+    MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS: $$(
+      'input#man_cert, input#man_melhoria, input#man_acomp, input#man_evolucao, input#man_acomp_atuarial'
+    ).filter(i => i.checked).map(i => i.value).join('; '),
+
+    // ——— Espelho SIM/NAO ———
+    CELEBRACAO_TERMO_PARCELA_DEBITOS_FLAG:         anyChecked(F.parc) ? 'SIM' : 'NAO',
+    REGULARIZACAO_PENDEN_ADMINISTRATIVA_FLAG:      anyChecked(F.reg)  ? 'SIM' : 'NAO',
+    DEFICIT_ATUARIAL_FLAG:                          anyChecked(F.def)  ? 'SIM' : 'NAO',
+    CRITERIOS_ESTRUT_ESTABELECIDOS_FLAG:            anyChecked(F.org)  ? 'SIM' : 'NAO',
+    MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS_FLAG:     anyChecked(F.man)  ? 'SIM' : 'NAO',
+
+    // ——— ETAPAS 5–7 ———
+    COMPROMISSO_FIRMADO_ADESAO: $$('input[name="COMPROMISSOS[]"]:checked')
+      .map(i => i.value).join('; '),
+    PROVIDENCIA_NECESS_ADESAO: $$('input[name="PROVIDENCIAS[]"]:checked')
+      .map(i => i.value).join('; '),
+    CONDICAO_VIGENCIA: $$('input[name="CONDICOES[]"]:checked')
+      .map(i => i.value).join('; '),
+
+    // ——— Carimbos / metadados ———
+    MES: $('#MES')?.value || '',
+    DATA_TERMO_GERADO: $('#DATA_TERMO_GERADO')?.value || $('#DATA_SOLIC_GERADA')?.value || '',
+    HORA_TERMO_GERADO: $('#HORA_TERMO_GERADO')?.value || $('#HORA_SOLIC_GERADA')?.value || '',
+    ANO_TERMO_GERADO:  $('#ANO_TERMO_GERADO')?.value  || $('#ANO_SOLIC_GERADA')?.value  || '',
+  };
+
+  // anexos para o termo.js entender exatamente o que foi marcado
+  payload.ESFERA_COD     = ESFERA_COD;                 // '1.1.1' | '1.1.2' | ''
+  payload.SELECTED_CODES = Array.from(SELECTED_CODES); // ['4.1.1','4.2.3','5.1',...]
+  return payload;
   }
+
+
 
   // ======== Preview (sem PII na URL) ========
   function openTermoWithPayload(payload, autoFlag){
@@ -1917,5 +1974,21 @@
   const ignoreRestoreThisTab = !sessionStorage.getItem(TAB_FLAG);
   sessionStorage.setItem(TAB_FLAG, '1');
   restoreState({ ignore: ignoreRestoreThisTab });
+
+  // ==== Expor funções úteis para testes (apenas em dev) ====
+  try {
+    Object.assign(window, {
+      buildPayload,          // monta o payload que vai pra planilha/PDF
+      validateStep,          // validação por etapa (usa nos seus testes)
+      openTermoWithPayload,  // abre termo.html e injeta dados por postMessage
+      gerarBaixarPDF,        // (se quiser testar PDF com interceptador)
+      fetchJSON,             // útil se precisar debugar chamadas
+      fetchBinary            // idem (para o interceptador de PDF)
+    });
+    console.log('[DEV] Funções expostas no window: buildPayload, validateStep, openTermoWithPayload, gerarBaixarPDF.');
+  } catch (e) {
+    console.warn('Não foi possível expor funções de dev:', e);
+  }
+
 })();
 
