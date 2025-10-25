@@ -1284,6 +1284,14 @@
       $('#CNPJ_ENTE').value  = cnpjEnteMasked;
       $('#EMAIL_ENTE').value = data.EMAIL_ENTE || '';
 
+      /* —— 1.3/1.3.2 UG – NOME, CNPJ, E-MAIL e Órgão de Vinculação —— */
+      setUGFields({
+        nome:  (data.UG || data.UG_NOME || data.NOME_UG_RPPS || '').trim(),
+        cnpj:  (cnpjUg || '').trim(),
+        email: (data.EMAIL_UG || data.EMAIL_UG_RPPS || data.EMAIL_RPPS || '').trim(),
+        orgao: (data.UG_ORGAO_VINC || data.ORGAO_VINCULACAO || '').trim()
+      });
+
      // ====== [NOVO] 3.1 e 3.2 do CRP ======
     const elVencDate = document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP');
     const elTipoEmis = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP');
@@ -1588,6 +1596,7 @@
     UG: $('#UG').value.trim(),
     CNPJ_UG: digits($('#CNPJ_UG').value),
     EMAIL_UG: emailFinal('EMAIL_UG','EMAIL_REP_UG'),
+    ORGAO_VINCULACAO_UG: $('#ug_orgao_vinc')?.value || '',
 
     NOME_REP_UG: $('#NOME_REP_UG').value.trim(),
     CARGO_REP_UG: $('#CARGO_REP_UG').value.trim(),
@@ -1666,7 +1675,10 @@
     };
 
     // Abre a página de preview sem querystring (sem PII na URL)
-    const child = window.open('termo_solic_crp.html#preview', '_blank', 'noopener');
+    const isAdesao = /form_gera_termo_adesao_1\.html$/i.test(location.pathname);
+    const previewUrl = isAdesao ? 'termo.html#preview' : 'termo_solic_crp.html#preview';
+    const child = window.open(previewUrl, '_blank', 'noopener');
+
 
     // Envia os dados via postMessage (o termo.html deve escutar "message")
     // window.addEventListener('message', (ev) => { if(ev.data?.type==='TERMO_PREVIEW_DATA'){ ... } }, false);

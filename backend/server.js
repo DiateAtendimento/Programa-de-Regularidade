@@ -1826,7 +1826,7 @@ app.post('/api/gerar-termo', async (req, res) => {
     const sTermosSheet = await getOrCreateSheet('Termos_registrados', [
       'ENTE','UF','CNPJ_ENTE','EMAIL_ENTE',
       'NOME_REP_ENTE','CARGO_REP_ENTE','CPF_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
-      'UG','CNPJ_UG','EMAIL_UG',
+      'UG','CNPJ_UG','EMAIL_UG','ORGAO_VINCULACAO_UG',
       'NOME_REP_UG','CARGO_REP_UG','CPF_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
       'CRITERIOS_IRREGULARES','OUTRO_CRITERIO_COMPLEXO',
       'ADESAO_SEM_IRREGULARIDADES',
@@ -1842,8 +1842,9 @@ app.post('/api/gerar-termo', async (req, res) => {
       'IDEMP_KEY'
     ]);
     await sTermosSheet.loadHeaderRow();
-    await ensureSheetHasColumns(sTermosSheet, ['TEL_REP_ENTE','TEL_REP_UG','OUTRO_CRITERIO_COMPLEXO','IDEMP_KEY']);
-
+    await ensureSheetHasColumns(sTermosSheet, [
+      'TEL_REP_ENTE','TEL_REP_UG','OUTRO_CRITERIO_COMPLEXO','ORGAO_VINCULACAO_UG','IDEMP_KEY'
+    ]);
 
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
     const idemBody   = String(p.IDEMP_KEY || '').trim();
@@ -1874,7 +1875,6 @@ app.post('/api/gerar-termo', async (req, res) => {
           .map(s => s.trim())
           .filter(Boolean);
 
-
     const { DATA, HORA, ANO, MES } = nowBR();
 
     const emailEnteFinal = isEmail(p.EMAIL_ENTE) ? norm(p.EMAIL_ENTE)
@@ -1882,31 +1882,38 @@ app.post('/api/gerar-termo', async (req, res) => {
     const emailUgFinal   = isEmail(p.EMAIL_UG)   ? norm(p.EMAIL_UG)
                      : isEmail(p.EMAIL_REP_UG)   ? norm(p.EMAIL_REP_UG)   : '';
 
+    /* 🔎 LOG (recomendado): antes de gravar no Sheets */
+    if (DEBUG_PDF || LOG_LEVEL !== 'silent') {
+      console.info('[SHEETS][Termos_registrados] upsert', {
+        ENTE: p.ENTE, UF: p.UF,
+        UG: p.UG || p.ug_nome,
+        CNPJ_UG: p.CNPJ_UG,
+        EMAIL_UG: p.EMAIL_UG,
+        ORGAO_VINCULACAO_UG: p.ORGAO_VINCULACAO_UG,
+        PRAZO_ADICIONAL_FLAG: p.PRAZO_ADICIONAL_FLAG,
+        DATA_TERMO_GERADO: p.DATA_TERMO_GERADO,
+        IDEMP_KEY: idemKey
+      });
+    }
+
     /* ✅ ALTERAÇÃO: gravar CNPJ_* como texto (asSheetCNPJ) */
     await safeAddRow(sTermosSheet, sheetSanObject({
       ENTE: norm(p.ENTE), UF: norm(p.UF),
       CNPJ_ENTE: asSheetCNPJ(p.CNPJ_ENTE), EMAIL_ENTE: emailEnteFinal,
-
       NOME_REP_ENTE: norm(p.NOME_REP_ENTE),
       CARGO_REP_ENTE: norm(p.CARGO_REP_ENTE),
       CPF_REP_ENTE: digits(p.CPF_REP_ENTE),
       EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE),
-      /* NOVO */
       TEL_REP_ENTE: norm(p.TEL_REP_ENTE),
-
       UG: norm(p.UG), CNPJ_UG: asSheetCNPJ(p.CNPJ_UG), EMAIL_UG: emailUgFinal,
-
+      ORGAO_VINCULACAO_UG: norm(p.ORGAO_VINCULACAO_UG),
       NOME_REP_UG: norm(p.NOME_REP_UG),
       CARGO_REP_UG: norm(p.CARGO_REP_UG),
       CPF_REP_UG: digits(p.CPF_REP_UG),
       EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
-      /* NOVO */
       TEL_REP_UG: norm(p.TEL_REP_UG),
-
       CRITERIOS_IRREGULARES: criterios.join(', '),
-      /* NOVO */
       OUTRO_CRITERIO_COMPLEXO: norm(p.OUTRO_CRITERIO_COMPLEXO),
-
       ADESAO_SEM_IRREGULARIDADES: norm(p.ADESAO_SEM_IRREGULARIDADES),
       CELEBRACAO_TERMO_PARCELA_DEBITOS: norm(p.CELEBRACAO_TERMO_PARCELA_DEBITOS),
       REGULARIZACAO_PENDEN_ADMINISTRATIVA: norm(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA),
@@ -2298,6 +2305,28 @@ app.post('/api/termo-pdf', async (req, res) => {
   try {
     const p = validateOr400(res, schemaTermoPdf, req.body || {});
     if (!p) return;
+
+    /* ✅ FALLBACK DE DATA (dd/mm/aaaa) SE VIER VAZIA */
+    if (!p.DATA_TERMO_GERADO) {
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2,'0');
+      const mm = String(now.getMonth()+1).padStart(2,'0');
+      const yy = String(now.getFullYear());
+      p.DATA_TERMO_GERADO = `${dd}/${mm}/${yy}`;
+    }
+
+    /* 🔎 LOG ÚTIL PARA AUDITORIA DO PDF */
+    if (DEBUG_PDF) {
+      const miss = ['UG','EMAIL_UG','DATA_TERMO_GERADO','PRAZO_ADICIONAL_FLAG']
+        .filter(k => !p[k]);
+      console.info('[PDF] payload resumo', {
+        ENTE: p.ENTE, UF: p.UF,
+        UG: p.UG, EMAIL_UG: p.EMAIL_UG,
+        DATA_TERMO_GERADO: p.DATA_TERMO_GERADO,
+        miss
+      });
+    }
+
     await withPdfLimiter(async () => {
       try {
         const { buffer, filename } = await gerarPdfDoTemplateSimples({
@@ -2319,6 +2348,7 @@ app.post('/api/termo-pdf', async (req, res) => {
     if (!res.headersSent) res.status(500).json({ error: 'Falha ao gerar PDF' });
   }
 });
+
 
 // === /api/termo-solic-crp-pdf — usa exatamente frontend/termo_solic_crp.html ===
 app.post('/api/termo-solic-crp-pdf', async (req, res) => {
