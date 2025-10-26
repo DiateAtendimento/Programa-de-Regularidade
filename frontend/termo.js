@@ -176,13 +176,9 @@
         if (!caption) return;
 
         const ugName = String(p.UG || p.ug || '').trim();
-        const ente = String(p.ENTE || p.ente || '').trim();
-
         if (/institut/i.test(ugName)) {
-          // formato solicitado: "Representante legal do Instituto De Previdência do Município de [Nome do município]"
           caption.innerHTML = `<strong><span data-k="nome_rep_ug"></span></strong><br>Representante legal do Instituto De Previdência do Município de <span data-k="ente"></span>`;
         } else {
-          // fallback clássico
           caption.innerHTML = `<strong><span data-k="nome_rep_ug"></span></strong><br>Representante legal do <span data-k="ug"></span>`;
         }
       } catch (_) {}

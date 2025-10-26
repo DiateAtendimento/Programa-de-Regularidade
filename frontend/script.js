@@ -1314,33 +1314,30 @@
       }
 
       // === Função que atualiza a UI do tipo de emissão ===
-      function setTipoEmissaoUI(tipo){
-        const t = String(tipo || '').trim().toLowerCase();
-        const adm = /adm/i.test(t) || t === 'administrativa' || t === 'administrativo';
-        const jud = /jud/i.test(t) || t === 'judicial';
 
-        // radios antigos (se existirem)
+      function setTipoEmissaoUI(tipo){
+        const t = String(tipo || '').trim();
+        const adm = /adm/i.test(t) || /^administrativ/i.test(t);
+        const jud = /jud/i.test(t) || /^judicial/i.test(t);
+
+        // elements
+        const elTipoHidden = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP'); // hidden
+        const elTipoView   = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP_VIEW'); // select view
         const rAdm = document.getElementById('em_adm');
         const rJud = document.getElementById('em_jud');
 
-        // campo efetivo (hidden) e o select de visualização
-        const elTipoHidden = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP');
-        const elTipoView = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP_VIEW');
-
-        const val = adm ? 'Administrativa' : (jud ? 'Judicial' : (tipo || ''));
+        const val = adm ? 'Administrativa' : (jud ? 'Judicial' : (t || ''));
 
         if (elTipoHidden) elTipoHidden.value = val;
+        // atualiza também o select visível (mesmo que esteja disabled)
         if (elTipoView) {
-          // mesmo que esteja disabled, podemos definir o value para visualização
-          try { elTipoView.value = val; } catch (e) { /* noop */ }
+          try { elTipoView.value = val; } catch (_) {}
         }
-
         if (rAdm) rAdm.checked = !!adm;
         if (rJud) rJud.checked = !!jud;
       }
 
-      // === Trecho na função que preenche os dados após consulta CNPJ ===
-      // (substituir a inferência atual do tipo por esta versão mais robusta)
+      // Substituir a inferência atual (onde faz let tipo = ...) por este bloco:
       let tipo = (data.TIPO_EMISSAO_ULTIMO_CRP || '').trim();
       if (!tipo) {
         const djRaw =
@@ -1348,7 +1345,7 @@
           data.DEC_JUDICIAL         || data.CRP_DJ || '';
         const dj = _normYesNo(djRaw);
 
-        // considera presença de datas de validade/situação como indicador de emissão administrativa
+        // considerar presença de datas de validade/situação como indicativo de emissão administrativa
         const hasValidade =
           !!(data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY ||
             data.CRP_DATA_SITUACAO_ISO || data.CRP_DATA_SITUACAO_DMY ||
