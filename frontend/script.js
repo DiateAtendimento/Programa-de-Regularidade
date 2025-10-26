@@ -1337,7 +1337,7 @@
         if (rJud) rJud.checked = !!jud;
       }
 
-      // Substituir a inferência atual (onde faz let tipo = ...) por este bloco:
+      // ====== Ajuste na inferência em after-lookup ======
       let tipo = (data.TIPO_EMISSAO_ULTIMO_CRP || '').trim();
       if (!tipo) {
         const djRaw =
@@ -1345,19 +1345,20 @@
           data.DEC_JUDICIAL         || data.CRP_DJ || '';
         const dj = _normYesNo(djRaw);
 
-        // considerar presença de datas de validade/situação como indicativo de emissão administrativa
         const hasValidade =
           !!(data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY ||
             data.CRP_DATA_SITUACAO_ISO || data.CRP_DATA_SITUACAO_DMY ||
-            data.DATA_VENCIMENTO_ULTIMO_CRP || (snapshotBase && snapshotBase.DATA_VENCIMENTO_ULTIMO_CRP));
+            data.DATA_VENCIMENTO_ULTIMO_CRP || snapshotBase?.DATA_VENCIMENTO_ULTIMO_CRP);
 
         if (dj === 'SIM') tipo = 'Judicial';
         else if (dj === 'NAO') tipo = 'Administrativa';
         else if (hasValidade) tipo = 'Administrativa';
         else tipo = '';
       }
-      setTipoEmissaoUI(tipo);
-
+      // aqui chamamos com force=true pois este preenchimento vem da consulta
+      setTipoEmissaoUI(tipo, { force: true });
+      // após preencher automaticamente, resetamos a flag de override (permitindo o usuário editar em seguida)
+      window.__user_changed_tipo_emissao = false;
       // (mantém o restante)
       autoselectEsferaByEnte(data.ENTE);
 
@@ -1574,8 +1575,9 @@
   };
 
   // --- CRP (3.1/3.2): nomes finais + flags SIM/NAO ---
-  const dataCRP  = (document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP')?.value || '');
-  const tipoCRP  = (document.getElementById('TIPO_EMISSAO_ULTIMO_CRP')?.value || '');
+  // por esta versão (usa fallback snapshotBase caso haja)
+    const dataCRP  = (document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP')?.value
+                      || (snapshotBase && snapshotBase.DATA_VENCIMENTO_ULTIMO_CRP) || '');
   const prazoAdi = (document.getElementById('PRAZO_ADICIONAL_SOLICITADO')?.checked ? 'SIM' : 'NAO');
 
   // --- Flags “finalidades” da Etapa 4 (para espelho SIM/NAO) ---
