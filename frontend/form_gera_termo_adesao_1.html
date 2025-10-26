@@ -317,26 +317,24 @@
               <small class="text-muted">Pré-preenchido pela consulta; pode ser ajustado se necessário.</small>
             </div>
 
-            <!-- 3.2 Tipo de emissão do último CRP (AUTO) -->
+            <!-- 3.2 Tipo de emissão do último CRP (visível e editável) -->
             <div class="mb-3">
               <div class="sub-title">3.2 Tipo de emissão do último CRP</div>
               <div class="row g-2">
                 <div class="col-12 col-sm-6 col-md-5">
-                  <!-- Select travado para exibir; valor real vai em um hidden -->
+                  <!-- Select visível (AGORA editável pelo usuário) -->
                   <select
                     class="form-select"
                     id="TIPO_EMISSAO_ULTIMO_CRP_VIEW"
-                    aria-label="Tipo de emissão do último CRP (definido automaticamente)"
-                    disabled>
+                    aria-label="Tipo de emissão do último CRP (definido automaticamente)">
                     <option value="">(definido automaticamente)</option>
                     <option value="Administrativa">Administrativa</option>
                     <option value="Judicial">Judicial</option>
                   </select>
                   <!-- Campo efetivamente enviado/salvo -->
                   <input type="hidden" id="TIPO_EMISSAO_ULTIMO_CRP" name="TIPO_EMISSAO_ULTIMO_CRP" />
-                  <!-- Gancho para o script preencher com base em CRP.DATA_VALIDADE -->
                   <small class="text-muted d-block mt-1">
-                    Definido automaticamente a partir do último CRP (Cadprev).
+                    Definido automaticamente a partir do último CRP (Cadprev). Pode ser editado, se necessário.
                   </small>
                 </div>
               </div>
