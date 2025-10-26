@@ -138,13 +138,12 @@
       });
     })();
 
-    // 3.4 Solicitação de Prazo Adicional — flag + justificativa
+    // 3.4 Solicitação de Prazo Adicional — apenas exibe a FLAG (SIM / NÃO / Não informado)
     (function applyPrazoAdicional(){
       const elFlag = document.querySelector('[data-k="prazo_adicional_flag"]');
-      const elJust = document.querySelector('[data-k="prazo_adicional_just"]');
-      if (!elFlag && !elJust) return;
+      if (!elFlag) return;
 
-      // várias chaves possíveis
+      // várias chaves possíveis para a flag
       const rawFlag = String(
         p.PRAZO_ADICIONAL_FLAG ||
         p.PRAZO_ADICIONAL ||
@@ -159,24 +158,8 @@
       else if (rawFlag === 'NAO' || rawFlag === 'N' || rawFlag === 'NÃO' || rawFlag === 'FALSE' || rawFlag === '0') flagOut = 'NÃO';
       else flagOut = (rawFlag ? rawFlag : '');
 
-      if (elFlag) elFlag.textContent = flagOut || (flagOut === '' ? 'Não informado' : flagOut);
-
-      // justificativa: aceitar múltiplas chaves no payload
-      const just = (p.PRAZO_ADICIONAL_JUST || p.prazo_adicional_just || p.PRAZO_ADICIONAL_JUSTIFICATIVA || p.prazo_adicional_justificativa || '').trim();
-
-      if (elJust) {
-        // Regra de apresentação:
-        // - Se houver justificativa -> exibe justificativa
-        // - Se não houver justificativa e flag === 'SIM' -> exibe em branco (evita "Não informado" junto com SIM)
-        // - Se não houver justificativa e flag !== 'SIM' -> exibe "Não informado"
-        if (just) {
-          elJust.textContent = just;
-        } else if (flagOut === 'SIM') {
-          elJust.textContent = '';
-        } else {
-          elJust.innerHTML = NOT_INFORMED;
-        }
-      }
+      // Se flag estiver vazia → mostramos "Não informado"; senão mostramos SIM/NÃO
+      elFlag.textContent = flagOut || 'Não informado';
     })();
 
     // ===== 1.1 – Esfera de Governo =====
@@ -305,8 +288,7 @@
         ESFERA_COD: q.get('esfera_cod') || '',
 
         // prazo adicional (fallbacks)
-        PRAZO_ADICIONAL_FLAG: q.get('prazo_adicional_flag') || '',
-        
+        PRAZO_ADICIONAL_FLAG: q.get('prazo_adicional_flag') || ''
       };
       try { renderizarTermo(payload); } catch (e) { console.error('[TERMO_QS] render error:', e); }
     }
