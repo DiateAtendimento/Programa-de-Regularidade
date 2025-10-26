@@ -1575,9 +1575,8 @@
   };
 
   // --- CRP (3.1/3.2): nomes finais + flags SIM/NAO ---
-  // por esta versão (usa fallback snapshotBase caso haja)
-    const dataCRP  = (document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP')?.value
-                      || (snapshotBase && snapshotBase.DATA_VENCIMENTO_ULTIMO_CRP) || '');
+  const tipoCRP  = (document.getElementById('TIPO_EMISSAO_ULTIMO_CRP')?.value
+                    || document.getElementById('TIPO_EMISSAO_ULTIMO_CRP_VIEW')?.value || '');
   const prazoAdi = (document.getElementById('PRAZO_ADICIONAL_SOLICITADO')?.checked ? 'SIM' : 'NAO');
 
   // --- Flags “finalidades” da Etapa 4 (para espelho SIM/NAO) ---
