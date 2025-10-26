@@ -1302,9 +1302,24 @@
         orgao: (data.UG_ORGAO_VINC || data.ORGAO_VINCULACAO || '').trim()
       });
 
-      // ====== [AJUSTE] 3.1 e 3.2 do CRP ======
-      const elVencDate = document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP');
-      const elTipoEmis = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP');
+      (() => {
+        try {
+          const elVencDate = document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP');
+          const vencIso = data.CRP_DATA_VALIDADE_ISO
+                      || data.CRP_DATA_SITUACAO_ISO
+                      || data.CRP_DATA_VALIDADE_DMY
+                      || data.CRP_DATA_SITUACAO_DMY
+                      || data.DATA_VENCIMENTO_ULTIMO_CRP
+                      || snapshotBase?.DATA_VENCIMENTO_ULTIMO_CRP
+                      || '';
+          if (elVencDate && vencIso) {
+            // toISODate já existe no arquivo e converte dd/mm/aaaa -> yyyy-mm-dd
+            const iso = toISODate(vencIso) || vencIso;
+            // só escreve se o campo estiver vazio (não sobrescreve edição do usuário)
+            if (!elVencDate.value) elVencDate.value = iso;
+          }
+        } catch (_) {}
+      })();
 
       function _normYesNo(v){
         const s = String(v||'').trim().toLowerCase();
@@ -1313,29 +1328,50 @@
         return '';
       }
 
-      // === Função que atualiza a UI do tipo de emissão ===
-
-      function setTipoEmissaoUI(tipo){
+      function setTipoEmissaoUI(tipo, { force = false } = {}) {
         const t = String(tipo || '').trim();
         const adm = /adm/i.test(t) || /^administrativ/i.test(t);
         const jud = /jud/i.test(t) || /^judicial/i.test(t);
 
-        // elements
         const elTipoHidden = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP'); // hidden
-        const elTipoView   = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP_VIEW'); // select view
+        const elTipoView   = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP_VIEW'); // select visível
         const rAdm = document.getElementById('em_adm');
         const rJud = document.getElementById('em_jud');
+
+        // Se o usuário já alterou manualmente, não sobrescrever, salvo quando force===true
+        if (!force && window.__user_changed_tipo_emissao) return;
 
         const val = adm ? 'Administrativa' : (jud ? 'Judicial' : (t || ''));
 
         if (elTipoHidden) elTipoHidden.value = val;
-        // atualiza também o select visível (mesmo que esteja disabled)
         if (elTipoView) {
           try { elTipoView.value = val; } catch (_) {}
         }
         if (rAdm) rAdm.checked = !!adm;
         if (rJud) rJud.checked = !!jud;
       }
+
+      // Wiring: espelhar mudanças do select/radios no hidden e marcar override do usuário
+      (function wireTipoEmissaoMirrorOnce(){
+        if (window.__wiredTipoCRP__) return;
+        window.__wiredTipoCRP__ = true;
+
+        const rAdm = document.getElementById('em_adm');
+        const rJud = document.getElementById('em_jud');
+        const elTipoView = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP_VIEW');
+        const elTipoHidden = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP');
+
+        const markUserOverride = () => { window.__user_changed_tipo_emissao = true; };
+
+        if (rAdm) rAdm.addEventListener('change', () => { if (rAdm.checked) { setTipoEmissaoUI('Administrativa', { force: true }); markUserOverride(); }});
+        if (rJud) rJud.addEventListener('change', () => { if (rJud.checked) { setTipoEmissaoUI('Judicial', { force: true }); markUserOverride(); }});
+        if (elTipoView) elTipoView.addEventListener('change', () => {
+          const v = elTipoView.value || '';
+          if (elTipoHidden) elTipoHidden.value = v;
+          setTipoEmissaoUI(v, { force: true });
+          markUserOverride();
+        });
+      })();
 
       // ====== Ajuste na inferência em after-lookup ======
       let tipo = (data.TIPO_EMISSAO_ULTIMO_CRP || '').trim();
@@ -1361,7 +1397,6 @@
       window.__user_changed_tipo_emissao = false;
       // (mantém o restante)
       autoselectEsferaByEnte(data.ENTE);
-
 
       cnpjOK = true;
       editedFields.clear();
@@ -1573,6 +1608,9 @@
     });
     return out;
   };
+
+  const dataCRP  = (document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP')?.value
+                  || (snapshotBase && snapshotBase.DATA_VENCIMENTO_ULTIMO_CRP) || '');
 
   // --- CRP (3.1/3.2): nomes finais + flags SIM/NAO ---
   const tipoCRP  = (document.getElementById('TIPO_EMISSAO_ULTIMO_CRP')?.value
