@@ -22,6 +22,11 @@
     return s; // se já vier dd/mm/aaaa, mantém
   };
 
+  // data de hoje em pt-BR (fuso São Paulo)
+  const todayBR = () =>
+  new Date().toLocaleDateString('pt-BR', { timeZone:'America/Sao_Paulo' });
+
+
   const setTextAll = (k, v) => {
     const text = (v == null || String(v).trim() === '') ? '' : v;
     document.querySelectorAll(`[data-k="${k}"]`).forEach(el => el.textContent = text);
@@ -63,12 +68,28 @@
     setTextAll('cpf_rep_ug',   fmtCPF(p.CPF_REP_UG || ''));
     setTextAll('email_rep_ug', p.EMAIL_REP_UG || '');
 
-    // Data do termo (registro)
-    setTextAll('data_termo', fmtDataBR(p.DATA_TERMO_GERADO || ''));
+    // Data do termo (registro) — com fallback para hoje
+    const dataTermo = p.DATA_TERMO_GERADO ? fmtDataBR(p.DATA_TERMO_GERADO) : todayBR();
+    setTextAll('data_termo', dataTermo);
 
-    // ===== Etapa 3 – CRP (campos diretos, com compat) =====
-    setTextAll('crp_venc', fmtDataBR(p.DATA_VENCIMENTO_ULTIMO_CRP || p.crp_venc || ''));
-    setTextAll('crp_tipo', (p.TIPO_EMISSAO_ULTIMO_CRP || p.crp_tipo || '').trim());
+    // 3.1 Data de vencimento do último CRP (preferindo DATA_SITUACAO da aba CRP)
+    const crpVenc =
+      p.CRP_DATA_SITUACAO_ISO || p.CRP_DATA_SITUACAO_DMY || p.CRP_DATA_SITUACAO ||
+      p.DATA_SITUACAO_ISO     || p.DATA_SITUACAO         || p.DATA_SUTUACAO ||
+      p.DATA_VENCIMENTO_ULTIMO_CRP ||
+      p.CRP_DATA_VALIDADE_ISO || p.CRP_DATA_VALIDADE_DMY || '';
+    setTextAll('crp_venc', fmtDataBR(crpVenc));
+
+    // 3.2 Tipo de emissão do último CRP (Sim→Judicial / Não→Administrativa)
+    let crpTipo = (p.TIPO_EMISSAO_ULTIMO_CRP || p.crp_tipo || '').trim();
+    if (!crpTipo) {
+      const raw = String(p.CRP_DECISAO_JUDICIAL || p.DECISAO_JUDICIAL || '').toLowerCase();
+      if (raw.includes('sim')) crpTipo = 'Judicial';
+      else if (raw.includes('nao') || raw.includes('não')) crpTipo = 'Administrativa';
+    }
+    setTextAll('crp_tipo', crpTipo);
+
+
     (function applyPrazoAdicional(){
       const el = document.querySelector('[data-k="prazo_adicional_flag"]');
       if (!el) return;
@@ -140,27 +161,6 @@
       });
     })();
 
-    // ===== Etapa 3.5 – Adesão sem irregularidades =====
-    (function(){
-      const box = document.getElementById('blk-3-2-adesao');
-      const ul  = document.getElementById('finalidades-3-2');
-      if (!box || !ul) return;
-
-      const flag = String(p.ADESAO_SEM_IRREGULARIDADES || '').trim().toUpperCase();
-      const isYes = (flag === 'SIM' || flag === 'TRUE' || flag === '1' || flag === 'ON' || flag === 'X');
-
-      if (!isYes) {
-        ul.innerHTML = `<li>${NOT_INFORMED}</li>`;
-        return;
-      }
-
-      box.style.removeProperty('display');
-      ul.innerHTML = `
-        <li>
-          O RPPS <strong>não apresenta, atualmente, irregularidades</strong> nos critérios do extrato previdenciário,
-          mas necessita de prazo adicional para:
-        </li>`;
-    })();
 
     // ===== Util p/ pegar só códigos de uma seção a partir de p.SELECTED_CODES =====
     const wantCodes = (prefix) => {

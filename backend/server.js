@@ -1896,6 +1896,19 @@ app.post('/api/gerar-termo', async (req, res) => {
       });
     }
 
+    if (LOG_LEVEL !== 'silent') {
+      console.log('[SHEETS][Termos_registrados] upsert', {
+        ENTE: p.ENTE, UF: p.UF, UG: p.UG,
+        CNPJ_UG: asSheetCNPJ(p.CNPJ_UG),
+        EMAIL_UG: emailUgFinal,
+        ORGAO_VINCULACAO_UG: norm(p.ORGAO_VINCULACAO_UG),
+        PRAZO_ADICIONAL_FLAG: norm(p.PRAZO_ADICIONAL_FLAG),
+        DATA_TERMO_GERADO: DATA,
+        IDEMP_KEY: idemKey
+      });
+    }
+
+
     /* ✅ ALTERAÇÃO: gravar CNPJ_* como texto (asSheetCNPJ) */
     await safeAddRow(sTermosSheet, sheetSanObject({
       ENTE: norm(p.ENTE), UF: norm(p.UF),
@@ -2306,26 +2319,31 @@ app.post('/api/termo-pdf', async (req, res) => {
     const p = validateOr400(res, schemaTermoPdf, req.body || {});
     if (!p) return;
 
-    /* ✅ FALLBACK DE DATA (dd/mm/aaaa) SE VIER VAZIA */
-    if (!p.DATA_TERMO_GERADO) {
-      const now = new Date();
-      const dd = String(now.getDate()).padStart(2,'0');
-      const mm = String(now.getMonth()+1).padStart(2,'0');
-      const yy = String(now.getFullYear());
-      p.DATA_TERMO_GERADO = `${dd}/${mm}/${yy}`;
-    }
+    // ✅ Fallbacks e resumo de log
+    const miss = [];
+    try {
+      // data do termo (rodapé de assinaturas)
+      if (!p.DATA_TERMO_GERADO) {
+        const { DATA } = nowBR();
+        p.DATA_TERMO_GERADO = DATA;
+        miss.push('DATA_TERMO_GERADO');
+      }
+      // tipo de emissão (3.2) — se vier só a decisão judicial
+      if (!p.TIPO_EMISSAO_ULTIMO_CRP) {
+        const dj = String(p.CRP_DECISAO_JUDICIAL || p.DECISAO_JUDICIAL || '').toLowerCase();
+        if (dj.includes('sim'))      p.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
+        else if (dj.includes('nao') || dj.includes('não')) p.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
+      }
 
-    /* 🔎 LOG ÚTIL PARA AUDITORIA DO PDF */
-    if (DEBUG_PDF) {
-      const miss = ['UG','EMAIL_UG','DATA_TERMO_GERADO','PRAZO_ADICIONAL_FLAG']
-        .filter(k => !p[k]);
-      console.info('[PDF] payload resumo', {
-        ENTE: p.ENTE, UF: p.UF,
-        UG: p.UG, EMAIL_UG: p.EMAIL_UG,
-        DATA_TERMO_GERADO: p.DATA_TERMO_GERADO,
-        miss
-      });
-    }
+      // log resumido (ajuda a depurar PDFs “vazios”)
+      const resumo = {
+        ENTE: p.ENTE, UF: p.UF, UG: p.UG, EMAIL_UG: p.EMAIL_UG,
+        '3.1_venc': p.DATA_VENCIMENTO_ULTIMO_CRP || p.CRP_DATA_SITUACAO || '',
+        '3.2_tipo': p.TIPO_EMISSAO_ULTIMO_CRP || '',
+        DATA_TERMO_GERADO: p.DATA_TERMO_GERADO
+      };
+      if (LOG_LEVEL !== 'silent') console.log('[PDF] payload resumo', resumo, 'miss:', miss);
+    } catch (_) {}
 
     await withPdfLimiter(async () => {
       try {

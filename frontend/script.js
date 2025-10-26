@@ -203,6 +203,16 @@
   const fmtBR = d => d.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'});
   const fmtHR = d => d.toLocaleTimeString('pt-BR',{hour12:false,timeZone:'America/Sao_Paulo'});
   const rmAcc = s => String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+  
+  function toISODate(s){
+  const t = String(s||'').trim();
+  if (!t) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0,10);
+  const m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
+  }
+
+  
   /* ========= Regime / UG helpers (compat) ========= */
   function getRPPS_SITUACAO(){
     return document.querySelector('input[name="rpps_situacao"]:checked')?.value || 'RPPS';
@@ -1292,29 +1302,63 @@
         orgao: (data.UG_ORGAO_VINC || data.ORGAO_VINCULACAO || '').trim()
       });
 
-     // ====== [NOVO] 3.1 e 3.2 do CRP ======
-    const elVencDate = document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP');
-    const elTipoEmis = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP');
+      // ====== [AJUSTE] 3.1 e 3.2 do CRP ======
+      const elVencDate = document.getElementById('DATA_VENCIMENTO_ULTIMO_CRP');
+      const elTipoEmis = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP');
 
-    // 1) Data de vencimento
-    const vencISO =
-      data.DATA_VENCIMENTO_ULTIMO_CRP ||            // da planilha (sua nova coluna)
-      data.CRP_DATA_VALIDADE_ISO ||                 // fallback API
-      (snapshotBase?.DATA_VENCIMENTO_ULTIMO_CRP || '');
-    if (elVencDate) elVencDate.value = (vencISO || '').slice(0,10);
+      function _normYesNo(v){
+        const s = String(v||'').trim().toLowerCase();
+        if (['sim','s','yes','y','true','1'].includes(s)) return 'SIM';
+        if (['nao','não','n','no','false','0'].includes(s)) return 'NAO';
+        return '';
+      }
+      function setTipoEmissaoUI(tipo){
+        const t = String(tipo||'').trim().toLowerCase();
+        const adm = /adm/i.test(t) || t === 'administrativa' || t === 'administrativo';
+        const jud = /jud/i.test(t) || t === 'judicial';
+        const rAdm = document.getElementById('em_adm');
+        const rJud = document.getElementById('em_jud');
 
-    // 2) Tipo de emissão
-    let tipo = (data.TIPO_EMISSAO_ULTIMO_CRP || '').trim();
-    if (!tipo) {
-      // fallback: inferir do campo CRP_DECISAO_JUDICIAL (sim/nao)
-      const dj = (String(data.CRP_DECISAO_JUDICIAL || '')).trim().toLowerCase();
-      if (dj === 'sim') tipo = 'Judicial';
-      else if (dj === 'nao') tipo = 'Administrativa';
-    }
-    if (elTipoEmis) elTipoEmis.value = tipo;
+        if (elTipoEmis) elTipoEmis.value = adm ? 'Administrativa' : (jud ? 'Judicial' : (tipo||''));
+        if (rAdm) rAdm.checked = !!adm;
+        if (rJud) rJud.checked = !!jud;
+      }
+      // (espelha mudanças do usuário / UI)
+      (function wireTipoEmissaoMirrorOnce(){
+        if (window.__wiredTipoCRP__) return;
+        window.__wiredTipoCRP__ = true;
 
-    // (mantém o restante)
-    autoselectEsferaByEnte(data.ENTE);
+        const rAdm = document.getElementById('em_adm');
+        const rJud = document.getElementById('em_jud');
+        rAdm?.addEventListener('change', ()=> { if (rAdm.checked) setTipoEmissaoUI('Administrativa'); });
+        rJud?.addEventListener('change', ()=> { if (rJud.checked) setTipoEmissaoUI('Judicial'); });
+        elTipoEmis?.addEventListener('input', ()=> setTipoEmissaoUI(elTipoEmis.value));
+      })();
+
+      // 3.1 Data de vencimento do último CRP
+      // 👉 preferir DATA_SITUACAO da aba CRP; manter fallbacks
+      const vencISO =
+        data.CRP_DATA_SITUACAO_ISO || data.CRP_DATA_SITUACAO_DMY || data.CRP_DATA_SITUACAO ||
+        data.DATA_SITUACAO_ISO     || data.DATA_SITUACAO        || data.DATA_SUTUACAO ||
+        data.DATA_VENCIMENTO_ULTIMO_CRP ||
+        data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || (snapshotBase?.DATA_VENCIMENTO_ULTIMO_CRP || '');
+      if (elVencDate) elVencDate.value = toISODate(vencISO);
+
+      // 3.2 Tipo de emissão do último CRP
+      // 👉 “Sim” (decisão judicial) → Judicial | “Não” → Administrativa | ainda editável
+      let tipo = (data.TIPO_EMISSAO_ULTIMO_CRP || '').trim();
+      if (!tipo) {
+        const djRaw =
+          data.CRP_DECISAO_JUDICIAL || data.DECISAO_JUDICIAL ||
+          data.DEC_JUDICIAL         || data.CRP_DJ || '';
+        const dj = _normYesNo(djRaw);
+        if (dj === 'SIM') tipo = 'Judicial';
+        else if (dj === 'NAO') tipo = 'Administrativa';
+      }
+      setTipoEmissaoUI(tipo);
+
+      // (mantém o restante)
+      autoselectEsferaByEnte(data.ENTE);
 
 
       cnpjOK = true;
