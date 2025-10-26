@@ -1312,48 +1312,52 @@
         if (['nao','não','n','no','false','0'].includes(s)) return 'NAO';
         return '';
       }
+
+      // === Função que atualiza a UI do tipo de emissão ===
       function setTipoEmissaoUI(tipo){
-        const t = String(tipo||'').trim().toLowerCase();
+        const t = String(tipo || '').trim().toLowerCase();
         const adm = /adm/i.test(t) || t === 'administrativa' || t === 'administrativo';
         const jud = /jud/i.test(t) || t === 'judicial';
+
+        // radios antigos (se existirem)
         const rAdm = document.getElementById('em_adm');
         const rJud = document.getElementById('em_jud');
 
-        if (elTipoEmis) elTipoEmis.value = adm ? 'Administrativa' : (jud ? 'Judicial' : (tipo||''));
+        // campo efetivo (hidden) e o select de visualização
+        const elTipoHidden = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP');
+        const elTipoView = document.getElementById('TIPO_EMISSAO_ULTIMO_CRP_VIEW');
+
+        const val = adm ? 'Administrativa' : (jud ? 'Judicial' : (tipo || ''));
+
+        if (elTipoHidden) elTipoHidden.value = val;
+        if (elTipoView) {
+          // mesmo que esteja disabled, podemos definir o value para visualização
+          try { elTipoView.value = val; } catch (e) { /* noop */ }
+        }
+
         if (rAdm) rAdm.checked = !!adm;
         if (rJud) rJud.checked = !!jud;
       }
-      // (espelha mudanças do usuário / UI)
-      (function wireTipoEmissaoMirrorOnce(){
-        if (window.__wiredTipoCRP__) return;
-        window.__wiredTipoCRP__ = true;
 
-        const rAdm = document.getElementById('em_adm');
-        const rJud = document.getElementById('em_jud');
-        rAdm?.addEventListener('change', ()=> { if (rAdm.checked) setTipoEmissaoUI('Administrativa'); });
-        rJud?.addEventListener('change', ()=> { if (rJud.checked) setTipoEmissaoUI('Judicial'); });
-        elTipoEmis?.addEventListener('input', ()=> setTipoEmissaoUI(elTipoEmis.value));
-      })();
-
-      // 3.1 Data de vencimento do último CRP
-      // 👉 preferir DATA_SITUACAO da aba CRP; manter fallbacks
-      const vencISO =
-        data.CRP_DATA_SITUACAO_ISO || data.CRP_DATA_SITUACAO_DMY || data.CRP_DATA_SITUACAO ||
-        data.DATA_SITUACAO_ISO     || data.DATA_SITUACAO        || data.DATA_SUTUACAO ||
-        data.DATA_VENCIMENTO_ULTIMO_CRP ||
-        data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY || (snapshotBase?.DATA_VENCIMENTO_ULTIMO_CRP || '');
-      if (elVencDate) elVencDate.value = toISODate(vencISO);
-
-      // 3.2 Tipo de emissão do último CRP
-      // 👉 “Sim” (decisão judicial) → Judicial | “Não” → Administrativa | ainda editável
+      // === Trecho na função que preenche os dados após consulta CNPJ ===
+      // (substituir a inferência atual do tipo por esta versão mais robusta)
       let tipo = (data.TIPO_EMISSAO_ULTIMO_CRP || '').trim();
       if (!tipo) {
         const djRaw =
           data.CRP_DECISAO_JUDICIAL || data.DECISAO_JUDICIAL ||
           data.DEC_JUDICIAL         || data.CRP_DJ || '';
         const dj = _normYesNo(djRaw);
+
+        // considera presença de datas de validade/situação como indicador de emissão administrativa
+        const hasValidade =
+          !!(data.CRP_DATA_VALIDADE_ISO || data.CRP_DATA_VALIDADE_DMY ||
+            data.CRP_DATA_SITUACAO_ISO || data.CRP_DATA_SITUACAO_DMY ||
+            data.DATA_VENCIMENTO_ULTIMO_CRP || (snapshotBase && snapshotBase.DATA_VENCIMENTO_ULTIMO_CRP));
+
         if (dj === 'SIM') tipo = 'Judicial';
         else if (dj === 'NAO') tipo = 'Administrativa';
+        else if (hasValidade) tipo = 'Administrativa';
+        else tipo = '';
       }
       setTipoEmissaoUI(tipo);
 

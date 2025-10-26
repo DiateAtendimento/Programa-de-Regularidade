@@ -95,14 +95,20 @@
       p.CRP_DATA_VALIDADE_ISO || p.CRP_DATA_VALIDADE_DMY || '';
     setTextAll('crp_venc', crpVenc ? fmtDataBR(crpVenc) : '');
 
-    // 3.2 Tipo de emissão do último CRP (Sim→Judicial / Não→Administrativa)
+    // 3.2 Tipo de emissão do último CRP (inferência robusta)
     let crpTipo = (p.TIPO_EMISSAO_ULTIMO_CRP || p.TIPO_EMISSAO || p.crp_tipo || '').trim();
     if (!crpTipo) {
       const raw = String(p.CRP_DECISAO_JUDICIAL || p.DECISAO_JUDICIAL || p.DEC_JUDICIAL || p.CRP_DJ || '').toLowerCase();
+      const hasValidade =
+        !!(p.CRP_DATA_VALIDADE_ISO || p.CRP_DATA_VALIDADE_DMY ||
+           p.CRP_DATA_SITUACAO_ISO || p.CRP_DATA_SITUACAO_DMY ||
+           p.DATA_VENCIMENTO_ULTIMO_CRP);
+
       if (raw.includes('sim') || raw.includes('s')) crpTipo = 'Judicial';
       else if (raw.includes('nao') || raw.includes('não') || raw.includes('n')) crpTipo = 'Administrativa';
+      else if (hasValidade) crpTipo = 'Administrativa';
       else {
-        // também checar flags booleanas que possam existir
+        // fallback para flags booleanas (compat)
         if (p.em_jud === true || String(p.em_jud) === 'true') crpTipo = 'Judicial';
         else if (p.em_adm === true || String(p.em_adm) === 'true') crpTipo = 'Administrativa';
       }
@@ -143,7 +149,6 @@
       const elFlag = document.querySelector('[data-k="prazo_adicional_flag"]');
       if (!elFlag) return;
 
-      // várias chaves possíveis para a flag
       const rawFlag = String(
         p.PRAZO_ADICIONAL_FLAG ||
         p.PRAZO_ADICIONAL ||
@@ -158,8 +163,29 @@
       else if (rawFlag === 'NAO' || rawFlag === 'N' || rawFlag === 'NÃO' || rawFlag === 'FALSE' || rawFlag === '0') flagOut = 'NÃO';
       else flagOut = (rawFlag ? rawFlag : '');
 
-      // Se flag estiver vazia → mostramos "Não informado"; senão mostramos SIM/NÃO
       elFlag.textContent = flagOut || 'Não informado';
+    })();
+
+    // Ajuste da legenda da segunda assinatura (UG)
+    (function adjustSecondSignatureCaption(){
+      try {
+        const blocks = Array.from(document.querySelectorAll('.signature-block'));
+        if (!blocks || blocks.length < 2) return;
+        const second = blocks[1];
+        const caption = second.querySelector('.signature-caption');
+        if (!caption) return;
+
+        const ugName = String(p.UG || p.ug || '').trim();
+        const ente = String(p.ENTE || p.ente || '').trim();
+
+        if (/institut/i.test(ugName)) {
+          // formato solicitado: "Representante legal do Instituto De Previdência do Município de [Nome do município]"
+          caption.innerHTML = `<strong><span data-k="nome_rep_ug"></span></strong><br>Representante legal do Instituto De Previdência do Município de <span data-k="ente"></span>`;
+        } else {
+          // fallback clássico
+          caption.innerHTML = `<strong><span data-k="nome_rep_ug"></span></strong><br>Representante legal do <span data-k="ug"></span>`;
+        }
+      } catch (_) {}
     })();
 
     // ===== 1.1 – Esfera de Governo =====
@@ -167,7 +193,6 @@
       const list = document.getElementById('opt-1-1');
       if (!list) return;
 
-      // preferência: p.ESFERA_COD; fallback heurístico textual
       let esferaCod = String(p.ESFERA_COD || p.ESFERA || '').trim();
       if (!esferaCod) {
         let esfera = '';
@@ -185,7 +210,6 @@
       const items = [...list.querySelectorAll('li')];
       items.forEach(li => { if (li.getAttribute('data-code') !== esferaCod) li.remove(); });
 
-      // legenda da assinatura
       const sig = document.getElementById('sig-cap-ente');
       if (sig) {
         sig.innerHTML = (esferaCod === '1.1.2')
@@ -194,13 +218,13 @@
       }
     })();
 
-    // ===== Util p/ pegar só códigos de uma seção a partir de p.SELECTED_CODES =====
+    // util para códigos
     const wantCodes = (prefix) => {
       const src = Array.isArray(p.SELECTED_CODES) ? p.SELECTED_CODES : (String(p.SELECTED_CODES || '') ? String(p.SELECTED_CODES).split(',').map(s=>s.trim()).filter(Boolean) : []);
       return src.filter(c => String(c || '').startsWith(prefix));
     };
 
-    // ===== Etapa 4 – FINALIDADES (preferindo SELECTED_CODES) =====
+    // Finalidades / Compromissos / Providências / Condições
     filterBy('opt-4-1', wantCodes('4.1'));
     filterBy('opt-4-2', wantCodes('4.2'));
     filterBy('opt-4-3', wantCodes('4.3'));
@@ -208,20 +232,15 @@
     filterBy('opt-4-5', wantCodes('4.5'));
     filterBy('opt-4-6', wantCodes('4.6'));
 
-    // ===== Etapa 5 – Compromissos (5.1 a 5.8) =====
     filterBy('opt-5', wantCodes('5.'));
-
-    // ===== Etapa 6 – Providências (6.1/6.2) =====
     filterBy('opt-6', wantCodes('6.'));
-
-    // ===== Etapa 7 – Condições (7.1–7.4) =====
     filterBy('opt-7', wantCodes('7.'));
 
     // re-hidrata spans usados nas assinaturas (garantia)
     setTextAll('ente', p.ENTE || p.ente || '');
     setTextAll('uf',   p.UF   || p.uf   || '');
 
-    // 🔔 sinaliza “pronto para imprimir”
+    // sinaliza “pronto para imprimir”
     try {
       if (!window.__TERMO_READY_FIRED__) {
         window.__TERMO_READY_FIRED__ = true;
@@ -236,7 +255,7 @@
     } catch (_) {}
   }
 
-  // ========= Fluxo 1: Preview (postMessage) =========
+  // Fluxo: preview via postMessage
   window.addEventListener('message', (ev) => {
     const msg = ev && ev.data;
     if (!msg || msg.type !== 'TERMO_PREVIEW_DATA') return;
@@ -246,12 +265,12 @@
     catch (e) { console.error('[TERMO_PREVIEW_DATA] render error:', e); }
   }, false);
 
-  // ========= Fluxo 2: PDF (Puppeteer) =========
+  // Fluxo: PDF (Puppeteer) — quando backend injeta window.__TERMO_DATA__
   document.addEventListener('TERMO_DATA_READY', () => {
     try { renderizarTermo(window.__TERMO_DATA__ || {}); } catch (e) { console.error('[TERMO_DATA_READY] render error:', e); }
   });
 
-  // ========= Fallback: querystring (para testes) =========
+  // Fallback: querystring (apenas para testes). NÃO inclui justificativa do prazo adicional.
   document.addEventListener('DOMContentLoaded', () => {
     if (window.__TERMO_DATA__) { try { renderizarTermo(window.__TERMO_DATA__ || {}); } catch (e) { console.error('[TERMO_INIT] render error:', e); } return; }
     const q = new URLSearchParams(location.search);
@@ -267,7 +286,6 @@
         NOME_REP_UG: q.get('nome_rep_ug') || '', CPF_REP_UG: q.get('cpf_rep_ug') || '',
         CARGO_REP_UG: q.get('cargo_rep_ug') || '', EMAIL_REP_UG: q.get('email_rep_ug') || '',
 
-        // Etapa 3
         CRITERIOS_IRREGULARES: (()=>{
           const multi = q.getAll('criterio'); if (multi && multi.length) return multi;
           const joined = q.get('criterios') || ''; return joined ? joined.split(/[;,]/).map(s=>s.trim()).filter(Boolean) : [];
@@ -275,19 +293,16 @@
         ADESAO_SEM_IRREGULARIDADES: q.get('adesao_sem_irregularidades') || '',
         OUTRO_CRITERIO_COMPLEXO: q.get('outro_criterio_complexo') || '',
 
-        // Etapa 4 (fallback)
         SELECTED_CODES: (q.get('codes') || '').split(',').map(s=>s.trim()).filter(Boolean),
 
-        // Etapa 5–7 (texto)
         COMPROMISSO_FIRMADO_ADESAO: q.get('compromissos') || q.get('compromisso') || '',
         PROVIDENCIA_NECESS_ADESAO: q.get('providencias') || '',
         CONDICAO_VIGENCIA: q.get('condicao_vigencia') || '',
 
-        // Registro
         DATA_TERMO_GERADO: q.get('data_termo') || '',
         ESFERA_COD: q.get('esfera_cod') || '',
 
-        // prazo adicional (fallbacks)
+        // apenas a flag do prazo adicional (se fornecida via QS)
         PRAZO_ADICIONAL_FLAG: q.get('prazo_adicional_flag') || ''
       };
       try { renderizarTermo(payload); } catch (e) { console.error('[TERMO_QS] render error:', e); }
