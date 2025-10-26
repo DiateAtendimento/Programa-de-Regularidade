@@ -17,18 +17,23 @@
   // aceita 'aaaa-mm-dd' e 'aaaa-mm-ddTHH:MM:SS...' e mantém dd/mm/aaaa
   const fmtDataBR = v => {
     const s = String(v || '').trim();
+    if (!s) return '';
     const mISO = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);
     if (mISO) return `${mISO[3]}/${mISO[2]}/${mISO[1]}`;
+    // tenta interpretar como Date (ex.: '2025-10-26T11:46:00.000Z')
+    const maybeDate = new Date(s);
+    if (!isNaN(maybeDate.getTime())) {
+      return maybeDate.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    }
     return s; // se já vier dd/mm/aaaa, mantém
   };
 
   // data de hoje em pt-BR (fuso São Paulo)
   const todayBR = () =>
-  new Date().toLocaleDateString('pt-BR', { timeZone:'America/Sao_Paulo' });
-
+    new Date().toLocaleDateString('pt-BR', { timeZone:'America/Sao_Paulo' });
 
   const setTextAll = (k, v) => {
-    const text = (v == null || String(v).trim() === '') ? '' : v;
+    const text = (v == null || String(v).trim() === '') ? '' : String(v);
     document.querySelectorAll(`[data-k="${k}"]`).forEach(el => el.textContent = text);
   };
 
@@ -39,37 +44,47 @@
     const list = document.getElementById(listId);
     if (!list) return;
     const items = [...list.querySelectorAll('li')];
-    if (!codes.length){
-      items.forEach(li => li.remove());
+    if (!codes || !codes.length){
+      // limpa e coloca "Não informado"
+      list.innerHTML = '';
       const li = document.createElement('li'); li.innerHTML = NOT_INFORMED; list.appendChild(li);
       return;
     }
-    items.forEach(li => { if (!codes.includes(li.getAttribute('data-code'))) li.remove(); });
+    items.forEach(li => {
+      const code = li.getAttribute('data-code');
+      if (!codes.includes(code)) li.remove();
+    });
   }
 
   // ========= Render principal =========
   function renderizarTermo(p){
+    if (!p || typeof p !== 'object') p = {};
+
     // ——— Campos DIRETOS (Etapas 1–2)
-    setTextAll('uf',          p.UF || '');
-    setTextAll('ente',        p.ENTE || '');
-    setTextAll('cnpj_ente',   fmtCNPJ(p.CNPJ_ENTE || ''));
-    setTextAll('email_ente',  p.EMAIL_ENTE || '');
-    setTextAll('ug',          p.UG || '');
-    setTextAll('cnpj_ug',     fmtCNPJ(p.CNPJ_UG || ''));
-    setTextAll('email_ug',    p.EMAIL_UG || '');
+    setTextAll('uf',          p.UF || p.uf || '');
+    setTextAll('ente',        p.ENTE || p.ente || '');
+    setTextAll('cnpj_ente',   fmtCNPJ(p.CNPJ_ENTE || p.cnpj_ente || ''));
+    setTextAll('email_ente',  p.EMAIL_ENTE || p.email_ente || '');
+    setTextAll('ug',          p.UG || p.ug || '');
+    setTextAll('cnpj_ug',     fmtCNPJ(p.CNPJ_UG || p.cnpj_ug || ''));
+    setTextAll('email_ug',    p.EMAIL_UG || p.email_ug || '');
 
-    setTextAll('nome_rep_ente',  p.NOME_REP_ENTE || '');
-    setTextAll('cargo_rep_ente', p.CARGO_REP_ENTE || '');
-    setTextAll('cpf_rep_ente',   fmtCPF(p.CPF_REP_ENTE || ''));
-    setTextAll('email_rep_ente', p.EMAIL_REP_ENTE || '');
+    setTextAll('nome_rep_ente',  p.NOME_REP_ENTE || p.nome_rep_ente || '');
+    setTextAll('cargo_rep_ente', p.CARGO_REP_ENTE || p.cargo_rep_ente || '');
+    setTextAll('cpf_rep_ente',   fmtCPF(p.CPF_REP_ENTE || p.cpf_rep_ente || ''));
+    setTextAll('email_rep_ente', p.EMAIL_REP_ENTE || p.email_rep_ente || '');
 
-    setTextAll('nome_rep_ug',  p.NOME_REP_UG || '');
-    setTextAll('cargo_rep_ug', p.CARGO_REP_UG || '');
-    setTextAll('cpf_rep_ug',   fmtCPF(p.CPF_REP_UG || ''));
-    setTextAll('email_rep_ug', p.EMAIL_REP_UG || '');
+    setTextAll('nome_rep_ug',  p.NOME_REP_UG || p.nome_rep_ug || '');
+    setTextAll('cargo_rep_ug', p.CARGO_REP_UG || p.cargo_rep_ug || '');
+    setTextAll('cpf_rep_ug',   fmtCPF(p.CPF_REP_UG || p.cpf_rep_ug || ''));
+    setTextAll('email_rep_ug', p.EMAIL_REP_UG || p.email_rep_ug || '');
+
+    // ORGAO DE VINCULAÇÃO da UG (se existir no payload)
+    setTextAll('orgao_vinculacao_ug', p.ORGAO_VINCULACAO_UG || p.orgao_vinculacao_ug || '');
 
     // Data do termo (registro) — com fallback para hoje
-    const dataTermo = p.DATA_TERMO_GERADO ? fmtDataBR(p.DATA_TERMO_GERADO) : todayBR();
+    const dataTermoRaw = p.DATA_TERMO_GERADO || p.DATA_TERMO || p.data_termo || '';
+    const dataTermo = dataTermoRaw ? fmtDataBR(dataTermoRaw) : todayBR();
     setTextAll('data_termo', dataTermo);
 
     // 3.1 Data de vencimento do último CRP (preferindo DATA_SITUACAO da aba CRP)
@@ -78,66 +93,28 @@
       p.DATA_SITUACAO_ISO     || p.DATA_SITUACAO         || p.DATA_SUTUACAO ||
       p.DATA_VENCIMENTO_ULTIMO_CRP ||
       p.CRP_DATA_VALIDADE_ISO || p.CRP_DATA_VALIDADE_DMY || '';
-    setTextAll('crp_venc', fmtDataBR(crpVenc));
+    setTextAll('crp_venc', crpVenc ? fmtDataBR(crpVenc) : '');
 
     // 3.2 Tipo de emissão do último CRP (Sim→Judicial / Não→Administrativa)
-    let crpTipo = (p.TIPO_EMISSAO_ULTIMO_CRP || p.crp_tipo || '').trim();
+    let crpTipo = (p.TIPO_EMISSAO_ULTIMO_CRP || p.TIPO_EMISSAO || p.crp_tipo || '').trim();
     if (!crpTipo) {
-      const raw = String(p.CRP_DECISAO_JUDICIAL || p.DECISAO_JUDICIAL || '').toLowerCase();
-      if (raw.includes('sim')) crpTipo = 'Judicial';
-      else if (raw.includes('nao') || raw.includes('não')) crpTipo = 'Administrativa';
+      const raw = String(p.CRP_DECISAO_JUDICIAL || p.DECISAO_JUDICIAL || p.DEC_JUDICIAL || p.CRP_DJ || '').toLowerCase();
+      if (raw.includes('sim') || raw.includes('s')) crpTipo = 'Judicial';
+      else if (raw.includes('nao') || raw.includes('não') || raw.includes('n')) crpTipo = 'Administrativa';
+      else {
+        // também checar flags booleanas que possam existir
+        if (p.em_jud === true || String(p.em_jud) === 'true') crpTipo = 'Judicial';
+        else if (p.em_adm === true || String(p.em_adm) === 'true') crpTipo = 'Administrativa';
+      }
     }
-    setTextAll('crp_tipo', crpTipo);
+    setTextAll('crp_tipo', crpTipo || '');
 
-
-    (function applyPrazoAdicional(){
-      const el = document.querySelector('[data-k="prazo_adicional_flag"]');
-      if (!el) return;
-      const raw = String(p.PRAZO_ADICIONAL_FLAG || p.prazo_adicional_flag || '').trim().toUpperCase();
-      if (raw === 'SIM' || raw === 'NÃO' || raw === 'NAO') {
-        el.textContent = (raw === 'NAO') ? 'NÃO' : raw;
-      } else {
-        el.textContent = 'Não informado';
-      }
-    })();
-
-    // ===== 1.1 – Esfera de Governo =====
-    (function(){
-      const list = document.getElementById('opt-1-1');
-      if (!list) return;
-
-      // preferência: p.ESFERA_COD; fallback heurístico textual
-      let esferaCod = String(p.ESFERA_COD || '').trim();
-      if (!esferaCod) {
-        let esfera = '';
-        const rawEsfera = String(p.ESFERA || '').toLowerCase();
-        if (/municipal/.test(rawEsfera)) esfera = 'municipal';
-        else if (/estadual|distrital/.test(rawEsfera)) esfera = 'estadual';
-        if (!esfera) {
-          const ente = String(p.ENTE || '').toLowerCase();
-          esfera = /estado|distrito/.test(ente) ? 'estadual' : 'municipal';
-        }
-        esferaCod = (esfera === 'estadual') ? '1.1.2' : '1.1.1';
-      }
-
-      const items = [...list.querySelectorAll('li')];
-      items.forEach(li => { if (li.getAttribute('data-code') !== esferaCod) li.remove(); });
-
-      // legenda da assinatura
-      const sig = document.getElementById('sig-cap-ente');
-      if (sig) {
-        sig.innerHTML = (esferaCod === '1.1.2')
-          ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
-          : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
-      }
-    })();
-
-    // ===== Etapa 3.3 – Critérios irregulares =====
+    // 3.3 Critérios irregulares (pode vir como string separada por ';' ou array)
     (function () {
       const list = document.getElementById('criterios-list');
       if (!list) return;
 
-      const raw = p.CRITERIOS_IRREGULARES;
+      const raw = p.CRITERIOS_IRREGULARES || p.CRITERIOS || p.criterios || '';
       const arr = Array.isArray(raw)
         ? raw
         : String(raw || '')
@@ -161,10 +138,82 @@
       });
     })();
 
+    // 3.4 Solicitação de Prazo Adicional — flag + justificativa
+    (function applyPrazoAdicional(){
+      const elFlag = document.querySelector('[data-k="prazo_adicional_flag"]');
+      const elJust = document.querySelector('[data-k="prazo_adicional_just"]');
+      if (!elFlag && !elJust) return;
+
+      // várias chaves possíveis
+      const rawFlag = String(
+        p.PRAZO_ADICIONAL_FLAG ||
+        p.PRAZO_ADICIONAL ||
+        p.PRAZO_ADICIONAL_SOLICITADO ||
+        p.prazo_adicional_flag ||
+        p.prazo_adicional ||
+        ''
+      ).trim().toUpperCase();
+
+      let flagOut = '';
+      if (rawFlag === 'SIM' || rawFlag === 'S' || rawFlag === 'TRUE' || rawFlag === '1') flagOut = 'SIM';
+      else if (rawFlag === 'NAO' || rawFlag === 'N' || rawFlag === 'NÃO' || rawFlag === 'FALSE' || rawFlag === '0') flagOut = 'NÃO';
+      else flagOut = (rawFlag ? rawFlag : '');
+
+      if (elFlag) elFlag.textContent = flagOut || (flagOut === '' ? 'Não informado' : flagOut);
+
+      // justificativa: aceitar múltiplas chaves no payload
+      const just = (p.PRAZO_ADICIONAL_JUST || p.prazo_adicional_just || p.PRAZO_ADICIONAL_JUSTIFICATIVA || p.prazo_adicional_justificativa || '').trim();
+
+      if (elJust) {
+        // Regra de apresentação:
+        // - Se houver justificativa -> exibe justificativa
+        // - Se não houver justificativa e flag === 'SIM' -> exibe em branco (evita "Não informado" junto com SIM)
+        // - Se não houver justificativa e flag !== 'SIM' -> exibe "Não informado"
+        if (just) {
+          elJust.textContent = just;
+        } else if (flagOut === 'SIM') {
+          elJust.textContent = '';
+        } else {
+          elJust.innerHTML = NOT_INFORMED;
+        }
+      }
+    })();
+
+    // ===== 1.1 – Esfera de Governo =====
+    (function(){
+      const list = document.getElementById('opt-1-1');
+      if (!list) return;
+
+      // preferência: p.ESFERA_COD; fallback heurístico textual
+      let esferaCod = String(p.ESFERA_COD || p.ESFERA || '').trim();
+      if (!esferaCod) {
+        let esfera = '';
+        const rawEsfera = String(p.ESFERA || p.esfera || '').toLowerCase();
+        if (/municipal/.test(rawEsfera)) esfera = 'municipal';
+        else if (/estadual|distrital/.test(rawEsfera)) esfera = 'estadual';
+
+        if (!esfera) {
+          const ente = String(p.ENTE || '').toLowerCase();
+          esfera = /estado|distrito/.test(ente) ? 'estadual' : 'municipal';
+        }
+        esferaCod = (esfera === 'estadual') ? '1.1.2' : '1.1.1';
+      }
+
+      const items = [...list.querySelectorAll('li')];
+      items.forEach(li => { if (li.getAttribute('data-code') !== esferaCod) li.remove(); });
+
+      // legenda da assinatura
+      const sig = document.getElementById('sig-cap-ente');
+      if (sig) {
+        sig.innerHTML = (esferaCod === '1.1.2')
+          ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
+          : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
+      }
+    })();
 
     // ===== Util p/ pegar só códigos de uma seção a partir de p.SELECTED_CODES =====
     const wantCodes = (prefix) => {
-      const src = Array.isArray(p.SELECTED_CODES) ? p.SELECTED_CODES : [];
+      const src = Array.isArray(p.SELECTED_CODES) ? p.SELECTED_CODES : (String(p.SELECTED_CODES || '') ? String(p.SELECTED_CODES).split(',').map(s=>s.trim()).filter(Boolean) : []);
       return src.filter(c => String(c || '').startsWith(prefix));
     };
 
@@ -185,9 +234,9 @@
     // ===== Etapa 7 – Condições (7.1–7.4) =====
     filterBy('opt-7', wantCodes('7.'));
 
-    // re-hidrata spans usados nas assinaturas
-    setTextAll('ente', p.ENTE || '');
-    setTextAll('uf',   p.UF   || '');
+    // re-hidrata spans usados nas assinaturas (garantia)
+    setTextAll('ente', p.ENTE || p.ente || '');
+    setTextAll('uf',   p.UF   || p.uf   || '');
 
     // 🔔 sinaliza “pronto para imprimir”
     try {
@@ -216,12 +265,12 @@
 
   // ========= Fluxo 2: PDF (Puppeteer) =========
   document.addEventListener('TERMO_DATA_READY', () => {
-    renderizarTermo(window.__TERMO_DATA__ || {});
+    try { renderizarTermo(window.__TERMO_DATA__ || {}); } catch (e) { console.error('[TERMO_DATA_READY] render error:', e); }
   });
 
   // ========= Fallback: querystring (para testes) =========
   document.addEventListener('DOMContentLoaded', () => {
-    if (window.__TERMO_DATA__) { renderizarTermo(window.__TERMO_DATA__ || {}); return; }
+    if (window.__TERMO_DATA__) { try { renderizarTermo(window.__TERMO_DATA__ || {}); } catch (e) { console.error('[TERMO_INIT] render error:', e); } return; }
     const q = new URLSearchParams(location.search);
     if (q.has('uf') || q.has('ente')) {
       const payload = {
@@ -253,9 +302,13 @@
 
         // Registro
         DATA_TERMO_GERADO: q.get('data_termo') || '',
-        ESFERA_COD: q.get('esfera_cod') || ''
+        ESFERA_COD: q.get('esfera_cod') || '',
+
+        // prazo adicional (fallbacks)
+        PRAZO_ADICIONAL_FLAG: q.get('prazo_adicional_flag') || '',
+        
       };
-      renderizarTermo(payload);
+      try { renderizarTermo(payload); } catch (e) { console.error('[TERMO_QS] render error:', e); }
     }
   });
 })();
