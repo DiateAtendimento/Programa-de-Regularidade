@@ -186,7 +186,7 @@
           caption.innerHTML =
             `<strong><span data-k="nome_rep_ug"></span></strong><br>` +
             `Representante legal do Instituto de Previdência do Município de ` +
-            `<span data-k="ente"></span>`;
+            `<span data-k="ente"></span>/<span data-k="uf"></span>`;
         } else {
           caption.innerHTML =
             `<strong><span data-k="nome_rep_ug"></span></strong><br>` +

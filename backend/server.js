@@ -2170,34 +2170,34 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     flat['email_rep_ug']   = flat['email_rep_ug']   || flat['__snapshot_email_rep_ug'];
     flat['tel_rep_ug']     = flat['tel_rep_ug']     || flat['__snapshot_tel_rep_ug']     || flat['responsaveis_ug_telefone'];
 
-    // Data do último CRP (vários nomes possíveis)
-    flat['venc_ult_crp']   = flat['venc_ult_crp']
-                          || flat['data_venc_ultimo_crp']
-                          || flat['crp_data_validade_dmy']
-                          || flat['crp_data_validade_iso']
-                          || flat['data_venc'];
+    // === FORMATA "YYYY-MM-DD" -> "DD/MM/AAAA" (mantém outros formatos) ===
+    const fmtBR = (s) => {
+      const t = String(s || '').trim();
+      const m = t.match(/^(\d{4})-(\d{2})-(\d{2})/); // 2025-10-26...
+      return m ? `${m[3]}/${m[2]}/${m[1]}` : t;
+    };
 
-    // Tipo de emissão do último CRP
+    // 3.1 — Data de vencimento do último CRP (corrigido + robusto)
+    flat['venc_ult_crp'] = flat['venc_ult_crp']
+                        || flat['data_vencimento_ultimo_crp'] // <- chave correta do form
+                        || flat['data_venc_ultimo_crp']       // legado (se existir)
+                        || flat['crp_data_situacao_iso']
+                        || flat['crp_data_situacao_dmy']
+                        || flat['data_situacao_iso']
+                        || flat['data_situacao']
+                        || flat['crp_data_validade_iso']
+                        || flat['crp_data_validade_dmy']
+                        || flat['data_validade_crp']
+                        || flat['data_venc'];                 // fallback genérico
+
+    // Alias usado pelo template termo.html (data-k="crp_venc")
+    flat['crp_venc'] = flat['crp_venc'] || fmtBR(flat['venc_ult_crp']);
+
+    // 3.2 — Tipo de emissão do último CRP (mantém, com alias do template)
     flat['tipo_emissao_ult_crp'] = flat['tipo_emissao_ult_crp']
                                 || flat['tipo_emissao_ultimo_crp']
                                 || flat['crp_tipo']
-                                || flat['tipo']; // quando vier de /termos-registrados
-
-    // === Aliases usados pelo template termo.html ===
-    // Formata "YYYY-MM-DD" -> "DD/MM/YYYY" (mantém outros formatos intactos)
-    const fmtBR = (s) => {
-      const t = String(s || '').trim();
-      if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
-        const [Y, M, D] = t.slice(0,10).split('-');
-        return `${D}/${M}/${Y}`;
-      }
-      return t;
-    };
-
-    // 3.1 — Data de vencimento do último CRP
-    flat['crp_venc'] = flat['crp_venc'] || fmtBR(flat['venc_ult_crp']);
-
-    // 3.2 — Tipo de emissão do último CRP
+                                || flat['tipo'];
     flat['crp_tipo'] = flat['crp_tipo'] || flat['tipo_emissao_ult_crp'];
 
     // Data que aparece antes das assinaturas
