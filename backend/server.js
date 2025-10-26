@@ -2183,6 +2183,27 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
                                 || flat['crp_tipo']
                                 || flat['tipo']; // quando vier de /termos-registrados
 
+    // === Aliases usados pelo template termo.html ===
+    // Formata "YYYY-MM-DD" -> "DD/MM/YYYY" (mantém outros formatos intactos)
+    const fmtBR = (s) => {
+      const t = String(s || '').trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
+        const [Y, M, D] = t.slice(0,10).split('-');
+        return `${D}/${M}/${Y}`;
+      }
+      return t;
+    };
+
+    // 3.1 — Data de vencimento do último CRP
+    flat['crp_venc'] = flat['crp_venc'] || fmtBR(flat['venc_ult_crp']);
+
+    // 3.2 — Tipo de emissão do último CRP
+    flat['crp_tipo'] = flat['crp_tipo'] || flat['tipo_emissao_ult_crp'];
+
+    // Data que aparece antes das assinaturas
+    flat['data_termo'] = flat['data_termo'] 
+                      || fmtBR(flat['data_termo_gerado']) 
+                      || (new Date()).toLocaleDateString('pt-BR');
 
     // Esfera
     flat['esfera']         = flat['esfera']         || flat['esfera_sugerida'];

@@ -176,13 +176,25 @@
         if (!caption) return;
 
         const ugName = String(p.UG || p.ug || '').trim();
-        if (/institut/i.test(ugName)) {
-          caption.innerHTML = `<strong><span data-k="nome_rep_ug"></span></strong><br>Representante legal do Instituto De Previdência do Município de <span data-k="ente"></span>`;
+        const esferaRaw = String(p.ESFERA || p.esfera || p.ESFERA_COD || '').toLowerCase();
+        const esferaCod = String(p.ESFERA_COD || '').trim();
+
+        const isMunicipal =
+          /municipal/.test(esferaRaw) || esferaCod === '1.1.1';
+
+        if (isMunicipal || /institut/i.test(ugName)) {
+          caption.innerHTML =
+            `<strong><span data-k="nome_rep_ug"></span></strong><br>` +
+            `Representante legal do Instituto de Previdência do Município de ` +
+            `<span data-k="ente"></span>`;
         } else {
-          caption.innerHTML = `<strong><span data-k="nome_rep_ug"></span></strong><br>Representante legal do <span data-k="ug"></span>`;
+          caption.innerHTML =
+            `<strong><span data-k="nome_rep_ug"></span></strong><br>` +
+            `Representante legal do <span data-k="ug"></span>`;
         }
       } catch (_) {}
     })();
+
 
     // ===== 1.1 – Esfera de Governo =====
     (function(){
