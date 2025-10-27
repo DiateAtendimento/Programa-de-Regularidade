@@ -2079,8 +2079,14 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   page.on('request', (reqObj) => {
     const u = reqObj.url();
     if (u === 'about:blank' || u.startsWith('data:')) return reqObj.continue();
-    const allowed = u.startsWith(LOOPBACK_BASE) || (PUBLIC_BASE && u.startsWith(PUBLIC_BASE));
-    return allowed ? reqObj.continue() : reqObj.abort();
+    const allowed =
+      u.startsWith(LOOPBACK_BASE) ||
+      (PUBLIC_BASE && u.startsWith(PUBLIC_BASE)) ||
+      u.startsWith('https://fonts.googleapis.com/') ||
+      u.startsWith('https://fonts.gstatic.com/') ||
+      u.startsWith('https://cdn.jsdelivr.net/') ||
+      u.startsWith('https://cdnjs.cloudflare.com/');
+      return allowed ? reqObj.continue() : reqObj.abort();
   });
 
   page.setDefaultNavigationTimeout(120_000);
@@ -2318,21 +2324,19 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   try { await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 5000 }); } catch {}
 
   // 6) Gera o PDF
-  await page.pdf({
-    printBackground: true,
-    preferCSSPageSize: true,
-    displayHeaderFooter: false,   // <— desliga
-    margin: { top: '16mm', right: '16mm', bottom: '20mm', left: '16mm' }
-  });
+  const pdf = await page.pdf({
+     printBackground: true,
+     preferCSSPageSize: true,
+     displayHeaderFooter: false,
+     margin: { top: '16mm', right: '16mm', bottom: '20mm', left: '16mm' }
+   });
 
-
-
-  // 7) Fecha a página (browser compartilhado)
+  // 7) Fecha a página
   try { await page.close(); } catch {}
 
-  // Define um nome de arquivo simples se não vier nada do payload
   const fname = (filenameFallback || 'termo');
   return { buffer: pdf, filename: `${fname}.pdf` };
+
 }
 
 
