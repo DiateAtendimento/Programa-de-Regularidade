@@ -2319,10 +2319,9 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
 
   // 6) Gera o PDF
   const pdf = await page.pdf({
+    format: 'A4',
     printBackground: true,
     preferCSSPageSize: true,
-    displayHeaderFooter: false, // garante que o Chrome não reserve espaço p/ header/footer nativos
-    margin: { top: '28mm', right: '16mm', bottom: '20mm', left: '16mm' }
   });
 
   // 7) Fecha a página (browser compartilhado)

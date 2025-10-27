@@ -61,7 +61,6 @@ router.post('/pdf/termo', async (req, res) => {
       format: 'A4',
       printBackground: true,
       preferCSSPageSize: true
-      // Sem 'margin': usa o @page do CSS (30mm topo) e evita sobreposição.
     });
 
     const dt = Date.now() - t0;
