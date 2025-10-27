@@ -1,7 +1,8 @@
 /* ======================================================================
    CSS unificado para termo.html e termo_solic_crp.html
-   — Layout A4 estável para PDF.
-   — Cabeçalho: fixo em TELA; na IMPRESSÃO sai apenas na 1ª página.
+   — Layout A4 estável para PDF
+   — Cabeçalho fixo EM TELA e APENAS na primeira página do PDF
+   — Sem regras específicas de formulário/app
    ====================================================================== */
 
 /* -------------------- Fontes (PDF usa Rawline) -------------------- */
@@ -25,9 +26,9 @@
   --muted:#475569;
   --rule:#d7dee8;
 
-  /* Cabeçalho (medidas de preview em tela) */
-  --header-height:22mm;   /* altura aproximada do header com logos */
-  --header-gap:4mm;       /* respiro adicional abaixo do header */
+  /* Cabeçalho (tela) */
+  --header-height:16mm;   /* ~14mm de logos + 2mm de folga */
+  --header-gap:2mm;
 
   /* Modal */
   --modal-backdrop:rgba(15,23,42,.35);
@@ -44,16 +45,18 @@ body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
 }
+
+/* Garante fidelidade de cor quando necessário */
 html,body{
   -webkit-print-color-adjust:exact !important;
   print-color-adjust:exact !important;
 }
 
 /* -------------------- Página (A4) -------------------- */
-/* IMPORTANTE: usar valores numéricos estáticos no @page (sem var()). */
+/* Valores numéricos estáticos no @page (sem var()) */
 @page{
   size:A4;
-  margin:16mm 16mm 20mm 16mm; /* top right bottom left */
+  margin:20mm 16mm 20mm 16mm; /* top right bottom left */
 }
 
 /* -------------------- Container (preview em tela) -------------------- */
@@ -68,12 +71,12 @@ html,body{
   box-shadow:0 24px 50px rgba(2,22,58,.12), 0 8px 18px rgba(2,22,58,.07);
 }
 
-/* Modo exportação (quando o app/tarefas aplicarem a classe) */
+/* Modo exportação opcional (se o app aplicar a classe) */
 html.pdf-export, body.pdf-export{ background:#fff !important; }
 .pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important; }
 
 /* -------------------- Cabeçalho -------------------- */
-/* Em TELA: fixo no topo (preview) */
+/* Em TELA: fixo no topo */
 .prp-header{
   position:fixed;
   top:0; left:0; right:0;
@@ -85,35 +88,32 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   padding:0 10mm;
 }
 .prp-header .logos-wrap{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:6mm;
-  width:100%;
-  line-height:0;
-  flex-wrap:wrap;
+  display:flex; align-items:center; justify-content:center;
+  gap:6mm; width:100%; line-height:0; flex-wrap:wrap;
 }
 .prp-header img{
   display:block; height:auto; width:auto;
-  max-height:14mm;            /* altura controlada */
-  max-width:45%;              /* evita que 1 logo ocupe largura demais */
+  max-height:14mm;          /* nunca maior que o cabeçalho */
+  max-width:45%;
   object-fit:contain;
 }
 
 /* Em TELA: empurrar o conteúdo pra baixo do header fixo */
 .prp-content{ padding-top:calc(var(--header-height) + var(--header-gap)); }
 
-/* Em PDF: header sai apenas uma vez (na 1ª página) */
+/* Em PDF: o cabeçalho vira bloco normal no fluxo (apenas 1ª página) */
 @media print{
+  html, body{ background:#fff !important; }            /* remove qualquer “cinza” */
+  .term-wrap{ box-shadow:none !important; }            /* sem sombra no PDF */
   .prp-header{
-    position:static !important;      /* entra no fluxo do documento */
-    display:block !important;        /* garante exibição */
-    break-after:avoid-page;          /* evita quebra logo abaixo */
-    page-break-after:avoid;          /* compatibilidade */
-    margin:0 0 8mm 0;                /* respiro abaixo do header */
+    position:static !important;                        /* deixa de ser fixo */
+    top:auto; left:auto; right:auto;
+    height:auto;                                       /* altura se ajusta ao conteúdo */
+    padding:0 0 6mm 0;                                 /* respiro inferior */
     border-bottom:1px solid var(--rule);
+    margin:0;                                          /* ocupa o topo da 1ª página */
   }
-  .prp-content{ padding-top:0 !important; }  /* sem espaço extra no PDF */
+  .prp-content{ padding-top:0 !important; }            /* nada de offset no PDF */
 }
 
 /* -------------------- Título + meta -------------------- */
@@ -222,7 +222,6 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 .pdf-modal--open .pdf-modal__backdrop,
 .pdf-modal--open .pdf-modal__box{ display:block; }
 
-/* Spinner */
 .spinner{
   width:42px; height:42px; border-radius:50%;
   border:4px solid #e2e8f0; border-top-color:var(--brand);
@@ -252,7 +251,11 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
 
 /* -------------------- Regras específicas de impressão -------------------- */
 @media print{
-  /* evitar que o título ou o cabeçalho quebrem estranhamente */
+  /* nada de “cinza” no entorno do PDF */
+  #pdf-root{ width:auto !important; margin:0 !important; }
+  .term-wrap{ width:auto !important; padding:0 !important; border-radius:0 !important; }
+
+  /* evitar que o título ou o cabeçalho quebrem de forma estranha */
   .term-title{
     margin-top:6mm;
     break-before:avoid; page-break-before:avoid;
@@ -262,5 +265,5 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
   }
 }
 
-/* Ocultar rodapé genérico, se existir no HTML */
+/* Ocultar qualquer rodapé HTML específico */
 @media print { #rodape { display:none } }
