@@ -57,11 +57,13 @@ router.post('/pdf/termo', async (req, res) => {
     }
 
     // 6) Gera PDF
-    const pdf = await page.pdf({
-      format: 'A4',
+    await page.pdf({
       printBackground: true,
-      preferCSSPageSize: true
+      preferCSSPageSize: true,
+      displayHeaderFooter: false,   // <— desliga
+      margin: { top: '16mm', right: '16mm', bottom: '20mm', left: '16mm' }
     });
+  
 
     const dt = Date.now() - t0;
     log('PDF gerado com sucesso', { ms: dt, kb: Math.round(pdf.length / 1024) });

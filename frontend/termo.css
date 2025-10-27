@@ -1,12 +1,10 @@
 /* ======================================================================
-   termo.css — header sticky no preview / header fixo repetido no print
-   - Preview em tela: header .prp-header continua sticky como antes
-   - Impressão/PDF: header .prp-header fica position:fixed e será repetido
-     em cada página; .term-wrap recebe padding-top para o conteúdo começar
-     abaixo do cabeçalho em todas as páginas.
+   CSS unificado para termo.html e termo_solic_crp.html
+   — Layout A4 estável para PDF.
+   — Cabeçalho: fixo em TELA; na IMPRESSÃO sai apenas na 1ª página.
    ====================================================================== */
 
-/* -------------------- Fontes (para o PDF) -------------------- */
+/* -------------------- Fontes (PDF usa Rawline) -------------------- */
 @font-face{
   font-family:'Rawline'; font-weight:400; font-style:normal; font-display:swap;
   src:url('./fonts/rawline-400.ttf') format('truetype');
@@ -20,15 +18,16 @@
   src:url('./fonts/rawline-700.ttf') format('truetype');
 }
 
-/* -------------------- Tokens -------------------- */
+/* -------------------- Variáveis visuais -------------------- */
 :root{
   --brand:#0b2240;
   --ink:#23272f;
   --muted:#475569;
   --rule:#d7dee8;
 
-  /* Altura “alvo” do header para preview e impressão (ajuste se necessário) */
-  --header-height:18mm;
+  /* Cabeçalho (medidas de preview em tela) */
+  --header-height:22mm;   /* altura aproximada do header com logos */
+  --header-gap:4mm;       /* respiro adicional abaixo do header */
 
   /* Modal */
   --modal-backdrop:rgba(15,23,42,.35);
@@ -51,10 +50,10 @@ html,body{
 }
 
 /* -------------------- Página (A4) -------------------- */
-/* usamos margem superior zero para que o header fixo controle o espaço */
+/* IMPORTANTE: usar valores numéricos estáticos no @page (sem var()). */
 @page{
   size:A4;
-  margin: 0 16mm 20mm 16mm; /* top right bottom left (top=0; header fixo reserva espaço) */
+  margin:16mm 16mm 20mm 16mm; /* top right bottom left */
 }
 
 /* -------------------- Container (preview em tela) -------------------- */
@@ -62,48 +61,64 @@ html,body{
 .term-wrap{
   position:relative;
   width:calc(210mm - 2*16mm);
-  padding:0 15mm 15mm; /* padding-top será ajustado somente no print */
+  padding:15mm;
   margin:0 auto 2rem;
   background:#fff;
   border-radius:12px;
   box-shadow:0 24px 50px rgba(2,22,58,.12), 0 8px 18px rgba(2,22,58,.07);
 }
 
-/* Modo exportação em tela */
+/* Modo exportação (quando o app/tarefas aplicarem a classe) */
 html.pdf-export, body.pdf-export{ background:#fff !important; }
 .pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important; }
 
-/* -------------------- Cabeçalho (preview em tela: STICKY) -------------------- */
-/* Fica no fluxo e “gruda” ao rolar; não sobrepõe o conteúdo na tela */
+/* -------------------- Cabeçalho -------------------- */
+/* Em TELA: fixo no topo (preview) */
 .prp-header{
-  position: sticky;
-  top: 0;
-  z-index: 9999;
+  position:fixed;
+  top:0; left:0; right:0;
+  height:var(--header-height);
   background:#fff;
-  display:flex; align-items:center; justify-content:center;
-  padding: 3mm 10mm;
-  min-height: var(--header-height);
   border-bottom:1px solid var(--rule);
+  z-index:9999;
+  display:flex; align-items:center; justify-content:center;
+  padding:0 10mm;
 }
 .prp-header .logos-wrap{
-  display:flex; align-items:center; justify-content:center;
-  gap:4mm; width:100%; line-height:0; flex-wrap:wrap;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6mm;
+  width:100%;
+  line-height:0;
+  flex-wrap:wrap;
 }
 .prp-header img{
   display:block; height:auto; width:auto;
-  max-height:12mm;                  /* cabe com folga no header alvo */
-  max-width:45%;
+  max-height:14mm;            /* altura controlada */
+  max-width:45%;              /* evita que 1 logo ocupe largura demais */
   object-fit:contain;
 }
 
-/* Conteúdo: no preview o header ocupa o fluxo, então sem padding-top */
-.prp-content{ padding-top: 0; }
-@media print{ .prp-content{ padding-top:0 !important; } }
-.pdf-export .prp-content{ padding-top:0 !important; }
+/* Em TELA: empurrar o conteúdo pra baixo do header fixo */
+.prp-content{ padding-top:calc(var(--header-height) + var(--header-gap)); }
+
+/* Em PDF: header sai apenas uma vez (na 1ª página) */
+@media print{
+  .prp-header{
+    position:static !important;      /* entra no fluxo do documento */
+    display:block !important;        /* garante exibição */
+    break-after:avoid-page;          /* evita quebra logo abaixo */
+    page-break-after:avoid;          /* compatibilidade */
+    margin:0 0 8mm 0;                /* respiro abaixo do header */
+    border-bottom:1px solid var(--rule);
+  }
+  .prp-content{ padding-top:0 !important; }  /* sem espaço extra no PDF */
+}
 
 /* -------------------- Título + meta -------------------- */
 .term-title{
-  margin:2mm 0 0 !important;
+  margin:6mm 0 0 !important;
   text-align:center;
   font-weight:800;
   font-size:16px;
@@ -112,15 +127,14 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   color:var(--brand);
 }
 .term-meta{
-  margin:1mm 0 4mm !important;
+  margin:1.2mm 0 5mm !important;
   text-align:center;
   font-size:12.8px;
   color:var(--muted);
 }
 
 /* -------------------- Seções / Tipografia -------------------- */
-.term-section + .term-section{ margin-top:7mm; }
-@media print{ .term-section + .term-section{ margin-top:6mm; } }
+.term-section + .term-section{ margin-top:8mm; }
 .term-section h2{
   font-size:15px; font-weight:800; color:var(--brand);
   margin-bottom:3mm; letter-spacing:.2px;
@@ -128,7 +142,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 }
 .term-section h3{
   font-size:13.6px; font-weight:700; color:var(--ink);
-  margin-top:3mm; margin-bottom:1.2mm;
+  margin-top:3.5mm; margin-bottom:1.2mm;
 }
 .term-section p, .term-section li{
   font-size:13.2px; line-height:1.48; text-align:justify; text-justify:inter-word;
@@ -137,22 +151,19 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 .small{ font-size:12.2px; color:var(--muted); }
 .note{ font-size:12.6px; color:var(--muted); }
 
-/* -------------------- Grid de campos (evita cortes) -------------------- */
+/* -------------------- Grid de campos -------------------- */
 .grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:2.2mm 7mm;
+  gap:2.4mm 8mm;
 }
 .grid-num{ grid-template-columns:1fr 1fr 1fr; }
 .field .label{ display:block; font-size:12.2px; color:var(--muted); }
 .field .value{ display:block; font-size:13.4px; margin-top:.6mm; }
 
-/* Evitar quebra dentro de cada field, mas permitir entre eles */
-.grid .field{ break-inside:avoid; page-break-inside:avoid; }
-
 /* -------------------- Listas -------------------- */
 .term-section ul{ list-style:none; margin:2mm 0 0 0; padding-left:0; }
-.term-section li{ margin:1.4mm 0; padding-left:6mm; text-indent:-6mm; }
+.term-section li{ margin:1.6mm 0; padding-left:6mm; text-indent:-6mm; }
 
 /* -------------------- Não quebrar certos conteúdos -------------------- */
 [data-k="email_ente"],
@@ -166,25 +177,16 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 .avoid-break{ break-inside:avoid; page-break-inside:avoid; }
 .break-before{ break-before:page; page-break-before:always; }
 
-/* No PRINT, se um bloco grande estiver marcando avoid, relaxa pra não criar buracos */
-@media print{
-  .term-section.avoid-break{ break-inside:auto !important; page-break-inside:auto !important; }
-}
-
-/* Títulos nunca “soltos” no fim de página */
-.term-section h2,
-.term-section h3{ break-after:avoid-page; page-break-after:avoid; }
-
 /* -------------------- Rodapé (Assinaturas) -------------------- */
 .term-footer{
-  margin-top:12mm; text-align:center;
+  margin-top:14mm; text-align:center;
   break-inside:avoid; page-break-inside:avoid;
-  padding-top:8mm;
+  padding-top:10mm;
 }
-.place-date{ margin:8mm 0 6mm; font-size:13.2px; }
-.signature-block{ margin-top:10mm; }
+.place-date{ margin:10mm 0 6mm; font-size:13.2px; }
+.signature-block{ margin-top:12mm; }
 .signature-line{
-  width:70%; height:0; border-bottom:1.6px solid var(--brand);
+  width:70%; height:0; border-bottom:1.8px solid var(--brand);
   margin:0 auto 3mm;
 }
 .signature-caption{ font-size:13.2px; color:var(--muted); margin-bottom:0; }
@@ -248,32 +250,17 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
   font-style:italic;
 }
 
-/* -------------------- Regras específicas de impressão (SIMPLES) -------------------- */
-/* No PDF/impressão: mostramos o header e reservamos espaço via padding-top */
+/* -------------------- Regras específicas de impressão -------------------- */
 @media print{
-  /* torna o header FIXO e visível em cada página impressa */
-  .prp-header{
-    display:flex !important;
-    position:fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 9999 !important;
-    background: #fff !important;
-    padding: 3mm 10mm !important;
-    min-height: var(--header-height) !important;
-    border-bottom:1px solid var(--rule) !important;
+  /* evitar que o título ou o cabeçalho quebrem estranhamente */
+  .term-title{
+    margin-top:6mm;
+    break-before:avoid; page-break-before:avoid;
   }
-
-  /* reserva espaço para o header em TODAS as páginas */
-  .term-wrap{
-    /* +2mm de folga para evitar sobreposição de bordas/padding do header */
-    padding-top: calc(var(--header-height) + 2mm) !important;
+  .term-section{
+    break-inside:avoid-page; page-break-inside:avoid;
   }
-
-  /* ajustar quebras caso haja elements marcados como avoid-break */
-  .term-section.avoid-break{ break-inside:auto !important; page-break-inside:auto !important; }
 }
 
-/* Ocultar qualquer rodapé HTML externo que não pertença ao termo */
+/* Ocultar rodapé genérico, se existir no HTML */
 @media print { #rodape { display:none } }

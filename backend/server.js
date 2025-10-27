@@ -2318,11 +2318,13 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   try { await page.waitForFunction('window.__TERMO_PRINT_READY__ === true', { timeout: 5000 }); } catch {}
 
   // 6) Gera o PDF
-  const pdf = await page.pdf({
-    format: 'A4',
-    printBackground: true,
-    preferCSSPageSize: true,
-  });
+await page.pdf({
+  printBackground: true,
+  preferCSSPageSize: true,
+  displayHeaderFooter: false,   // <— desliga
+  margin: { top: '16mm', right: '16mm', bottom: '20mm', left: '16mm' }
+});
+
 
   // 7) Fecha a página (browser compartilhado)
   try { await page.close(); } catch {}
