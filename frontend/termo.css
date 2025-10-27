@@ -1,8 +1,9 @@
 /* ======================================================================
-   termo.css — header sticky no preview / header do PDF via Puppeteer
-   - Preview em tela: header .prp-header está NO FLUXO (sticky), não sobrepõe
-   - PDF (Puppeteer): .prp-header é OCULTADO; o espaço de topo vem da
-     margin.top do page.pdf() (headerTemplate do Puppeteer repete as logos)
+   termo.css — header sticky no preview / header fixo repetido no print
+   - Preview em tela: header .prp-header continua sticky como antes
+   - Impressão/PDF: header .prp-header fica position:fixed e será repetido
+     em cada página; .term-wrap recebe padding-top para o conteúdo começar
+     abaixo do cabeçalho em todas as páginas.
    ====================================================================== */
 
 /* -------------------- Fontes (para o PDF) -------------------- */
@@ -26,7 +27,7 @@
   --muted:#475569;
   --rule:#d7dee8;
 
-  /* Altura “alvo” do header para preview (pode crescer se as logos quebrarem) */
+  /* Altura “alvo” do header para preview e impressão (ajuste se necessário) */
   --header-height:18mm;
 
   /* Modal */
@@ -50,10 +51,10 @@ html,body{
 }
 
 /* -------------------- Página (A4) -------------------- */
-/* No PDF, o topo é reservado pela margin.top do page.pdf() */
+/* usamos margem superior zero para que o header fixo controle o espaço */
 @page{
   size:A4;
-  margin: 0 16mm 20mm 16mm; /* top right bottom left (top=0; header do PDF usa margin.top do Puppeteer) */
+  margin: 0 16mm 20mm 16mm; /* top right bottom left (top=0; header fixo reserva espaço) */
 }
 
 /* -------------------- Container (preview em tela) -------------------- */
@@ -61,7 +62,7 @@ html,body{
 .term-wrap{
   position:relative;
   width:calc(210mm - 2*16mm);
-  padding:0 15mm 15mm; /* sem padding-top: header sticky já ocupa o fluxo */
+  padding:0 15mm 15mm; /* padding-top será ajustado somente no print */
   margin:0 auto 2rem;
   background:#fff;
   border-radius:12px;
@@ -73,7 +74,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 .pdf-export .term-wrap{ margin:0 !important; box-shadow:none !important; border-radius:0 !important; }
 
 /* -------------------- Cabeçalho (preview em tela: STICKY) -------------------- */
-/* Fica no fluxo e “gruda” ao rolar; não sobrepõe o conteúdo */
+/* Fica no fluxo e “gruda” ao rolar; não sobrepõe o conteúdo na tela */
 .prp-header{
   position: sticky;
   top: 0;
@@ -95,7 +96,7 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   object-fit:contain;
 }
 
-/* Conteúdo: começa logo após o header (que está no fluxo) */
+/* Conteúdo: no preview o header ocupa o fluxo, então sem padding-top */
 .prp-content{ padding-top: 0; }
 @media print{ .prp-content{ padding-top:0 !important; } }
 .pdf-export .prp-content{ padding-top:0 !important; }
@@ -247,10 +248,31 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
   font-style:italic;
 }
 
-/* -------------------- Regras específicas de impressão -------------------- */
-/* No PDF, o header visual é ocultado; quem reserva o topo é a margin.top do PDF */
+/* -------------------- Regras específicas de impressão (SIMPLES) -------------------- */
+/* No PDF/impressão: mostramos o header e reservamos espaço via padding-top */
 @media print{
-  .prp-header{ display:none !important; }
+  /* torna o header FIXO e visível em cada página impressa */
+  .prp-header{
+    display:flex !important;
+    position:fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    background: #fff !important;
+    padding: 3mm 10mm !important;
+    min-height: var(--header-height) !important;
+    border-bottom:1px solid var(--rule) !important;
+  }
+
+  /* reserva espaço para o header em TODAS as páginas */
+  .term-wrap{
+    /* +2mm de folga para evitar sobreposição de bordas/padding do header */
+    padding-top: calc(var(--header-height) + 2mm) !important;
+  }
+
+  /* ajustar quebras caso haja elements marcados como avoid-break */
+  .term-section.avoid-break{ break-inside:auto !important; page-break-inside:auto !important; }
 }
 
 /* Ocultar qualquer rodapé HTML externo que não pertença ao termo */

@@ -2,9 +2,12 @@
   "name": "programa-de-regularidade",
   "private": true,
   "type": "commonjs",
-  "engines": { "node": "20.x" },
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "@sparticuz/chromium": "^131.0.0",
+    "puppeteer": "^24.26.1",
     "puppeteer-core": "^24.2.0",
     "zod": "^3.23.8"
   }
