@@ -3,9 +3,6 @@
   "private": true,
   "type": "commonjs",
   "engines": { "node": "20.x" },
-  "scripts": {
-    "generate-pdf": "node frontend/generate-termo-pdf.js --html frontend/termo.html --out termo.pdf --data payload.json"
-  },
   "dependencies": {
     "@sparticuz/chromium": "^140.0.0",
     "puppeteer-core": "^24.22.3"
