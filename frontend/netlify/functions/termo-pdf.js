@@ -60,8 +60,6 @@ router.post('/pdf/termo', async (req, res) => {
     const pdf = await page.pdf({
       printBackground: true,
       preferCSSPageSize: true,
-      displayHeaderFooter: false, // mantém; o header vem do DOM
-      margin: { top: '16mm', right: '16mm', bottom: '20mm', left: '16mm' }
     });
 
     const dt = Date.now() - t0;

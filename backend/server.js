@@ -2327,8 +2327,6 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   const pdf = await page.pdf({
      printBackground: true,
      preferCSSPageSize: true,
-     displayHeaderFooter: false,
-     margin: { top: '16mm', right: '16mm', bottom: '20mm', left: '16mm' }
    });
 
   // 7) Fecha a página
