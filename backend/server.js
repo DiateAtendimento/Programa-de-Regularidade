@@ -1149,31 +1149,31 @@ app.post('/api/termos-registrados', async (req, res) => {
     const cnpj = cnpj14(body.cnpj);
 
     await authSheets();
-
-    const sBase = await getSheetStrict('CNPJ_ENTE_UG');
-    const sTerm = await getSheetStrict('Termos_registrados');
-    const sCrp  = await getSheetStrict('CRP');
+    // ⚙️ Tolerante: se alguma aba não existir, seguimos com payload mínimo (200), sem 500.
+    let sBase = null, sTerm = null, sCrp = null;
+    try { sBase = await getSheetStrict('CNPJ_ENTE_UG'); } catch { /* keep null */ }
+    try { sTerm = await getSheetStrict('Termos_registrados'); } catch { /* keep null */ }
+    try { sCrp  = await getSheetStrict('CRP'); } catch { /* keep null */ }
 
     // Base
-    await sBase.loadHeaderRow();
-    const headersB = sBase.headerValues || [];
+    const headersB = sBase ? (await sBase.loadHeaderRow(), sBase.headerValues || []) : [];
     const san = (s) => (s ?? '').toString().trim().toLowerCase()
       .normalize('NFD').replace(/\p{Diacritic}/gu,'')
       .replace(/[^\p{L}\p{N}]+/gu,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'');
     const idxB = {
-      UF: headersB.findIndex(h => san(h)==='uf'),
-      ENTE: headersB.findIndex(h => san(h)==='ente'),
-      UG: headersB.findIndex(h => san(h)==='ug'),
-      CNPJ_ENTE: headersB.findIndex(h => san(h)==='cnpj_ente'),
-      CNPJ_UG: headersB.findIndex(h => san(h)==='cnpj_ug'),
-      EMAIL_ENTE: headersB.findIndex(h => san(h)==='email_ente'),
-      EMAIL_UG: headersB.findIndex(h => san(h)==='email_ug'),
+UF: headersB.findIndex?.(h => san(h)==='uf') ?? -1,
+      ENTE: headersB.findIndex?.(h => san(h)==='ente') ?? -1,
+      UG: headersB.findIndex?.(h => san(h)==='ug') ?? -1,
+      CNPJ_ENTE: headersB.findIndex?.(h => san(h)==='cnpj_ente') ?? -1,
+      CNPJ_UG: headersB.findIndex?.(h => san(h)==='cnpj_ug') ?? -1,
+      EMAIL_ENTE: headersB.findIndex?.(h => san(h)==='email_ente') ?? -1,
+      EMAIL_UG: headersB.findIndex?.(h => san(h)==='email_ug') ?? -1,
     };
 
-    const endRowB = sBase.rowCount || 2000;
+    const endRowB = sBase?.rowCount || 0;
     let baseRow = -1;
 
-    if (idxB.CNPJ_ENTE >= 0) {
+    if (sBase && idxB.CNPJ_ENTE >= 0) {
       await safeLoadCells(sBase, {
         startRowIndex: 1, startColumnIndex: idxB.CNPJ_ENTE,
         endRowIndex: endRowB, endColumnIndex: idxB.CNPJ_ENTE + 1
@@ -1183,7 +1183,7 @@ app.post('/api/termos-registrados', async (req, res) => {
         if (v && v === cnpj) { baseRow = r; break; }
       }
     }
-    if (baseRow < 0 && idxB.CNPJ_UG >= 0) {
+    if (sBase && baseRow < 0 && idxB.CNPJ_UG >= 0) {
       await safeLoadCells(sBase, {
         startRowIndex: 1, startColumnIndex: idxB.CNPJ_UG,
         endRowIndex: endRowB, endColumnIndex: idxB.CNPJ_UG + 1
@@ -1197,7 +1197,7 @@ app.post('/api/termos-registrados', async (req, res) => {
     let entePayload = { uf:'', nome:'', cnpj:'', ug:'', cnpj_ug:'', email:'', email_ug:'' };
 
 
-    if (baseRow >= 0) {
+    if (sBase && baseRow >= 0) {
       const endColB = headersB.length || sBase.columnCount || 26;
       await safeLoadCells(sBase, {
         startRowIndex: baseRow, startColumnIndex: 0,
@@ -1217,8 +1217,7 @@ app.post('/api/termos-registrados', async (req, res) => {
     }
 
     // Último termo
-    await sTerm.loadHeaderRow();
-    const rowsT = await safeGetRows(sTerm, 'Termos_registrados:getRows');
+    const rowsT = sTerm ? (await sTerm.loadHeaderRow(), await safeGetRows(sTerm, 'Termos_registrados:getRows')) : [];
     const matches = rowsT.filter(r => {
       const ce = cnpj14(getVal(r,'CNPJ_ENTE') || '');
       const cu = cnpj14(getVal(r,'CNPJ_UG') || '');
@@ -1230,7 +1229,6 @@ app.post('/api/termos-registrados', async (req, res) => {
 
     // ✅ só agora podemos ler do último termo
     entePayload.orgao_vinculacao_ug = (getVal(lastRow, 'ORGAO_VINCULACAO_UG') || '').toString().trim();
-
 
     const responsaveisPayload = {
       ente: {
@@ -1251,13 +1249,13 @@ app.post('/api/termos-registrados', async (req, res) => {
 
 
     // normaliza a string de critérios irregulares
-    const criteriosStr = (getVal(last,'CRITERIOS_IRREGULARES') || '').toString().trim();
+    const criteriosStr = (getVal(lastRow,'CRITERIOS_IRREGULARES') || '').toString().trim();
     const criteriosArr = criteriosStr
       ? criteriosStr.split(/[;,]/).map(s => s.trim()).filter(Boolean)
       : [];
 
     // CRP (rápido)
-    const crpFast = await findCRPByCnpjFast(sCrp, cnpj) || {};
+    const crpFast = sCrp ? (await findCRPByCnpjFast(sCrp, cnpj) || {}) : {};
     const tipo = (crpFast.DECISAO_JUDICIAL || '').toString().trim();
     const crpPayload = {
       data_venc: crpFast.DATA_VALIDADE_ISO || '',
@@ -1274,7 +1272,7 @@ app.post('/api/termos-registrados', async (req, res) => {
      entePayload.email_ug = (getVal(lastRow,'EMAIL_UG') || '').toString().trim();
    }
 
-    const esfera = esferaFromEnte(entePayload.nome || getVal(last,'ENTE') || '');
+    const esfera = esferaFromEnte(entePayload.nome || getVal(lastRow,'ENTE') || '');
 
     return res.json({
       ente: { ...entePayload, esfera },
