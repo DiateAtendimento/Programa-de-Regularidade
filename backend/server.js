@@ -1745,9 +1745,10 @@ async function findSolicByIdemKey(sheet, idemKey) {
 }
 
 /* ====== Removidos campos CRP dos headers da Solic_CRPs ====== */
+// server.js
 const SOLIC_HEADERS = [
   'ESFERA','UF','ENTE','CNPJ_ENTE','EMAIL_ENTE',
-  'UG','CNPJ_UG','EMAIL_UG',
+  'UG','CNPJ_UG','EMAIL_UG','ORGAO_VINCULACAO_UG',
   'NOME_REP_ENTE','CPF_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
   'NOME_REP_UG','CPF_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
   'ADESAO_SEM_IRREGULARIDADES',
@@ -1762,13 +1763,14 @@ const SOLIC_HEADERS = [
   'F45_OK451','F45_DOCS','F45_JUST','F453_EXEC_RES',
   'F46_CRITERIOS','F46_PROGESTAO','F46_PORTE','F46_JUST_D','F46_DOCS_D','F46_JUST_E','F46_DOCS_E',
   'F46_FINALIDADES','F46_ANEXOS','F46_JUST_PLANOS','F46_COMP_CUMPR',
-  'F462F_CRITERIOS','F46_ANEXOS', /* se sua planilha tiver repetição, mantenha 1 só */
+  'F462F_CRITERIOS',
   'F466_DOCS','F466_EXEC_RES',
   'JUSTIFICATIVAS_GERAIS',
   'HAS_TERMO_ENC_GESCON','N_GESCON','DATA_ENC_VIA_GESCON',
   'MES','DATA_SOLIC_GERADA','HORA_SOLIC_GERADA','ANO_SOLIC_GERADA',
   'IDEMP_KEY'
 ];
+
 
 async function findTermoByIdemKey(sTermos, idemKey) {
   await sTermos.loadHeaderRow();
@@ -2094,7 +2096,7 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
       CARGO_REP_UG: p.CARGO_REP_UG,
       EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
       TEL_REP_UG: norm(p.TEL_REP_UG),
-
+      ORGAO_VINCULACAO_UG: p.ORGAO_VINCULACAO_UG || '',
       ADESAO_SEM_IRREGULARIDADES: p.ADESAO_SEM_IRREGULARIDADES ? '1' : '',
 
       FIN_3_2_MANUTENCAO_CONFORMIDADE: p.FIN_3_2_MANUTENCAO_CONFORMIDADE ? '1' : '',

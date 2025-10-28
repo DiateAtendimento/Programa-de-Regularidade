@@ -13,6 +13,7 @@
     const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
     return override || '/.netlify/functions/api-proxy';
   })();
+  
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
 
   // (opcional) chave para o backend
@@ -1382,6 +1383,7 @@
     }
 
     dbg('[SOLIC-CRP] Payload pronto:', obj);
+    ensureDefaultsForPayload(obj);
     return obj;
   }
 
