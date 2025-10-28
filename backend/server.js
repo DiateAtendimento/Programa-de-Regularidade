@@ -1195,8 +1195,6 @@ app.post('/api/termos-registrados', async (req, res) => {
     }
 
     let entePayload = { uf:'', nome:'', cnpj:'', ug:'', cnpj_ug:'', email:'', email_ug:'' };
-    // acrescenta o Órgão de Vinculação vindo da planilha Termos_registrados
-    entePayload.orgao_vinculacao_ug = (getVal(last, 'ORGAO_VINCULACAO_UG') || '').toString().trim();
 
 
     if (baseRow >= 0) {
@@ -1227,24 +1225,30 @@ app.post('/api/termos-registrados', async (req, res) => {
       return (ce && ce === cnpj) || (cu && cu === cnpj);
     });
 
-    const last = matches[matches.length - 1] || {};
+    // ✅ renomeie 'last' -> 'lastRow'
+    const lastRow = matches[matches.length - 1] || {};
+
+    // ✅ só agora podemos ler do último termo
+    entePayload.orgao_vinculacao_ug = (getVal(lastRow, 'ORGAO_VINCULACAO_UG') || '').toString().trim();
+
 
     const responsaveisPayload = {
       ente: {
-        nome:  (getVal(last,'NOME_REP_ENTE') || '').toString().trim(),
-        cpf:   digits(getVal(last,'CPF_REP_ENTE')),
-        cargo: (getVal(last,'CARGO_REP_ENTE') || '').toString().trim(),
-        email: (getVal(last,'EMAIL_REP_ENTE') || '').toString().trim(),
-        telefone: (getVal(last,'TEL_REP_ENTE') || '').toString().trim(),
+        nome:      (getVal(lastRow, 'NOME_REP_ENTE') || '').toString().trim(),
+        cpf:       digits(getVal(lastRow, 'CPF_REP_ENTE')),
+        cargo:     (getVal(lastRow, 'CARGO_REP_ENTE') || '').toString().trim(),
+        email:     (getVal(lastRow, 'EMAIL_REP_ENTE') || '').toString().trim(),
+        telefone:  (getVal(lastRow, 'TEL_REP_ENTE') || '').toString().trim(),
       },
       ug: {
-        nome:  (getVal(last,'NOME_REP_UG') || '').toString().trim(),
-        cpf:   digits(getVal(last,'CPF_REP_UG')),
-        cargo: (getVal(last,'CARGO_REP_UG') || '').toString().trim(),
-        email: (getVal(last,'EMAIL_REP_UG') || '').toString().trim(),
-        telefone: (getVal(last,'TEL_REP_UG') || '').toString().trim(),
+        nome:      (getVal(lastRow, 'NOME_REP_UG') || '').toString().trim(),
+        cpf:       digits(getVal(lastRow, 'CPF_REP_UG')),
+        cargo:     (getVal(lastRow, 'CARGO_REP_UG') || '').toString().trim(),
+        email:     (getVal(lastRow, 'EMAIL_REP_UG') || '').toString().trim(),
+        telefone:  (getVal(lastRow, 'TEL_REP_UG') || '').toString().trim(),
       }
     };
+
 
     // normaliza a string de critérios irregulares
     const criteriosStr = (getVal(last,'CRITERIOS_IRREGULARES') || '').toString().trim();
