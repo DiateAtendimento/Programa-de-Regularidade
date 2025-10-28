@@ -845,6 +845,12 @@
       if (ente.cnpj_ug) el.cnpjUg.value  = maskCNPJ(ente.cnpj_ug);
       if (ente.email_ug)el.emailUg.value = ente.email_ug;
 
+      // Órgão de Vinculação (1. Identificação) – vindo do Termos_registrados
+      const orgField = document.getElementById('ug_orgao_vinc');
+      if (orgField && data?.ente?.orgao_vinculacao_ug) {
+        orgField.value = data.ente.orgao_vinculacao_ug;
+      }
+
       // >>> NOVO: espelha 1.3 → 1.3.2
       syncUg132();
       // <<<
@@ -1230,6 +1236,8 @@
       UG: UG_FINAL,
       CNPJ_UG: CNPJ_UG_FINAL,
       EMAIL_UG: EMAIL_UG_FINAL,
+      ORGAO_VINCULACAO_UG: (document.getElementById('ug_orgao_vinc')?.value || '').trim(),
+
 
       CPF_REP_ENTE: digits(el.cpfRepEnte.value),
       NOME_REP_ENTE: el.nomeRepEnte.value.trim(),
@@ -1245,6 +1253,9 @@
 
       DATA_VENCIMENTO_ULTIMO_CRP,
       TIPO_EMISSAO_ULTIMO_CRP,
+      // compat: a planilha/servidor usam DATA_VENC_ULTIMO_CRP
+      DATA_VENC_ULTIMO_CRP: DATA_VENCIMENTO_ULTIMO_CRP,
+
 
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i => i.value),
 

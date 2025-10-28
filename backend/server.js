@@ -1195,6 +1195,9 @@ app.post('/api/termos-registrados', async (req, res) => {
     }
 
     let entePayload = { uf:'', nome:'', cnpj:'', ug:'', cnpj_ug:'', email:'', email_ug:'' };
+    // acrescenta o Órgão de Vinculação vindo da planilha Termos_registrados
+    entePayload.orgao_vinculacao_ug = (getVal(last, 'ORGAO_VINCULACAO_UG') || '').toString().trim();
+
 
     if (baseRow >= 0) {
       const endColB = headersB.length || sBase.columnCount || 26;
@@ -1460,36 +1463,74 @@ const schemaSolicCrp = Joi.object({
   ENTE: Joi.string().trim().min(1).required(),
   CNPJ_ENTE: Joi.string().pattern(/^\D*\d{14}\D*$/).required(),
   EMAIL_ENTE: Joi.string().email().allow(''),
+
   UG: Joi.string().trim().min(1).required(),
   CNPJ_UG: Joi.string().pattern(/^\D*\d{14}\D*$/).required(),
   EMAIL_UG: Joi.string().email().allow(''),
+
+  // Representante do ente
   CPF_REP_ENTE: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
   NOME_REP_ENTE: Joi.string().trim().min(2).required(),
   CARGO_REP_ENTE: Joi.string().trim().min(1).required(),
   EMAIL_REP_ENTE: Joi.string().email().allow(''),
   TEL_REP_ENTE: Joi.string().allow(''),
+
+  // Representante da UG
   CPF_REP_UG: Joi.string().pattern(/^\D*\d{11}\D*$/).required(),
   NOME_REP_UG: Joi.string().trim().min(2).required(),
   CARGO_REP_UG: Joi.string().trim().min(1).required(),
   EMAIL_REP_UG: Joi.string().email().allow(''),
   TEL_REP_UG: Joi.string().allow(''),
+
+  // 3.x (CRP anterior) — adições/compat
+  DATA_VENC_ULTIMO_CRP: Joi.string().allow(''),
+  DATA_VENCIMENTO_ULTIMO_CRP: Joi.string().allow(''), // compat com o front
+  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().allow(''),
+
+  // Irregularidades marcadas
   CRITERIOS_IRREGULARES: Joi.alternatives().try(
     Joi.array().items(Joi.string().trim()),
     Joi.string().allow('')
   ).optional(),
+
+  // 4.x – Fases e campos auxiliares
   FASE_PROGRAMA: Joi.string().valid('4.1','4.2','4.3','4.4','4.5','4.6').allow(''),
   F41_OPCAO: Joi.string().allow(''),
   F42_LISTA: Joi.array().items(Joi.string()).optional(),
+
   F43_LISTA: Joi.array().items(Joi.string()).optional(),
   F43_JUST: Joi.string().allow(''),
   F43_PLANO: Joi.string().allow(''),
+
+  // NOVOS (4.3.10, inclusões, descrições de planos)
+  F4310_OPCAO: Joi.string().allow(''),
+  F4310_LEGISLACAO: Joi.string().allow(''),
+  F4310_DOCS: Joi.string().allow(''),
+  F43_INCLUIR: Joi.string().allow(''),
+  F43_DESC_PLANOS: Joi.string().allow(''),
+
+  // 4.4 – Declarações/criterios/finalidades/anexos
   F44_CRITERIOS: Joi.array().items(Joi.string()).optional(),
   F44_DECLS: Joi.array().items(Joi.string()).optional(),
   F44_FINALIDADES: Joi.array().items(Joi.string()).optional(),
   F44_ANEXOS: Joi.string().allow(''),
+  // NOVO
+  F441_LEGISLACAO: Joi.string().allow(''),
+
+  // 4.4.5 / 4.4.6 – execuções e docs
+  // NOVOS
+  F445_DESC_PLANOS: Joi.string().allow(''),
+  F446_DOCS: Joi.string().allow(''),
+  F446_EXEC_RES: Joi.string().allow(''),
+
+  // 4.5 – OK/Docs/Just/Exec
   F45_OK451: Joi.boolean().optional(),
   F45_DOCS: Joi.string().allow(''),
   F45_JUST: Joi.string().allow(''),
+  // NOVO
+  F453_EXEC_RES: Joi.string().allow(''),
+
+  // 4.6 – critérios, progestão, porte, justificativas e docs
   F46_CRITERIOS: Joi.array().items(Joi.string()).optional(),
   F46_PROGESTAO: Joi.string().allow(''),
   F46_PORTE: Joi.string().allow(''),
@@ -1501,6 +1542,13 @@ const schemaSolicCrp = Joi.object({
   F46_ANEXOS: Joi.string().allow(''),
   F46_JUST_PLANOS: Joi.string().allow(''),
   F46_COMP_CUMPR: Joi.string().allow(''),
+
+  // NOVOS (4.6.2-f e 4.6.6)
+  F462F_CRITERIOS: Joi.array().items(Joi.string()).optional(),
+  F466_DOCS: Joi.string().allow(''),
+  F466_EXEC_RES: Joi.string().allow(''),
+
+  // Metadados e gerais
   JUSTIFICATIVAS_GERAIS: Joi.string().allow(''),
   MES: Joi.string().allow(''),
   DATA_SOLIC_GERADA: Joi.string().allow(''),
@@ -1511,6 +1559,7 @@ const schemaSolicCrp = Joi.object({
   DATA_ENC_VIA_GESCON: Joi.string().allow(''),
   IDEMP_KEY: Joi.string().allow('')
 }).unknown(true);
+
 
 const schemaSolicCrpPdf = schemaSolicCrp.fork(
   Object.keys(schemaSolicCrp.describe().keys),
@@ -1697,17 +1746,24 @@ async function findSolicByIdemKey(sheet, idemKey) {
 
 /* ====== Removidos campos CRP dos headers da Solic_CRPs ====== */
 const SOLIC_HEADERS = [
-  'DATA_VENC_ULTIMO_CRP',       // 3.1
-  'TIPO_EMISSAO_ULTIMO_CRP',    // 3.2
   'ESFERA','UF','ENTE','CNPJ_ENTE','EMAIL_ENTE',
   'UG','CNPJ_UG','EMAIL_UG',
   'NOME_REP_ENTE','CPF_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
   'NOME_REP_UG','CPF_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
+  'ADESAO_SEM_IRREGULARIDADES',
+  'FIN_3_2_MANUTENCAO_CONFORMIDADE','FIN_3_2_DEFICIT_ATUARIAL','FIN_3_2_CRITERIOS_ESTRUTURANTES','FIN_3_2_OUTRO_CRITERIO_COMPLEXO',
+  'TIPO_EMISSAO_ULTIMO_CRP','DATA_VENC_ULTIMO_CRP',
   'CRITERIOS_IRREGULARES',
-  'FASE_PROGRAMA','F41_OPCAO','F42_LISTA','F43_LISTA','F43_JUST','F43_PLANO',
-  'F44_CRITERIOS','F44_DECLS','F44_FINALIDADES','F44_ANEXOS',
-  'F45_OK451','F45_DOCS','F45_JUST',
-  'F46_CRITERIOS','F46_PROGESTAO','F46_PORTE','F46_JUST_D','F46_DOCS_D','F46_JUST_E','F46_DOCS_E','F46_FINALIDADES','F46_ANEXOS','F46_JUST_PLANOS','F46_COMP_CUMPR',
+  'FASE_PROGRAMA','F41_OPCAO','F42_LISTA','F43_LISTA',
+  'F4310_OPCAO','F4310_LEGISLACAO','F4310_DOCS',
+  'F43_JUST','F43_INCLUIR','F43_PLANO','F43_DESC_PLANOS',
+  'F44_DECLS','F441_LEGISLACAO','F44_FINALIDADES','F44_CRITERIOS','F44_ANEXOS',
+  'F445_DESC_PLANOS','F446_DOCS','F446_EXEC_RES',
+  'F45_OK451','F45_DOCS','F45_JUST','F453_EXEC_RES',
+  'F46_CRITERIOS','F46_PROGESTAO','F46_PORTE','F46_JUST_D','F46_DOCS_D','F46_JUST_E','F46_DOCS_E',
+  'F46_FINALIDADES','F46_ANEXOS','F46_JUST_PLANOS','F46_COMP_CUMPR',
+  'F462F_CRITERIOS','F46_ANEXOS', /* se sua planilha tiver repetição, mantenha 1 só */
+  'F466_DOCS','F466_EXEC_RES',
   'JUSTIFICATIVAS_GERAIS',
   'HAS_TERMO_ENC_GESCON','N_GESCON','DATA_ENC_VIA_GESCON',
   'MES','DATA_SOLIC_GERADA','HORA_SOLIC_GERADA','ANO_SOLIC_GERADA',
@@ -1991,35 +2047,112 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
 
     const asCSV = (a) => Array.isArray(a) ? a.join(', ') : String(a||'');
 
-    /* ✅ ALTERAÇÃO: gravar CNPJ_* como texto (asSheetCNPJ) */
+    // antes do safeAddRow: normalize 3.1 e 3.2
+    const dataVencUltCrp =
+      p.DATA_VENC_ULTIMO_CRP ||
+      p.DATA_VENCIMENTO_ULTIMO_CRP || // compat front
+      p.CRP_DATA_VALIDADE_DMY ||
+      p.CRP_DATA_VALIDADE_ISO ||
+      '';
+
+    const tipoUltCrp = p.TIPO_EMISSAO_ULTIMO_CRP || '';
+
     await safeAddRow(s, sheetSanObject({
-      DATA_VENC_ULTIMO_CRP: p.DATA_VENC_ULTIMO_CRP || p.CRP_DATA_VALIDADE_DMY || p.CRP_DATA_VALIDADE_ISO || '',
-      TIPO_EMISSAO_ULTIMO_CRP: p.TIPO_EMISSAO_ULTIMO_CRP || '',
+      // === ORDEM ALINHADA AO SOLIC_HEADERS ===
       ESFERA: p.ESFERA || '',
-      UF: p.UF, ENTE: p.ENTE, CNPJ_ENTE: asSheetCNPJ(p.CNPJ_ENTE), EMAIL_ENTE: norm(p.EMAIL_ENTE),
-      UG: p.UG, CNPJ_UG: asSheetCNPJ(p.CNPJ_UG), EMAIL_UG: norm(p.EMAIL_UG),
-      NOME_REP_ENTE: p.NOME_REP_ENTE, CPF_REP_ENTE: digits(p.CPF_REP_ENTE), CARGO_REP_ENTE: p.CARGO_REP_ENTE, EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE), TEL_REP_ENTE: norm(p.TEL_REP_ENTE),
-      NOME_REP_UG: p.NOME_REP_UG, CPF_REP_UG: digits(p.CPF_REP_UG), CARGO_REP_UG: p.CARGO_REP_UG, EMAIL_REP_UG: norm(p.EMAIL_REP_UG), TEL_REP_UG: norm(p.TEL_REP_UG),
+      UF: p.UF,
+      ENTE: p.ENTE,
+      CNPJ_ENTE: asSheetCNPJ(p.CNPJ_ENTE),
+      EMAIL_ENTE: norm(p.EMAIL_ENTE),
+
+      UG: p.UG,
+      CNPJ_UG: asSheetCNPJ(p.CNPJ_UG),
+      EMAIL_UG: norm(p.EMAIL_UG),
+
+      NOME_REP_ENTE: p.NOME_REP_ENTE,
+      CPF_REP_ENTE: digits(p.CPF_REP_ENTE),
+      CARGO_REP_ENTE: p.CARGO_REP_ENTE,
+      EMAIL_REP_ENTE: norm(p.EMAIL_REP_ENTE),
+      TEL_REP_ENTE: norm(p.TEL_REP_ENTE),
+
+      NOME_REP_UG: p.NOME_REP_UG,
+      CPF_REP_UG: digits(p.CPF_REP_UG),
+      CARGO_REP_UG: p.CARGO_REP_UG,
+      EMAIL_REP_UG: norm(p.EMAIL_REP_UG),
+      TEL_REP_UG: norm(p.TEL_REP_UG),
+
+      ADESAO_SEM_IRREGULARIDADES: p.ADESAO_SEM_IRREGULARIDADES ? '1' : '',
+
+      FIN_3_2_MANUTENCAO_CONFORMIDADE: p.FIN_3_2_MANUTENCAO_CONFORMIDADE ? '1' : '',
+      FIN_3_2_DEFICIT_ATUARIAL:        p.FIN_3_2_DEFICIT_ATUARIAL ? '1' : '',
+      FIN_3_2_CRITERIOS_ESTRUTURANTES: p.FIN_3_2_CRITERIOS_ESTRUTURANTES ? '1' : '',
+      FIN_3_2_OUTRO_CRITERIO_COMPLEXO: p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO ? '1' : '',
+
+      TIPO_EMISSAO_ULTIMO_CRP: tipoUltCrp,
+      DATA_VENC_ULTIMO_CRP:    dataVencUltCrp,
+
       CRITERIOS_IRREGULARES: criterios.join(', '),
 
       FASE_PROGRAMA: p.FASE_PROGRAMA || '',
       F41_OPCAO: p.F41_OPCAO || '',
       F42_LISTA: asCSV(p.F42_LISTA),
-      F43_LISTA: asCSV(p.F43_LISTA), F43_JUST: p.F43_JUST || '', F43_PLANO: p.F43_PLANO || '',
-      F44_CRITERIOS: asCSV(p.F44_CRITERIOS), F44_DECLS: asCSV(p.F44_DECLS), F44_FINALIDADES: asCSV(p.F44_FINALIDADES), F44_ANEXOS: p.F44_ANEXOS || '',
-      F45_OK451: p.F45_OK451 ? '1' : '', F45_DOCS: p.F45_DOCS || '', F45_JUST: p.F45_JUST || '',
-      F46_CRITERIOS: asCSV(p.F46_CRITERIOS), F46_PROGESTAO: p.F46_PROGESTAO || '', F46_PORTE: p.F46_PORTE || '',
-      F46_JUST_D: p.F46_JUST_D || '', F46_DOCS_D: p.F46_DOCS_D || '', F46_JUST_E: p.F46_JUST_E || '', F46_DOCS_E: p.F46_DOCS_E || '',
-      F46_FINALIDADES: asCSV(p.F46_FINALIDADES), F46_ANEXOS: p.F46_ANEXOS || '', F46_JUST_PLANOS: p.F46_JUST_PLANOS || '', F46_COMP_CUMPR: p.F46_COMP_CUMPR || '',
+
+      F43_LISTA: asCSV(p.F43_LISTA),
+      F4310_OPCAO: p.F4310_OPCAO || '',
+      F4310_LEGISLACAO: p.F4310_LEGISLACAO || '',
+      F4310_DOCS: p.F4310_DOCS || '',
+      F43_JUST: p.F43_JUST || '',
+      F43_INCLUIR: p.F43_INCLUIR || '',
+      F43_PLANO: p.F43_PLANO || '',
+      F43_DESC_PLANOS: p.F43_DESC_PLANOS || '',
+
+      F44_DECLS: asCSV(p.F44_DECLS),
+      F441_LEGISLACAO: p.F441_LEGISLACAO || '',
+      F44_FINALIDADES: asCSV(p.F44_FINALIDADES),
+      F44_CRITERIOS: asCSV(p.F44_CRITERIOS),
+      F44_ANEXOS: p.F44_ANEXOS || '',
+
+      F445_DESC_PLANOS: p.F445_DESC_PLANOS || '',
+      F446_DOCS: p.F446_DOCS || '',
+      F446_EXEC_RES: p.F446_EXEC_RES || '',
+
+      F45_OK451: p.F45_OK451 ? '1' : '',
+      F45_DOCS: p.F45_DOCS || '',
+      F45_JUST: p.F45_JUST || '',
+      F453_EXEC_RES: p.F453_EXEC_RES || '',
+
+      F46_CRITERIOS: asCSV(p.F46_CRITERIOS),
+      F46_PROGESTAO: p.F46_PROGESTAO || '',
+      F46_PORTE: p.F46_PORTE || '',
+      F46_JUST_D: p.F46_JUST_D || '',
+      F46_DOCS_D: p.F46_DOCS_D || '',
+      F46_JUST_E: p.F46_JUST_E || '',
+      F46_DOCS_E: p.F46_DOCS_E || '',
+      F46_FINALIDADES: asCSV(p.F46_FINALIDADES),
+      F46_ANEXOS: p.F46_ANEXOS || '',
+      F46_JUST_PLANOS: p.F46_JUST_PLANOS || '',
+      F46_COMP_CUMPR: p.F46_COMP_CUMPR || '',
+
+      F462F_CRITERIOS: asCSV(p.F462F_CRITERIOS),
+      F466_DOCS: p.F466_DOCS || '',
+      F466_EXEC_RES: p.F466_EXEC_RES || '',
 
       JUSTIFICATIVAS_GERAIS: p.JUSTIFICATIVAS_GERAIS || '',
 
       HAS_TERMO_ENC_GESCON: p.HAS_TERMO_ENC_GESCON ? '1' : '',
-      N_GESCON: p.N_GESCON || '', DATA_ENC_VIA_GESCON: p.DATA_ENC_VIA_GESCON || '',
+      N_GESCON: p.N_GESCON || '',
+      DATA_ENC_VIA_GESCON: p.DATA_ENC_VIA_GESCON || '',
 
-      MES: p.MES || '', DATA_SOLIC_GERADA: p.DATA_SOLIC_GERADA || '', HORA_SOLIC_GERADA: p.HORA_SOLIC_GERADA || '', ANO_SOLIC_GERADA: p.ANO_SOLIC_GERADA || '',
+      MES: p.MES || '',
+      DATA_SOLIC_GERADA: p.DATA_SOLIC_GERADA || '',
+      HORA_SOLIC_GERADA: p.HORA_SOLIC_GERADA || '',
+      ANO_SOLIC_GERADA: p.ANO_SOLIC_GERADA || '',
+
       IDEMP_KEY: idemKey
     }), 'SolicCRP:add');
+
+
+
 
     try { await upsertEmailsInBase(p); } catch (_) {}
 

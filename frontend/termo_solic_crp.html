@@ -57,6 +57,7 @@
           <div class="field"><span class="label"><strong>1.3.1 Unidade Gestora</strong></span><span class="value" data-k="ug"></span></div>
           <div class="field"><span class="label"><strong>1.3.2 CNPJ</strong></span><span class="value" data-k="cnpj_ug"></span></div>
           <div class="field"><span class="label"><strong>1.3.3 E-mail oficial</strong></span><span class="value" data-k="email_ug"></span></div>
+          <div class="field"><span class="label"><strong>1.3.4 Órgão de vinculação da UG</strong></span><span class="value" data-k="ORGAO_VINCULACAO_UG"></span></div>
         </div>
       </section>
 
@@ -309,6 +310,7 @@
         p.EMAIL_ENTE = p.EMAIL_ENTE ?? p.email_ente; p.EMAIL_UG = p.EMAIL_UG ?? p.email_ug;
         p.SEI_PROCESSO = p.SEI_PROCESSO ?? p.sei_processo ?? p.PROC_SEI ?? p.proc_sei ?? '';
         p.PORTARIA_SRPC = p.PORTARIA_SRPC ?? p.portaria_srpc ?? p.PORTARIA_SRPC_MPS ?? '2.024/2025';
+        p.ORGAO_VINCULACAO_UG = p.ORGAO_VINCULACAO_UG || p.orgao_vinculacao_ug || p.orgao_vinc_ug || '';
 
         p.NOME_REP_ENTE = p.NOME_REP_ENTE ?? p.nome_rep_ente;
         p.CARGO_REP_ENTE = p.CARGO_REP_ENTE ?? p.cargo_rep_ente;
@@ -321,7 +323,8 @@
         p.CPF_REP_UG   = p.CPF_REP_UG   ?? p.cpf_rep_ug;
         p.EMAIL_REP_UG = p.EMAIL_REP_UG ?? p.email_rep_ug;
         p.TEL_REP_UG   = p.TEL_REP_UG   ?? p.tel_rep_ug;
-
+        
+        
         // ===== (3.1 e 3.2) Prefill a partir de p.crp / p.CRP
         const crp = p.crp || p.CRP || {};
         // 3.1
