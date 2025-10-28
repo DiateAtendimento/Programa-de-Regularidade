@@ -8,15 +8,11 @@
   function dbe(...args){ if (window.__DEBUG_SOLIC_CRP__) console.error(...args); }
 
   /* ========= Config ========= */
-  const API_BASE = (() => {
-    const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/,'')) || '';
-    if (override) return override;
-    // tenta back-end montado na mesma origem
-    if (location.origin && location.origin !== 'http://127.0.0.1:5500') return '/api';
-    // fallback Netlify
-    return '/.netlify/functions/api-proxy';
+  const API_BASE = (function(){
+    // permite sobrescrever via window.__API_BASE se quiser
+    const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
+    return override || '/.netlify/functions/api-proxy';
   })();
-
   
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
 
