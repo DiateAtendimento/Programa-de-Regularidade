@@ -3,7 +3,7 @@
 (() => {
 
   // === DEBUG global (ligue/desligue quando quiser) ===
-  window.__DEBUG_SOLIC_CRP__ = true;
+  window.__DEBUG_SOLIC_CRP__ = false;
   function dbg(...args){ if (window.__DEBUG_SOLIC_CRP__) console.log(...args); }
   function dbe(...args){ if (window.__DEBUG_SOLIC_CRP__) console.error(...args); }
 
@@ -1273,12 +1273,8 @@
     const EMAIL_UG_FINAL = (el.emailUg?.value || el.ugEmail?.value || '').trim();
 
     if (!CNPJ_UG_FINAL) {
-      if (window.__DEBUG_SOLIC_CRP__) {
-        // Em dev, deixa vazio para cair no "Não informado" do template
-        // Em produção, mantenha a exceção.
-      } else {
-        throw new Error('CNPJ_UG inválido/ausente');
-      }
+      alert('Preencha o CNPJ da UG (campo 1.3 / 1.3.2) para salvar a solicitação.');
+      throw new Error('CNPJ_UG ausente');
     }
 
 
