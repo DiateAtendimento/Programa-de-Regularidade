@@ -235,11 +235,11 @@
     // etapa 1
     uf: $('#UF'), ente: $('#ENTE'), cnpjEnte: $('#CNPJ_ENTE'), emailEnte: $('#EMAIL_ENTE'),
     ug: $('#UG'), cnpjUg: $('#CNPJ_UG'), emailUg: $('#EMAIL_UG'),
-    // >>> adicionados (1.3.2 – espelham 1.3):
+    // campos espelho 1.3.x
     ugNome:  $('#ug_nome'),
     ugCnpj:  $('#ug_cnpj'),
     ugEmail: $('#ug_email'),
-    // <<<
+    ugOrgaoVinc: $('#ug_orgao_vinc'), // 1.3.4 Órgão de vinculação da UG
     esfMun: $('#esf_mun'), esfEst: $('#esf_est'),
     infoNumGescon: $('#infoNumGescon'),
 
@@ -249,8 +249,15 @@
     cpfRepUg: $('#CPF_REP_UG'), nomeRepUg: $('#NOME_REP_UG'),
     cargoRepUg: $('#CARGO_REP_UG'), emailRepUg: $('#EMAIL_REP_UG'), telRepUg: $('#TEL_REP_UG'),
 
-    // etapa 3
+    // etapa 3 (critérios)
     grpCrit: $('#grpCRITERIOS'),
+
+    // ===== Campos 3.1 / 3.2 (compat: aceita o novo e o legado) =====
+    dataUltCrp: document.getElementById('DATA_VENC_ULTIMO_CRP') || document.getElementById('dataUltCrp'),
+    selectTipoUltCrp: document.getElementById('TIPO_EMISSAO_ULTIMO_CRP'),
+    // Mantém fallback para rádios antigos caso existam em algum layout
+    tipoAdm: document.getElementById('tipoAdm'),
+    tipoJud: document.getElementById('tipoJud'),
 
     // etapa 4
     faseRadios: $$('input[name="FASE_PROGRAMA"]'),
@@ -272,6 +279,7 @@
     dots: $$('#stepper .step'),
     navFooter: $('#navFooter')
   };
+
 
   /* ========= Máscaras ========= */
   function maskCNPJ(v){
@@ -826,6 +834,7 @@
       searching = false;
     }
   }
+
   async function hidratarTermosRegistrados(cnpj){
     dbg('[hidratarTermosRegistrados] start →', cnpj);
     try{
@@ -871,11 +880,24 @@
         el.telRepUg.value   = resp.ug.telefone || '';
       }
 
-      // 3) CRP anterior — estes campos NÃO existem no form_2; proteger
-      if (crp.data_venc && el.dataUltCrp) el.dataUltCrp.value = crp.data_venc;
-      if (crp.tipo) {
-        if (crp.tipo === 'Administrativa' && el.tipoAdm) el.tipoAdm.checked = true;
-        if (crp.tipo === 'Judicial'       && el.tipoJud) el.tipoJud.checked = true;
+      // 3) CRP anterior — preencher 3.1 (data) e 3.2 (tipo)
+      const dataVenc = crp.data_venc || crp.DATA_VALIDADE_DMY || crp.DATA_VALIDADE_ISO || '';
+      if (el.dataUltCrp) el.dataUltCrp.value = dataVenc;
+
+      // Regra “não ⇒ Administrativa / sim ⇒ Judicial”
+      let tipo = '';
+      const flag = (crp.DECISAO_JUDICIAL || crp.e_judicial || crp.tipo_simnao || '').toString().trim().toLowerCase();
+      if (['sim','s','true','1','yes','y'].includes(flag))      tipo = 'Judicial';
+      else if (['nao','não','n','false','0','no'].includes(flag)) tipo = 'Administrativa';
+      // fallback: usa crp.tipo se já vier normalizado
+      if (!tipo && crp.tipo) tipo = crp.tipo;
+
+      // Preenche select novo, ou rádios legados
+      if (el.selectTipoUltCrp) {
+        el.selectTipoUltCrp.value = tipo || '';
+      } else {
+        if (el.tipoAdm) el.tipoAdm.checked = (tipo === 'Administrativa');
+        if (el.tipoJud) el.tipoJud.checked = (tipo === 'Judicial');
       }
 
       // === 3.1 Critérios irregulares ===
@@ -967,6 +989,12 @@
       syncUg132();
     }
   }
+
+
+  // Disponibiliza no escopo global para diagnósticos/testes
+  window.hidratarTermosRegistrados = hidratarTermosRegistrados;
+  window.el = el;
+
   /* ========= Fase 4 (mostrar blocos + validar) ========= */
   function setupFase4Toggles(){
     const modalByFase = {
@@ -1202,10 +1230,17 @@
     const FIN_3_2_OUTRO_CRITERIO_COMPLEXO =
       document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : '';
 
-    const DATA_VENCIMENTO_ULTIMO_CRP = (el.dataUltCrp?.value) || '';
-    const TIPO_EMISSAO_ULTIMO_CRP =
-      (el.tipoAdm?.checked && 'Administrativa') ||
-      (el.tipoJud?.checked && 'Judicial') || '';
+    const DATA_VENCIMENTO_ULTIMO_CRP =
+      (el.dataUltCrp && el.dataUltCrp.value) ? el.dataUltCrp.value.trim() : '';
+
+    let TIPO_EMISSAO_ULTIMO_CRP = '';
+    if (el.selectTipoUltCrp && el.selectTipoUltCrp.value) {
+      TIPO_EMISSAO_ULTIMO_CRP = el.selectTipoUltCrp.value.trim();
+    } else if (el.tipoAdm || el.tipoJud) {
+      if (el.tipoAdm && el.tipoAdm.checked) TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
+      if (el.tipoJud && el.tipoJud.checked) TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
+    }
+
 
     // UG consolidados (1.3 OU 1.3.2)
     const UG_FINAL       = (el.ug?.value || el.ugNome?.value || '').trim();

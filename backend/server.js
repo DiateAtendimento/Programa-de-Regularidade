@@ -2055,7 +2055,21 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
       p.CRP_DATA_VALIDADE_ISO ||
       '';
 
-    const tipoUltCrp = p.TIPO_EMISSAO_ULTIMO_CRP || '';
+    // === NOVO: derivar tipo (Judicial/Administrativa) a partir de flag "sim/não"
+    const asYes = v => ['sim','s','true','1','yes','y'].includes(String(v ?? '').trim().toLowerCase());
+    const asNo  = v => ['nao','não','n','false','0','no'].includes(String(v ?? '').trim().toLowerCase());
+
+    let tipoUltCrp = String(p.TIPO_EMISSAO_ULTIMO_CRP || '').trim();
+    if (!tipoUltCrp) {
+      const flag =
+        p.CRP_E_JUDICIAL ??
+        p.CRP_TIPO_SIMNAO ??
+        p.E_JUDICIAL ??
+        (p.crp && (p.crp.e_judicial ?? p.crp.tipo_simnao)) ?? '';
+      if (asYes(flag))      tipoUltCrp = 'Judicial';
+      else if (asNo(flag))  tipoUltCrp = 'Administrativa';
+      else                  tipoUltCrp = '';
+    }
 
     await safeAddRow(s, sheetSanObject({
       // === ORDEM ALINHADA AO SOLIC_HEADERS ===

@@ -280,12 +280,15 @@
       }
       /* ===== Utilitários ===== */
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+      
       function asArr(v){
         if (Array.isArray(v)) return v.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
         return String(v||'')
           .split(/[;\n,]/).map(s => s.trim()).filter(Boolean);
       }
+      
       function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
+      
       function liList(ulSel, items){
         const ul = $(ulSel); if (!ul) return;
         const list = asArr(items);
@@ -300,6 +303,10 @@
           const li = document.createElement('li'); li.textContent = txt; ul.appendChild(li);
         });
       }
+      // Helpers "sim/não" → boolean
+      function asYes(v){ return ['sim','s','true','1','yes','y'].includes(String(v ?? '').trim().toLowerCase()); }
+      function asNo(v){  return ['nao','não','n','false','0','no'].includes(String(v ?? '').trim().toLowerCase()); }
+
       /* ===== Normalização do payload ===== */
       function normalizePayload(p0){
         const p = Object.assign({}, p0);
@@ -334,10 +341,15 @@
           ?? crp.DATA_VALIDADE_ISO
           ?? '';
         // 3.2
-        p.TIPO_EMISSAO_ULTIMO_CRP = p.TIPO_EMISSAO_ULTIMO_CRP
-          ?? crp.tipo
-          ?? (crp.DECISAO_JUDICIAL ? 'Judicial'
-                : ((crp.DATA_VALIDADE_DMY || crp.DATA_VALIDADE_ISO || crp.data_venc) ? 'Administrativa' : ''));
+        // depois — regra: "sim" ⇒ Judicial ; "não" ⇒ Administrativa
+        p.TIPO_EMISSAO_ULTIMO_CRP = (p.TIPO_EMISSAO_ULTIMO_CRP || '').trim();
+        if (!p.TIPO_EMISSAO_ULTIMO_CRP) {
+          const flag = crp.e_judicial ?? crp.tipo_simnao ?? p.CRP_E_JUDICIAL ?? p.CRP_TIPO_SIMNAO ?? '';
+          if (asYes(flag))      p.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
+          else if (asNo(flag))  p.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
+          else                  p.TIPO_EMISSAO_ULTIMO_CRP = (crp.tipo || '').trim(); // fallback antigo, se existir
+        }
+
         // Mantém compat anterior do 3.1 no template (data-k="venc_ult_crp")
         p.venc_ult_crp = p.venc_ult_crp
           ?? p.DATA_VENC_ULTIMO_CRP
@@ -444,7 +456,8 @@
         // 3.1
         fillText('venc_ult_crp', p.venc_ult_crp || '');
         // 3.2 (NOVA: tipo de emissão — Administrativa/Judicial)
-        fillText('tipo_emissao_ultimo_crp', p.TIPO_EMISSAO_ULTIMO_CRP || '');
+        fillText('tipo_emissao_ult_crp', p.TIPO_EMISSAO_ULTIMO_CRP || '');
+
 
         // 3.2 (opção antiga "motivo principal", se usar ul#opt-3-2)
         (function(){
