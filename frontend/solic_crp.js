@@ -79,6 +79,30 @@
   function isGesconNumber(x){
     return /^[SL]\d{6}\/\d{4}$/i.test(String(x).trim());
   }
+
+  // --- GARANTIAS: fase_programa + datas normalizadas para o payload do PDF/submit
+  function ensureDefaultsForPayload(payload){
+    if (!payload.FASE_PROGRAMA && !payload.__FASE_SEL__) {
+      payload.FASE_PROGRAMA = 'Solicitação de CRP';
+    }
+    if (!payload.DATA && !payload.DATA_SOLIC_GERADA) {
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      payload.DATA_SOLIC_GERADA = `${dd}/${mm}/${d.getFullYear()}`;
+    }
+    const toBR = (v)=> {
+      if (!v) return '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(v))) {
+        const [Y,M,D] = String(v).split('-'); return `${D}/${M}/${Y}`;
+      }
+      return String(v);
+    };
+    payload.DATA_SOLIC_GERADA = toBR(payload.DATA_SOLIC_GERADA);
+    payload.DATA = toBR(payload.DATA);
+    payload.DATA_VENC_ULTIMO_CRP = toBR(payload.DATA_VENC_ULTIMO_CRP || payload.DATA_VENCIMENTO_ULTIMO_CRP);
+  }
+
   /* ========= Robust fetch (timeout + retries) ========= */
   const FETCH_TIMEOUT_MS = 120000;
   const FETCH_RETRIES    = 1;
