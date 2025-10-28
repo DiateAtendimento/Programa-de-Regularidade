@@ -1367,7 +1367,7 @@
       F43_PLANO_B: collectTextValue('F43_PLANO_B'),
       F43_INCLUIR: collectCheckedValues('#F43_INCLUIR input[type="checkbox"]'),
       F44_CRITERIOS: collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
-      F44_DECLS: collectCheckedValues('#blk_44 .d-flex input[type="checkbox"]'),
+      F44_DECLS: collectCheckedValues('#blk_44 .d-flex input[type="checkbox"]'), // <-- array
       F44_FINALIDADES: collectCheckedValues('#F44_FINALIDADES input[type="checkbox"]'),
       F44_ANEXOS: collectTextValue('F44_ANEXOS'),
       F45_OK451: !!$('#blk_45 input[type="checkbox"]:checked'),
@@ -1437,14 +1437,15 @@
     dbg('[SOLIC-CRP] Payload pronto:', obj);
     ensureDefaultsForPayload(obj);
 
-
+    // no final de buildPayload()
     console.log('DEBUG buildPayload output:', {
-      F44_CRITERIOS: payload.F44_CRITERIOS,
-      F44_DECLS: payload.F44_DECLS,
-      F44_FINALIDADES: payload.F44_FINALIDADES,
-      PRAZO_ADICIONAL_TEXTO: payload.PRAZO_ADICIONAL_TEXTO,
-      PRAZO_ADICIONAL_FLAG: payload.PRAZO_ADICIONAL_FLAG
+      F44_CRITERIOS: obj.F44_CRITERIOS,
+      F44_DECLS: obj.F44_DECLS,
+      F44_FINALIDADES: obj.F44_FINALIDADES,
+      PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO,
+      PRAZO_ADICIONAL_FLAG: obj.PRAZO_ADICIONAL_FLAG
     });
+    
 
     return obj;
   }
@@ -1562,6 +1563,16 @@
     try{
       fillNowHiddenFields();
       const payload = buildPayload();
+
+      // DEBUG: ver o payload que será enviado
+      console.log('DEBUG payload (pre-send):', {
+        F44_CRITERIOS: payload.F44_CRITERIOS,
+        F44_DECLS: payload.F44_DECLS,
+        F44_FINALIDADES: payload.F44_FINALIDADES,
+        PRAZO_ADICIONAL_TEXTO: payload.PRAZO_ADICIONAL_TEXTO,
+        PRAZO_ADICIONAL_FLAG: payload.PRAZO_ADICIONAL_FLAG
+      });
+
       const md = bootstrap.Modal.getOrCreateInstance($('#modalGerandoPdf')); md.show();
       await gerarBaixarPDF(payload);
       md.hide();
