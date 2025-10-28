@@ -111,7 +111,7 @@
         <!-- 3.4 -->
         <h3>3.4 Solicitação de Prazo Adicional</h3>
         <p class="small no-print">Será exibida apenas a alternativa selecionada no formulário.</p>
-        <ul id="opt-3-4">
+        <ul id="opt-3-2">
           <li data-code="3.4.1"><strong>3.4.1 Manutenção da conformidade</strong></li>
           <li data-code="3.4.2"><strong>3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</strong></li>
           <li data-code="3.4.3"><strong>3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</strong></li>
@@ -372,9 +372,13 @@
 
         // ===== Fase / demais campos
         p.__FASE_SEL__ = String(p.FASE_PROGRAMA || p.fase_programa || p.FASE || p.fase || '').trim();
-        p.F41_OPCAO = p.F41_OPCAO || p.f41_opcao || '';
-        p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || '');
-        p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || '');
+
+        /* --- PATCH: mapear variantes adicionais de F41/F42/F43 e garantir arrays --- */
+        p.F41_OPCAO = p.F41_OPCAO || p.f41_opcao || p.F41 || p['4.1'] || p.fase_41_opcao || '';
+        p.F41_LISTA = asArr(p.F41_LISTA || p.f41_lista || p.f41_itens || p.F41_ITENS || p.f41_list || (p.F41_OPCAO ? [p.F41_OPCAO] : []));
+
+        p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || p.f42_lista || p.F42_LISTA || '');
+        p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || p.f43_lista || '');
 
         p.F44_CRITERIOS   = asArr(p.F44_CRITERIOS   || p.f44_criterios   || p.fase44_criterios   || '');
         p.F44_DECLS       = asArr(p.F44_DECLS       || p.f44_decls       || p.fase44_decls       || '');
@@ -430,6 +434,9 @@
       // segunda função
       function run(payload){
         const p = normalizePayload(payload || {});
+        /* --- DEBUG: saída temporária para inspecionar payloads durante testes --- */
+        try { console.debug('[TERMO] payload original:', payload); } catch(_) {}
+        try { console.debug('[TERMO] payload normalizado:', p); } catch(_) {}
 
         /* 1) Cabeçalho/meta */
         fillText('ente', p.ENTE); fillText('uf', p.UF); fillText('ug', p.UG);
@@ -481,9 +488,14 @@
         switch (faseSel) {
           case '4.1': {
             const it = [];
-            const v = String(p.F41_OPCAO||'').toLowerCase();
-            if (/^4\.1\.1/.test(p.F41_OPCAO) || /incluiu|incluidos|incluídos/.test(v)) it.push('4.1.1 Incluiu todos os débitos (Cadprev).');
-            else if (/^4\.1\.2/.test(p.F41_OPCAO) || /não possui|nao possui|regularizad/.test(v)) it.push('4.1.2 Não possui débitos ou já regularizados.');
+            // --- PATCH: priorizar lista enviada (F41_LISTA) --- //
+            if (Array.isArray(p.F41_LISTA) && p.F41_LISTA.length) {
+              p.F41_LISTA.forEach(v => { if (v) it.push(String(v).trim()); });
+            } else {
+              const v = String(p.F41_OPCAO||'').toLowerCase();
+              if (/^4\.1\.1/.test(p.F41_OPCAO) || /incluiu|incluidos|incluídos/.test(v)) it.push('4.1.1 Incluiu todos os débitos (Cadprev).');
+              else if (/^4\.1\.2/.test(p.F41_OPCAO) || /não possui|nao possui|regularizad/.test(v)) it.push('4.1.2 Não possui débitos ou já regularizados.');
+            }
             liList('#f41-itens', it);
             break;
           }
@@ -658,7 +670,6 @@
       })();
     })();
   </script>
-
 
   <!-- Força fallback “Não informado” também no preview local -->
   <script>
