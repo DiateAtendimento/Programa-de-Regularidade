@@ -1246,13 +1246,13 @@
 
     const ADESAO_SEM_IRREGULARIDADES =
       $('#chkSemIrregularidades')?.checked ? 'SIM' : '';
-    const FIN_3_2_MANUTENCAO_CONFORMIDADE =
+    let FIN_3_2_MANUTENCAO_CONFORMIDADE =
       document.querySelector('input[name="MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS"]')?.checked ? 'SIM' : '';
-    const FIN_3_2_DEFICIT_ATUARIAL =
+    let FIN_3_2_DEFICIT_ATUARIAL =
       document.querySelector('input[name="DEFICIT_ATUARIAL"]')?.checked ? 'SIM' : '';
-    const FIN_3_2_CRITERIOS_ESTRUTURANTES =
+    let FIN_3_2_CRITERIOS_ESTRUTURANTES =
       document.querySelector('input[name="CRITERIOS_ESTRUT_ESTABELECIDOS"]')?.checked ? 'SIM' : '';
-    const FIN_3_2_OUTRO_CRITERIO_COMPLEXO =
+    let FIN_3_2_OUTRO_CRITERIO_COMPLEXO =
       document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : '';
 
     const DATA_VENCIMENTO_ULTIMO_CRP =
@@ -1277,6 +1277,24 @@
       throw new Error('CNPJ_UG ausente');
     }
 
+    let PRAZO_ADICIONAL_COD =
+      document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked')?.value || '';
+    // compat: se a UI ainda estiver com value "3.2.x", converte para "3.4.x"
+    PRAZO_ADICIONAL_COD = String(PRAZO_ADICIONAL_COD).replace(/^3\.2\.(\d)$/, '3.4.$1');
+
+    // Se o rádio foi marcado (3.4.x), refletir na única flag FIN_3_2_*
+    if (PRAZO_ADICIONAL_COD) {
+      FIN_3_2_MANUTENCAO_CONFORMIDADE = '';
+      FIN_3_2_DEFICIT_ATUARIAL = '';
+      FIN_3_2_CRITERIOS_ESTRUTURANTES = '';
+      FIN_3_2_OUTRO_CRITERIO_COMPLEXO = '';
+
+      const code = PRAZO_ADICIONAL_COD.replace(/^3\.2\./, '3.4.');
+      if (code === '3.4.1') FIN_3_2_MANUTENCAO_CONFORMIDADE = 'SIM';
+      if (code === '3.4.2') FIN_3_2_DEFICIT_ATUARIAL = 'SIM';
+      if (code === '3.4.3') FIN_3_2_CRITERIOS_ESTRUTURANTES = 'SIM';
+      if (code === '3.4.4') FIN_3_2_OUTRO_CRITERIO_COMPLEXO = 'SIM';
+    }
 
     const obj = {
       HAS_TERMO_ENC_GESCON: el.hasGescon?.value === '1',
@@ -1369,6 +1387,17 @@
       DATA_SOLIC_GERADA: el.dataSol.value,
       HORA_SOLIC_GERADA: el.horaSol.value,
       ANO_SOLIC_GERADA: el.anoSol.value,
+
+      PRAZO_ADICIONAL_TEXTO: (() => {
+        switch (PRAZO_ADICIONAL_COD.replace(/^3\.2\./, '3.4.')) {
+          case '3.4.1': return '3.4.1 Manutenção da conformidade';
+          case '3.4.2': return '3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)';
+          case '3.4.3': return '3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)';
+          case '3.4.4': return '3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade';
+          default: return '';
+        }
+      })(),
+
 
       IDEMP_KEY: takeIdemKey() || ''
     };
