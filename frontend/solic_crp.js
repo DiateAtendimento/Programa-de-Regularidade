@@ -1367,7 +1367,7 @@
       F43_PLANO_B: collectTextValue('F43_PLANO_B'),
       F43_INCLUIR: collectCheckedValues('#F43_INCLUIR input[type="checkbox"]'),
       F44_CRITERIOS: collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
-      F44_DECLS: collectTextValue('F445_DESC_PLANOS') || '',
+      F44_DECLS: collectCheckedValues('#blk_44 .d-flex input[type="checkbox"]'),
       F44_FINALIDADES: collectCheckedValues('#F44_FINALIDADES input[type="checkbox"]'),
       F44_ANEXOS: collectTextValue('F44_ANEXOS'),
       F45_OK451: !!$('#blk_45 input[type="checkbox"]:checked'),
@@ -1398,7 +1398,7 @@
       F43_DESC_PLANOS: collectTextValue('F43_DESC_PLANOS'),
 
       F441_LEGISLACAO: $('#F441_LEGISLACAO')?.value || '',
-      F445_DESC_PLANOS: $('#F445_DESC_PLANOS')?.value || '',
+      F445_DESC_PLANOS: collectTextValue('F445_DESC_PLANOS'),
       F446_DOCS:       $('#F446_DOCS')?.value || '',
       F446_EXEC_RES:   $('#F446_EXEC_RES')?.value || '',
 
@@ -1436,8 +1436,19 @@
 
     dbg('[SOLIC-CRP] Payload pronto:', obj);
     ensureDefaultsForPayload(obj);
+
+
+    console.log('DEBUG buildPayload output:', {
+      F44_CRITERIOS: payload.F44_CRITERIOS,
+      F44_DECLS: payload.F44_DECLS,
+      F44_FINALIDADES: payload.F44_FINALIDADES,
+      PRAZO_ADICIONAL_TEXTO: payload.PRAZO_ADICIONAL_TEXTO,
+      PRAZO_ADICIONAL_FLAG: payload.PRAZO_ADICIONAL_FLAG
+    });
+
     return obj;
   }
+
 
   // === Compat converter → transforma os campos granulares do form 2
   //     nas chaves que o template termo_solic_crp.html espera ===
