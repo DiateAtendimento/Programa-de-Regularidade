@@ -1234,7 +1234,25 @@
     el.dataSol.value= fmtBR(now);
     el.horaSol.value= fmtHR(now);
     el.anoSol.value = String(now.getFullYear());
+
   }
+
+  // --- ADICIONAR: helpers para coletar valores dos modais -------------------
+  function collectCheckedValues(selector) {
+    // retorna array de valores (strings) dos checkbox/radio marcados dentro do seletor
+    return Array.from(document.querySelectorAll(selector || ''))
+      .filter(i => i && i.checked)
+      .map(i => String(i.value || '').trim())
+      .filter(Boolean);
+  }
+
+  function collectTextValue(id) {
+    const el = document.getElementById(id);
+    return el ? String(el.value || '').trim() : '';
+  }
+
+
+// -------------------------------------------------------------------------
 
   /* ========= Payload ========= */
   function buildPayload(){
@@ -1341,25 +1359,34 @@
 
       FASE_PROGRAMA: faseCompat,
       F41_OPCAO: $('input[name="F41_OPCAO"]:checked')?.value || '',
-      F42_LISTA: $$(`#F42_LISTA input[type="checkbox"]:checked`).map(i => i.value),
-      F43_LISTA: $$(`#F43_LISTA input[type="checkbox"]:checked`).map(i => i.value),
-      F43_PLANO: $('#F43_PLANO')?.value || '',
-      F43_INCLUIR: $$('#F43_INCLUIR input[type="checkbox"]:checked').map(i => i.value),
-      F44_CRITERIOS:   $$(`#F44_CRITERIOS input[type="checkbox"]:checked`).map(i => i.value),
-      F44_DECLS:       $$(`#blk_44 .d-flex input[type="checkbox"]:checked`).map(i => i.value),
-      F44_FINALIDADES: $$(`#F44_FINALIDADES input[type="checkbox"]:checked`).map(i => i.value),
-      F44_ANEXOS:      $('#F44_ANEXOS')?.value || '',
+      F42_LISTA: collectCheckedValues('#F42_LISTA input[type="checkbox"]'),
+
+      F43_LISTA: collectCheckedValues('#F43_LISTA input[type="checkbox"]'),
+      F43_PLANO: collectTextValue('F43_PLANO'),
+      F43_INCLUIR_B: collectCheckedValues('#F43_INCLUIR_B input[type="checkbox"]'),
+      F43_PLANO_B: collectTextValue('F43_PLANO_B'),
+      F43_INCLUIR: collectCheckedValues('#F43_INCLUIR input[type="checkbox"]'),
+      F44_CRITERIOS: collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
+      F44_DECLS: collectTextValue('F445_DESC_PLANOS') || '',
+      F44_FINALIDADES: collectCheckedValues('#F44_FINALIDADES input[type="checkbox"]'),
+      F44_ANEXOS: collectTextValue('F44_ANEXOS'),
       F45_OK451: !!$('#blk_45 input[type="checkbox"]:checked'),
       F45_DOCS:  $('#F45_DOCS')?.value || '',
       F45_JUST:  $('#F45_JUST')?.value || '',
-      F46_CRITERIOS:   $$(`#F46_CRITERIOS input[type="checkbox"]:checked`).map(i => i.value),
+      F46_CRITERIOS: collectCheckedValues('#F46_CRITERIOS input[type="checkbox"]'),
+      F46_DOCS: collectTextValue('F466_DOCS'),
+      F46_EXEC_RES: collectTextValue('F466_EXEC_RES'),
+
+      PRAZO_ADICIONAL_TEXTO: collectTextValue('PRAZO_ADICIONAL_TEXTO') || collectTextValue('ID_DO_CAMPO_3_4_TEXTO'),
+      PRAZO_ADICIONAL_FLAG: (document.getElementById('PRAZO_ADICIONAL_SOLICITADO')?.checked ? 'SIM' : 'NAO'),
+
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
       F46_PORTE:       $('#F46_PORTE')?.value || '',
       F46_JUST_D:      $('#F46_JUST_D')?.value || '',
       F46_DOCS_D:      $('#F46_DOCS_D')?.value || '',
       F46_JUST_E:      $('#F46_JUST_E')?.value || '',
       F46_DOCS_E:      $('#F46_DOCS_E')?.value || '',
-      F46_FINALIDADES: $$(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i => i.value),
+      F46_FINALIDADES: collectCheckedValues('#F46_FINALIDADES input[type="checkbox"]'),
       F46_ANEXOS:      $('#F46_ANEXOS')?.value || '',
       F46_JUST_PLANOS: $('#F46_JUST_PLANOS')?.value || '',
       F46_COMP_CUMPR:  $('#F46_COMP_CUMPR')?.value || '',
@@ -1368,7 +1395,7 @@
       F4310_LEGISLACAO: $('#F4310_LEGISLACAO')?.value || '',
       F4310_DOCS:       $('#F4310_DOCS')?.value || '',
 
-      F43_DESC_PLANOS: $('#F43_DESC_PLANOS')?.value || '',
+      F43_DESC_PLANOS: collectTextValue('F43_DESC_PLANOS'),
 
       F441_LEGISLACAO: $('#F441_LEGISLACAO')?.value || '',
       F445_DESC_PLANOS: $('#F445_DESC_PLANOS')?.value || '',
