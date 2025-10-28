@@ -1264,15 +1264,15 @@ app.post('/api/termos-registrados', async (req, res) => {
       tipo: /jud/i.test(tipo) ? 'Judicial' : (tipo ? 'Administrativa' : '')
     };
 
-    if (!entePayload.uf && last) {
-      entePayload.uf = (getVal(last,'UF') || '').toString().trim();
-      entePayload.nome = (getVal(last,'ENTE') || '').toString().trim();
-      entePayload.cnpj = cnpj14(getVal(last,'CNPJ_ENTE') || cnpj);
-      entePayload.ug = (getVal(last,'UG') || '').toString().trim();
-      entePayload.cnpj_ug = cnpj14(getVal(last,'CNPJ_UG') || '');
-      entePayload.email = (getVal(last,'EMAIL_ENTE') || '').toString().trim();
-      entePayload.email_ug = (getVal(last,'EMAIL_UG') || '').toString().trim();
-    }
+   if (!entePayload.uf && lastRow) {
+     entePayload.uf = (getVal(lastRow,'UF') || '').toString().trim();
+     entePayload.nome = (getVal(lastRow,'ENTE') || '').toString().trim();
+     entePayload.cnpj = cnpj14(getVal(lastRow,'CNPJ_ENTE') || cnpj);
+     entePayload.ug = (getVal(lastRow,'UG') || '').toString().trim();
+     entePayload.cnpj_ug = cnpj14(getVal(lastRow,'CNPJ_UG') || '');
+     entePayload.email = (getVal(lastRow,'EMAIL_ENTE') || '').toString().trim();
+     entePayload.email_ug = (getVal(lastRow,'EMAIL_UG') || '').toString().trim();
+   }
 
     const esfera = esferaFromEnte(entePayload.nome || getVal(last,'ENTE') || '');
 
