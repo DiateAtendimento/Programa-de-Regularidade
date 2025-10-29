@@ -490,9 +490,9 @@
         fillText('tipo_emissao_ult_crp', p.TIPO_EMISSAO_ULTIMO_CRP || '');
 
         // 3.1
-        fillText('data_vencimento_ultimo_crp', p.DATA_VENC_ULTIMO_CRP || p.venc_ult_crp || '');
+        fillText('data_vencimento_ultimo_crp', p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
         // 3.2 (NOVA: tipo de emissão — Administrativa/Judicial)
-        fillText('tipo_emissao_ultimo_crp', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
+        fillText('tipo_emissao_ultimo_crp', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || p.tipo || '');
 
 
         // 3.2 (opção antiga "motivo principal", se usar ul#opt-3-2)

@@ -105,6 +105,7 @@
     payload.DATA_SOLIC_GERADA = toBR(payload.DATA_SOLIC_GERADA);
     payload.DATA = toBR(payload.DATA);
     payload.DATA_VENC_ULTIMO_CRP = toBR(payload.DATA_VENC_ULTIMO_CRP || payload.DATA_VENCIMENTO_ULTIMO_CRP);
+    payload.DATA_VENCIMENTO_ULTIMO_CRP = payload.DATA_VENC_ULTIMO_CRP;
   }
 
   /* ========= Robust fetch (timeout + retries) ========= */
@@ -1311,10 +1312,7 @@
     const CNPJ_UG_FINAL  = obterCNPJUG(); // string com 14 dígitos ou null
     const EMAIL_UG_FINAL = (el.emailUg?.value || el.ugEmail?.value || '').trim();
 
-    if (!CNPJ_UG_FINAL) {
-      alert('Preencha o CNPJ da UG (campo 1.3 / 1.3.2) para salvar a solicitação.');
-      throw new Error('CNPJ_UG ausente');
-    }
+    if (!CNPJ_UG_FINAL) { console.warn('[solic_crp] CNPJ_UG ausente — salvando como rascunho'); window.__CNPJ_UG_WARNING__ = true; }
 
     let PRAZO_ADICIONAL_COD =
       document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked')?.value || '';
@@ -1380,16 +1378,28 @@
 
       FASE_PROGRAMA: faseCompat,
       F41_OPCAO: $('input[name="F41_OPCAO"]:checked')?.value || '',
-      F42_LISTA: collectCheckedValues('#F42_LISTA input[type="checkbox"]'),
+      F42_LISTA: Array.from(new Set([...
+        collectCheckedValues('#F42_LISTA input[type="checkbox"]'),
+        Array.from(document.querySelectorAll('input[name="F42_ITENS[]"]:checked')).map(i=>i.value.trim())
+      ].flat().filter(Boolean))),
 
       F43_LISTA: collectCheckedValues('#F43_LISTA input[type="checkbox"]'),
       F43_PLANO: collectTextValue('F43_PLANO'),
       F43_INCLUIR_B: collectCheckedValues('#F43_INCLUIR_B input[type="checkbox"]'),
       F43_PLANO_B: collectTextValue('F43_PLANO_B'),
       F43_INCLUIR: collectCheckedValues('#F43_INCLUIR input[type="checkbox"]'),
-      F44_CRITERIOS: collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
-      F44_DECLS: collectCheckedValues('#blk_44 .d-flex input[type="checkbox"]'), // <-- array
-      F44_FINALIDADES: collectCheckedValues('#F44_FINALIDADES input[type="checkbox"]'),
+      F44_CRITERIOS: Array.from(new Set([...
+      collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
+      Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i=>i.value.trim())
+    ].flat().filter(Boolean))),
+      F44_DECLS: Array.from(new Set([...
+      collectCheckedValues('#blk_44 .d-flex input[type="checkbox"]'),
+      Array.from(document.querySelectorAll('input[name="F44_DECLS[]"]:checked')).map(i=>i.value.trim())
+    ].flat().filter(Boolean))),
+      F44_FINALIDADES: Array.from(new Set([...
+      collectCheckedValues('#F44_FINALIDADES input[type="checkbox"]'),
+      Array.from(document.querySelectorAll('input[name="F44_FINALIDADES[]"]:checked')).map(i=>i.value.trim())
+    ].flat().filter(Boolean))),
       F44_ANEXOS: collectTextValue('F44_ANEXOS'),
       F45_OK451: !!$('#blk_45 input[type="checkbox"]:checked'),
       F45_DOCS:  $('#F45_DOCS')?.value || '',
@@ -1584,6 +1594,7 @@
     try{
       fillNowHiddenFields();
       const payload = buildPayload();
+      if (window.__DEBUG_SOLIC_CRP__) { try { console.log('[solic_crp] buildPayload() (PDF) →', JSON.stringify(payload, null, 2)); } catch(_) {} 
 
       // DEBUG: ver o payload que será enviado
       console.log('DEBUG payload (pre-send):', {
@@ -1619,6 +1630,7 @@
     rememberIdemKey(idem);
 
     const payload = buildPayload(); // já inclui IDEMP_KEY (se existir)
+    if (window.__DEBUG_SOLIC_CRP__) { try { console.log('[solic_crp] buildPayload() →', JSON.stringify(payload, null, 2)); } catch(_) {} }
 
     const btn = el.btnSubmit; const old = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = 'Finalizando…';
