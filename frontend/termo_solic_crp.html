@@ -412,6 +412,22 @@
           else if (/4\.1\.2/.test(c) || /(300\s*parcelas|nao possui|não possui)/i.test(c)) p.F41_OPCAO = '4.1.2';
         }
 
+        // --- Fallbacks extras para Fase 4 (quando vierem só campos "compat")
+        if (!p.F41_OPCAO) {
+          const s = String(p.CELEBRACAO_TERMO_PARCELA_DEBITOS || p.celebracao_termo_parcela_debitos || '').toLowerCase();
+          if (s.includes('4.1.1') || s.includes('até 60'))  p.F41_OPCAO = '4.1.1';
+          if (s.includes('4.1.2') || s.includes('até 300')) p.F41_OPCAO = '4.1.2';
+        }
+
+        // Strings com códigos separadas por “; ” ou linhas → arrays
+        const _split = v => Array.isArray(v) ? v : String(v||'').split(/[;\n\r]+/).map(s => s.trim()).filter(Boolean);
+
+        if (!p.F42_LISTA?.length) p.F42_LISTA = _split(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA || p.reg_penden_admin || '');
+        if (!p.F43_LISTA?.length) p.F43_LISTA = _split(p.DEFICIT_ATUARIAL || p.deficit_atuarial || '');
+        if (!p.F44_CRITERIOS?.length) p.F44_CRITERIOS = _split(p.CRITERIOS_ESTRUT_ESTABELECIDOS || p.criterios_estrut || '');
+        if (!p.F46_CRITERIOS?.length) p.F46_CRITERIOS = _split(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || p.man_conformidade || '');
+
+
         // Garante arrays para as fases – evita "Não informado" indevido
         ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
          'F45_DECLS','F46_CRITERIOS','F46_DECLS','F46_FINALIDADES','F462F_CRITERIOS']

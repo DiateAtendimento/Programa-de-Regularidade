@@ -8,13 +8,16 @@
   function dbe(...args){ if (window.__DEBUG_SOLIC_CRP__) console.error(...args); }
 
   /* ========= Config ========= */
-  const API_BASE = (function(){
-    // permite sobrescrever via window.__API_BASE se quiser
-    const override = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
-    return override || '/.netlify/functions/api-proxy';
+  // Preferir o proxy do Netlify SEMPRE (injeta API Key)
+  // Em dev local você pode sobrescrever com window.__API_BASE = 'http://localhost:3000/api'
+  const API_BASE = (function() {
+    const devOverride = (window.__API_BASE && String(window.__API_BASE).replace(/\/+$/, '')) || '';
+    const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    // Em produção, nunca usar override para upstream
+    return isDev && devOverride ? devOverride : '/_api';
   })();
-  
   const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
+
 
   // (opcional) chave para o backend
   const API_KEY = window.__API_KEY || '';
