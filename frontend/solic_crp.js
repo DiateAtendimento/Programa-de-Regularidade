@@ -1288,7 +1288,11 @@
       || (document.getElementById('FASE_PROGRAMA')?.value || '');
 
     // 4.1 opção (radio)
-    const F41_OPCAO = (document.querySelector('input[name="F41_OPCAO"]:checked')?.value || '').trim();
+     const F41_OPCAO = (
+      document.querySelector('input[name="F41_OPCAO"]:checked')?.value ||
+      document.querySelector('input[name="F41_OPCAO_4_1"]:checked')?.value || // fallback
+      ''
+    ).trim();
 
     // 4.2 lista (checkboxes, exemplo name="F42_ITENS[]")
     const F42_LISTA = Array.from(document.querySelectorAll('input[name="F42_ITENS[]"]:checked')).map(i => i.value.trim());
@@ -1385,9 +1389,11 @@
 
       F43_LISTA: collectCheckedValues('#F43_LISTA input[type="checkbox"]'),
       F43_PLANO: collectTextValue('F43_PLANO'),
-      F43_INCLUIR_B: collectCheckedValues('#F43_INCLUIR_B input[type="checkbox"]'),
       F43_PLANO_B: collectTextValue('F43_PLANO_B'),
-      F43_INCLUIR: collectCheckedValues('#F43_INCLUIR input[type="checkbox"]'),
+      // Joi exige STRING; mandamos join("; ")
+      F43_INCLUIR: collectCheckedValues('#F43_INCLUIR input[type="checkbox"]').join('; '),
+      // (se existir a lista “B”, também como string)
+      F43_INCLUIR_B: collectCheckedValues('#F43_INCLUIR_B input[type="checkbox"]').join('; '),
       F44_CRITERIOS: Array.from(new Set([...
         collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
         Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i=>i.value.trim())
@@ -1505,14 +1511,35 @@
       byNameVal('tipo_emissao_ult_crp') ||
       byIdVal('tipo_emissao_ult_crp') ||
       byNameVal('tipo') || '';
-    obj.TIPO_EMISSAO_ULTIMO_CRP = (_tipoEmissaoUltCrpRaw || '').trim();
+       obj.TIPO_EMISSAO_ULTIMO_CRP = (_tipoEmissaoUltCrpRaw || '').trim();
+      if (/^adm/i.test(obj.TIPO_EMISSAO_ULTIMO_CRP)) obj.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
+      if (/^jud/i.test(obj.TIPO_EMISSAO_ULTIMO_CRP)) obj.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
 
     obj.ULTIMO_CRP_DATA = obj.DATA_VENC_ULTIMO_CRP;
     obj.ULTIMO_CRP_TIPO = obj.TIPO_EMISSAO_ULTIMO_CRP;
 
+    // Fallback: se o rádio não veio, derive das flags 3.2 (mantém 3.4.x no PDF)
+    if (!obj.PRAZO_ADICIONAL_COD) {
+      if (obj.FIN_3_2_MANUTENCAO_CONFORMIDADE === 'SIM') obj.PRAZO_ADICIONAL_COD = '3.4.1';
+      else if (obj.FIN_3_2_DEFICIT_ATUARIAL === 'SIM') obj.PRAZO_ADICIONAL_COD = '3.4.2';
+      else if (obj.FIN_3_2_CRITERIOS_ESTRUTURANTES === 'SIM') obj.PRAZO_ADICIONAL_COD = '3.4.3';
+      else if (obj.FIN_3_2_OUTRO_CRITERIO_COMPLEXO === 'SIM') obj.PRAZO_ADICIONAL_COD = '3.4.4';
+    }
+    if (!obj.PRAZO_ADICIONAL_TEXTO && obj.PRAZO_ADICIONAL_COD) {
+      obj.PRAZO_ADICIONAL_TEXTO = ({
+        '3.4.1': '3.4.1 Manutenção da conformidade',
+        '3.4.2': '3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)',
+        '3.4.3': '3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)',
+        '3.4.4': '3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade'
+      })[obj.PRAZO_ADICIONAL_COD] || '';
+    }
+    obj.PRAZO_ADICIONAL_FLAG = obj.PRAZO_ADICIONAL_COD ? 'SIM' : 'NAO';
 
     // === [3.4] Prazo adicional — somente a alternativa selecionada ===
-    const _prz = document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked');
+    const _prz =
+    document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked') ||
+    document.querySelector('input[name="PRAZO_ADICIONAL"]:checked') ||
+    document.querySelector('input[name^="PRAZO_ADICIONAL"]:checked');
     obj.PRAZO_ADICIONAL_COD = _prz?.value || obj.PRAZO_ADICIONAL_COD || '';
     obj.PRAZO_ADICIONAL_TEXTO =
       (_prz?.dataset?.label ||
@@ -1525,7 +1552,7 @@
       if (Array.isArray(obj[key])) obj[`${key}[]`] = obj[key];
     }
     [
-      'F42_LISTA','F43_LISTA','F43_INCLUIR','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
+      'F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
       'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES'
     ].forEach(aliasArray);
 
