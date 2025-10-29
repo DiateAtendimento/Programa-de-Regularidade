@@ -327,25 +327,37 @@
         
         // ===== (3.1 e 3.2) Prefill a partir de p.crp / p.CRP
         const crp = p.crp || p.CRP || {};
-        // 3.1
+
+        // 3.1 - aceitar várias variantes de nome/formatos de data que o form pode enviar
         p.DATA_VENC_ULTIMO_CRP = p.DATA_VENC_ULTIMO_CRP
+          ?? p.data_vencimento_ultimo_crp
+          ?? p.data_venc_ult_crp
           ?? crp.data_venc
+          ?? crp.data_validade
           ?? crp.DATA_VALIDADE_DMY
           ?? crp.DATA_VALIDADE_ISO
+          ?? crp.DATA_VALIDADE
+          ?? crp.validade
+          ?? crp.vencimento
           ?? '';
-        // 3.2
-        // depois — regra: "sim" ⇒ Judicial ; "não" ⇒ Administrativa
-        p.TIPO_EMISSAO_ULTIMO_CRP = (p.TIPO_EMISSAO_ULTIMO_CRP || '').trim();
+
+        // 3.2 Tipo de emissão - normalizar a partir de várias chaves possíveis
+        p.TIPO_EMISSAO_ULTIMO_CRP = (p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ultimo_crp || p.tipo_emissao_ult_crp || p.tipo_emissao || '').trim();
         if (!p.TIPO_EMISSAO_ULTIMO_CRP) {
-          const flag = crp.e_judicial ?? crp.tipo_simnao ?? p.CRP_E_JUDICIAL ?? p.CRP_TIPO_SIMNAO ?? '';
+          const flag = crp.e_judicial ?? crp.tipo_simnao ?? p.CRP_E_JUDICIAL ?? p.CRP_TIPO_SIMNAO ?? crp.emissao ?? crp.tipo_emissao ?? '';
           if (asYes(flag))      p.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
           else if (asNo(flag))  p.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
-          else                  p.TIPO_EMISSAO_ULTIMO_CRP = (crp.tipo || '').trim(); // fallback antigo, se existir
+          else {
+            // fallback textual
+            const txt = String(crp.tipo || crp.emissao || p.tipo || '').trim();
+            if (txt) p.TIPO_EMISSAO_ULTIMO_CRP = txt;
+          }
         }
 
         // Mantém compat anterior do 3.1 no template (data-k="venc_ult_crp")
         p.venc_ult_crp = p.venc_ult_crp
           ?? p.DATA_VENC_ULTIMO_CRP
+          ?? p.DATA_VENCIMENTO_ULTIMO_CRP
           ?? p.DATA_VENCIMENTO_ULTIMO_CRP
           ?? '';
 
@@ -359,18 +371,58 @@
           else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) p.OPT_3_2 = '3.2.4';
         }
 
-        // ===== 3.4 (novo) – código único vindo do form 2
-        // aceita tanto 3.4.x (novo) quanto 3.2.x (legado) e normaliza para 3.4.x
-        const _prazo = String(p.PRAZO_ADICIONAL_COD || p.prazo_adicional_cod || p.OPT_3_2 || '').trim();
-        p.PRAZO_ADICIONAL_COD = _prazo.replace(/^3\.2\.(\d)$/, '3.4.$1'); // 3.2.1 -> 3.4.1
-        p.PRAZO_ADICIONAL_TEXTO = p.PRAZO_ADICIONAL_TEXTO || p.prazo_adicional_texto || '';
+        // ===== 3.4 (novo) – código único vindo do form 2 (agora com detecção extra)
+        // aceita tanto 3.4.x (novo) quanto 3.2.x (legado) e diversas variantes de chave/valor
+        const _rawPrazo = String(
+          p.PRAZO_ADICIONAL_COD
+          || p.prazo_adicional_cod
+          || p.prazo_adicional
+          || p.prazo
+          || p.OPT_3_4
+          || p.opt_3_4
+          || p.OPT_3_2
+          || ''
+        ).trim();
+
+        let _prazo = _rawPrazo || '';
+
+        // se vazio, varre chaves/valores do payload procurando um código 3.4.x ou 3.2.x
+        if (!_prazo) {
+          for (const k of Object.keys(p0 || p)) {
+            const v = String((p0[k] ?? p[k] ?? '')).trim();
+            // valor contendo "3.4.1" etc
+            const mv = v.match(/(3\.[24]\.\d)/);
+            if (mv) { _prazo = mv[1]; break; }
+            // chave contendo 3.4.1 ou patterns tipo 3_4_1 ou fPrazo_3_4_1
+            const mk = k.match(/(3[._-]?(?:2|4)[._-]?\d|3_4_\d|3_2_\d)/i);
+            if (mk) {
+              const codeFromKey = mk[0].replace(/_/g, '.').replace(/([^\d\.])/g,'').replace(/\.{2,}/g,'.');
+              // normalizar 3.2.x → 3.4.x
+              _prazo = codeFromKey.replace(/^3\.2\.(\d)$/, '3.4.$1');
+              break;
+            }
+            // se valor for número 1..4 assumir 3.4.x (caso legacy envie só '1'..'4')
+            if (/^[1-9]$/.test(v)) { _prazo = '3.4.' + v; break; }
+          }
+        }
+        p.PRAZO_ADICIONAL_COD = (_prazo || '').replace(/^3\.2\.(\d)$/, '3.4.$1');
+        p.PRAZO_ADICIONAL_TEXTO = p.PRAZO_ADICIONAL_TEXTO || p.prazo_adicional_texto || p.prazo_adicional_desc || '';
 
         // ===== Critérios irregulares (3.3)
         const candCriterios = (p.CRITERIOS_IRREGULARES || p.CRITERIOS_LIST || p.CRIT_IRREGULARES || p.CRITERIOS || p.CODIGOS_CRITERIOS || p.codigos_criterios || '');
         p.__CRITERIOS_ARR__ = asArr(candCriterios);
 
         // ===== Fase / demais campos
-        p.__FASE_SEL__ = String(p.FASE_PROGRAMA || p.fase_programa || p.FASE || p.fase || '').trim();
+        p.__FASE_SEL__ = String(
+          p.FASE_PROGRAMA
+          || p.fase_programa
+          || p.FASE
+          || p.fase
+          || p.fase_selecionada
+          || p.fase_codigo
+          || p.fase_sel
+          || ''
+        ).trim();
 
         // normaliza F41 (remove espaços, acentos e coloca em minúsculas para os testes textuais)
         p.F41_OPCAO = String(p.F41_OPCAO || p.f41_opcao || '').trim();

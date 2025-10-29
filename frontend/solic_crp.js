@@ -134,8 +134,15 @@
       try{
         const start = performance.now();
         const res = await fetch(finalURL, {
-          method, headers, body, signal: ctrl.signal,
-          cache:'no-store', credentials:'same-origin', redirect:'follow', mode:'cors'
+          method,
+          headers,
+          body,
+          signal: ctrl.signal,
+          cache: 'no-store',
+          // trocar same-origin por include — útil se o backend/proxy usa cookie/session
+          credentials: 'include',
+          redirect: 'follow',
+          mode: 'cors'
         });
         const dur = Math.round(performance.now() - start);
         clearTimeout(to);
@@ -1309,7 +1316,13 @@
 
     // UG consolidados (1.3 OU 1.3.2)
     const UG_FINAL       = (el.ug?.value || el.ugNome?.value || '').trim();
-    const CNPJ_UG_FINAL  = obterCNPJUG(); // string com 14 dígitos ou null
+    let CNPJ_UG_FINAL  = obterCNPJUG(); // retorna 14 dígitos ou null
+    if(!CNPJ_UG_FINAL) {
+      // tenta extrair diretamente do input que existe em alguns layouts
+      const rawCnpj = (document.getElementById('CNPJ_UG')?.value || document.getElementById('ug_cnpj')?.value || '');
+      const digitsOnly = String(rawCnpj).replace(/\D+/g,'');
+      CNPJ_UG_FINAL = (digitsOnly.length === 14) ? digitsOnly : null;
+    }
     const EMAIL_UG_FINAL = (el.emailUg?.value || el.ugEmail?.value || '').trim();
 
     if (!CNPJ_UG_FINAL) { console.warn('[solic_crp] CNPJ_UG ausente — salvando como rascunho'); window.__CNPJ_UG_WARNING__ = true; }
