@@ -1585,16 +1585,26 @@
 
   /* ========= Ações: Gerar & Submit ========= */
   let gerarBusy=false;
-  el.btnGerar?.addEventListener('click', async ()=>{
-    if(gerarBusy) return;
-    if(!validarCamposBasicos()) return;
-    const vf = validarFaseSelecionada(); if(!vf.ok){ showAtencao([vf.motivo]); return; }
+  el.btnGerar?.addEventListener('click', async () => {
+    if (gerarBusy) return;
+    if (!validarCamposBasicos()) return;
+    const vf = validarFaseSelecionada();
+    if (!vf.ok) { showAtencao([vf.motivo]); return; }
 
-    gerarBusy=true; el.btnGerar.disabled=true;
-    try{
+    gerarBusy = true; 
+    el.btnGerar.disabled = true;
+
+    try {
       fillNowHiddenFields();
       const payload = buildPayload();
-      if (window.__DEBUG_SOLIC_CRP__) { try { console.log('[solic_crp] buildPayload() (PDF) →', JSON.stringify(payload, null, 2)); } catch(_) {} 
+
+      if (window.__DEBUG_SOLIC_CRP__) {
+        try {
+          console.log('[solic_crp] buildPayload() (PDF) →', JSON.stringify(payload, null, 2));
+        } catch (e) {
+          console.warn('[solic_crp] falha ao serializar payload (PDF)', e);
+        }
+      }
 
       // DEBUG: ver o payload que será enviado
       console.log('DEBUG payload (pre-send):', {
@@ -1605,17 +1615,21 @@
         PRAZO_ADICIONAL_FLAG: payload.PRAZO_ADICIONAL_FLAG
       });
 
-      const md = bootstrap.Modal.getOrCreateInstance($('#modalGerandoPdf')); md.show();
+      const md = bootstrap.Modal.getOrCreateInstance($('#modalGerandoPdf'));
+      md.show();
       await gerarBaixarPDF(payload);
       md.hide();
       bootstrap.Modal.getOrCreateInstance($('#modalSucesso')).show();
-    }catch(e){
+
+    } catch (e) {
       bootstrap.Modal.getOrCreateInstance($('#modalGerandoPdf')).hide();
-      showErro(friendlyErrorMessages(e,'Não foi possível gerar o PDF.'));
-    }finally{
-      el.btnGerar.disabled=false; gerarBusy=false;
+      showErro(friendlyErrorMessages(e, 'Não foi possível gerar o PDF.'));
+    } finally {
+      el.btnGerar.disabled = false;
+      gerarBusy = false;
     }
   });
+
 
   // ——— SUBMIT ———
   const form = $('#solicCrpForm');
