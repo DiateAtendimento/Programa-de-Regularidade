@@ -213,9 +213,6 @@
 
           <p class="small mt"><strong>4.6.5 Justificativas quanto ao(s) Plano(s) de Ação:</strong></p>
           <div id="f46-just-planos"></div>
-
-          <p class="small mt"><strong>4.6.6 Comprovação do cumprimento do(s) Plano(s):</strong></p>
-          <div id="f46-comp-cumpr"></div>
         </div>
       </section>
 
@@ -284,7 +281,7 @@
         $$('[data-k="'+key+'"]').forEach(el => { el.textContent = s; });
       }
       /* ===== Utilitários ===== */
-      function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+      function escapeHtml(s){ return String(s||'').replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
       
       function asArr(v){
         if (Array.isArray(v)) return v;
@@ -329,7 +326,6 @@
         p.EMAIL_REP_UG = p.EMAIL_REP_UG ?? p.email_rep_ug;
         p.TEL_REP_UG   = p.TEL_REP_UG   ?? p.tel_rep_ug;
         
-        
         // ===== (3.1 e 3.2) Prefill a partir de p.crp / p.CRP
         const crp = p.crp || p.CRP || {};
 
@@ -362,7 +358,6 @@
         // Mantém compat anterior do 3.1 no template (data-k="venc_ult_crp")
         p.venc_ult_crp = p.venc_ult_crp
           ?? p.DATA_VENC_ULTIMO_CRP
-          ?? p.DATA_VENCIMENTO_ULTIMO_CRP
           ?? p.DATA_VENCIMENTO_ULTIMO_CRP
           ?? '';
 
@@ -401,7 +396,8 @@
             // chave contendo 3.4.1 ou patterns tipo 3_4_1 ou fPrazo_3_4_1
             const mk = k.match(/(3[._-]?(?:2|4)[._-]?\d|3_4_\d|3_2_\d)/i);
             if (mk) {
-              const codeFromKey = mk[0].replace(/_/g, '.').replace(/([^\d\.])/g,'').replace(/\.{2,}/g,'.');
+              const codeFromKey = mk[0].replace(/_/g, '.').replace(/([^
+\d.])/g,'').replace(/\.\{2,}/g,'.');
               // normalizar 3.2.x → 3.4.x
               _prazo = codeFromKey.replace(/^3\.2\.(\d)$/, '3.4.$1');
               break;
@@ -496,8 +492,8 @@
       function hojeBR_robusto(){
         try{
           const s = new Date().toLocaleDateString('pt-BR');
-          if (s && /\d{2}\/\d{2}\/\d{4}/.test(s)) return s;
-        }catch(_){}
+          if (s && /\d{2}\/:\d{2}\/:\d{4}/.test(s)) return s;
+        }catch(_){ }
         const d = new Date();
         const dd = String(d.getDate()).padStart(2,'0');
         const mm = String(d.getMonth()+1).padStart(2,'0');
@@ -544,7 +540,7 @@
         /* 3) CRP */
 
         fillText('venc_ult_crp', p.venc_ult_crp || '');
-        fillText('tipo_emissao_ult_crp', p.TIPO_EMISSAO_ULTIMO_CRP || '');
+        fillText('tipo_emissao_ultimo_crp', p.TIPO_EMISSAO_ULTIMO_CRP || '');
 
         // 3.1
         fillText('data_vencimento_ultimo_crp',
@@ -556,14 +552,19 @@
           p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || p.tipo || ''
         );
 
-        // 3.4 — mostrar somente a alternativa selecionada
-        const __prz = (p.PRAZO_ADICIONAL_COD || p.PRAZO_ADICIONAL_FLAG || '').trim();
-        const showOnlyPrazo = (code) => {
+        // 3.4 — mostrar somente a alternativa selecionada (USAR APENAS O CÓDIGO, NÃO A FLAG)
+        const __prz = String(p.PRAZO_ADICIONAL_COD || '').trim();
+        function showOnlyPrazo(code){
+          // Mostrar/ocultar com base no atributo data-prz (não removemos elementos)
           document.querySelectorAll('[data-prz]').forEach(n => {
-            n.style.display = (n.getAttribute('data-prz') === code && code) ? '' : 'none';
+            try {
+              n.style.display = (code && (n.getAttribute('data-prz') === code)) ? '' : 'none';
+            } catch(e) { /* safe */ }
           });
-        };
+        }
+        // aplica
         showOnlyPrazo(__prz);
+        // campo textual opcional do 3.4
         fillText('prz_3_4_escolha', p.PRAZO_ADICIONAL_TEXTO || '');
 
 
@@ -580,20 +581,21 @@
             ul.appendChild(li);
           }
         })();
-
         
-        // 3.4 (novo) – mostra apenas a alternativa escolhida
+        // 3.4 (novo) – mantém os LIs no DOM e oculta os não selecionados
         (function(){
           const ul = document.getElementById('opt-3-4'); if (!ul) return;
-          const code = (p.PRAZO_ADICIONAL_COD || '').trim(); // ex.: "3.4.1"
-          if (code) {
-            [...ul.children].forEach(li => {
-              if (li.getAttribute('data-code') !== code) li.remove();
-            });
-          } else {
+          const code = String(p.PRAZO_ADICIONAL_COD || '').trim(); // ex.: "3.4.1"
+          [...ul.children].forEach(li => {
+            const attr = (li.getAttribute('data-prz') || li.getAttribute('data-code') || '').trim();
+            li.style.display = (code && attr === code) ? '' : 'none';
+          });
+          // fallback "Não informado" se nenhum visível
+          const anyVisible = [...ul.children].some(li => li.style.display === '');
+          if (!anyVisible) {
             ul.innerHTML = '';
             const li = document.createElement('li');
-            li.textContent = __NA_LABEL__();
+            li.textContent = (typeof __NA_LABEL__ === 'function' ? __NA_LABEL__() : 'Não informado');
             ul.appendChild(li);
           }
         })();
@@ -612,7 +614,7 @@
         fillText('f44_decls', listify(p.F44_DECLS));
         fillText('f44_finalidades', listify(p.F44_FINALIDADES));
 
-        // Opcional: se vier vazio, esconda o bloco “Não informado”
+        // Opcional: se vier vazio, esconda o bloco “Não informado"
         ['f41_opcao','f42_lista','f43_lista','f44_criterios','f44_decls','f44_finalidades'].forEach(id=>{
           const el = document.getElementById(id);
           if (el && !el.textContent.trim()) {
@@ -620,7 +622,6 @@
             wrap.style.display = 'none';
           }
         });
-
 
         // 3.3
         liList('#criterios-list', p.__CRITERIOS_ARR__);
@@ -656,7 +657,7 @@
           }
           case '4.4': {
             liList('#f44-criterios',   p.F44_CRITERIOS);
-            liList('#f44-decls',       p.F44_DECLS);
+            liList('#f44_decls',       p.F44_DECLS);
             liList('#f44-finalidades', p.F44_FINALIDADES);
 
             const ax = splitLines(p.F44_ANEXOS || '');
@@ -682,7 +683,7 @@
             const j = splitLines(p.F45_JUST || '');
             const docsBox = document.getElementById('f45-docs');
             const justBox = document.getElementById('f45-just');
-            if (docsBox) docsBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+            if (docsBox) docsBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__ ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             if (justBox) justBox.innerHTML = j.length ? '<ul>'+j.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             break;
           }
@@ -762,7 +763,7 @@
               });
             });
           }
-        }catch(_){}
+        }catch(_){ }
       }
 
       /* Modal PDF (abrir/fechar) */
@@ -779,9 +780,9 @@
           if ([...qs.keys()].length) {
             const obj = {}; qs.forEach((v,k)=>{ obj[k]=v; });
             window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, obj);
-            try { run(window.__TERMO_DATA__); } catch(_){}
+            try { run(window.__TERMO_DATA__); } catch(_){ }
           }
-        }catch(_){}
+        }catch(_){ }
       })();
       if (window.__TERMO_DATA__) { try { run(window.__TERMO_DATA__); } catch {} }
       document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
@@ -815,37 +816,10 @@
   </script>
 
   <script>
-    // Se o backend já colocou window.__TERMO_DATA__, renderiza e dispara os eventos esperados pelo gerador de PDF
-    (function () {
-      function fire() {
-        try {
-          document.dispatchEvent(new CustomEvent('TERMO_DATA'));
-          document.dispatchEvent(new CustomEvent('TERMO_DATA_READY'));
-          // Sinaliza "pronto para imprimir" (o servidor espera isso)
-          setTimeout(function () {
-            window.__TERMO_PRINT_READY__ = true;
-            document.dispatchEvent(new Event('TERMO_PRINT_READY'));
-          }, 0);
-        } catch (e) {}
-      }
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', fire);
-      } else {
-        fire();
-      }
-    })();
+    /* MARCADOR: REMOVED_DUPLICATE_PRZ_TOGGLE */
+    /* Removido: toggle duplicado que conflituava com a lógica principal de exibição de #opt-3-4.
+       Lógica centralizada em run() acima. */
   </script>
-
-  <script>
-    (function(){
-      var data = (window.__TERMO_DATA__||{});
-      var code = (data.PRAZO_ADICIONAL_COD || '').replace(/^3\.2\./,'3.4.');
-      document.querySelectorAll('#opt-3-4 [data-prz]').forEach(function(li){
-        li.style.display = (li.getAttribute('data-prz')===code ? '' : 'none');
-      });
-    })();
-  </script>
-
 
 
 </body>
