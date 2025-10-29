@@ -1426,6 +1426,7 @@ const schemaTermoSolicPdf = Joi.object({
   ).optional(),
   FASE_PROGRAMA: Joi.string().valid('4.1','4.2','4.3','4.4','4.5','4.6').allow(''),
   F41_OPCAO: Joi.string().allow(''),
+  F41_LISTA: Joi.array().items(Joi.string()).optional(),
   F42_LISTA: Joi.array().items(Joi.string()).optional(),
   F43_LISTA: Joi.array().items(Joi.string()).optional(),
   F43_JUST: Joi.string().allow(''),
@@ -1498,6 +1499,7 @@ const schemaSolicCrp = Joi.object({
   // 4.x – Fases e campos auxiliares
   FASE_PROGRAMA: Joi.string().valid('4.1','4.2','4.3','4.4','4.5','4.6').allow(''),
   F41_OPCAO: Joi.string().allow(''),
+  F41_LISTA: Joi.array().items(Joi.string()).optional(),
   F42_LISTA: Joi.array().items(Joi.string()).optional(),
 
   F43_LISTA: Joi.array().items(Joi.string()).optional(),
@@ -1757,7 +1759,7 @@ const SOLIC_HEADERS = [
   'FIN_3_2_MANUTENCAO_CONFORMIDADE','FIN_3_2_DEFICIT_ATUARIAL','FIN_3_2_CRITERIOS_ESTRUTURANTES','FIN_3_2_OUTRO_CRITERIO_COMPLEXO',
   'TIPO_EMISSAO_ULTIMO_CRP','DATA_VENC_ULTIMO_CRP',
   'CRITERIOS_IRREGULARES',
-  'FASE_PROGRAMA','F41_OPCAO','F42_LISTA','F43_LISTA',
+  'FASE_PROGRAMA','F41_OPCAO','F41_LISTA','F42_LISTA','F43_LISTA',
   'F4310_OPCAO','F4310_LEGISLACAO','F4310_DOCS',
   'F43_JUST','F43_INCLUIR','F43_PLANO','F43_DESC_PLANOS',
   'F44_DECLS','F441_LEGISLACAO','F44_FINALIDADES','F44_CRITERIOS','F44_ANEXOS',
@@ -2113,6 +2115,7 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
 
       FASE_PROGRAMA: p.FASE_PROGRAMA || '',
       F41_OPCAO: p.F41_OPCAO || '',
+      F41_LISTA: asCSV(p.F41_LISTA),
       F42_LISTA: asCSV(p.F42_LISTA),
 
       F43_LISTA: asCSV(p.F43_LISTA),
@@ -2357,6 +2360,13 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
                                 || flat['tipo'];
     flat['crp_tipo'] = flat['crp_tipo'] || flat['tipo_emissao_ult_crp'];
 
+    const setText = (sel, v) => {
+      const el = document.querySelector(sel);
+      if (el) el.textContent = (v && String(v).trim()) ? String(v) : (useNA ? NA_LABEL : '');
+    };
+    setText('[data-k="data_vencimento_ultimo_crp"]', fmtBR(flat['venc_ult_crp']));
+    setText('[data-k="tipo_emissao_ultimo_crp"]',    flat['crp_tipo']);
+
     // Data que aparece antes das assinaturas
     flat['data_termo'] = flat['data_termo'] 
                       || fmtBR(flat['data_termo_gerado']) 
@@ -2393,7 +2403,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
 
     // 3.2 (ul#opt-3-2) – marca apenas a opção selecionada se existir F41_OPCAO
     const opt = (flat['f41_opcao'] || flat['f4310_opcao'] || '').trim();
-    const ulOpt = document.getElementById('opt-3-4'); // agora 3.4
+    const ulOpt = document.getElementById('opt-4-1'); // lista das opções exibidas da 4.1
     if (ulOpt) {
       ulOpt.querySelectorAll('li').forEach(li => {
         const code = (li.getAttribute('data-code') || '').trim();
@@ -2421,7 +2431,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     fillList('criterios-list', flat['f44_criterios'] || flat['criterios_irregulares']);
 
     // Fases
-    fillList('f41-itens', flat['f41_lista'] || flat['f41_itens']);
+    fillList('f41-itens', flat['f41_lista'] || flat['f41_itens']); // com schema acima, agora vem
     fillList('f42-itens', flat['f42_lista']);
     fillList('f43-itens', flat['f43_lista']);
     fillList('f44-criterios', flat['f44_criterios']);
@@ -2447,10 +2457,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     fillBlockCsv('f44-anexos',flat['f44_anexos']);
 
     // Flags específicas mostradas em spans simples
-    const setText = (sel, v) => {
-      const el = document.querySelector(sel);
-      if (el) el.textContent = (v && String(v).trim()) ? String(v) : (useNA ? NA_LABEL : '');
-    };
+
     setText('[data-k="f43_just"]',  flat['f43_just']);
     setText('[data-k="f43_plano"]', flat['f43_plano']);
     setText('[data-k="f441_legislacao"]', flat['f441_legislacao']);
