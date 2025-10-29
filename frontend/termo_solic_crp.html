@@ -112,12 +112,12 @@
         <p class="small no-print">Será exibida apenas a alternativa selecionada no formulário.</p>
 
         <ul id="opt-3-4">
-          <!-- Mantive data-code (legado) e adicionei data-prz para o filtro -->
-          <li data-code="3.4.1" data-prz="3.4.1"><strong>3.4.1 Manutenção da conformidade</strong></li>
-          <li data-code="3.4.2" data-prz="3.4.2"><strong>3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</strong></li>
-          <li data-code="3.4.3" data-prz="3.4.3"><strong>3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</strong></li>
-          <li data-code="3.4.4" data-prz="3.4.4"><strong>3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade</strong></li>
+          <li data-prz="3.4.1"><strong>3.4.1 Manutenção da conformidade</strong></li>
+          <li data-prz="3.4.2"><strong>3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</strong></li>
+          <li data-prz="3.4.3"><strong>3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</strong></li>
+          <li data-prz="3.4.4"><strong>3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade</strong></li>
         </ul>
+
 
         <!-- Opcional: espaço para inserir o texto exato do rádio selecionado (PRAZO_ADICIONAL_TEXTO) -->
         <p id="prz_3_4_escolha"></p>
@@ -835,6 +835,17 @@
       }
     })();
   </script>
+
+  <script>
+    (function(){
+      var data = (window.__TERMO_DATA__||{});
+      var code = (data.PRAZO_ADICIONAL_COD || '').replace(/^3\.2\./,'3.4.');
+      document.querySelectorAll('#opt-3-4 [data-prz]').forEach(function(li){
+        li.style.display = (li.getAttribute('data-prz')===code ? '' : 'none');
+      });
+    })();
+  </script>
+
 
 
 </body>

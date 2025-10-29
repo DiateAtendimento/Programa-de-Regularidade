@@ -1478,22 +1478,25 @@
     });
 
     // === [3.1 e 3.2] Normalização dos campos do último CRP ===
-    // helpers locais
     const byNameVal = (n) => document.querySelector(`[name="${n}"]`)?.value || '';
     const byIdVal   = (i) => document.getElementById(i)?.value || '';
+    const toBR = (v)=>{
+      if(!v) return '';
+      const s = String(v).trim();
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      return m ? `${m[3]}/${m[2]}/${m[1]}` : s;
+    };
 
-    // 3.1 Data de vencimento do último CRP (variações de name/id)
+    // 3.1 Data de vencimento do último CRP (aceita vários nomes/legados)
     const _dataVencUltCrpRaw =
       byNameVal('DATA_VENC_ULTIMO_CRP') ||
       byNameVal('DATA_VENCIMENTO_ULTIMO_CRP') ||
       byIdVal('DATA_VENC_ULTIMO_CRP') ||
       byIdVal('DATA_VENCIMENTO_ULTIMO_CRP') ||
       byNameVal('data_venc_ult_crp') ||
-      byIdVal('data_venc_ult_crp') ||
-      obj.DATA_VENCIMENTO_ULTIMO_CRP || '';
-
-    obj.DATA_VENC_ULTIMO_CRP = toDateBR((_dataVencUltCrpRaw || '').trim());
-    obj.DATA_VENCIMENTO_ULTIMO_CRP = obj.DATA_VENC_ULTIMO_CRP; // espelho aceito pelo template
+      byIdVal('data_venc_ult_crp') || '';
+    obj.DATA_VENC_ULTIMO_CRP = toBR(_dataVencUltCrpRaw);
+    obj.DATA_VENCIMENTO_ULTIMO_CRP = obj.DATA_VENC_ULTIMO_CRP; // alias que o template aceita
 
     // 3.2 Tipo de emissão do último CRP (Administrativa/Judicial)
     const _tipoEmissaoUltCrpRaw =
@@ -1501,10 +1504,12 @@
       byIdVal('TIPO_EMISSAO_ULTIMO_CRP') ||
       byNameVal('tipo_emissao_ult_crp') ||
       byIdVal('tipo_emissao_ult_crp') ||
-      byNameVal('tipo') ||
-      obj.TIPO_EMISSAO_ULTIMO_CRP || '';
-
+      byNameVal('tipo') || '';
     obj.TIPO_EMISSAO_ULTIMO_CRP = (_tipoEmissaoUltCrpRaw || '').trim();
+
+    obj.ULTIMO_CRP_DATA = obj.DATA_VENC_ULTIMO_CRP;
+    obj.ULTIMO_CRP_TIPO = obj.TIPO_EMISSAO_ULTIMO_CRP;
+
 
     // === [3.4] Prazo adicional — somente a alternativa selecionada ===
     const _prz = document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked');
@@ -1515,7 +1520,15 @@
       _prz?.nextElementSibling?.innerText ||
       obj.PRAZO_ADICIONAL_TEXTO || '').trim();
 
-    
+    // ——— Aliases com [] para agradar validações Joi do backend ———
+    function aliasArray(key){
+      if (Array.isArray(obj[key])) obj[`${key}[]`] = obj[key];
+    }
+    [
+      'F42_LISTA','F43_LISTA','F43_INCLUIR','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
+      'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES'
+    ].forEach(aliasArray);
+
 
     return obj;
   }
@@ -1558,18 +1571,23 @@
     const DATA_TERMO_GERADO = p.DATA_SOLIC_GERADA || p.DATA || '';
 
     return {
-      CELEBRACAO_TERMO_PARCELA_DEBITOS,
+      CELEBRACAO_TERMO_PARCELA_DEBITOS,     // usado em alguns templates
+      F41_OPCAO_TXT: CELEBRACAO_TERMO_PARCELA_DEBITOS, // alias
+      FASE_41_DESC:  CELEBRACAO_TERMO_PARCELA_DEBITOS, // alias
+
       REGULARIZACAO_PENDEN_ADMINISTRATIVA,
       DEFICIT_ATUARIAL,
       CRITERIOS_ESTRUT_ESTABELECIDOS,
       MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS,
+
       COMPROMISSO_FIRMADO_ADESAO,
       PROVIDENCIA_NECESS_ADESAO,
       CONDICAO_VIGENCIA,
+
       DATA_TERMO_GERADO,
-      // também mantenho ESFERA, pois o render usa (ele já vem de p.ESFERA)
       ESFERA: p.ESFERA || ''
     };
+
   }
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
@@ -1587,7 +1605,7 @@
 
     // 🔥 Aquece o backend/Puppeteer ANTES de pedir o PDF (evita 502/restart)
     try {
-      await fetchJSON(api('/_api/warmup'), {}, { label: 'warmup', timeout: 8000, retries: 1 });
+      await fetchJSON(api('/warmup'), {}, { label: 'warmup', timeout: 8000, retries: 1 });
     } catch (_) { /* segue se warmup falhar */ }
 
     // Garante que o serviço está de pé (proxy → backend)
