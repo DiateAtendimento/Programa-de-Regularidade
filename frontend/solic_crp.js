@@ -29,7 +29,7 @@
     const end = Date.now() + timeoutMs;
     while (Date.now() < end) {
       try {
-        const r = await fetchJSON(api('/_api/health'), {}, { label: 'health', timeout: 4000, retries: 0 });
+        const r = await getJSON(api('/health'));
         if (r && (r.ok || r.status === 'ok')) return true;
       } catch (_) {}
       await new Promise(r => setTimeout(r, pollMs));
@@ -138,6 +138,47 @@
     // pode não haver JSON
     try { return await resp.json(); } catch { return {}; }
   }
+
+  // === GET padronizado com erro detalhado ===
+  async function getJSON(url, extraHeaders = {}) {
+    const headers = { ...extraHeaders };
+    if (window.__API_KEY__) headers['X-API-Key'] = window.__API_KEY__;
+    const resp = await fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit', headers });
+    if (!resp.ok) {
+      const txt = await resp.text().catch(()=> '');
+      console.error('[solic_crp] GET FAIL', url, resp.status, txt);
+      throw new Error(`HTTP ${resp.status} — ${txt.slice(0,500)}`);
+    }
+    try { return await resp.json(); } catch { return {}; }
+  }
+
+  // === Compat: fetchJSON usado pelo resto do código (GET/POST) ===
+  async function fetchJSON(url, opts = {}, meta = {}) {
+    const method  = (opts.method || 'GET').toUpperCase();
+    const headers = opts.headers || {};
+    const body    = opts.body;
+
+    if (method === 'GET') {
+      return await getJSON(url, headers);
+    }
+    // POST/PUT/PATCH com JSON
+    const resp = await fetch(url, {
+      method,
+      mode: 'cors',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body
+    });
+    if (!resp.ok) {
+      const txt = await resp.text().catch(()=> '');
+      console.error('[solic_crp]', method, 'FAIL', url, resp.status, txt);
+      throw new Error(`HTTP ${resp.status} — ${txt.slice(0,500)}`);
+    }
+    try { return await resp.json(); } catch { return {}; }
+  }
+
+
+
 
 
   async function fetchBinary(
@@ -1441,17 +1482,18 @@
     const byNameVal = (n) => document.querySelector(`[name="${n}"]`)?.value || '';
     const byIdVal   = (i) => document.getElementById(i)?.value || '';
 
-    // 3.1 Data de vencimento do último CRP
+    // 3.1 Data de vencimento do último CRP (variações de name/id)
     const _dataVencUltCrpRaw =
       byNameVal('DATA_VENC_ULTIMO_CRP') ||
       byNameVal('DATA_VENCIMENTO_ULTIMO_CRP') ||
       byIdVal('DATA_VENC_ULTIMO_CRP') ||
       byIdVal('DATA_VENCIMENTO_ULTIMO_CRP') ||
       byNameVal('data_venc_ult_crp') ||
-      byIdVal('data_venc_ult_crp') || '';
+      byIdVal('data_venc_ult_crp') ||
+      obj.DATA_VENCIMENTO_ULTIMO_CRP || '';
 
-    payload.DATA_VENC_ULTIMO_CRP = toBR(_dataVencUltCrpRaw?.trim());
-    payload.DATA_VENCIMENTO_ULTIMO_CRP = payload.DATA_VENC_ULTIMO_CRP; // espelho aceito pelo template
+    obj.DATA_VENC_ULTIMO_CRP = toDateBR((_dataVencUltCrpRaw || '').trim());
+    obj.DATA_VENCIMENTO_ULTIMO_CRP = obj.DATA_VENC_ULTIMO_CRP; // espelho aceito pelo template
 
     // 3.2 Tipo de emissão do último CRP (Administrativa/Judicial)
     const _tipoEmissaoUltCrpRaw =
@@ -1459,20 +1501,20 @@
       byIdVal('TIPO_EMISSAO_ULTIMO_CRP') ||
       byNameVal('tipo_emissao_ult_crp') ||
       byIdVal('tipo_emissao_ult_crp') ||
-      byNameVal('tipo') || '';
+      byNameVal('tipo') ||
+      obj.TIPO_EMISSAO_ULTIMO_CRP || '';
 
-    payload.TIPO_EMISSAO_ULTIMO_CRP = (_tipoEmissaoUltCrpRaw || '').trim();
-
+    obj.TIPO_EMISSAO_ULTIMO_CRP = (_tipoEmissaoUltCrpRaw || '').trim();
 
     // === [3.4] Prazo adicional — somente a alternativa selecionada ===
     const _prz = document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked');
-    payload.PRAZO_ADICIONAL_COD   = _prz?.value || byNameVal('PRAZO_ADICIONAL_COD') || '';
-    payload.PRAZO_ADICIONAL_FLAG  = payload.PRAZO_ADICIONAL_COD; // legados usam FLAG
-    payload.PRAZO_ADICIONAL_TEXTO =
+    obj.PRAZO_ADICIONAL_COD = _prz?.value || obj.PRAZO_ADICIONAL_COD || '';
+    obj.PRAZO_ADICIONAL_TEXTO =
       (_prz?.dataset?.label ||
       _prz?.title ||
       _prz?.nextElementSibling?.innerText ||
-      byNameVal('PRAZO_ADICIONAL_TEXTO') || '').trim();
+      obj.PRAZO_ADICIONAL_TEXTO || '').trim();
+
     
 
     return obj;
