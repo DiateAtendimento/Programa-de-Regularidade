@@ -1287,6 +1287,24 @@
       if (el.tipoJud && el.tipoJud.checked) TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
     }
 
+    // --- Normalizações / captura das fases (compatibilidade) ---
+    // Fase do programa (radio/select)
+    const FASE_PROGRAMA = (document.querySelector('input[name="FASE_PROGRAMA"]:checked')?.value || '')
+      || (document.getElementById('FASE_PROGRAMA')?.value || '');
+
+    // 4.1 opção (radio)
+    const F41_OPCAO = (document.querySelector('input[name="F41_OPCAO"]:checked')?.value || '').trim();
+
+    // 4.2 lista (checkboxes, exemplo name="F42_ITENS[]")
+    const F42_LISTA = Array.from(document.querySelectorAll('input[name="F42_ITENS[]"]:checked')).map(i => i.value.trim());
+
+    // 4.4 (exemplo: critérios / declarações / finalidades)
+    const F44_CRITERIOS = Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i => i.value.trim());
+    const F44_DECLS = Array.from(document.querySelectorAll('input[name="F44_DECLS[]"]:checked')).map(i => i.value.trim());
+    const F44_FINALIDADES = Array.from(document.querySelectorAll('input[name="F44_FINALIDADES[]"]:checked')).map(i => i.value.trim());
+
+
+    
 
     // UG consolidados (1.3 OU 1.3.2)
     const UG_FINAL       = (el.ug?.value || el.ugNome?.value || '').trim();
