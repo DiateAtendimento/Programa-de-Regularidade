@@ -111,88 +111,34 @@
   /* ========= Robust fetch (timeout + retries) ========= */
   const FETCH_TIMEOUT_MS = 120000;
   const FETCH_RETRIES    = 1;
-  async function fetchJSON(
-    url,
-    { method='GET', headers={}, body=null } = {},
-    { label='request', timeout=FETCH_TIMEOUT_MS, retries=FETCH_RETRIES } = {}
-  ){
-    let attempt=0;
-    const bust = `_ts=${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const sep  = url.includes('?') ? '&' : '?';
-    const finalURL = `${url}${sep}${bust}`;
-    while(true){
-      attempt++;
-      const ctrl = new AbortController();
-      const to   = setTimeout(()=>ctrl.abort(`timeout:${label}`), timeout);
 
-      if (window.__DEBUG_SOLIC_CRP__) {
-        const safeHeaders = { ...headers };
-        if (safeHeaders['X-API-Key']) safeHeaders['X-API-Key'] = '***';
-        dbg(`[fetchJSON] → ${label}`, { finalURL, method, headers: safeHeaders, body });
-      }
+  async function postJSON(url, body, extraHeaders = {}) {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...extraHeaders
+    };
+    // Se você usa API key, defina window.__API_KEY__ em produção
+    if (window.__API_KEY__) headers['X-API-Key'] = window.__API_KEY__;
 
-      try{
-        const start = performance.now();
-        const res = await fetch(finalURL, {
-          method,
-          headers,
-          body,
-          signal: ctrl.signal,
-          cache: 'no-store',
-          // trocar same-origin por include — útil se o backend/proxy usa cookie/session
-          credentials: 'include',
-          redirect: 'follow',
-          mode: 'cors'
-        });
-        const dur = Math.round(performance.now() - start);
-        clearTimeout(to);
+    const resp = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      credentials: 'omit',
+      headers,
+      body: JSON.stringify(body)
+    });
 
-        const ct = res.headers.get('content-type') || '';
-        const isJson = ct.includes('application/json');
-        const txt = await res.text(); // lemos uma vez
-        const data = isJson ? (JSON.parse(txt || 'null')) : txt;
-
-        if (window.__DEBUG_SOLIC_CRP__) {
-          dbg(`[fetchJSON] ← ${label} (${dur}ms)`, {
-            status: res.status,
-            ok: res.ok,
-            headers: {
-              'content-type': ct,
-              'x-cache': res.headers.get('x-cache') || undefined
-            },
-            preview: isJson ? data : (String(txt).slice(0,300) + (txt.length>300?'…':'')),
-          });
-        }
-
-        if(!res.ok){
-          const err = new Error((isJson && (data?.error || data?.message)) || `HTTP ${res.status}`);
-          err.status = res.status;
-          err.response = data;
-          throw err;
-        }
-
-        return isJson ? data : txt;
-
-      }catch(e){
-        clearTimeout(to);
-        const m = String(e?.message||'').toLowerCase();
-        const isHttp = (e && typeof e.status === 'number');
-        const retriable =
-          (isHttp && (e.status===429 || e.status===502 || e.status===503 || e.status===504 || e.status>=500)) ||
-          m.includes('timeout:') || m.includes('etimedout') || m.includes('abort') ||
-          m.includes('econnreset') || m.includes('socket hang up') || m.includes('eai_again') ||
-          m.includes('failed to fetch') || (!navigator.onLine);
-
-        dbe(`[fetchJSON][erro] ${label}`, { attempt, message: e?.message, status: e?.status, response: e?.response });
-
-        if(retriable && attempt <= (retries+1)){
-          const backoff = Math.min(4000, 300 * Math.pow(2, attempt-1));
-          await new Promise(r=>setTimeout(r, backoff)); continue;
-        }
-        throw e;
-      }
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => '');
+      console.error('[solic_crp] POST FAIL', url, resp.status, txt);
+      // Propaga motivo legível para a UI
+      throw new Error(`HTTP ${resp.status} — ${txt.slice(0, 500)}`);
     }
+
+    // pode não haver JSON
+    try { return await resp.json(); } catch { return {}; }
   }
+
 
   async function fetchBinary(
     url,
@@ -1402,17 +1348,17 @@
       F43_PLANO_B: collectTextValue('F43_PLANO_B'),
       F43_INCLUIR: collectCheckedValues('#F43_INCLUIR input[type="checkbox"]'),
       F44_CRITERIOS: Array.from(new Set([...
-      collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
-      Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i=>i.value.trim())
-    ].flat().filter(Boolean))),
+        collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
+        Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i=>i.value.trim())
+      ].flat().filter(Boolean))),
       F44_DECLS: Array.from(new Set([...
-      collectCheckedValues('#blk_44 .d-flex input[type="checkbox"]'),
-      Array.from(document.querySelectorAll('input[name="F44_DECLS[]"]:checked')).map(i=>i.value.trim())
-    ].flat().filter(Boolean))),
+        collectCheckedValues('#blk_44 .d-flex input[type="checkbox"]'),
+        Array.from(document.querySelectorAll('input[name="F44_DECLS[]"]:checked')).map(i=>i.value.trim())
+      ].flat().filter(Boolean))),
       F44_FINALIDADES: Array.from(new Set([...
-      collectCheckedValues('#F44_FINALIDADES input[type="checkbox"]'),
-      Array.from(document.querySelectorAll('input[name="F44_FINALIDADES[]"]:checked')).map(i=>i.value.trim())
-    ].flat().filter(Boolean))),
+        collectCheckedValues('#F44_FINALIDADES input[type="checkbox"]'),
+        Array.from(document.querySelectorAll('input[name="F44_FINALIDADES[]"]:checked')).map(i=>i.value.trim())
+      ].flat().filter(Boolean))),
       F44_ANEXOS: collectTextValue('F44_ANEXOS'),
       F45_OK451: !!$('#blk_45 input[type="checkbox"]:checked'),
       F45_DOCS:  $('#F45_DOCS')?.value || '',
@@ -1489,6 +1435,44 @@
       PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO,
       PRAZO_ADICIONAL_FLAG: obj.PRAZO_ADICIONAL_FLAG
     });
+
+    // === [3.1 e 3.2] Normalização dos campos do último CRP ===
+    // helpers locais
+    const byNameVal = (n) => document.querySelector(`[name="${n}"]`)?.value || '';
+    const byIdVal   = (i) => document.getElementById(i)?.value || '';
+
+    // 3.1 Data de vencimento do último CRP
+    const _dataVencUltCrpRaw =
+      byNameVal('DATA_VENC_ULTIMO_CRP') ||
+      byNameVal('DATA_VENCIMENTO_ULTIMO_CRP') ||
+      byIdVal('DATA_VENC_ULTIMO_CRP') ||
+      byIdVal('DATA_VENCIMENTO_ULTIMO_CRP') ||
+      byNameVal('data_venc_ult_crp') ||
+      byIdVal('data_venc_ult_crp') || '';
+
+    payload.DATA_VENC_ULTIMO_CRP = toBR(_dataVencUltCrpRaw?.trim());
+    payload.DATA_VENCIMENTO_ULTIMO_CRP = payload.DATA_VENC_ULTIMO_CRP; // espelho aceito pelo template
+
+    // 3.2 Tipo de emissão do último CRP (Administrativa/Judicial)
+    const _tipoEmissaoUltCrpRaw =
+      byNameVal('TIPO_EMISSAO_ULTIMO_CRP') ||
+      byIdVal('TIPO_EMISSAO_ULTIMO_CRP') ||
+      byNameVal('tipo_emissao_ult_crp') ||
+      byIdVal('tipo_emissao_ult_crp') ||
+      byNameVal('tipo') || '';
+
+    payload.TIPO_EMISSAO_ULTIMO_CRP = (_tipoEmissaoUltCrpRaw || '').trim();
+
+
+    // === [3.4] Prazo adicional — somente a alternativa selecionada ===
+    const _prz = document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked');
+    payload.PRAZO_ADICIONAL_COD   = _prz?.value || byNameVal('PRAZO_ADICIONAL_COD') || '';
+    payload.PRAZO_ADICIONAL_FLAG  = payload.PRAZO_ADICIONAL_COD; // legados usam FLAG
+    payload.PRAZO_ADICIONAL_TEXTO =
+      (_prz?.dataset?.label ||
+      _prz?.title ||
+      _prz?.nextElementSibling?.innerText ||
+      byNameVal('PRAZO_ADICIONAL_TEXTO') || '').trim();
     
 
     return obj;
@@ -1667,11 +1651,12 @@
     try{
       await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-      const resp = await fetchJSON(api('/gerar-solic-crp'), {
-        method:'POST',
-        headers: withKey({'Content-Type':'application/json','X-Idempotency-Key':idem}),
-        body: JSON.stringify(payload)
-      }, { label:'gerar-solic-crp', timeout:30000, retries:1 });
+      const resp = await postJSON(
+        api('/gerar-solic-crp'),           // ajuste a rota se a sua for diferente
+        payload,                           // corpo já em objeto
+        withKey({ 'X-Idempotency-Key': idem }) // headers extras (API key + Idempotency)
+      );
+
 
       clearTimeout(t);
       try{ bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); }catch{}

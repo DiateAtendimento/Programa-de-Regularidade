@@ -108,15 +108,20 @@
         <p class="small">Selecione todos os itens apontados como irregulares no extrato.</p>
         <ul id="criterios-list"></ul>
 
-        <!-- 3.4 -->
         <h3>3.4 Solicitação de Prazo Adicional</h3>
         <p class="small no-print">Será exibida apenas a alternativa selecionada no formulário.</p>
+
         <ul id="opt-3-4">
-          <li data-code="3.4.1"><strong>3.4.1 Manutenção da conformidade</strong></li>
-          <li data-code="3.4.2"><strong>3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</strong></li>
-          <li data-code="3.4.3"><strong>3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</strong></li>
-          <li data-code="3.4.4"><strong>3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade</strong></li>
+          <!-- Mantive data-code (legado) e adicionei data-prz para o filtro -->
+          <li data-code="3.4.1" data-prz="3.4.1"><strong>3.4.1 Manutenção da conformidade</strong></li>
+          <li data-code="3.4.2" data-prz="3.4.2"><strong>3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</strong></li>
+          <li data-code="3.4.3" data-prz="3.4.3"><strong>3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</strong></li>
+          <li data-code="3.4.4" data-prz="3.4.4"><strong>3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade</strong></li>
         </ul>
+
+        <!-- Opcional: espaço para inserir o texto exato do rádio selecionado (PRAZO_ADICIONAL_TEXTO) -->
+        <p id="prz_3_4_escolha"></p>
+
       </section>
 
 
@@ -542,9 +547,24 @@
         fillText('tipo_emissao_ult_crp', p.TIPO_EMISSAO_ULTIMO_CRP || '');
 
         // 3.1
-        fillText('data_vencimento_ultimo_crp', p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
-        // 3.2 (NOVA: tipo de emissão — Administrativa/Judicial)
-        fillText('tipo_emissao_ultimo_crp', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || p.tipo || '');
+        fillText('data_vencimento_ultimo_crp',
+          p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || ''
+        );
+
+        // 3.2
+        fillText('tipo_emissao_ultimo_crp',
+          p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || p.tipo || ''
+        );
+
+        // 3.4 — mostrar somente a alternativa selecionada
+        const __prz = (p.PRAZO_ADICIONAL_COD || p.PRAZO_ADICIONAL_FLAG || '').trim();
+        const showOnlyPrazo = (code) => {
+          document.querySelectorAll('[data-prz]').forEach(n => {
+            n.style.display = (n.getAttribute('data-prz') === code && code) ? '' : 'none';
+          });
+        };
+        showOnlyPrazo(__prz);
+        fillText('prz_3_4_escolha', p.PRAZO_ADICIONAL_TEXTO || '');
 
 
         // 3.2 (opção antiga "motivo principal", se usar ul#opt-3-2)
@@ -577,6 +597,30 @@
             ul.appendChild(li);
           }
         })();
+
+        // Helpers
+        const listify = v => Array.isArray(v) ? v.filter(Boolean).join('; ') : (v || '');
+
+        // 4. Identificação da fase
+        fillText('fase_selecionada', p.FASE_PROGRAMA || p.FASE || '');
+
+        // 4.1 / 4.2 / 4.4 — conteúdos vindos dos modais
+        fillText('f41_opcao', p.F41_OPCAO || '');
+        fillText('f42_lista', listify(p.F42_LISTA));
+        fillText('f43_lista', listify(p.F43_LISTA));
+        fillText('f44_criterios', listify(p.F44_CRITERIOS));
+        fillText('f44_decls', listify(p.F44_DECLS));
+        fillText('f44_finalidades', listify(p.F44_FINALIDADES));
+
+        // Opcional: se vier vazio, esconda o bloco “Não informado”
+        ['f41_opcao','f42_lista','f43_lista','f44_criterios','f44_decls','f44_finalidades'].forEach(id=>{
+          const el = document.getElementById(id);
+          if (el && !el.textContent.trim()) {
+            const wrap = el.closest('.termo-bloco, .linha, li, p') || el;
+            wrap.style.display = 'none';
+          }
+        });
+
 
         // 3.3
         liList('#criterios-list', p.__CRITERIOS_ARR__);
