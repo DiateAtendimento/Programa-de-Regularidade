@@ -1317,6 +1317,14 @@
       document.querySelector('input[name="F41_OPCAO_4_1"]:checked')?.value || ''
     ).trim();
 
+    // 4.1 — código normalizado (envia somente "4.1.1" ou "4.1.2" se houver)
+    const F41_OPCAO_CODE = (()=>{
+      const m = (F41_OPCAO || '').match(/4\.1\.[12]/);
+      return m ? m[0]
+              : (document.querySelector('input[name="F41_OPCAO"]:checked')?.value || '').trim();
+    })();
+
+
     // 4.2, 4.3, 4.4... (listas vindas dos modais)
     const F42_LISTA = Array.from(
       document.querySelectorAll('#F42_LISTA input[type="checkbox"]:checked, input[name="F42_LISTA[]"]:checked')
@@ -1434,6 +1442,7 @@
 
       FASE_PROGRAMA: FASE_PROGRAMA,
       F41_OPCAO,
+      F41_OPCAO_CODE: F41_OPCAO_CODE,
 
       // Listas já calculadas (sem recomputar aqui)
       F42_LISTA,
@@ -1572,6 +1581,14 @@
           FASE_PROGRAMA: obj.FASE_PROGRAMA || obj.fase_programa
         });
       } catch {}
+    }
+
+    // no final do buildPayload(), antes do return:
+    if (!obj.IDEMP_KEY) {
+      obj.IDEMP_KEY = takeIdemKey() || (function(){ try{
+        const a=new Uint8Array(16); crypto.getRandomValues(a);
+        return 'id_'+Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
+      }catch{ return 'id_'+Math.random().toString(36).slice(2)+Date.now().toString(36); }})();
     }
 
     return obj;
@@ -1746,7 +1763,6 @@
 
     const idem = takeIdemKey() || newIdemKey();
     rememberIdemKey(idem);
-
     const payload = buildPayload(); // já inclui IDEMP_KEY (se existir)
 
     // 🔎 DEBUG (ANTES do postJSON)
@@ -1818,23 +1834,30 @@
       }, 800);
 
     } catch (err) {
+      // garante que o “salvando…” suma mesmo em falha
       clearTimeout(t);
       try { bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); } catch {}
 
-      // 🔎 DEBUG de erro
-      if (window.__DEBUG_SOLIC_CRP__) {
-        try {
-          console.log('[SUBMIT][ERRO]', {
-            message: err?.message,
-            status: err?.status || err?.response?.status,
-            data: err?.response?.data
-          });
-        } catch {}
-      }
+      // logs úteis de diagnóstico
+      dbe('[SUBMIT][ERRO]', err);
+      try {
+        console.error('[SUBMIT][ERRO detalhe]', {
+          message: err?.message,
+          status: err?.status || err?.response?.status,
+          data: err?.response?.data
+        });
+      } catch {}
 
+      // mensagem amigável na UI
       showErro(friendlyErrorMessages(err, 'Falha ao registrar a solicitação.'));
-      if (btn) { btn.disabled = false; btn.innerHTML = old; }
+
+      // reativa o botão e restaura o rótulo
+      if (btn) { btn.disabled = false; btn.innerHTML = old || 'Finalizar'; }
+
+      // mantém a chave de idempotência para permitir retry seguro
+      // (se preferir descartar, troque por: clearIdemKey();)
     }
+
   });
 
 

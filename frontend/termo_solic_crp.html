@@ -87,55 +87,50 @@
       <section class="term-section avoid-break page-break" id="sec-3">
         <h2>3. SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
 
-        <!-- 3.1 -->
-        <div class="grid grid-num">
-          <div class="field">
-            <span class="label"><strong>3.1 Data de vencimento do último CRP</strong></span>
-            <span class="value" data-k="venc_ult_crp"></span>
-
-            <!-- compat aliases, mantêm-se ocultos -->
-            <span data-k="data_vencimento_ultimo_crp" style="display:none"></span>
-          </div>
+        <!-- 3.1 Data de vencimento do último CRP -->
+        <div class="linha">
+          <div class="rotulo">3.1 Data de vencimento do último CRP</div>
+          <div class="valor" data-k="DATA_VENC_ULTIMO_CRP" data-fallback="venc_ult_crp" data-na="Não informado"></div>
         </div>
 
-        <!-- 3.2 -->
-        <div class="grid grid-num">
-          <div class="field">
-            <span class="label"><strong>3.2 Tipo de emissão do último CRP</strong></span>
-            <span class="value" data-k="tipo_emissao_ult_crp"></span>
-
-            <!-- compat aliases, mantêm-se ocultos -->
-            <span data-k="tipo_emissao_ultimo_crp" style="display:none"></span>
-          </div>
+        <!-- 3.2 Tipo de emissão do último CRP -->
+        <div class="linha">
+          <div class="rotulo">3.2 Tipo de emissão do último CRP</div>
+          <div class="valor" data-k="TIPO_EMISSAO_ULTIMO_CRP" data-fallback="tipo_emissao_ult_crp" data-na="Não informado"></div>
         </div>
 
-
-        <!-- 3.3 -->
         <h3>3.3 Critério(s) atualmente irregular(es) no extrato previdenciário</h3>
         <p class="small">Selecione todos os itens apontados como irregulares no extrato.</p>
-        <ul id="criterios-list"></ul>
-
-        <h3>3.4 Solicitação de Prazo Adicional</h3>
-        <p class="small no-print">Será exibida apenas a alternativa selecionada no formulário.</p>
-
-        <ul id="opt-3-4">
-          <li data-prz="3.4.1"><strong>3.4.1 Manutenção da conformidade</strong></li>
-          <li data-prz="3.4.2"><strong>3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</strong></li>
-          <li data-prz="3.4.3"><strong>3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</strong></li>
-          <li data-prz="3.4.4"><strong>3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade</strong></li>
+        <ul id="criterios-list"
+            data-k-array="CRITERIOS_IRREGULARES"
+            data-empty="Sem irregularidades informadas.">
         </ul>
 
+        <!-- 3.4 -->
+        <div class="linha">
+          <div class="rotulo">3.4 Solicitação de Prazo Adicional</div>
+          <div class="valor">
+            <!-- Mostra só a selecionada -->
+            <div data-3_4="3.4.1">3.4.1 Manutenção da conformidade</div>
+            <div data-3_4="3.4.2">3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</div>
+            <div data-3_4="3.4.3">3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</div>
+            <div data-3_4="3.4.4">3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade</div>
 
-        <!-- Opcional: espaço para inserir o texto exato do rádio selecionado (PRAZO_ADICIONAL_TEXTO) -->
-        <p id="prz_3_4_escolha"></p>
+            <!-- Fallback: se nenhum code bater, usa o texto resolvido -->
+            <div data-k="PRAZO_ADICIONAL_TEXTO" class="d-none"></div>
+          </div>
+        </div>
 
       </section>
 
 
       <!-- 4. FASE DO PROGRAMA -->
-      <section class="term-section avoid-break">
+      <section class="term-section avoid-break" id="sec-fase">
         <h2>4. IDENTIFICAÇÃO DA FASE DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
-        <p class="small">Fase selecionada: <strong data-k="fase_programa"></strong></p>
+        <p class="small">
+          Fase selecionada:
+          <strong id="fase-escolhida" data-k="FASE_PROGRAMA"></strong>
+        </p>
 
         <!-- 4.1 -->
         <div class="avoid-break" id="fase-41" hidden>
@@ -154,15 +149,18 @@
         <div class="avoid-break" id="fase-43" hidden>
           <h3>4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</h3>
           <ul id="f43-itens"></ul>
+
           <p class="small mt"><strong>4.3.10 Justificativas/Informações adicionais:</strong></p>
-          <p data-k="f43_just"></p>
+          <p id="f43-just"></p>
+
           <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
-          <p data-k="f43_plano"></p>
-          
+          <p id="f43-plano"></p>
         </div>
+
         <!-- 4.4 -->
         <div class="avoid-break" id="fase-44" hidden>
           <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
+
           <p class="small"><strong>4.4.1 Critério(s) do extrato objeto do(s) Plano(s) de Ação:</strong></p>
           <ul id="f44-criterios"></ul>
 
@@ -171,7 +169,8 @@
 
           <p class="small mt"><strong>4.4.3 Finalidade do(s) Plano(s) de Ação:</strong></p>
           <ul id="f44-finalidades"></ul>
-          <p class="small mt"><strong>4.4.1(d) Legislação:</strong> <span data-k="f441_legislacao"></span></p>
+
+          <p class="small mt"><strong>4.4.1(d) Legislação:</strong> <span id="f441-legislacao"></span></p>
 
           <p class="small mt"><strong>4.4.6 Documentos:</strong></p>
           <div id="f446-docs"></div>
@@ -187,8 +186,10 @@
         <div class="avoid-break" id="fase-45" hidden>
           <h3>4.5 Fase Específica/Focalizada – 5º CRP Emergencial</h3>
           <ul id="f45-decls"></ul>
+
           <p class="small mt"><strong>4.5.2/4.5.3 Documentos:</strong></p>
           <div id="f45-docs"></div>
+
           <p class="small mt"><strong>4.5.4 Justificativas:</strong></p>
           <div id="f45-just"></div>
         </div>
@@ -196,6 +197,7 @@
         <!-- 4.6 -->
         <div class="avoid-break" id="fase-46" hidden>
           <h3>4.6 Fase de Manutenção da Conformidade</h3>
+
           <p class="small"><strong>4.6.1 Critério(s) objeto do(s) Plano(s) de Ação:</strong></p>
           <ul id="f46-criterios"></ul>
 
@@ -211,7 +213,6 @@
           <p class="small mt"><strong>Execução/Resultados adicionais (4.6):</strong></p>
           <div id="f466-exec"></div>
 
-
           <p class="small mt"><strong>4.6.3 Finalidade do(s) Plano(s) de Ação:</strong></p>
           <ul id="f46-finalidades"></ul>
 
@@ -222,6 +223,7 @@
           <div id="f46-just-planos"></div>
         </div>
       </section>
+
 
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section avoid-break">
@@ -879,6 +881,250 @@
       }
     });
   </script>
+
+  <script>
+    (function(){
+      // Suporte a data-fallback="outra_chave" + data-na="Não informado"
+      function resolveK(node, data){
+        const k = node.getAttribute('data-k');
+        let v = (data && data[k]) || '';
+        if(!v){
+          const fb = node.getAttribute('data-fallback');
+          if (fb && data && data[fb]) v = data[fb];
+        }
+        if(!v){
+          v = node.getAttribute('data-na') || 'Não informado';
+        }
+        node.textContent = (v==null || v==='') ? (node.getAttribute('data-na')||'Não informado') : v;
+      }
+
+      function fillAll(){
+        const data = window.__TERMO_DATA__ || {};
+        document.querySelectorAll('[data-k]').forEach(n => resolveK(n, data));
+      }
+
+      document.addEventListener('TERMO_DATA', fillAll);
+      document.addEventListener('TERMO_DATA_READY', fillAll);
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fillAll);
+      else fillAll();
+    })();
+  </script>
+
+  <script>
+    (function(){
+    function renderList(ul){
+      const data = window.__TERMO_DATA__ || {};
+      const key  = ul.getAttribute('data-k-array') || 'CRITERIOS_IRREGULARES';
+      // Aceita CRITERIOS_IRREGULARES ou CRITERIOS_IRREGULARES[]
+      const arr = Array.isArray(data[key]) ? data[key]
+                : (Array.isArray(data[key + '[]']) ? data[key + '[]'] : []);
+      ul.innerHTML = '';
+      if (!arr || arr.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = ul.getAttribute('data-empty') || '—';
+        ul.appendChild(li);
+        return;
+      }
+      arr.forEach(txt => {
+        const li = document.createElement('li');
+        li.textContent = txt;
+        ul.appendChild(li);
+      });
+    }
+
+    function aplicarPrazoAdicional(){
+      const d = window.__TERMO_DATA__ || {};
+      const cod = (d.PRAZO_ADICIONAL_COD || '').trim();
+      const blocos = document.querySelectorAll('[data-3_4]');
+      let shown = false;
+      blocos.forEach(el => {
+        const ok = el.getAttribute('data-3_4') === cod;
+        el.style.display = ok ? '' : 'none';
+        if (ok) shown = true;
+      });
+      const holder = document.querySelector('[data-k="PRAZO_ADICIONAL_TEXTO"]');
+      if (holder) {
+        holder.classList.toggle('d-none', shown);
+        if (!shown) holder.textContent = d.PRAZO_ADICIONAL_TEXTO || 'Não informado';
+      }
+    }
+
+    function init(){
+      const ul = document.getElementById('criterios-list');
+      if (ul) renderList(ul);
+      aplicarPrazoAdicional();
+    }
+
+    document.addEventListener('TERMO_DATA', init);
+    document.addEventListener('TERMO_DATA_READY', init);
+    if (document.readyState !== 'loading') init();
+  })();
+  </script>
+
+  <script>
+  (function(){
+    const D = () => (window.__TERMO_DATA__ || {});
+
+    // Helpers ---------------
+
+    function getArr(key){
+      const d = D();
+      const v = d[key];
+      const alt = d[key + '[]'];
+      if (Array.isArray(v))   return v;
+      if (Array.isArray(alt)) return alt;
+      if (typeof v === 'string' && v.trim()){
+        return v.split(/;|,/).map(s => s.trim()).filter(Boolean);
+      }
+      return [];
+    }
+
+    function getTxt(key, fallback='—'){
+      const d = D();
+      const v = d[key];
+      return (v === 0 ? '0' : (v || '')).toString().trim() || fallback;
+    }
+
+    function renderList(ulId, arr, empty='—'){
+      const ul = document.getElementById(ulId);
+      if (!ul) return;
+      ul.innerHTML = '';
+      const items = Array.isArray(arr) ? arr : [];
+      if (!items.length){
+        const li = document.createElement('li');
+        li.textContent = empty;
+        ul.appendChild(li);
+        return;
+      }
+      items.forEach(t=>{
+        const li = document.createElement('li');
+        li.textContent = t;
+        ul.appendChild(li);
+      });
+    }
+
+    function renderText(elId, txt){
+      const el = document.getElementById(elId);
+      if (!el) return;
+      el.textContent = (txt || '').trim() || '—';
+    }
+
+    function renderMultiline(elId, txt){
+      const el = document.getElementById(elId);
+      if (!el) return;
+      const v = (txt || '').toString().trim();
+      if (!v){ el.textContent = '—'; return; }
+      el.innerHTML = '';
+      v.split(/\r?\n/).forEach(line=>{
+        const p = document.createElement('p');
+        p.textContent = line.trim();
+        el.appendChild(p);
+      });
+    }
+
+    function onlyPhase(code){  // code = '4.1'...'4.6'
+      // esconde todas
+      ['41','42','43','44','45','46'].forEach(suf=>{
+        const box = document.getElementById('fase-' + suf);
+        if (box) box.hidden = true;
+      });
+      // mostra a escolhida
+      const suf = code.replace(/\D/g,''); // '4.1' -> '41'
+      const target = document.getElementById('fase-' + suf);
+      if (target) target.hidden = false;
+    }
+
+    // Render principal ---------------
+
+    function renderFase4(){
+      const d = D();
+
+      // Header "Fase selecionada"
+      const faseRaw  = (d.FASE_PROGRAMA || d.fase_programa || '').toString().trim();
+      const faseCode = (faseRaw.match(/^\s*4\.\d/) || [])[0] || ''; // '4.x' se houver
+      const faseEl   = document.getElementById('fase-escolhida');
+      if (faseEl) faseEl.textContent = faseRaw || '—';
+
+      if (faseCode){
+        onlyPhase(faseCode);
+      } else {
+        // se não vier fase, mantém tudo oculto
+        return;
+      }
+
+      // 4.1
+      if (faseCode === '4.1'){
+        const it = getTxt('F41_OPCAO', '—');
+        renderList('f41-itens', it ? [it] : []);
+      }
+
+      // 4.2
+      if (faseCode === '4.2'){
+        renderList('f42-itens', getArr('F42_LISTA'), 'Sem itens selecionados.');
+      }
+
+      // 4.3
+      if (faseCode === '4.3'){
+        renderList('f43-itens', getArr('F43_LISTA'), 'Sem itens selecionados.');
+        renderText('f43-just',  getTxt('F43_JUST', '—'));
+        renderText('f43-plano', getTxt('F43_PLANO', '—'));
+      }
+
+      // 4.4
+      if (faseCode === '4.4'){
+        renderList('f44-criterios',   getArr('F44_CRITERIOS'),   'Sem critérios selecionados.');
+        renderList('f44-decls',       getArr('F44_DECLS'),       'Sem declarações marcadas.');
+        renderList('f44-finalidades', getArr('F44_FINALIDADES'), 'Sem finalidades informadas.');
+        renderText('f441-legislacao', getTxt('F441_LEGISLACAO', '—'));
+        renderMultiline('f446-docs',  getTxt('F446_DOCS', ''));
+        renderMultiline('f446-exec',  getTxt('F446_EXEC_RES', ''));
+        renderMultiline('f44-anexos', getTxt('F44_ANEXOS', ''));
+      }
+
+      // 4.5
+      if (faseCode === '4.5'){
+        // f45-decls: se marcou 4.5.1, mostra; senão vazio
+        const decls = [];
+        if (String(d.F45_OK451 || '').toLowerCase() === 'true') {
+          decls.push('4.5.1 Declaração marcada');
+        } else if (d.F45_OK451 === true) {
+          decls.push('4.5.1 Declaração marcada');
+        }
+        renderList('f45-decls', decls, 'Sem declarações.');
+
+        renderMultiline('f45-docs', getTxt('F45_DOCS', ''));
+        renderMultiline('f45-just', getTxt('F45_JUST', ''));
+      }
+
+      // 4.6
+      if (faseCode === '4.6'){
+        renderList('f46-criterios',   getArr('F46_CRITERIOS'),   'Sem critérios selecionados.');
+        // Declarações gerais da 4.6 que confluiram para docs/just (se houver)
+        const decls = [];
+        const jd = getTxt('F46_JUST_D', '');
+        const je = getTxt('F46_JUST_E', '');
+        if (jd) decls.push('4.6.2(d): ' + jd);
+        if (je) decls.push('4.6.2(e): ' + je);
+        renderList('f46-decls', decls, '—');
+
+        renderList('f462f-criterios', getArr('F462F_CRITERIOS'), '—');
+
+        renderMultiline('f466-docs', getTxt('F466_DOCS', ''));
+        renderMultiline('f466-exec', getTxt('F466_EXEC_RES', ''));
+
+        renderList('f46-finalidades', getArr('F46_FINALIDADES'), '—');
+        renderMultiline('f46-anexos', getTxt('F46_ANEXOS', ''));
+        renderMultiline('f46-just-planos', getTxt('F46_JUST_PLANOS', ''));
+      }
+    }
+
+    // Eventos para hidratar quando __TERMO_DATA__ estiver pronto/atualizar
+    document.addEventListener('TERMO_DATA', renderFase4);
+    document.addEventListener('TERMO_DATA_READY', renderFase4);
+    if (document.readyState !== 'loading') renderFase4();
+  })();
+  </script>
+
 
 
 </body>
