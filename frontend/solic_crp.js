@@ -64,20 +64,33 @@
   // --- Normalização de data vinda da planilha/API (número serial/ISO/string) -> dd/mm/aaaa
   function toDateBR(v){
     if (v == null || v === '') return '';
+    const s = String(v).trim();
+
+    // Já no formato BR (dd/mm/aaaa)
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+
     // Número serial (Google Sheets/Excel) — pode vir como number OU string "45927"
-    if ((typeof v === 'number' && isFinite(v)) || (/^\d{4,6}$/.test(String(v).trim()))) {
+    if ((typeof v === 'number' && isFinite(v)) || (/^\d{4,6}$/.test(s))) {
       const n = Number(v);
       const base = new Date(1899, 11, 30); // Sheets base
       const d = new Date(base.getTime() + n * 86400000);
-      return fmtBR(d);
+      return d.toLocaleDateString('pt-BR', { timeZone:'America/Sao_Paulo' });
     }
-    // ISO (yyyy-mm-dd...)
-    const iso = String(v).trim();
-    const mIso = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+    // ISO (yyyy-mm-dd[...])
+    const mIso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (mIso) return `${mIso[3]}/${mIso[2]}/${mIso[1]}`;
-    // Já em PT-BR ou outro texto: mantém
-    return iso;
+
+    // Campos legados comuns (ex.: "2025/10/21", "21-10-2025")
+    const mY = s.match(/^(\d{4})[\/\-](\d{2})[\/\-](\d{2})$/);
+    if (mY) return `${mY[3]}/${mY[2]}/${mY[1]}`;
+    const mD = s.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
+    if (mD) return `${mD[1]}/${mD[2]}/${mD[3]}`;
+
+    // Último recurso: mantém como veio
+    return s;
   }
+
 
   // --- Validação do nº Gescon: S|L + 6 dígitos + "/" + ano
   function isGesconNumber(x){
@@ -1309,17 +1322,30 @@
     let FIN_3_2_OUTRO_CRITERIO_COMPLEXO =
       document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : '';
 
-    // 3.1 / 3.2 (coleta “crua” do form)
-    const DATA_VENCIMENTO_ULTIMO_CRP =
-      (el.dataUltCrp && el.dataUltCrp.value) ? el.dataUltCrp.value.trim() : '';
+    // 3.1 / 3.2 (coleta “crua” do form) + fallbacks fortes
+    const DATA_VENCIMENTO_ULTIMO_CRP = (()=>{
+      const v =
+        (el.dataUltCrp && el.dataUltCrp.value && el.dataUltCrp.value.trim()) ||
+        document.getElementById('DATA_VENC_ULTIMO_CRP')?.value?.trim() ||
+        document.getElementById('data_venc_ult_crp')?.value?.trim() ||
+        document.querySelector('[name="DATA_VENC_ULTIMO_CRP"]')?.value?.trim() ||
+        document.querySelector('[name="DATA_VENCIMENTO_ULTIMO_CRP"]')?.value?.trim() ||
+        (window.__TERMO_DATA__?.DATA_VENC_ULTIMO_CRP) ||
+        (window.__TERMO_DATA__?.venc_ult_crp) || '';
+      return toDateBR(v);
+    })();
 
-    let TIPO_EMISSAO_ULTIMO_CRP = '';
-    if (el.selectTipoUltCrp && el.selectTipoUltCrp.value) {
-      TIPO_EMISSAO_ULTIMO_CRP = el.selectTipoUltCrp.value.trim();
-    } else if (el.tipoAdm || el.tipoJud) {
-      if (el.tipoAdm && el.tipoAdm.checked) TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
-      if (el.tipoJud && el.tipoJud.checked) TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
-    }
+    let TIPO_EMISSAO_ULTIMO_CRP = (()=>{
+      const v =
+        (el.selectTipoUltCrp && el.selectTipoUltCrp.value && el.selectTipoUltCrp.value.trim()) ||
+        (el.tipoAdm?.checked ? 'Administrativa' : (el.tipoJud?.checked ? 'Judicial' : '')) ||
+        document.getElementById('TIPO_EMISSAO_ULTIMO_CRP')?.value?.trim() ||
+        document.querySelector('[name="TIPO_EMISSAO_ULTIMO_CRP"]')?.value?.trim() ||
+        (window.__TERMO_DATA__?.TIPO_EMISSAO_ULTIMO_CRP) ||
+        (window.__TERMO_DATA__?.tipo_emissao_ult_crp) || '';
+      return v;
+    })();
+
 
     // 4.1 opção
     const F41_OPCAO = (
