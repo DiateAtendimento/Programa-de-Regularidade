@@ -1317,7 +1317,7 @@
       document.querySelector('input[name="F41_OPCAO_4_1"]:checked')?.value || ''
     ).trim();
 
-    // 4.2, 4.3, 4.4... (listas vindas dos modais) — declarar como variáveis
+    // 4.2, 4.3, 4.4... (listas vindas dos modais)
     const F42_LISTA = Array.from(
       document.querySelectorAll('#F42_LISTA input[type="checkbox"]:checked, input[name="F42_LISTA[]"]:checked')
     ).map(i => i.value.trim());
@@ -1348,57 +1348,45 @@
     const EMAIL_UG_FINAL = (el.emailUg?.value || el.ugEmail?.value || '').trim();
     if (!CNPJ_UG_FINAL) { console.warn('[solic_crp] CNPJ_UG ausente — salvando como rascunho'); window.__CNPJ_UG_WARNING__ = true; }
 
-    // 3.4: aceita qualquer name de rádio/checkbox, ou até dataset
-    let PRAZO_ADICIONAL_COD = '';
-    (function(){
-      // 1) radios mais prováveis
-      const cand = document.querySelector(
-        'input[name="PRAZO_ADICIONAL_3_4"]:checked, ' +
-        'input[name^="PRAZO_ADICIONAL"]:checked, ' +
-        'input[name^="OPT_3_4"]:checked, ' +
-        'input[name*="3_4"]:checked'
-      );
-      if (cand && cand.value) PRAZO_ADICIONAL_COD = String(cand.value).trim();
-      // 2) se o input usa data-prz
-      if (!PRAZO_ADICIONAL_COD) {
-        const byDataset = document.querySelector('input[data-prz]:checked');
-        if (byDataset) PRAZO_ADICIONAL_COD = String(byDataset.dataset.prz || '').trim();
-      }
-      // 3) normaliza 3.2.x → 3.4.x
-      PRAZO_ADICIONAL_COD = PRAZO_ADICIONAL_COD.replace(/^3\.2\.(\d)$/, '3.4.$1');
-    })();
+    // === 3.4 — PRAZO ADICIONAL (garante ordem correta das consts) ===
+    const _radioPrazo =
+      document.querySelector('input[name="prazo_adicional"]:checked') ||
+      document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked') ||
+      document.querySelector('input[name^="PRAZO_ADICIONAL"]:checked') ||
+      document.querySelector('input[name^="OPT_3_4"]:checked') ||
+      document.querySelector('input[name*="3_4"]:checked') ||
+      document.querySelector('input[data-prz]:checked');
 
-    if (!PRAZO_ADICIONAL_TEXTO && PRAZO_ADICIONAL_COD) {
-      PRAZO_ADICIONAL_TEXTO = ({
-        '3.4.1': '3.4.1 Manutenção da conformidade',
-        '3.4.2': '3.4.2 Equacionamento do déficit atuarial (ou prazo adicional para implementar)',
-        '3.4.3': '3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)',
-        '3.4.4': '3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade'
-      })[PRAZO_ADICIONAL_COD] || '';
+    let PRAZO_ADICIONAL_COD = '';
+    if (_radioPrazo) {
+      PRAZO_ADICIONAL_COD = String(_radioPrazo.value || _radioPrazo.dataset?.prz || '').trim()
+        .replace(/^3\.2\.(\d)$/, '3.4.$1'); // normaliza
     }
 
 
-    let PRAZO_ADICIONAL_TEXTO = '';
-    (function(){
-      const sel = document.querySelector('input[name^="PRAZO_ADICIONAL"]:checked');
-      if (sel) {
-        PRAZO_ADICIONAL_TEXTO =
-          (sel.dataset?.label || sel.title || sel.nextElementSibling?.innerText || '').trim();
-      }
-    })();
+    // texto: usa um input/textarea opcional OU mapeamento padrão
+    const _txtNode  = document.getElementById('przTexto') || document.querySelector('[name="prazo_adicional_texto"]');
+    const _txtLivre = String(_txtNode?.value || _txtNode?.textContent || '').trim();
 
-    // Se marcou 3.4.x, zera flags e seta a correta
+    const _mapPrazo = {
+      '3.4.1': '3.4.1 Manutenção da conformidade',
+      '3.4.2': '3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)',
+      '3.4.3': '3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)',
+      '3.4.4': '3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade'
+    };
+    const PRAZO_ADICIONAL_TEXTO = _txtLivre || _mapPrazo[PRAZO_ADICIONAL_COD] || '';
+
+    // Reflete flags legadas 3.2.x conforme a seleção 3.4.x
     if (PRAZO_ADICIONAL_COD) {
       FIN_3_2_MANUTENCAO_CONFORMIDADE = '';
       FIN_3_2_DEFICIT_ATUARIAL = '';
       FIN_3_2_CRITERIOS_ESTRUTURANTES = '';
       FIN_3_2_OUTRO_CRITERIO_COMPLEXO = '';
 
-      const code = PRAZO_ADICIONAL_COD.replace(/^3\.2\./, '3.4.');
-      if (code === '3.4.1') FIN_3_2_MANUTENCAO_CONFORMIDADE = 'SIM';
-      if (code === '3.4.2') FIN_3_2_DEFICIT_ATUARIAL = 'SIM';
-      if (code === '3.4.3') FIN_3_2_CRITERIOS_ESTRUTURANTES = 'SIM';
-      if (code === '3.4.4') FIN_3_2_OUTRO_CRITERIO_COMPLEXO = 'SIM';
+      if (PRAZO_ADICIONAL_COD === '3.4.1') FIN_3_2_MANUTENCAO_CONFORMIDADE = 'SIM';
+      if (PRAZO_ADICIONAL_COD === '3.4.2') FIN_3_2_DEFICIT_ATUARIAL = 'SIM';
+      if (PRAZO_ADICIONAL_COD === '3.4.3') FIN_3_2_CRITERIOS_ESTRUTURANTES = 'SIM';
+      if (PRAZO_ADICIONAL_COD === '3.4.4') FIN_3_2_OUTRO_CRITERIO_COMPLEXO = 'SIM';
     }
 
     // === Montagem do objeto (SEM chaves duplicadas) ===
@@ -1467,7 +1455,6 @@
       F46_DOCS: collectTextValue('F466_DOCS'),
       F46_EXEC_RES: collectTextValue('F466_EXEC_RES'),
 
-      PRAZO_ADICIONAL_FLAG: (document.getElementById('PRAZO_ADICIONAL_SOLICITADO')?.checked ? 'SIM' : 'NAO'),
 
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
       F46_PORTE:       $('#F46_PORTE')?.value || '',
@@ -1551,24 +1538,10 @@
     obj.ULTIMO_CRP_DATA = obj.DATA_VENC_ULTIMO_CRP;
     obj.ULTIMO_CRP_TIPO = obj.TIPO_EMISSAO_ULTIMO_CRP;
 
-    // Fallback 3.4 (se veio só flags)
-    if (!PRAZO_ADICIONAL_COD) {
-      if (FIN_3_2_MANUTENCAO_CONFORMIDADE === 'SIM') PRAZO_ADICIONAL_COD = '3.4.1';
-      else if (FIN_3_2_DEFICIT_ATUARIAL === 'SIM')   PRAZO_ADICIONAL_COD = '3.4.2';
-      else if (FIN_3_2_CRITERIOS_ESTRUTURANTES==='SIM') PRAZO_ADICIONAL_COD = '3.4.3';
-      else if (FIN_3_2_OUTRO_CRITERIO_COMPLEXO==='SIM') PRAZO_ADICIONAL_COD = '3.4.4';
-    }
-    if (!PRAZO_ADICIONAL_TEXTO && PRAZO_ADICIONAL_COD) {
-      PRAZO_ADICIONAL_TEXTO = ({
-        '3.4.1': '3.4.1 Manutenção da conformidade',
-        '3.4.2': '3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)',
-        '3.4.3': '3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)',
-        '3.4.4': '3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade'
-      })[PRAZO_ADICIONAL_COD] || '';
-    }
-    obj.PRAZO_ADICIONAL_COD = PRAZO_ADICIONAL_COD;
+    // >>> aplica 3.4 no payload (sem duplicar lógica)
+    obj.PRAZO_ADICIONAL_COD   = PRAZO_ADICIONAL_COD;
     obj.PRAZO_ADICIONAL_TEXTO = PRAZO_ADICIONAL_TEXTO;
-    obj.PRAZO_ADICIONAL_FLAG = obj.PRAZO_ADICIONAL_COD ? 'SIM' : 'NAO';
+    obj.PRAZO_ADICIONAL_FLAG  = obj.PRAZO_ADICIONAL_COD ? 'SIM' : 'NAO';
 
     // ——— Aliases com [] para agradar validações Joi do backend ———
     // MARCADOR: JOI_ARRAY_ALIASES
@@ -1588,23 +1561,22 @@
       PRAZO_ADICIONAL_FLAG: obj.PRAZO_ADICIONAL_FLAG
     });
 
-    // PATCH E — passo 2: logs de campos críticos do payload
+    // PATCH E — passo 2 (log final)
     if (window.__DEBUG_SOLIC_CRP__) {
       try {
-        console.log('[E2] buildPayload() check', {
+        console.log('[E2] buildPayload() fim →', {
           DATA_VENC_ULTIMO_CRP: obj.DATA_VENC_ULTIMO_CRP || obj.DATA_VENCIMENTO_ULTIMO_CRP,
           TIPO_EMISSAO_ULTIMO_CRP: obj.TIPO_EMISSAO_ULTIMO_CRP,
           PRAZO_ADICIONAL_COD: obj.PRAZO_ADICIONAL_COD,
           PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO,
-          FASE_PROGRAMA: obj.FASE_PROGRAMA,
-          FASE_MODAIS: obj.__FASE_MODAIS__
+          FASE_PROGRAMA: obj.FASE_PROGRAMA || obj.fase_programa
         });
       } catch {}
     }
 
-
     return obj;
   }
+
 
 
   // === Compat converter → transforma os campos granulares do form 2
