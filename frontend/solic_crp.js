@@ -904,7 +904,17 @@
       }
 
       // 3) CRP anterior — preencher 3.1 (data) e 3.2 (tipo)
-      const dataVenc = crp.data_venc || crp.DATA_VALIDADE_DMY || crp.DATA_VALIDADE_ISO || '';
+      // depois (mais robusto)
+      const dataVenc =
+        crp.data_venc
+        || crp.DATA_VALIDADE_DMY
+        || crp.DATA_VALIDADE_ISO
+        || crp.DATA_VALIDADE
+        || crp.data_validade
+        || crp.validade
+        || crp.vencimento
+        || '';
+
       if (el.dataUltCrp) el.dataUltCrp.value = toDateBR(dataVenc);
 
 
@@ -1461,8 +1471,8 @@
       F45_DOCS:  $('#F45_DOCS')?.value || '',
       F45_JUST:  $('#F45_JUST')?.value || '',
       F46_CRITERIOS: collectCheckedValues('#F46_CRITERIOS input[type="checkbox"]'),
-      F46_DOCS: collectTextValue('F466_DOCS'),
-      F46_EXEC_RES: collectTextValue('F466_EXEC_RES'),
+      F466_DOCS: collectTextValue('F466_DOCS'),
+      F466_EXEC_RES: collectTextValue('F466_EXEC_RES'),
 
 
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
@@ -1527,7 +1537,7 @@
       byNameVal('data_venc_ult_crp') ||
       byIdVal('data_venc_ult_crp') || '';
 
-    obj.DATA_VENC_ULTIMO_CRP       = toBR(_dataVencUltCrpRaw) || toBR(obj.DATA_VENC_ULTIMO_CRP) || toBR(obj.DATA_VENCIMENTO_ULTIMO_CRP);
+    obj.DATA_VENC_ULTIMO_CRP = toBR(obj.DATA_VENC_ULTIMO_CRP || obj.DATA_VENCIMENTO_ULTIMO_CRP || '');
     obj.DATA_VENCIMENTO_ULTIMO_CRP = obj.DATA_VENC_ULTIMO_CRP;
     obj.venc_ult_crp               = obj.DATA_VENC_ULTIMO_CRP;   // <- data-k do termo
     obj.tipo_emissao_ult_crp       = obj.TIPO_EMISSAO_ULTIMO_CRP; // <- data-k do termo
@@ -1554,11 +1564,11 @@
 
     // ——— Aliases com [] para agradar validações Joi do backend ———
     // MARCADOR: JOI_ARRAY_ALIASES
-    ;[
-      'F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
-      'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES'
-    ].forEach(k => {
-      if (Array.isArray(obj[k])) obj[`${k}[]`] = obj[k];
+    ; 
+    
+    ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
+      'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES']
+      .forEach(k => { if (!Array.isArray(obj[k])) obj[k]=[]; obj[k+'[]']=obj[k];
     });
 
     // Log útil

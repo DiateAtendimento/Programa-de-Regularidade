@@ -503,7 +503,7 @@
       function hojeBR_robusto(){
         try{
           const s = new Date().toLocaleDateString('pt-BR');
-          if (s && /\d{2}\/:\d{2}\/:\d{4}/.test(s)) return s;
+          if (s && /\d{2}\/\d{2}\/\d{4}/.test(s)) return s;
         }catch(_){ }
         const d = new Date();
         const dd = String(d.getDate()).padStart(2,'0');
@@ -596,16 +596,29 @@
             });
           } catch {}
         }
-                function showOnlyPrazo(code){
-          // Mostrar/ocultar com base no atributo data-prz (não removemos elementos)
-          document.querySelectorAll('[data-prz]').forEach(n => {
-            try {
-              n.style.display = (code && (n.getAttribute('data-prz') === code)) ? '' : 'none';
-            } catch(e) { /* safe */ }
+
+        function togglePrazo(code){
+          const itens = document.querySelectorAll('[data-3_4], [data-prz]');
+          let mostrou = false;
+          itens.forEach(n => {
+            const tag = n.getAttribute('data-3_4') || n.getAttribute('data-prz') || '';
+            const ok  = (code && tag === code);
+            n.style.display = ok ? '' : 'none';
+            if (ok) mostrou = true;
           });
+          // fallback: se nada casou, mostra o texto livre (se houver)
+          const holder = document.querySelector('[data-k="PRAZO_ADICIONAL_TEXTO"]');
+          if (holder) {
+            holder.classList.toggle('d-none', mostrou);
+            if (!mostrou && holder.textContent.trim() === '') {
+              const d = window.__TERMO_DATA__ || {};
+              holder.textContent = d.PRAZO_ADICIONAL_TEXTO || 'Não informado';
+            }
+          }
         }
         // aplica
-        showOnlyPrazo(__prz);
+        togglePrazo(__prz);
+
         // campo textual opcional do 3.4
         fillText('prz_3_4_escolha', p.PRAZO_ADICIONAL_TEXTO || '');
 
@@ -886,8 +899,13 @@
     (function(){
       // Suporte a data-fallback="outra_chave" + data-na="Não informado"
       function resolveK(node, data){
+        // NÃO sobrescreve se já houver conteúdo útil
+        const already = (node.textContent || '').trim();
+        if (already && already !== 'Não informado' && already !== '—') return;
+
         const k = node.getAttribute('data-k');
         let v = (data && data[k]) || '';
+
         if(!v){
           const fb = node.getAttribute('data-fallback');
           if (fb && data && data[fb]) v = data[fb];
@@ -910,220 +928,7 @@
     })();
   </script>
 
-  <script>
-    (function(){
-    function renderList(ul){
-      const data = window.__TERMO_DATA__ || {};
-      const key  = ul.getAttribute('data-k-array') || 'CRITERIOS_IRREGULARES';
-      // Aceita CRITERIOS_IRREGULARES ou CRITERIOS_IRREGULARES[]
-      const arr = Array.isArray(data[key]) ? data[key]
-                : (Array.isArray(data[key + '[]']) ? data[key + '[]'] : []);
-      ul.innerHTML = '';
-      if (!arr || arr.length === 0) {
-        const li = document.createElement('li');
-        li.textContent = ul.getAttribute('data-empty') || '—';
-        ul.appendChild(li);
-        return;
-      }
-      arr.forEach(txt => {
-        const li = document.createElement('li');
-        li.textContent = txt;
-        ul.appendChild(li);
-      });
-    }
 
-    function aplicarPrazoAdicional(){
-      const d = window.__TERMO_DATA__ || {};
-      const cod = (d.PRAZO_ADICIONAL_COD || '').trim();
-      const blocos = document.querySelectorAll('[data-3_4]');
-      let shown = false;
-      blocos.forEach(el => {
-        const ok = el.getAttribute('data-3_4') === cod;
-        el.style.display = ok ? '' : 'none';
-        if (ok) shown = true;
-      });
-      const holder = document.querySelector('[data-k="PRAZO_ADICIONAL_TEXTO"]');
-      if (holder) {
-        holder.classList.toggle('d-none', shown);
-        if (!shown) holder.textContent = d.PRAZO_ADICIONAL_TEXTO || 'Não informado';
-      }
-    }
-
-    function init(){
-      const ul = document.getElementById('criterios-list');
-      if (ul) renderList(ul);
-      aplicarPrazoAdicional();
-    }
-
-    document.addEventListener('TERMO_DATA', init);
-    document.addEventListener('TERMO_DATA_READY', init);
-    if (document.readyState !== 'loading') init();
-  })();
-  </script>
-
-  <script>
-  (function(){
-    const D = () => (window.__TERMO_DATA__ || {});
-
-    // Helpers ---------------
-
-    function getArr(key){
-      const d = D();
-      const v = d[key];
-      const alt = d[key + '[]'];
-      if (Array.isArray(v))   return v;
-      if (Array.isArray(alt)) return alt;
-      if (typeof v === 'string' && v.trim()){
-        return v.split(/;|,/).map(s => s.trim()).filter(Boolean);
-      }
-      return [];
-    }
-
-    function getTxt(key, fallback='—'){
-      const d = D();
-      const v = d[key];
-      return (v === 0 ? '0' : (v || '')).toString().trim() || fallback;
-    }
-
-    function renderList(ulId, arr, empty='—'){
-      const ul = document.getElementById(ulId);
-      if (!ul) return;
-      ul.innerHTML = '';
-      const items = Array.isArray(arr) ? arr : [];
-      if (!items.length){
-        const li = document.createElement('li');
-        li.textContent = empty;
-        ul.appendChild(li);
-        return;
-      }
-      items.forEach(t=>{
-        const li = document.createElement('li');
-        li.textContent = t;
-        ul.appendChild(li);
-      });
-    }
-
-    function renderText(elId, txt){
-      const el = document.getElementById(elId);
-      if (!el) return;
-      el.textContent = (txt || '').trim() || '—';
-    }
-
-    function renderMultiline(elId, txt){
-      const el = document.getElementById(elId);
-      if (!el) return;
-      const v = (txt || '').toString().trim();
-      if (!v){ el.textContent = '—'; return; }
-      el.innerHTML = '';
-      v.split(/\r?\n/).forEach(line=>{
-        const p = document.createElement('p');
-        p.textContent = line.trim();
-        el.appendChild(p);
-      });
-    }
-
-    function onlyPhase(code){  // code = '4.1'...'4.6'
-      // esconde todas
-      ['41','42','43','44','45','46'].forEach(suf=>{
-        const box = document.getElementById('fase-' + suf);
-        if (box) box.hidden = true;
-      });
-      // mostra a escolhida
-      const suf = code.replace(/\D/g,''); // '4.1' -> '41'
-      const target = document.getElementById('fase-' + suf);
-      if (target) target.hidden = false;
-    }
-
-    // Render principal ---------------
-
-    function renderFase4(){
-      const d = D();
-
-      // Header "Fase selecionada"
-      const faseRaw  = (d.FASE_PROGRAMA || d.fase_programa || '').toString().trim();
-      const faseCode = (faseRaw.match(/^\s*4\.\d/) || [])[0] || ''; // '4.x' se houver
-      const faseEl   = document.getElementById('fase-escolhida');
-      if (faseEl) faseEl.textContent = faseRaw || '—';
-
-      if (faseCode){
-        onlyPhase(faseCode);
-      } else {
-        // se não vier fase, mantém tudo oculto
-        return;
-      }
-
-      // 4.1
-      if (faseCode === '4.1'){
-        const it = getTxt('F41_OPCAO', '—');
-        renderList('f41-itens', it ? [it] : []);
-      }
-
-      // 4.2
-      if (faseCode === '4.2'){
-        renderList('f42-itens', getArr('F42_LISTA'), 'Sem itens selecionados.');
-      }
-
-      // 4.3
-      if (faseCode === '4.3'){
-        renderList('f43-itens', getArr('F43_LISTA'), 'Sem itens selecionados.');
-        renderText('f43-just',  getTxt('F43_JUST', '—'));
-        renderText('f43-plano', getTxt('F43_PLANO', '—'));
-      }
-
-      // 4.4
-      if (faseCode === '4.4'){
-        renderList('f44-criterios',   getArr('F44_CRITERIOS'),   'Sem critérios selecionados.');
-        renderList('f44-decls',       getArr('F44_DECLS'),       'Sem declarações marcadas.');
-        renderList('f44-finalidades', getArr('F44_FINALIDADES'), 'Sem finalidades informadas.');
-        renderText('f441-legislacao', getTxt('F441_LEGISLACAO', '—'));
-        renderMultiline('f446-docs',  getTxt('F446_DOCS', ''));
-        renderMultiline('f446-exec',  getTxt('F446_EXEC_RES', ''));
-        renderMultiline('f44-anexos', getTxt('F44_ANEXOS', ''));
-      }
-
-      // 4.5
-      if (faseCode === '4.5'){
-        // f45-decls: se marcou 4.5.1, mostra; senão vazio
-        const decls = [];
-        if (String(d.F45_OK451 || '').toLowerCase() === 'true') {
-          decls.push('4.5.1 Declaração marcada');
-        } else if (d.F45_OK451 === true) {
-          decls.push('4.5.1 Declaração marcada');
-        }
-        renderList('f45-decls', decls, 'Sem declarações.');
-
-        renderMultiline('f45-docs', getTxt('F45_DOCS', ''));
-        renderMultiline('f45-just', getTxt('F45_JUST', ''));
-      }
-
-      // 4.6
-      if (faseCode === '4.6'){
-        renderList('f46-criterios',   getArr('F46_CRITERIOS'),   'Sem critérios selecionados.');
-        // Declarações gerais da 4.6 que confluiram para docs/just (se houver)
-        const decls = [];
-        const jd = getTxt('F46_JUST_D', '');
-        const je = getTxt('F46_JUST_E', '');
-        if (jd) decls.push('4.6.2(d): ' + jd);
-        if (je) decls.push('4.6.2(e): ' + je);
-        renderList('f46-decls', decls, '—');
-
-        renderList('f462f-criterios', getArr('F462F_CRITERIOS'), '—');
-
-        renderMultiline('f466-docs', getTxt('F466_DOCS', ''));
-        renderMultiline('f466-exec', getTxt('F466_EXEC_RES', ''));
-
-        renderList('f46-finalidades', getArr('F46_FINALIDADES'), '—');
-        renderMultiline('f46-anexos', getTxt('F46_ANEXOS', ''));
-        renderMultiline('f46-just-planos', getTxt('F46_JUST_PLANOS', ''));
-      }
-    }
-
-    // Eventos para hidratar quando __TERMO_DATA__ estiver pronto/atualizar
-    document.addEventListener('TERMO_DATA', renderFase4);
-    document.addEventListener('TERMO_DATA_READY', renderFase4);
-    if (document.readyState !== 'loading') renderFase4();
-  })();
-  </script>
 
 
 

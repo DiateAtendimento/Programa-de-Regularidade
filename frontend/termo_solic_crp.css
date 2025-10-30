@@ -267,3 +267,6 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
 
 /* Ocultar qualquer rodapé HTML específico */
 @media print { #rodape { display:none } }
+
+/* Utilitário para esconder elementos via JS */
+.d-none { display: none !important; }
