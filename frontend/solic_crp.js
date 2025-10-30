@@ -1254,14 +1254,20 @@
 
   /* ========= Payload ========= */
   function buildPayload(){
+    // === Coletas base ===
     const ESFERA =
       (el.esfMun?.checked ? 'RPPS Municipal' :
       (el.esfEst?.checked ? 'Estadual/Distrital' : ''));
 
-    const faseCompat = document.querySelector('input[name="FASE_PROGRAMA"]:checked')?.value || '';
+    // Fase (compat: rádio ou select)
+    const FASE_PROGRAMA =
+      document.querySelector('input[name="FASE_PROGRAMA"]:checked')?.value
+      || document.getElementById('FASE_PROGRAMA')?.value
+      || '';
 
     const ADESAO_SEM_IRREGULARIDADES =
       $('#chkSemIrregularidades')?.checked ? 'SIM' : '';
+
     let FIN_3_2_MANUTENCAO_CONFORMIDADE =
       document.querySelector('input[name="MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS"]')?.checked ? 'SIM' : '';
     let FIN_3_2_DEFICIT_ATUARIAL =
@@ -1271,6 +1277,7 @@
     let FIN_3_2_OUTRO_CRITERIO_COMPLEXO =
       document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : '';
 
+    // 3.1 / 3.2 (coleta “crua” do form)
     const DATA_VENCIMENTO_ULTIMO_CRP =
       (el.dataUltCrp && el.dataUltCrp.value) ? el.dataUltCrp.value.trim() : '';
 
@@ -1282,48 +1289,63 @@
       if (el.tipoJud && el.tipoJud.checked) TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
     }
 
-    // --- Normalizações / captura das fases (compatibilidade) ---
-    // Fase do programa (radio/select)
-    const FASE_PROGRAMA = (document.querySelector('input[name="FASE_PROGRAMA"]:checked')?.value || '')
-      || (document.getElementById('FASE_PROGRAMA')?.value || '');
-
-    // 4.1 opção (radio)
-     const F41_OPCAO = (
+    // 4.1 opção
+    const F41_OPCAO = (
       document.querySelector('input[name="F41_OPCAO"]:checked')?.value ||
-      document.querySelector('input[name="F41_OPCAO_4_1"]:checked')?.value || // fallback
-      ''
+      document.querySelector('input[name="F41_OPCAO_4_1"]:checked')?.value || ''
     ).trim();
 
-    // 4.2 lista (checkboxes, exemplo name="F42_ITENS[]")
-    const F42_LISTA = Array.from(document.querySelectorAll('input[name="F42_ITENS[]"]:checked')).map(i => i.value.trim());
+    // 4.2, 4.3, 4.4... (listas vindas dos modais) — declarar como variáveis
+    const F42_LISTA = Array.from(
+      document.querySelectorAll('input[name="F42_ITENS[]"]:checked')
+    ).map(i => i.value.trim());
 
-    // 4.4 (exemplo: critérios / declarações / finalidades)
-    const F44_CRITERIOS = Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i => i.value.trim());
-    const F44_DECLS = Array.from(document.querySelectorAll('input[name="F44_DECLS[]"]:checked')).map(i => i.value.trim());
-    const F44_FINALIDADES = Array.from(document.querySelectorAll('input[name="F44_FINALIDADES[]"]:checked')).map(i => i.value.trim());
+    const F44_CRITERIOS = Array.from(new Set([
+      collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
+      Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i => i.value.trim())
+    ].flat().filter(Boolean)));
 
+    const F44_DECLS = Array.from(new Set([
+      collectCheckedValues('#blk_44 .d-flex input[type="checkbox"]'),
+      Array.from(document.querySelectorAll('input[name="F44_DECLS[]"]:checked')).map(i => i.value.trim())
+    ].flat().filter(Boolean)));
 
-    
+    const F44_FINALIDADES = Array.from(new Set([
+      collectCheckedValues('#F44_FINALIDADES input[type="checkbox"]'),
+      Array.from(document.querySelectorAll('input[name="F44_FINALIDADES[]"]:checked')).map(i => i.value.trim())
+    ].flat().filter(Boolean)));
 
     // UG consolidados (1.3 OU 1.3.2)
     const UG_FINAL       = (el.ug?.value || el.ugNome?.value || '').trim();
-    let CNPJ_UG_FINAL  = obterCNPJUG(); // retorna 14 dígitos ou null
+    let CNPJ_UG_FINAL    = obterCNPJUG(); // retorna 14 dígitos ou null
     if(!CNPJ_UG_FINAL) {
-      // tenta extrair diretamente do input que existe em alguns layouts
       const rawCnpj = (document.getElementById('CNPJ_UG')?.value || document.getElementById('ug_cnpj')?.value || '');
       const digitsOnly = String(rawCnpj).replace(/\D+/g,'');
       CNPJ_UG_FINAL = (digitsOnly.length === 14) ? digitsOnly : null;
     }
     const EMAIL_UG_FINAL = (el.emailUg?.value || el.ugEmail?.value || '').trim();
-
     if (!CNPJ_UG_FINAL) { console.warn('[solic_crp] CNPJ_UG ausente — salvando como rascunho'); window.__CNPJ_UG_WARNING__ = true; }
 
+    // 3.4 — rádio/compat
     let PRAZO_ADICIONAL_COD =
       document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked')?.value || '';
-    // compat: se a UI ainda estiver com value "3.2.x", converte para "3.4.x"
     PRAZO_ADICIONAL_COD = String(PRAZO_ADICIONAL_COD).replace(/^3\.2\.(\d)$/, '3.4.$1');
 
-    // Se o rádio foi marcado (3.4.x), refletir na única flag FIN_3_2_*
+    if (!PRAZO_ADICIONAL_COD) {
+      const anyPrz = document.querySelector('input[name^="PRAZO_ADICIONAL"]:checked');
+      if (anyPrz) PRAZO_ADICIONAL_COD = String(anyPrz.value || '').replace(/^3\.2\.(\d)$/, '3.4.$1');
+    }
+
+    let PRAZO_ADICIONAL_TEXTO = '';
+    (function(){
+      const sel = document.querySelector('input[name^="PRAZO_ADICIONAL"]:checked');
+      if (sel) {
+        PRAZO_ADICIONAL_TEXTO =
+          (sel.dataset?.label || sel.title || sel.nextElementSibling?.innerText || '').trim();
+      }
+    })();
+
+    // Se marcou 3.4.x, zera flags e seta a correta
     if (PRAZO_ADICIONAL_COD) {
       FIN_3_2_MANUTENCAO_CONFORMIDADE = '';
       FIN_3_2_DEFICIT_ATUARIAL = '';
@@ -1337,6 +1359,7 @@
       if (code === '3.4.4') FIN_3_2_OUTRO_CRITERIO_COMPLEXO = 'SIM';
     }
 
+    // === Montagem do objeto (SEM chaves duplicadas) ===
     const obj = {
       HAS_TERMO_ENC_GESCON: el.hasGescon?.value === '1',
       N_GESCON: el.spanNGescon?.textContent || '',
@@ -1353,7 +1376,6 @@
       EMAIL_UG: EMAIL_UG_FINAL,
       ORGAO_VINCULACAO_UG: (document.getElementById('ug_orgao_vinc')?.value || '').trim(),
 
-
       CPF_REP_ENTE: digits(el.cpfRepEnte.value),
       NOME_REP_ENTE: el.nomeRepEnte.value.trim(),
       CARGO_REP_ENTE: el.cargoRepEnte.value.trim(),
@@ -1366,11 +1388,11 @@
       TEL_REP_UG: el.telRepUg.value.trim(),
       SEI_PROCESSO: (el.introProcSei?.textContent || el.infoProcSei?.textContent || '').trim(),
 
-      DATA_VENCIMENTO_ULTIMO_CRP,
-      TIPO_EMISSAO_ULTIMO_CRP,
-      // compat: a planilha/servidor usam DATA_VENC_ULTIMO_CRP
+      // 3.1/3.2 (base)
+      DATA_VENCIMENTO_ULTIMO_CRP: DATA_VENCIMENTO_ULTIMO_CRP,
+      TIPO_EMISSAO_ULTIMO_CRP: TIPO_EMISSAO_ULTIMO_CRP,
+      // compat: espelho
       DATA_VENC_ULTIMO_CRP: DATA_VENCIMENTO_ULTIMO_CRP,
-
 
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i => i.value),
 
@@ -1380,32 +1402,21 @@
       FIN_3_2_CRITERIOS_ESTRUTURANTES,
       FIN_3_2_OUTRO_CRITERIO_COMPLEXO,
 
-      FASE_PROGRAMA: faseCompat,
-      F41_OPCAO: $('input[name="F41_OPCAO"]:checked')?.value || '',
-      F42_LISTA: Array.from(new Set([...
-        collectCheckedValues('#F42_LISTA input[type="checkbox"]'),
-        Array.from(document.querySelectorAll('input[name="F42_ITENS[]"]:checked')).map(i=>i.value.trim())
-      ].flat().filter(Boolean))),
+      FASE_PROGRAMA: FASE_PROGRAMA,
+      F41_OPCAO,
+
+      // Listas já calculadas (sem recomputar aqui)
+      F42_LISTA,
+      F44_CRITERIOS,
+      F44_DECLS,
+      F44_FINALIDADES,
 
       F43_LISTA: collectCheckedValues('#F43_LISTA input[type="checkbox"]'),
       F43_PLANO: collectTextValue('F43_PLANO'),
       F43_PLANO_B: collectTextValue('F43_PLANO_B'),
-      // Joi exige STRING; mandamos join("; ")
       F43_INCLUIR: collectCheckedValues('#F43_INCLUIR input[type="checkbox"]').join('; '),
-      // (se existir a lista “B”, também como string)
       F43_INCLUIR_B: collectCheckedValues('#F43_INCLUIR_B input[type="checkbox"]').join('; '),
-      F44_CRITERIOS: Array.from(new Set([...
-        collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
-        Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i=>i.value.trim())
-      ].flat().filter(Boolean))),
-      F44_DECLS: Array.from(new Set([...
-        collectCheckedValues('#blk_44 .d-flex input[type="checkbox"]'),
-        Array.from(document.querySelectorAll('input[name="F44_DECLS[]"]:checked')).map(i=>i.value.trim())
-      ].flat().filter(Boolean))),
-      F44_FINALIDADES: Array.from(new Set([...
-        collectCheckedValues('#F44_FINALIDADES input[type="checkbox"]'),
-        Array.from(document.querySelectorAll('input[name="F44_FINALIDADES[]"]:checked')).map(i=>i.value.trim())
-      ].flat().filter(Boolean))),
+
       F44_ANEXOS: collectTextValue('F44_ANEXOS'),
       F45_OK451: !!$('#blk_45 input[type="checkbox"]:checked'),
       F45_DOCS:  $('#F45_DOCS')?.value || '',
@@ -1414,7 +1425,6 @@
       F46_DOCS: collectTextValue('F466_DOCS'),
       F46_EXEC_RES: collectTextValue('F466_EXEC_RES'),
 
-      PRAZO_ADICIONAL_TEXTO: collectTextValue('PRAZO_ADICIONAL_TEXTO') || collectTextValue('ID_DO_CAMPO_3_4_TEXTO'),
       PRAZO_ADICIONAL_FLAG: (document.getElementById('PRAZO_ADICIONAL_SOLICITADO')?.checked ? 'SIM' : 'NAO'),
 
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
@@ -1452,38 +1462,16 @@
       HORA_SOLIC_GERADA: el.horaSol.value,
       ANO_SOLIC_GERADA: el.anoSol.value,
 
-      PRAZO_ADICIONAL_TEXTO: (() => {
-        switch (PRAZO_ADICIONAL_COD.replace(/^3\.2\./, '3.4.')) {
-          case '3.4.1': return '3.4.1 Manutenção da conformidade';
-          case '3.4.2': return '3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)';
-          case '3.4.3': return '3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)';
-          case '3.4.4': return '3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade';
-          default: return '';
-        }
-      })(),
-
-
       IDEMP_KEY: takeIdemKey() || ''
     };
 
     // PORTARIA padronizada (caso não venha do formulário)
-    if (!obj.PORTARIA_SRPC) {
-      obj.PORTARIA_SRPC = '2.024/2025';
-    }
+    if (!obj.PORTARIA_SRPC) obj.PORTARIA_SRPC = '2.024/2025';
 
-    dbg('[SOLIC-CRP] Payload pronto:', obj);
+    dbg('[SOLIC-CRP] Payload (parcial):', obj);
     ensureDefaultsForPayload(obj);
 
-    // no final de buildPayload()
-    console.log('DEBUG buildPayload output:', {
-      F44_CRITERIOS: obj.F44_CRITERIOS,
-      F44_DECLS: obj.F44_DECLS,
-      F44_FINALIDADES: obj.F44_FINALIDADES,
-      PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO,
-      PRAZO_ADICIONAL_FLAG: obj.PRAZO_ADICIONAL_FLAG
-    });
-
-    // === [3.1 e 3.2] Normalização dos campos do último CRP ===
+    // === [3.1 e 3.2] Normalização e aliases para o TERMO ===
     const byNameVal = (n) => document.querySelector(`[name="${n}"]`)?.value || '';
     const byIdVal   = (i) => document.getElementById(i)?.value || '';
     const toBR = (v)=>{
@@ -1493,7 +1481,6 @@
       return m ? `${m[3]}/${m[2]}/${m[1]}` : s;
     };
 
-    // 3.1 Data de vencimento do último CRP (aceita vários nomes/legados)
     const _dataVencUltCrpRaw =
       byNameVal('DATA_VENC_ULTIMO_CRP') ||
       byNameVal('DATA_VENCIMENTO_ULTIMO_CRP') ||
@@ -1501,61 +1488,62 @@
       byIdVal('DATA_VENCIMENTO_ULTIMO_CRP') ||
       byNameVal('data_venc_ult_crp') ||
       byIdVal('data_venc_ult_crp') || '';
-    obj.DATA_VENC_ULTIMO_CRP = toBR(_dataVencUltCrpRaw);
-    obj.DATA_VENCIMENTO_ULTIMO_CRP = obj.DATA_VENC_ULTIMO_CRP; // alias que o template aceita
 
-    // 3.2 Tipo de emissão do último CRP (Administrativa/Judicial)
+    obj.DATA_VENC_ULTIMO_CRP = toBR(_dataVencUltCrpRaw) || toBR(obj.DATA_VENC_ULTIMO_CRP) || toBR(obj.DATA_VENCIMENTO_ULTIMO_CRP);
+    obj.DATA_VENCIMENTO_ULTIMO_CRP = obj.DATA_VENC_ULTIMO_CRP; // alias
+    obj.venc_ult_crp = obj.DATA_VENC_ULTIMO_CRP;               // data-k do termo
+
     const _tipoEmissaoUltCrpRaw =
       byNameVal('TIPO_EMISSAO_ULTIMO_CRP') ||
       byIdVal('TIPO_EMISSAO_ULTIMO_CRP') ||
       byNameVal('tipo_emissao_ult_crp') ||
       byIdVal('tipo_emissao_ult_crp') ||
-      byNameVal('tipo') || '';
-       obj.TIPO_EMISSAO_ULTIMO_CRP = (_tipoEmissaoUltCrpRaw || '').trim();
-      if (/^adm/i.test(obj.TIPO_EMISSAO_ULTIMO_CRP)) obj.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
-      if (/^jud/i.test(obj.TIPO_EMISSAO_ULTIMO_CRP)) obj.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
+      byNameVal('tipo') || obj.TIPO_EMISSAO_ULTIMO_CRP || '';
+
+    obj.TIPO_EMISSAO_ULTIMO_CRP = String(_tipoEmissaoUltCrpRaw).trim();
+    if (/^adm/i.test(obj.TIPO_EMISSAO_ULTIMO_CRP)) obj.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
+    if (/^jud/i.test(obj.TIPO_EMISSAO_ULTIMO_CRP)) obj.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
+    obj.tipo_emissao_ult_crp = obj.TIPO_EMISSAO_ULTIMO_CRP;     // data-k do termo
 
     obj.ULTIMO_CRP_DATA = obj.DATA_VENC_ULTIMO_CRP;
     obj.ULTIMO_CRP_TIPO = obj.TIPO_EMISSAO_ULTIMO_CRP;
 
-    // Fallback: se o rádio não veio, derive das flags 3.2 (mantém 3.4.x no PDF)
-    if (!obj.PRAZO_ADICIONAL_COD) {
-      if (obj.FIN_3_2_MANUTENCAO_CONFORMIDADE === 'SIM') obj.PRAZO_ADICIONAL_COD = '3.4.1';
-      else if (obj.FIN_3_2_DEFICIT_ATUARIAL === 'SIM') obj.PRAZO_ADICIONAL_COD = '3.4.2';
-      else if (obj.FIN_3_2_CRITERIOS_ESTRUTURANTES === 'SIM') obj.PRAZO_ADICIONAL_COD = '3.4.3';
-      else if (obj.FIN_3_2_OUTRO_CRITERIO_COMPLEXO === 'SIM') obj.PRAZO_ADICIONAL_COD = '3.4.4';
+    // Fallback 3.4 (se veio só flags)
+    if (!PRAZO_ADICIONAL_COD) {
+      if (FIN_3_2_MANUTENCAO_CONFORMIDADE === 'SIM') PRAZO_ADICIONAL_COD = '3.4.1';
+      else if (FIN_3_2_DEFICIT_ATUARIAL === 'SIM')   PRAZO_ADICIONAL_COD = '3.4.2';
+      else if (FIN_3_2_CRITERIOS_ESTRUTURANTES==='SIM') PRAZO_ADICIONAL_COD = '3.4.3';
+      else if (FIN_3_2_OUTRO_CRITERIO_COMPLEXO==='SIM') PRAZO_ADICIONAL_COD = '3.4.4';
     }
-    if (!obj.PRAZO_ADICIONAL_TEXTO && obj.PRAZO_ADICIONAL_COD) {
-      obj.PRAZO_ADICIONAL_TEXTO = ({
+    if (!PRAZO_ADICIONAL_TEXTO && PRAZO_ADICIONAL_COD) {
+      PRAZO_ADICIONAL_TEXTO = ({
         '3.4.1': '3.4.1 Manutenção da conformidade',
         '3.4.2': '3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)',
         '3.4.3': '3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)',
         '3.4.4': '3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade'
-      })[obj.PRAZO_ADICIONAL_COD] || '';
+      })[PRAZO_ADICIONAL_COD] || '';
     }
+    obj.PRAZO_ADICIONAL_COD = PRAZO_ADICIONAL_COD;
+    obj.PRAZO_ADICIONAL_TEXTO = PRAZO_ADICIONAL_TEXTO;
     obj.PRAZO_ADICIONAL_FLAG = obj.PRAZO_ADICIONAL_COD ? 'SIM' : 'NAO';
 
-    // === [3.4] Prazo adicional — somente a alternativa selecionada ===
-    const _prz =
-    document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked') ||
-    document.querySelector('input[name="PRAZO_ADICIONAL"]:checked') ||
-    document.querySelector('input[name^="PRAZO_ADICIONAL"]:checked');
-    obj.PRAZO_ADICIONAL_COD = _prz?.value || obj.PRAZO_ADICIONAL_COD || '';
-    obj.PRAZO_ADICIONAL_TEXTO =
-      (_prz?.dataset?.label ||
-      _prz?.title ||
-      _prz?.nextElementSibling?.innerText ||
-      obj.PRAZO_ADICIONAL_TEXTO || '').trim();
-
     // ——— Aliases com [] para agradar validações Joi do backend ———
-    function aliasArray(key){
-      if (Array.isArray(obj[key])) obj[`${key}[]`] = obj[key];
-    }
-    [
+    // MARCADOR: JOI_ARRAY_ALIASES
+    ;[
       'F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
       'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES'
-    ].forEach(aliasArray);
+    ].forEach(k => {
+      if (Array.isArray(obj[k])) obj[`${k}[]`] = obj[k];
+    });
 
+    // Log útil
+    console.log('DEBUG buildPayload output:', {
+      F44_CRITERIOS: obj.F44_CRITERIOS,
+      F44_DECLS: obj.F44_DECLS,
+      F44_FINALIDADES: obj.F44_FINALIDADES,
+      PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO,
+      PRAZO_ADICIONAL_FLAG: obj.PRAZO_ADICIONAL_FLAG
+    });
 
     return obj;
   }
