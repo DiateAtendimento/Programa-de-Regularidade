@@ -3,7 +3,7 @@
 (() => {
 
   // === DEBUG global (ligue/desligue quando quiser) ===
-  window.__DEBUG_SOLIC_CRP__ = false;
+  window.__DEBUG_SOLIC_CRP__ = true;
   function dbg(...args){ if (window.__DEBUG_SOLIC_CRP__) console.log(...args); }
   function dbe(...args){ if (window.__DEBUG_SOLIC_CRP__) console.error(...args); }
 
@@ -905,7 +905,8 @@
 
       // 3) CRP anterior — preencher 3.1 (data) e 3.2 (tipo)
       const dataVenc = crp.data_venc || crp.DATA_VALIDADE_DMY || crp.DATA_VALIDADE_ISO || '';
-      if (el.dataUltCrp) el.dataUltCrp.value = dataVenc;
+      if (el.dataUltCrp) el.dataUltCrp.value = toDateBR(dataVenc);
+
 
       // Regra “não ⇒ Administrativa / sim ⇒ Judicial”
       let tipo = '';
@@ -922,6 +923,27 @@
         if (el.tipoAdm) el.tipoAdm.checked = (tipo === 'Administrativa');
         if (el.tipoJud) el.tipoJud.checked = (tipo === 'Judicial');
       }
+
+      // PATCH E — passo 1: logs após hidratar 3.1 / 3.2
+      if (window.__DEBUG_SOLIC_CRP__) {
+        try {
+          const _venc =
+            (el.infoDataVencUltimoCrp?.textContent ?? '').trim() ||
+            (el.dataUltCrp?.value ?? '').trim() || null;
+
+          const _tipo =
+            (el.infoTipoEmissaoUltimoCrp?.textContent ?? '').trim() ||
+            (el.selectTipoUltCrp?.value ?? '').trim() ||
+            ((el.tipoAdm?.checked ? 'Administrativa' : (el.tipoJud?.checked ? 'Judicial' : '')) || '').trim() ||
+            null;
+
+          console.log('[E1] hidratarTermosRegistrados → CRP', {
+            '3.1_DATA_VENC_ULTIMO_CRP': _venc,
+            '3.2_TIPO_EMISSAO_ULTIMO_CRP': _tipo
+          });
+        } catch {}
+      }
+
 
       // === 3.1 Critérios irregulares ===
       let irregs = Array.isArray(crp.irregulares) ? crp.irregulares.slice() : [];
@@ -1297,7 +1319,7 @@
 
     // 4.2, 4.3, 4.4... (listas vindas dos modais) — declarar como variáveis
     const F42_LISTA = Array.from(
-      document.querySelectorAll('input[name="F42_ITENS[]"]:checked')
+      document.querySelectorAll('#F42_LISTA input[type="checkbox"]:checked, input[name="F42_LISTA[]"]:checked')
     ).map(i => i.value.trim());
 
     const F44_CRITERIOS = Array.from(new Set([
@@ -1326,15 +1348,35 @@
     const EMAIL_UG_FINAL = (el.emailUg?.value || el.ugEmail?.value || '').trim();
     if (!CNPJ_UG_FINAL) { console.warn('[solic_crp] CNPJ_UG ausente — salvando como rascunho'); window.__CNPJ_UG_WARNING__ = true; }
 
-    // 3.4 — rádio/compat
-    let PRAZO_ADICIONAL_COD =
-      document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked')?.value || '';
-    PRAZO_ADICIONAL_COD = String(PRAZO_ADICIONAL_COD).replace(/^3\.2\.(\d)$/, '3.4.$1');
+    // 3.4: aceita qualquer name de rádio/checkbox, ou até dataset
+    let PRAZO_ADICIONAL_COD = '';
+    (function(){
+      // 1) radios mais prováveis
+      const cand = document.querySelector(
+        'input[name="PRAZO_ADICIONAL_3_4"]:checked, ' +
+        'input[name^="PRAZO_ADICIONAL"]:checked, ' +
+        'input[name^="OPT_3_4"]:checked, ' +
+        'input[name*="3_4"]:checked'
+      );
+      if (cand && cand.value) PRAZO_ADICIONAL_COD = String(cand.value).trim();
+      // 2) se o input usa data-prz
+      if (!PRAZO_ADICIONAL_COD) {
+        const byDataset = document.querySelector('input[data-prz]:checked');
+        if (byDataset) PRAZO_ADICIONAL_COD = String(byDataset.dataset.prz || '').trim();
+      }
+      // 3) normaliza 3.2.x → 3.4.x
+      PRAZO_ADICIONAL_COD = PRAZO_ADICIONAL_COD.replace(/^3\.2\.(\d)$/, '3.4.$1');
+    })();
 
-    if (!PRAZO_ADICIONAL_COD) {
-      const anyPrz = document.querySelector('input[name^="PRAZO_ADICIONAL"]:checked');
-      if (anyPrz) PRAZO_ADICIONAL_COD = String(anyPrz.value || '').replace(/^3\.2\.(\d)$/, '3.4.$1');
+    if (!PRAZO_ADICIONAL_TEXTO && PRAZO_ADICIONAL_COD) {
+      PRAZO_ADICIONAL_TEXTO = ({
+        '3.4.1': '3.4.1 Manutenção da conformidade',
+        '3.4.2': '3.4.2 Equacionamento do déficit atuarial (ou prazo adicional para implementar)',
+        '3.4.3': '3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)',
+        '3.4.4': '3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade'
+      })[PRAZO_ADICIONAL_COD] || '';
     }
+
 
     let PRAZO_ADICIONAL_TEXTO = '';
     (function(){
@@ -1489,9 +1531,10 @@
       byNameVal('data_venc_ult_crp') ||
       byIdVal('data_venc_ult_crp') || '';
 
-    obj.DATA_VENC_ULTIMO_CRP = toBR(_dataVencUltCrpRaw) || toBR(obj.DATA_VENC_ULTIMO_CRP) || toBR(obj.DATA_VENCIMENTO_ULTIMO_CRP);
-    obj.DATA_VENCIMENTO_ULTIMO_CRP = obj.DATA_VENC_ULTIMO_CRP; // alias
-    obj.venc_ult_crp = obj.DATA_VENC_ULTIMO_CRP;               // data-k do termo
+    obj.DATA_VENC_ULTIMO_CRP       = toBR(_dataVencUltCrpRaw) || toBR(obj.DATA_VENC_ULTIMO_CRP) || toBR(obj.DATA_VENCIMENTO_ULTIMO_CRP);
+    obj.DATA_VENCIMENTO_ULTIMO_CRP = obj.DATA_VENC_ULTIMO_CRP;
+    obj.venc_ult_crp               = obj.DATA_VENC_ULTIMO_CRP;   // <- data-k do termo
+    obj.tipo_emissao_ult_crp       = obj.TIPO_EMISSAO_ULTIMO_CRP; // <- data-k do termo
 
     const _tipoEmissaoUltCrpRaw =
       byNameVal('TIPO_EMISSAO_ULTIMO_CRP') ||
@@ -1544,6 +1587,21 @@
       PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO,
       PRAZO_ADICIONAL_FLAG: obj.PRAZO_ADICIONAL_FLAG
     });
+
+    // PATCH E — passo 2: logs de campos críticos do payload
+    if (window.__DEBUG_SOLIC_CRP__) {
+      try {
+        console.log('[E2] buildPayload() check', {
+          DATA_VENC_ULTIMO_CRP: obj.DATA_VENC_ULTIMO_CRP || obj.DATA_VENCIMENTO_ULTIMO_CRP,
+          TIPO_EMISSAO_ULTIMO_CRP: obj.TIPO_EMISSAO_ULTIMO_CRP,
+          PRAZO_ADICIONAL_COD: obj.PRAZO_ADICIONAL_COD,
+          PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO,
+          FASE_PROGRAMA: obj.FASE_PROGRAMA,
+          FASE_MODAIS: obj.__FASE_MODAIS__
+        });
+      } catch {}
+    }
+
 
     return obj;
   }
@@ -1707,8 +1765,10 @@
   const form = $('#solicCrpForm');
   form?.addEventListener('submit', async (ev)=>{
     ev.preventDefault();
-    if(!validarCamposBasicos()) return;
-    const vf = validarFaseSelecionada(); if(!vf.ok){ showAtencao([vf.motivo]); return; }
+    if (!validarCamposBasicos()) return;
+
+    const vf = validarFaseSelecionada();
+    if (!vf.ok) { showAtencao([vf.motivo]); return; }
 
     fillNowHiddenFields();
 
@@ -1716,34 +1776,55 @@
     rememberIdemKey(idem);
 
     const payload = buildPayload(); // já inclui IDEMP_KEY (se existir)
-    if (window.__DEBUG_SOLIC_CRP__) { try { console.log('[solic_crp] buildPayload() →', JSON.stringify(payload, null, 2)); } catch(_) {} }
 
-    const btn = el.btnSubmit; const old = btn.innerHTML;
-    btn.disabled = true; btn.innerHTML = 'Finalizando…';
+    // 🔎 DEBUG (ANTES do postJSON)
+    if (window.__DEBUG_SOLIC_CRP__) {
+      try {
+        console.log('[SUBMIT] payload →', JSON.stringify(payload, null, 2));
+        console.log('[SUBMIT] campos críticos →', {
+          DATA_VENC_ULTIMO_CRP: payload.DATA_VENC_ULTIMO_CRP || payload.DATA_VENCIMENTO_ULTIMO_CRP,
+          TIPO_EMISSAO_ULTIMO_CRP: payload.TIPO_EMISSAO_ULTIMO_CRP,
+          PRAZO_ADICIONAL_COD: payload.PRAZO_ADICIONAL_COD,
+          PRAZO_ADICIONAL_TEXTO: payload.PRAZO_ADICIONAL_TEXTO,
+          FASE_PROGRAMA: payload.FASE_PROGRAMA
+        });
+      } catch {}
+    }
 
-    let t = setTimeout(()=> bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).show(), 3000);
+    const btn = el.btnSubmit;
+    const old = btn?.innerHTML ?? '';
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Finalizando…'; }
 
-    try{
+    let t = setTimeout(()=> {
+      try { bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).show(); } catch {}
+    }, 3000);
+
+    try {
       await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
       const resp = await postJSON(
-        api('/gerar-solic-crp'),           // ajuste a rota se a sua for diferente
-        payload,                           // corpo já em objeto
-        withKey({ 'X-Idempotency-Key': idem }) // headers extras (API key + Idempotency)
+        api('/gerar-solic-crp'),                // ajuste a rota se a sua for diferente
+        payload,                                // corpo já em objeto
+        withKey({ 'X-Idempotency-Key': idem })  // headers extras (API key + Idempotency)
       );
 
+      // 🔎 DEBUG (DEPOIS do postJSON) — AQUI MESMO
+      if (window.__DEBUG_SOLIC_CRP__) {
+        try { console.log('[SUBMIT] resposta API →', resp); } catch {}
+      }
 
       clearTimeout(t);
-      try{ bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); }catch{}
+      try { bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); } catch {}
       clearIdemKey();
-      btn.innerHTML = 'Finalizado ✓';
-      
+      if (btn) btn.innerHTML = 'Finalizado ✓';
+
       setTimeout(()=>{
-        try{ form.reset(); }catch{}
+        try { form.reset(); } catch {}
         clearAllState();
 
-        el.hasGescon && (el.hasGescon.value = '0');
-        el.cnpjInput && (el.cnpjInput.value = '');
+        // limpa e reseta campos auxiliares do passo 0
+        if (el.hasGescon) el.hasGescon.value = '0';
+        if (el.cnpjInput) el.cnpjInput.value = '';
         el.boxGescon && el.boxGescon.classList.add('d-none');
         if (el.spanNGescon) el.spanNGescon.textContent = '';
         if (el.spanDataEnc) el.spanDataEnc.textContent = '';
@@ -1758,20 +1839,32 @@
 
         if (el.btnNext) el.btnNext.disabled = true;
 
-        btn.disabled=false; btn.innerHTML=old;
+        if (btn) { btn.disabled = false; btn.innerHTML = old; }
 
         curStep = 0;
         window.__renderStepper?.();
-
       }, 800);
 
-    }catch(err){
+    } catch (err) {
       clearTimeout(t);
-      try{ bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); }catch{}
+      try { bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); } catch {}
+
+      // 🔎 DEBUG de erro
+      if (window.__DEBUG_SOLIC_CRP__) {
+        try {
+          console.log('[SUBMIT][ERRO]', {
+            message: err?.message,
+            status: err?.status || err?.response?.status,
+            data: err?.response?.data
+          });
+        } catch {}
+      }
+
       showErro(friendlyErrorMessages(err, 'Falha ao registrar a solicitação.'));
-      btn.disabled=false; btn.innerHTML=old;
+      if (btn) { btn.disabled = false; btn.innerHTML = old; }
     }
   });
+
 
   /* ========= UI helpers ========= */
   function showModal(id){ const mEl=document.getElementById(id); if(!mEl) return; bootstrap.Modal.getOrCreateInstance(mEl).show(); }

@@ -523,7 +523,28 @@
       }
       // segunda função
       function run(payload){
+
+        // PATCH E — passo 3a: log bruto do payload na entrada do template
+        if (window.__DEBUG_SOLIC_CRP__) {
+          try { console.log('[E3] template/run → payload (raw)', payload); } catch {}
+        }
+
         const p = normalizePayload(payload || {});
+
+        // PATCH E — passo 3b: campos críticos após normalização
+        if (window.__DEBUG_SOLIC_CRP__) {
+          try {
+            console.log('[E3] template/run → payload (norm)', {
+              DATA_VENC_ULTIMO_CRP: p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP,
+              TIPO_EMISSAO_ULTIMO_CRP: p.TIPO_EMISSAO_ULTIMO_CRP,
+              PRAZO_ADICIONAL_COD: p.PRAZO_ADICIONAL_COD,
+              PRAZO_ADICIONAL_TEXTO: p.PRAZO_ADICIONAL_TEXTO,
+              FASE_PROGRAMA: p.FASE_PROGRAMA,
+              FASE_MODAIS: p.__FASE_MODAIS__
+            });
+          } catch {}
+        }
+
 
         /* 1) Cabeçalho/meta */
         fillText('ente', p.ENTE); fillText('uf', p.UF); fillText('ug', p.UG);
@@ -562,7 +583,18 @@
 
         // 3.4 — mostrar somente a alternativa selecionada (USAR APENAS O CÓDIGO, NÃO A FLAG)
         const __prz = String(p.PRAZO_ADICIONAL_COD || '').trim();
-        function showOnlyPrazo(code){
+
+        // PATCH E — passo 4 (opcional): verificar decisão do 3.4
+        if (window.__DEBUG_SOLIC_CRP__) {
+          try {
+            console.log('[E4] 3.4 toggle check', {
+              PRAZO_ADICIONAL_COD: p.PRAZO_ADICIONAL_COD,
+              PRAZO_ADICIONAL_TEXTO: p.PRAZO_ADICIONAL_TEXTO,
+              vaiMostrar34: !!(p.PRAZO_ADICIONAL_COD || p.PRAZO_ADICIONAL_TEXTO)
+            });
+          } catch {}
+        }
+                function showOnlyPrazo(code){
           // Mostrar/ocultar com base no atributo data-prz (não removemos elementos)
           document.querySelectorAll('[data-prz]').forEach(n => {
             try {
@@ -828,6 +860,24 @@
     /* MARCADOR: REMOVED_DUPLICATE_PRZ_TOGGLE */
     /* Removido: toggle duplicado que conflituava com a lógica principal de exibição de #opt-3-4.
        Lógica centralizada em run() acima. */
+  </script>
+
+    <!-- PATCH F — garantir que o template rode com o payload injetado -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // No seu template, a função é exposta como window.__TERMO_RUN__
+      const fn = window.__TERMO_RUN__ || window.run;
+
+      // evita rodar 2x se alguém já disparou antes
+      if (window.__TERMO_PRINT_READY__ || window.__TERMO_READY_FIRED__) return;
+
+      if (typeof fn === 'function') {
+        const p = (window.__TERMO_DATA__ || {});
+        try { console.log('[TERMO] __TERMO_DATA__:', p); } catch {}
+        try { fn(p); } catch(e) { try { console.error('[TERMO] run falhou:', e); } catch {} }
+        try { document.dispatchEvent(new Event('TERMO_DATA_READY')); } catch {}
+      }
+    });
   </script>
 
 
