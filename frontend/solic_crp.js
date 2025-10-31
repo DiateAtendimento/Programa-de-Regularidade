@@ -91,6 +91,39 @@
     return s;
   }
 
+  // Novo: converte diversos formatos para AAAA-MM-DD (compatível com <input type="date">)
+  function toISOForInput(v){
+    if (v == null || v === '') return '';
+    const s = String(v).trim();
+    // já é ISO?
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // dd/mm/aaaa -> aaaa-mm-dd
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m){
+      const d = m[1].padStart(2,'0'), mo = m[2].padStart(2,'0'), y = m[3];
+      return `${y}-${mo}-${d}`;
+    }
+    // número serial (planilha)
+    if (/^\d{4,}$/.test(s)) {
+      const base = new Date(1899,11,30); // Excel serial base
+      const dt = new Date(base.getTime() + (Number(s) * 86400000));
+      const y = String(dt.getFullYear());
+      const mo = String(dt.getMonth()+1).padStart(2,'0');
+      const d = String(dt.getDate()).padStart(2,'0');
+      return `${y}-${mo}-${d}`;
+    }
+    // fallback: tenta Date.parse
+    const t = Date.parse(s);
+    if (!isNaN(t)){
+      const dt = new Date(t);
+      const y = String(dt.getFullYear());
+      const mo = String(dt.getMonth()+1).padStart(2,'0');
+      const d = String(dt.getDate()).padStart(2,'0');
+      return `${y}-${mo}-${d}`;
+    }
+    return '';
+  }
+
 
   // --- Validação do nº Gescon: S|L + 6 dígitos + "/" + ano
   function isGesconNumber(x){
@@ -117,6 +150,7 @@
     };
     payload.DATA_SOLIC_GERADA = toBR(payload.DATA_SOLIC_GERADA);
     payload.DATA = toBR(payload.DATA);
+    // Converte whatever -> DD/MM/AAAA só no payload final (para o template e planilha)
     payload.DATA_VENC_ULTIMO_CRP = toBR(payload.DATA_VENC_ULTIMO_CRP || payload.DATA_VENCIMENTO_ULTIMO_CRP);
     payload.DATA_VENCIMENTO_ULTIMO_CRP = payload.DATA_VENC_ULTIMO_CRP;
   }
@@ -928,7 +962,8 @@
         || crp.vencimento
         || '';
 
-      if (el.dataUltCrp) el.dataUltCrp.value = toDateBR(dataVenc);
+      // Preencher <input type="date"> SEMPRE em ISO (AAAA-MM-DD)
+      if (el.dataUltCrp) el.dataUltCrp.value = toISOForInput(dataVenc);
 
       // ===== NOVO BLOCO (sincronizar CRP com __TERMO_DATA__ para o template) =====
       try {
@@ -1379,7 +1414,7 @@
         document.querySelector('[name="DATA_VENCIMENTO_ULTIMO_CRP"]')?.value?.trim() ||
         (window.__TERMO_DATA__?.DATA_VENC_ULTIMO_CRP) ||
         (window.__TERMO_DATA__?.venc_ult_crp) || '';
-      return toDateBR(v);
+      return v;
     })();
 
     let TIPO_EMISSAO_ULTIMO_CRP = (()=>{

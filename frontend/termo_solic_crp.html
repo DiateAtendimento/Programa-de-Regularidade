@@ -443,8 +443,8 @@
           || ''
         ).trim();
 
-        // normaliza F41 (remove espaços, acentos e coloca em minúsculas para os testes textuais)
-        p.F41_OPCAO = String(p.F41_OPCAO || p.f41_opcao || '').trim();
+        // normaliza F41: aceita código em F41_OPCAO_CODE se F41_OPCAO vier descritivo
+        p.F41_OPCAO = String(p.F41_OPCAO || p.F41_OPCAO_CODE || p.f41_opcao || '').trim();
 
         // mantém como array (aceita string "A, B, C" ou array nativo)
         p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || '');

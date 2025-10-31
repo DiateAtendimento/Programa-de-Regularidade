@@ -1315,18 +1315,6 @@
     }, window.__NORMAS || {});
   </script>
 
-  <!-- Ajustes de endpoints: chamar direto o Render (evita timeout da Netlify) -->
-  <script>
-    // endpoint público do backend (Render)
-    window.__API_BASE   = 'https://programa-de-regularidade.onrender.com/api';
-    // alguns pontos do solic_crp.js consultam __API_DIRECT primeiro:
-    window.__API_DIRECT = window.__API_BASE;
-    // se o solic_crp.js enviar o header X-API-Key quando __API_KEY existir, defina-a aqui:
-    window.__API_KEY    = 'fprpps_5uP3rL0ng_';
-  </script>
-
-
-  <script src="solic_crp.js?v=2025-09-26-2" defer></script>
 
   <!-- JS auxiliar (D, F e normas dinâmicas) -->
   <script>
@@ -1426,6 +1414,17 @@
     // Se o backend exigir X-API-Key, coloque aqui (apenas para debug; não deixe a chave pública)
     // Exemplo: window.__API_KEY = 'COLOQUE_SUA_API_KEY_AQUI';
 </script>
+  <!-- Ajustes de endpoints: chamar direto o Render (evita timeout da Netlify) -->
+  <script>
+    // endpoint público do backend (Render)
+    window.__API_BASE   = 'https://programa-de-regularidade.onrender.com/api';
+    // alguns pontos do solic_crp.js consultam __API_DIRECT primeiro:
+    window.__API_DIRECT = window.__API_BASE;
+    // se o solic_crp.js enviar o header X-API-Key quando __API_KEY existir, defina-a aqui:
+    window.__API_KEY    = 'fprpps_5uP3rL0ng_';
+  </script>
 
+
+  <script src="solic_crp.js?v=2025-09-26-2" defer></script>
 </body>
 </html>
