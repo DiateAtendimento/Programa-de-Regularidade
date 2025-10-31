@@ -603,44 +603,36 @@
         fillText('TIPO_EMISSAO_ULTIMO_CRP', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
 
 
-        // 3.4 — mostrar somente a alternativa selecionada (USAR APENAS O CÓDIGO, NÃO A FLAG)
-        const __prz = String(p.PRAZO_ADICIONAL_COD || '').trim();
+        // === 3.4 — mostrar somente a alternativa selecionada e REMOVER as demais do DOM ===
+        const __prz = String(p.PRAZO_ADICIONAL_COD || p.prazo_adicional_cod || '').trim();
 
-        // PATCH E — passo 4 (opcional): verificar decisão do 3.4
-        if (window.__DEBUG_SOLIC_CRP__) {
-          try {
-            console.log('[E4] 3.4 toggle check', {
-              PRAZO_ADICIONAL_COD: p.PRAZO_ADICIONAL_COD,
-              PRAZO_ADICIONAL_TEXTO: p.PRAZO_ADICIONAL_TEXTO,
-              vaiMostrar34: !!(p.PRAZO_ADICIONAL_COD || p.PRAZO_ADICIONAL_TEXTO)
-            });
-          } catch {}
-        }
-
-        function togglePrazo(code){
-          const itens = document.querySelectorAll('[data-3_4], [data-prz]');
+        (function applyPrazoAdicional(code){
+          const itens = Array.from(document.querySelectorAll('[data-3_4]'));
           let mostrou = false;
-          itens.forEach(n => {
-            const tag = n.getAttribute('data-3_4') || n.getAttribute('data-prz') || '';
-            const ok  = (code && tag === code);
-            n.style.display = ok ? '' : 'none';
-            if (ok) mostrou = true;
+
+          itens.forEach(el => {
+            const tag = (el.getAttribute('data-3_4') || '').trim();
+            const ok  = code && tag === code;
+            if (ok) {
+              el.style.display = '';   // mantém só o escolhido
+              mostrou = true;
+            } else {
+              el.remove();             // REMOVE do DOM para não “voltar” depois
+            }
           });
-          // fallback: se nada casou, mostra o texto livre (se houver)
+
+          // Fallback: se nenhum bateu, exibe o texto livre (se existir)
           const holder = document.querySelector('[data-k="PRAZO_ADICIONAL_TEXTO"]');
           if (holder) {
-            holder.classList.toggle('d-none', mostrou);
-            if (!mostrou && holder.textContent.trim() === '') {
-              const d = window.__TERMO_DATA__ || {};
-              holder.textContent = d.PRAZO_ADICIONAL_TEXTO || 'Não informado';
+            if (mostrou) {
+              holder.classList.add('d-none');
+            } else {
+              const txt = p.PRAZO_ADICIONAL_TEXTO || p.prazo_adicional_texto || 'Não informado';
+              holder.textContent = txt;
+              holder.classList.remove('d-none');
             }
           }
-        }
-        // aplica
-        togglePrazo(__prz);
-
-        // campo textual opcional do 3.4
-        fillText('prz_3_4_escolha', p.PRAZO_ADICIONAL_TEXTO || '');
+        })(__prz);
 
 
         // 3.2 (opção antiga "motivo principal", se usar ul#opt-3-2)
@@ -657,24 +649,6 @@
           }
         })();
         
-        // 3.4 (novo) – mantém os LIs no DOM e oculta os não selecionados
-        (function(){
-          const ul = document.getElementById('opt-3-4'); if (!ul) return;
-          const code = String(p.PRAZO_ADICIONAL_COD || '').trim(); // ex.: "3.4.1"
-          [...ul.children].forEach(li => {
-            const attr = (li.getAttribute('data-prz') || li.getAttribute('data-code') || '').trim();
-            li.style.display = (code && attr === code) ? '' : 'none';
-          });
-          // fallback "Não informado" se nenhum visível
-          const anyVisible = [...ul.children].some(li => li.style.display === '');
-          if (!anyVisible) {
-            ul.innerHTML = '';
-            const li = document.createElement('li');
-            li.textContent = (typeof __NA_LABEL__ === 'function' ? __NA_LABEL__() : 'Não informado');
-            ul.appendChild(li);
-          }
-        })();
-          
 
         // Helpers
         const listify = v => Array.isArray(v) ? v.filter(Boolean).join('; ') : (v || '');
@@ -703,24 +677,47 @@
         liList('#criterios-list', p.__CRITERIOS_ARR__);
 
         /* 4) Fase */
-        const faseSel = p.__FASE_SEL__; fillText('fase_programa', faseSel || '—'); showOnlyPhase(faseSel);
+        // === Fase selecionada ===
+        const faseSel = p.__FASE_SEL__;        // definido no normalizePayload
+        showOnlyPhase(faseSel);                 // exibe só o contêiner da fase
+        fillText('fase_selecionada', faseSel || '—'); // texto “Fase selecionada: …”
+
         switch (faseSel) {
           case '4.1': {
-            const it = [];
-            const code = String(p.F41_OPCAO || '').trim(); // "4.1.1" ou "4.1.2"
-            if (code === '4.1.1') it.push('4.1.1 Incluiu todos os débitos (Cadprev).');
-            if (code === '4.1.2') it.push('4.1.2 Não possui débitos ou já regularizados.');
-            liList('#f41-itens', it);
+            // Renderiza o texto EXATO escolhido no modal (payload já traz F41_OPCAO)
+            const ul = document.getElementById('f41-itens');
+            if (ul) {
+              const textoEscolhido = (p.F41_OPCAO || p.F41_OPCAO_CODE || '').trim();
+              ul.innerHTML = textoEscolhido
+                ? `<li>${escapeHtml(textoEscolhido)}</li>`
+                : '<li>Não informado</li>';
+            }
             break;
           }
-          case '4.2': liList('#f42-itens', p.F42_LISTA); break;
-          case '4.3': {
-            liList('#f43-itens', p.F43_LISTA);
-            fillText('f43_just',  p.F43_JUST  || '');
-            fillText('f43_plano', p.F43_PLANO || '');
 
+          case '4.2': {
+            // Lista simples (já tem fallback “Não informado” em liList)
+            liList('#f42-itens', p.F42_LISTA);
+            break;
+          }
+
+          case '4.3': {
+            // Itens da 4.3
+            liList('#f43-itens', p.F43_LISTA);
+
+            // Campos textuais: os elementos são por ID (não data-k), então setamos por getElementById
             (function(){
-              const box = document.getElementById('f4310'); if(!box) return;
+              const j = document.getElementById('f43-just');
+              if (j) j.textContent = (p.F43_JUST || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+
+              const pl = document.getElementById('f43-plano');
+              if (pl) pl.textContent = (p.F43_PLANO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+            })();
+
+            // (Opcional) Se você tiver um bloco extra f4310 no HTML, preenche aqui:
+            (function(){
+              const box = document.getElementById('f4310');
+              if(!box) return;
               const items = [];
               if (p.F4310_OPCAO)      items.push('Opção: ' + p.F4310_OPCAO);
               if (p.F4310_LEGISLACAO) items.push('Legislação: ' + p.F4310_LEGISLACAO);
@@ -728,43 +725,71 @@
               liList('#f4310', items);
             })();
 
-            liList('#f43-incluir', p.F43_INCLUIR);
             break;
           }
+
           case '4.4': {
+            // Listas principais
             liList('#f44-criterios',   p.F44_CRITERIOS);
-            liList('#f44_decls',       p.F44_DECLS);
+            liList('#f44-decls',       p.F44_DECLS);
             liList('#f44-finalidades', p.F44_FINALIDADES);
 
-            const ax = splitLines(p.F44_ANEXOS || '');
-            const box = document.getElementById('f44-anexos');
-            if (box) box.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+            // Legislação 4.4.1(d) — elemento é por ID (não data-k)
+            (function(){
+              const el = document.getElementById('f441-legislacao');
+              if (el) el.textContent = (p.F441_LEGISLACAO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+            })();
 
-            fillText('f441_legislacao', p.F441_LEGISLACAO || '');
+            // Anexos 4.4
+            (function(){
+              const ax = splitLines(p.F44_ANEXOS || '');
+              const box = document.getElementById('f44-anexos');
+              if (box) {
+                box.innerHTML = ax.length
+                  ? '<ul>' + ax.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
+                  : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+              }
+            })();
 
+            // Documentos / Execução 4.4.6
             (function(){
               const d = splitLines(p.F446_DOCS || '');
               const e = splitLines(p.F446_EXEC_RES || '');
               const dBox = document.getElementById('f446-docs');
               const eBox = document.getElementById('f446-exec');
-              if (dBox) dBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
-              if (eBox) eBox.innerHTML = e.length ? '<ul>'+e.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
+              if (dBox) dBox.innerHTML = d.length
+                ? '<ul>' + d.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
+                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+              if (eBox) eBox.innerHTML = e.length
+                ? '<ul>' + e.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
+                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             })();
+
             break;
           }
+
           case '4.5': {
             const decls = p.F45_OK451 ? ['4.5.1 Mantida a regularidade das fases anteriores.'] : [];
             liList('#f45-decls', decls);
+
             const d = splitLines(p.F45_DOCS || '');
             const j = splitLines(p.F45_JUST || '');
             const docsBox = document.getElementById('f45-docs');
             const justBox = document.getElementById('f45-just');
-            if (docsBox) docsBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__ ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            if (justBox) justBox.innerHTML = j.length ? '<ul>'+j.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+            if (docsBox) docsBox.innerHTML = d.length
+              ? '<ul>' + d.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
+              : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+            if (justBox) justBox.innerHTML = j.length
+              ? '<ul>' + j.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
+              : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+
             break;
           }
+
           case '4.6': {
-            liList('#f46-criterios',   p.F46_CRITERIOS);
+            liList('#f46-criterios', p.F46_CRITERIOS);
+
+            // Declarações 4.6 (mistura de lista + campos soltos)
             const decls = [];
             if (Array.isArray(p.F46_DECLS)) decls.push(...p.F46_DECLS);
             if (p.F46_PROGESTAO) decls.push('Nível Pró-Gestão RPPS: ' + p.F46_PROGESTAO);
@@ -775,30 +800,58 @@
             if (p.F46_DOCS_E)    decls.push('(e) Documentos: ' + p.F46_DOCS_E);
             liList('#f46-decls', decls);
 
+            // Finalidades 4.6.3
             liList('#f46-finalidades', p.F46_FINALIDADES);
 
-            const ax = splitLines(p.F46_ANEXOS || '');
-            const axBox = document.getElementById('f46-anexos');
-            if (axBox) axBox.innerHTML = ax.length ? '<ul>'+ax.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+            // Anexos 4.6.4
+            (function(){
+              const ax = splitLines(p.F46_ANEXOS || '');
+              const axBox = document.getElementById('f46-anexos');
+              if (axBox) axBox.innerHTML = ax.length
+                ? '<ul>' + ax.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
+                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+            })();
 
-            const jp = document.getElementById('f46-just-planos');
-            const cc = document.getElementById('f46-comp-cumpr');
-            if (jp) jp.textContent = (p.F46_JUST_PLANOS || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-            if (cc) cc.textContent = (p.F46_COMP_CUMPR  || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+            // Campos de texto 4.6.5 / extra
+            (function(){
+              const jp = document.getElementById('f46-just-planos');
+              const cc = document.getElementById('f46-comp-cumpr');
+              if (jp) jp.textContent = (p.F46_JUST_PLANOS || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+              if (cc) cc.textContent = (p.F46_COMP_CUMPR  || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+            })();
 
+            // Critérios 4.6.2(f)
             liList('#f462f-criterios', p.F462F_CRITERIOS);
 
+            // Docs/Execução adicionais 4.6.6
             (function(){
               const d = splitLines(p.F466_DOCS || '');
               const e = splitLines(p.F466_EXEC_RES || '');
               const dBox = document.getElementById('f466-docs');
               const eBox = document.getElementById('f466-exec');
-              if (dBox) dBox.innerHTML = d.length ? '<ul>'+d.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
-              if (eBox) eBox.innerHTML = e.length ? '<ul>'+e.map(a=>'<li>'+escapeHtml(a)+'</li>').join('')+'</ul>' : `<span class="muted">${__NA_ALL__()?escapeHtml(__NA_LABEL__()):'—'}</span>`;
+              if (dBox) dBox.innerHTML = d.length
+                ? '<ul>' + d.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
+                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+              if (eBox) eBox.innerHTML = e.length
+                ? '<ul>' + e.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
+                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             })();
+
             break;
           }
         }
+
+        // “Congela” o DOM de 3.4 e 4.1 para evitar que outro handler reexiba coisas
+        (function freezeAfterRender(){
+          // 3.4: garanta que só exista 1 item em tela
+          const prazos = document.querySelectorAll('[data-3_4]');
+          if (prazos.length > 1) {
+            // por segurança extra (não deve acontecer, porque removemos os demais acima)
+            for (let i = 1; i < prazos.length; i++) prazos[i].remove();
+          }
+          // 4.1: nada a remover aqui, pois ul#f41-itens foi reescrito com um único <li>
+        })();
+
 
         /* 5) Justificativas gerais */
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
@@ -828,6 +881,7 @@
 
         /* pronto para imprimir */
         try{
+          
           if (!window.__TERMO_READY_FIRED__) {
             window.__TERMO_READY_FIRED__ = true;
             const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
