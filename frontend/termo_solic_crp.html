@@ -90,14 +90,21 @@
         <!-- 3.1 Data de vencimento do último CRP -->
         <div class="linha">
           <div class="rotulo">3.1 Data de vencimento do último CRP</div>
-          <div class="valor" data-k="DATA_VENC_ULTIMO_CRP" data-fallback="venc_ult_crp" data-na="Não informado"></div>
+          <div class="valor">
+            <span data-k="data_vencimento_ultimo_crp" data-fallback="DATA_VENC_ULTIMO_CRP" data-na="Não informado"></span>
+          </div>
         </div>
+
 
         <!-- 3.2 Tipo de emissão do último CRP -->
         <div class="linha">
           <div class="rotulo">3.2 Tipo de emissão do último CRP</div>
-          <div class="valor" data-k="TIPO_EMISSAO_ULTIMO_CRP" data-fallback="tipo_emissao_ult_crp" data-na="Não informado"></div>
+          <div class="valor">
+            <span data-k="tipo_emissao_ult_crp" data-fallback="TIPO_EMISSAO_ULTIMO_CRP" data-na="Não informado"></span>
+
+          </div>
         </div>
+
 
         <h3>3.3 Critério(s) atualmente irregular(es) no extrato previdenciário</h3>
         <p class="small">Selecione todos os itens apontados como irregulares no extrato.</p>
@@ -533,6 +540,12 @@
 
         const p = normalizePayload(payload || {});
 
+        // Espelha o payload normalizado no objeto global para que os fallbacks [data-k] funcionem
+        window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
+        // Dispara um evento para o resolvedor de [data-k] preencher o que não foi coberto por fillText
+        try { document.dispatchEvent(new Event('TERMO_DATA')); } catch {}
+
+
         // PATCH E — passo 3b: campos críticos após normalização
         if (window.__DEBUG_SOLIC_CRP__) {
           try {
@@ -555,6 +568,9 @@
         fillText('N_GESCON', p.N_GESCON || p.n_gescon || '');
         fillText('DATA_ENC_VIA_GESCON', p.DATA_ENC_VIA_GESCON || p.data_enc_via_gescon || '');
         fillText('SEI_PROCESSO', p.SEI_PROCESSO); fillText('PORTARIA_SRPC', p.PORTARIA_SRPC);
+        // 1.3.4 Órgão de vinculação da UG (existe <span class="value" data-k="ORGAO_VINCULACAO_UG">)
+        fillText('ORGAO_VINCULACAO_UG', p.ORGAO_VINCULACAO_UG || '');
+
 
         /* 2) Responsáveis */
         fillText('nome_rep_ente',  p.NOME_REP_ENTE);
@@ -581,6 +597,10 @@
         fillText('tipo_emissao_ult_crp',    p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
         // (opcional, para templates antigos com o nome extenso – não faz mal manter)
         fillText('tipo_emissao_ultimo_crp', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
+
+        // ACRESCENTE logo após os fillText de 3.1/3.2:
+        fillText('DATA_VENC_ULTIMO_CRP', p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
+        fillText('TIPO_EMISSAO_ULTIMO_CRP', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
 
 
         // 3.4 — mostrar somente a alternativa selecionada (USAR APENAS O CÓDIGO, NÃO A FLAG)
@@ -928,109 +948,6 @@
     })();
   </script>
 
-  <script>
-    (function(){
-      // Espera o objeto que o renderer injeta. Se não existir, tenta a cópia do window.
-      var P = (window.__TERMO_DATA__ || window.__TERMO__ || {});
-      var cod = (P.PRAZO_ADICIONAL_COD || '').trim();
-      // Todos os blocos 3.4
-      var blocos = document.querySelectorAll('[data-3_4]');
-      if (blocos && blocos.length) {
-        blocos.forEach(function(n){
-          n.style.display = (n.getAttribute('data-3_4') === cod ? '' : 'none');
-        });
-      }
-      // Se não casou nenhum code (ou code vazio), exibe o texto resolvido
-      if (!cod || !document.querySelector('[data-3_4="'+cod+'"]')) {
-        var txt = document.querySelector('[data-k="PRAZO_ADICIONAL_TEXTO"]');
-        if (txt) txt.classList.remove('d-none');
-      }
-    })();
-  </script>
-
-  <script>
-    (function(){
-  var P = (window.__TERMO_DATA__ || window.__TERMO__ || {});
-  // Fase escolhida
-  var fase = (P.FASE_PROGRAMA || '').toString().trim();
-  var mapSec = { '4.1':'fase-41','4.2':'fase-42','4.3':'fase-43','4.4':'fase-44','4.5':'fase-45','4.6':'fase-46' };
-  // Mostra somente a seção da fase selecionada
-  Object.keys(mapSec).forEach(function(k){
-    var sec = document.getElementById(mapSec[k]);
-    if (sec) sec.hidden = (k !== fase);
-  });
-
-  // 4.1 — lista com a opção (até 60 / até 300)
-  if (fase === '4.1') {
-    var ul = document.getElementById('f41-itens');
-    if (ul) {
-      var code = (P.F41_OPCAO_CODE || '').trim(); // "4.1.1" ou "4.1.2"
-      var txt  = (P.F41_OPCAO || P.F41_OPCAO_TXT || P.FASE_41_DESC || '').trim();
-      // Normaliza texto a partir do code, se necessário
-      if (!txt && code === '4.1.1') txt = '4.1.1 – até 60 parcelas';
-      if (!txt && code === '4.1.2') txt = '4.1.2 – até 300 parcelas';
-
-      ul.innerHTML = '';
-      var li = document.createElement('li');
-      li.textContent = txt || 'Não informado';
-      ul.appendChild(li);
-    }
-  }
-
-  // 4.2 — marcações (array -> <li>)
-  if (fase === '4.2') {
-    var itens = Array.isArray(P.F42_LISTA) ? P.F42_LISTA : (P['F42_LISTA[]'] || []);
-    var ul = document.getElementById('f42-itens'); if (ul) {
-      ul.innerHTML = itens.length ? '' : '<li>Não informado</li>';
-      itens.forEach(function(v){ var li=document.createElement('li'); li.textContent=v; ul.appendChild(li); });
-    }
-  }
-
-  // 4.3 — critérios + texto/plano
-  if (fase === '4.3') {
-    var itens = Array.isArray(P.F43_LISTA) ? P.F43_LISTA : (P['F43_LISTA[]'] || []);
-    var ul = document.getElementById('f43-itens'); if (ul) {
-      ul.innerHTML = itens.length ? '' : '<li>Não informado</li>';
-      itens.forEach(function(v){ var li=document.createElement('li'); li.textContent=v; ul.appendChild(li); });
-    }
-    var just = document.getElementById('f43-just'); if (just) just.textContent = (P.F4310_DOCS || P.F4310_LEGISLACAO || P.F43_JUST || 'Não informado');
-    var plano = document.getElementById('f43-plano'); if (plano) plano.textContent = (P.F43_PLANO || P.F43_PLANO_B || P.F43_DESC_PLANOS || 'Não informado');
-  }
-
-  // 4.4 — critérios/declarações/finalidades + campos livres
-  if (fase === '4.4') {
-    function fillList(id, arr){
-      var ul = document.getElementById(id); if (!ul) return;
-      var a = Array.isArray(arr) ? arr : (arr && arr.length ? arr : []);
-      ul.innerHTML = (a && a.length) ? '' : '<li>Não informado</li>';
-      (a||[]).forEach(function(v){ var li=document.createElement('li'); li.textContent=v; ul.appendChild(li); });
-    }
-    fillList('f44-criterios', P.F44_CRITERIOS || P['F44_CRITERIOS[]']);
-    fillList('f44-decls',    P.F44_DECLS    || P['F44_DECLS[]']);
-    fillList('f44-finalidades', P.F44_FINALIDADES || P['F44_FINALIDADES[]']);
-
-    var f441 = document.getElementById('f441-legislacao'); if (f441) f441.textContent = (P.F441_LEGISLACAO || 'Não informado');
-    var d46  = document.getElementById('f446-docs'); if (d46)  d46.textContent = (P.F446_DOCS || 'Não informado');
-    var e46  = document.getElementById('f446-exec'); if (e46)  e46.textContent = (P.F446_EXEC_RES || 'Não informado');
-    var an44 = document.getElementById('f44-anexos'); if (an44) an44.textContent = (P.F44_ANEXOS || 'Não informado');
-  }
-
-  // 4.6 — critérios + selects
-  if (fase === '4.6') {
-    function fillList(id, arr){
-      var ul = document.getElementById(id); if (!ul) return;
-      var a = Array.isArray(arr) ? arr : (arr && arr.length ? arr : []);
-      ul.innerHTML = (a && a.length) ? '' : '<li>Não informado</li>';
-      (a||[]).forEach(function(v){ var li=document.createElement('li'); li.textContent=v; ul.appendChild(li); });
-    }
-    fillList('f46-criterios', P.F46_CRITERIOS || P['F46_CRITERIOS[]']);
-    var elProg = document.querySelector('#fase-46 [data-k="F46_PROGESTAO"]');
-    if (elProg) elProg.textContent = (P.F46_PROGESTAO || 'Não informado');
-    var elPorte = document.querySelector('#fase-46 [data-k="F46_PORTE"]');
-    if (elPorte) elPorte.textContent = (P.F46_PORTE || 'Não informado');
-  }
-})();
-  </script>
 
 
 

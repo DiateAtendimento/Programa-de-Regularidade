@@ -412,7 +412,7 @@
     };
     [
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
-      'ug_nome','ug_cnpj','ug_email',
+      'ug_nome','ug_cnpj','ug_email', 'ug_orgao_vinc',
       'CPF_REP_ENTE','NOME_REP_ENTE','CARGO_REP_ENTE','EMAIL_REP_ENTE','TEL_REP_ENTE',
       'CPF_REP_UG','NOME_REP_UG','CARGO_REP_UG','EMAIL_REP_UG','TEL_REP_UG',
       'JUSTIFICATIVAS_GERAIS'
