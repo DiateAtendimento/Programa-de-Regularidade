@@ -2429,6 +2429,46 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
 
     // 3.3
     fillList('criterios-list', flat['f44_criterios'] || flat['criterios_irregulares']);
+    
+    // --- COMPAT: 4.1 (fase geral) -----------------------------
+    // Se não veio 'f41_lista', derive a partir de F41_OPCAO / F41_OPCAO_CODE
+    if (!flat['f41_lista'] || (Array.isArray(flat['f41_lista']) && flat['f41_lista'].length === 0)) {
+      const f41 = (flat['f41_opcao'] || flat['f41_opcao_code'] || '').trim();
+      if (f41) flat['f41_lista'] = [f41];
+    }
+
+    // --- COMPAT: 3.4 (prazo adicional) ------------------------
+    // No PDF, garanta que só a opção escolhida fique no DOM
+    (function () {
+      const code = String(flat['prazo_adicional_cod'] || '').trim();
+      const nodes = document.querySelectorAll('[data-3_4]');
+      let mostrou = false;
+
+      nodes.forEach((el) => {
+        const tag = String(el.getAttribute('data-3_4') || '').trim();
+        if (code && tag === code) {
+          mostrou = true; // mantém só a escolhida
+        } else {
+          el.remove();    // remove as demais do DOM
+        }
+      });
+
+      // Fallback: se nada bateu, exibe texto livre (se houver)
+      const holder = document.querySelector('[data-k="PRAZO_ADICIONAL_TEXTO"]');
+      if (holder) {
+        if (mostrou) {
+          holder.classList.add('d-none');
+        } else {
+          const txt = String(
+            flat['prazo_adicional_texto'] ||
+            flat['prazo_adicional'] ||
+            ''
+          ).trim();
+          holder.textContent = txt || (useNA ? NA_LABEL : '');
+          holder.classList.toggle('d-none', !holder.textContent.trim());
+        }
+      }
+    })();
 
     // Fases
     fillList('f41-itens', flat['f41_lista'] || flat['f41_itens']); // com schema acima, agora vem
