@@ -599,8 +599,10 @@
         fillText('tipo_emissao_ultimo_crp', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
 
         // ACRESCENTE logo após os fillText de 3.1/3.2:
-        fillText('DATA_VENC_ULTIMO_CRP', p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
+        // 3.1 e 3.2 (espelhos para data-k)
+        fillText('DATA_VENC_ULTIMO_CRP',  p.DATA_VENC_ULTIMO_CRP  || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
         fillText('TIPO_EMISSAO_ULTIMO_CRP', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
+
 
 
         // === 3.4 — mostrar somente a alternativa selecionada e REMOVER as demais do DOM ===
@@ -614,14 +616,14 @@
             const tag = (el.getAttribute('data-3_4') || '').trim();
             const ok  = code && tag === code;
             if (ok) {
-              el.style.display = '';   // mantém só o escolhido
+              el.style.display = '';
               mostrou = true;
             } else {
-              el.remove();             // REMOVE do DOM para não “voltar” depois
+              el.remove(); // remove do DOM para não “voltar” depois
             }
           });
 
-          // Fallback: se nenhum bateu, exibe o texto livre (se existir)
+          // Fallback: se nenhum bateu, usa texto livre (se existir) ou esconde o holder
           const holder = document.querySelector('[data-k="PRAZO_ADICIONAL_TEXTO"]');
           if (holder) {
             if (mostrou) {
@@ -629,10 +631,11 @@
             } else {
               const txt = p.PRAZO_ADICIONAL_TEXTO || p.prazo_adicional_texto || 'Não informado';
               holder.textContent = txt;
-              holder.classList.remove('d-none');
+              holder.classList.toggle('d-none', !txt.trim());
             }
           }
         })(__prz);
+
 
 
         // 3.2 (opção antiga "motivo principal", se usar ul#opt-3-2)
@@ -657,7 +660,7 @@
         fillText('fase_selecionada', p.FASE_PROGRAMA || p.FASE || '');
 
         // 4.1 / 4.2 / 4.4 — conteúdos vindos dos modais
-        fillText('f41_opcao', p.F41_OPCAO || '');
+  
         fillText('f42_lista', listify(p.F42_LISTA));
         fillText('f43_lista', listify(p.F43_LISTA));
         fillText('f44_criterios', listify(p.F44_CRITERIOS));
@@ -677,14 +680,12 @@
         liList('#criterios-list', p.__CRITERIOS_ARR__);
 
         /* 4) Fase */
-        // === Fase selecionada ===
-        const faseSel = p.__FASE_SEL__;        // definido no normalizePayload
-        showOnlyPhase(faseSel);                 // exibe só o contêiner da fase
-        fillText('fase_selecionada', faseSel || '—'); // texto “Fase selecionada: …”
+        const faseSel = p.__FASE_SEL__;
+        showOnlyPhase(faseSel);
+        fillText('fase_selecionada', faseSel || '—');
 
         switch (faseSel) {
           case '4.1': {
-            // Renderiza o texto EXATO escolhido no modal (payload já traz F41_OPCAO)
             const ul = document.getElementById('f41-itens');
             if (ul) {
               const textoEscolhido = (p.F41_OPCAO || p.F41_OPCAO_CODE || '').trim();
