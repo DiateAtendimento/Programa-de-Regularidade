@@ -930,6 +930,33 @@
 
       if (el.dataUltCrp) el.dataUltCrp.value = toDateBR(dataVenc);
 
+      // ===== NOVO BLOCO (sincronizar CRP com __TERMO_DATA__ para o template) =====
+      try {
+        window.__TERMO_DATA__ = window.__TERMO_DATA__ || {};
+
+        const dataVencFormat = (el.dataUltCrp && String(el.dataUltCrp.value || '').trim()) || '';
+        const tipoFormat = (
+          (el.selectTipoUltCrp && String(el.selectTipoUltCrp.value || '').trim()) ||
+          (el.tipoAdm && el.tipoAdm.checked ? 'Administrativa' : (el.tipoJud && el.tipoJud.checked ? 'Judicial' : ''))
+        );
+
+        // aliases usados pelo template / buildPayload
+        window.__TERMO_DATA__.DATA_VENC_ULTIMO_CRP = dataVencFormat;
+        window.__TERMO_DATA__.DATA_VENCIMENTO_ULTIMO_CRP = dataVencFormat;
+        window.__TERMO_DATA__.DATA_VENC_ULTIMO_CRP = dataVencFormat;
+        window.__TERMO_DATA__.venc_ult_crp = dataVencFormat;
+        window.__TERMO_DATA__.ULTIMO_CRP_DATA = dataVencFormat;
+
+        window.__TERMO_DATA__.TIPO_EMISSAO_ULTIMO_CRP = tipoFormat;
+        window.__TERMO_DATA__.tipo_emissao_ult_crp = tipoFormat;
+        window.__TERMO_DATA__.ULTIMO_CRP_TIPO = tipoFormat;
+
+        // dispara o evento para que o template re-execute run() e aplique os fallbacks/data-k
+        document.dispatchEvent(new Event('TERMO_DATA'));
+      } catch (e) {
+        console.warn('Falha ao espelhar __TERMO_DATA__ após hidratarTermosRegistrados:', e);
+      }
+
 
       // Regra “não ⇒ Administrativa / sim ⇒ Judicial”
       let tipo = '';
@@ -1225,6 +1252,7 @@
     if(el.f46Final && !el.f46Final.children.length){
       el.f46Final.innerHTML = el.f44Final.innerHTML;
     }
+
     // 4.6.2 (f)
     const f462f = document.getElementById('F462F_CRITERIOS');
     if (f462f && !f462f.children.length) {
@@ -1232,7 +1260,26 @@
         `<label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F462F_CRITERIOS[]" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
       )).join('');
     }
+        // ===== NOVO BLOCO: refletir seleções DOM em __TERMO_DATA__ e notificar template =====
+    try {
+      window.__TERMO_DATA__ = window.__TERMO_DATA__ || {};
+
+      window.__TERMO_DATA__.F42_LISTA = Array.from(document.querySelectorAll('#F42_LISTA input[type="checkbox"]:checked')).map(i => i.value);
+      window.__TERMO_DATA__.F43_LISTA = Array.from(document.querySelectorAll('#F43_LISTA input[type="checkbox"]:checked')).map(i => i.value);
+      window.__TERMO_DATA__.F44_CRITERIOS = Array.from(document.querySelectorAll('#F44_CRITERIOS input[type="checkbox"]:checked')).map(i => i.value);
+      window.__TERMO_DATA__.F44_DECLS = Array.from(document.querySelectorAll('#blk_44 .d-flex input[type="checkbox"]:checked')).map(i => i.value);
+      window.__TERMO_DATA__.F44_FINALIDADES = Array.from(document.querySelectorAll('#F44_FINALIDADES input[type="checkbox"]:checked')).map(i => i.value);
+      window.__TERMO_DATA__.F46_CRITERIOS = Array.from(document.querySelectorAll('#F46_CRITERIOS input[type="checkbox"]:checked')).map(i => i.value);
+      window.__TERMO_DATA__.F46_FINALIDADES = Array.from(document.querySelectorAll('#F46_FINALIDADES input[type="checkbox"]:checked')).map(i => i.value);
+
+      // dispara evento para o template captar mudanças
+      document.dispatchEvent(new Event('TERMO_DATA'));
+    } catch (e) {
+      console.warn('Erro ao sincronizar __TERMO_DATA__ em popularListasFaseComBaseNosCritérios', e);
+    }
   }
+
+
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
     const msgs=[];
@@ -1401,10 +1448,13 @@
       document.querySelector('input[name*="3_4"]:checked') ||
       document.querySelector('input[data-prz]:checked');
 
+    // --- reforço da extração do código 3.4.x (substitui a captura original de PRAZO_ADICIONAL_COD)
     let PRAZO_ADICIONAL_COD = '';
     if (_radioPrazo) {
-      PRAZO_ADICIONAL_COD = String(_radioPrazo.value || _radioPrazo.dataset?.prz || '').trim()
-        .replace(/^3\.2\.(\d)$/, '3.4.$1'); // normaliza
+      let raw = String(_radioPrazo.value || _radioPrazo.dataset?.prz || '').trim();
+      const m = raw.match(/(3\.[24]\.\d)/);
+      if (m) raw = m[1];
+      PRAZO_ADICIONAL_COD = raw.replace(/^3\.2\.(\d)$/, '3.4.$1'); // normaliza legacy 3.2.x
     }
 
 
@@ -1583,6 +1633,13 @@
     obj.ULTIMO_CRP_DATA = obj.DATA_VENC_ULTIMO_CRP;
     obj.ULTIMO_CRP_TIPO = obj.TIPO_EMISSAO_ULTIMO_CRP;
 
+    // Compat: objeto CRP legado (se alguma parte do backend/template ainda usa)
+    obj.CRP = Object.assign({}, obj.CRP || {}, {
+      data_venc: obj.DATA_VENC_ULTIMO_CRP,
+      tipo:      obj.TIPO_EMISSAO_ULTIMO_CRP
+    });
+
+
     // >>> aplica 3.4 no payload (sem duplicar lógica)
     obj.PRAZO_ADICIONAL_COD   = PRAZO_ADICIONAL_COD;
     obj.PRAZO_ADICIONAL_TEXTO = PRAZO_ADICIONAL_TEXTO;
@@ -1626,6 +1683,36 @@
         return 'id_'+Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
       }catch{ return 'id_'+Math.random().toString(36).slice(2)+Date.now().toString(36); }})();
     }
+
+    // ===== NOVO BLOCO: aliases compat/template para 3.1 / 3.2 / 3.4 =====
+    obj.PRAZO_ADICIONAL_COD = obj.PRAZO_ADICIONAL_COD || '';
+    obj.PRAZO_ADICIONAL_TEXTO = obj.PRAZO_ADICIONAL_TEXTO || '';
+
+    // lowercase aliases (alguns templates / fallbacks usam chaves minúsculas)
+    obj.prazo_adicional_cod = obj.PRAZO_ADICIONAL_COD;
+    obj.prazo_adicional_texto = obj.PRAZO_ADICIONAL_TEXTO;
+
+    // 3.1 aliases lowercase e espelho
+    obj.data_vencimento_ultimo_crp = obj.DATA_VENCIMENTO_ULTIMO_CRP || obj.DATA_VENC_ULTIMO_CRP || obj.venc_ult_crp || '';
+    obj.data_venc_ultimo_crp = obj.data_vencimento_ultimo_crp;
+    obj.venc_ult_crp = obj.data_vencimento_ultimo_crp;
+
+    // 3.2 aliases lowercase
+    obj.tipo_emissao_ult_crp = obj.TIPO_EMISSAO_ULTIMO_CRP || obj.tipo_emissao_ult_crp || '';
+
+    // espelha no window.__TERMO_DATA__ para garantir que o template receba os valores
+    try {
+      window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, {
+        DATA_VENC_ULTIMO_CRP: obj.data_venc_ultimo_crp,
+        DATA_VENCIMENTO_ULTIMO_CRP: obj.data_venc_ultimo_crp,
+        venc_ult_crp: obj.venc_ult_crp,
+        TIPO_EMISSAO_ULTIMO_CRP: obj.TIPO_EMISSAO_ULTIMO_CRP,
+        tipo_emissao_ult_crp: obj.tipo_emissao_ult_crp,
+        PRAZO_ADICIONAL_COD: obj.PRAZO_ADICIONAL_COD,
+        PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO
+      });
+      document.dispatchEvent(new Event('TERMO_DATA'));
+    } catch (e) { /* não crítico */ }
 
     return obj;
   }
