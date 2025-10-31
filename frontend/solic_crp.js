@@ -746,9 +746,62 @@
   $('#modalSucesso')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieSuccess','animacao/confirm-success.json',{loop:false,autoplay:true}));
   $('#modalGerandoPdf')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieGerandoPdf','animacao/gerando-pdf.json',{loop:true,autoplay:true}));
   $('#modalSalvando')?.addEventListener('shown.bs.modal', ()=> mountLottie('lottieSalvando','animacao/gerando-pdf.json',{loop:true,autoplay:true}));
+
+  $('#modalAtencao')?.addEventListener('shown.bs.modal', () =>
+  mountLottie('lottieAtencao', 'animacao/atencao-info.json', { loop:false, autoplay:true })
+  );
+
+  $('#modalErro')?.addEventListener('shown.bs.modal', () =>
+    mountLottie('lottieError', 'animacao/confirm-error.json', { loop:false, autoplay:true })
+  );
+
+  /* ========= Botão "Voltar" que fecha os modais da Fase 4 ========= */
+  function ensureBackButton(modalId){
+    const el = document.getElementById(modalId);
+    if (!el) return;
+
+    const content = el.querySelector('.modal-content');
+    if (!content) return;
+
+    // garante <div class="modal-footer">
+    let footer = content.querySelector('.modal-footer');
+    if (!footer) {
+      footer = document.createElement('div');
+      footer.className = 'modal-footer';
+      content.appendChild(footer);
+    }
+
+    // evita duplicar
+    if (footer.querySelector('[data-action="voltar-fecha"]')) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-outline-secondary ms-auto';
+    btn.textContent = 'Voltar';
+    btn.setAttribute('data-action', 'voltar-fecha');
+    btn.setAttribute('data-bs-dismiss', 'modal'); // Bootstrap fecha o modal
+
+    footer.appendChild(btn);
+  }
+
+  // fallback caso o Bootstrap não esteja disponível por algum motivo
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="voltar-fecha"]');
+    if (!btn) return;
+    const modalEl = btn.closest('.modal');
+    if (!modalEl) return;
+    try {
+      const m = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      m.hide();
+    } catch {}
+  });
+
+
   /* ========= Gate: Gescon TERMO_ENC_GESCON & Termos_registrados ========= */
   let searching = false;
 
+
+  
   async function consultarGesconByCnpj(cnpj){
     const body = { cnpj };
     dbg('[consultarGesconByCnpj] >> body:', body);
@@ -2127,6 +2180,13 @@
     // >>> novo: liga os bridges da etapa 1 (registro do termo + espelhamento 1.3→1.3.2)
     initEtapa1Bridges();
     // <<<
+
+    // >>> novo: liga os bridges da etapa 1 (registro do termo + espelhamento 1.3→1.3.2)
+    initEtapa1Bridges();
+    // <<<
+    // cria o botão "Voltar" nos modais da Fase 4
+    ['modalF41','modalF42','modalF43','modalF44','modalF45','modalF46'].forEach(ensureBackButton);
+
   }
 
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); }
