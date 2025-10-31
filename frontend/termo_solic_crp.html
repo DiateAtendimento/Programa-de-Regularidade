@@ -949,6 +949,34 @@
     })();
   </script>
 
+  <script>
+    (function(){
+      function boot(){
+        // 1) payload vindo do Puppeteer (window.__TERMO_INJECT__)
+        var p = window.__TERMO_INJECT__ || null;
+
+        // 2) fallback: sessionStorage (se você já salva lá)
+        if (!p) {
+          try { p = JSON.parse(sessionStorage.getItem('TERMO_SOLIC_CRP_PAYLOAD') || 'null'); } catch(_) {}
+        }
+
+        // roda o template
+        if (p && typeof run === 'function') {
+          try {
+            window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
+            run(p);
+            document.dispatchEvent(new Event('TERMO_DATA'));
+          } catch(e) { console.error('run bootstrap fail', e); }
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
 
 
 

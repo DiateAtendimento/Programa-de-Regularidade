@@ -2483,9 +2483,14 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
 
   // 6) Gera o PDF
   const pdf = await page.pdf({
-     printBackground: true,
-     preferCSSPageSize: true,
-   });
+    printBackground: true,
+    preferCSSPageSize: true,
+    displayHeaderFooter: true,
+    headerTemplate: (typeof buildHeaderTemplate === 'function') ? buildHeaderTemplate() : '<div></div>',
+    footerTemplate: '<div></div>',
+    margin: { top: '22mm', right: '16mm', bottom: '20mm', left: '16mm' }
+  });
+
 
   // 7) Fecha a página
   try { await page.close(); } catch {}
