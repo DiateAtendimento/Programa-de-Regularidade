@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="./termo_solic_crp.css">
   
 </head>
+
 <body>
   <!-- Cabeçalho FIXO (anti-sobreposição em 2+ páginas) -->
   <header class="prp-header" aria-hidden="true">
@@ -33,9 +34,8 @@
       <p class="term-meta">
         Ente: <strong data-k="ente"></strong> / UF: <strong data-k="uf"></strong> • UG: <strong data-k="ug"></strong>
       </p>
-
       <!-- 1. IDENTIFICAÇÃO -->
-      <section class="term-section avoid-break">
+      <section class="term-section avoid-break" id="sec-1">
         <h2><br>1. IDENTIFICAÇÃO DO ENTE FEDERATIVO E DA UNIDADE GESTORA</h2>
 
         <h3><span class="label">1.1 Esfera de Governo</span></h3>
@@ -51,7 +51,7 @@
           <div class="field"><span class="label"><strong>1.2.3 E-mail oficial</strong></span><span class="value" data-k="email_ente"></span></div>
         </div>
 
-        <h3><strong>1.3 Regime Próprio de Previdência Social (RPPS)</strong></h3>
+        <h3 id="sec-1-3"><strong>1.3 Regime Próprio de Previdência Social (RPPS)</strong></h3>
         <div class="grid grid-num">
           <div class="field"><span class="label"><strong>1.3.1 Unidade Gestora</strong></span><span class="value" data-k="ug"></span></div>
           <div class="field"><span class="label"><strong>1.3.2 CNPJ</strong></span><span class="value" data-k="cnpj_ug"></span></div>
@@ -59,6 +59,7 @@
           <div class="field"><span class="label"><strong>1.3.4 Órgão de vinculação da UG</strong></span><span class="value" data-k="ORGAO_VINCULACAO_UG"></span></div>
         </div>
       </section>
+
       <!-- 2. IDENTIFICAÇÃO DOS RESPONSÁVEIS -->
       <section class="term-section avoid-break">
         <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
@@ -81,7 +82,6 @@
           <div class="field"><span class="label"><strong>2.2.5 Telefone</strong></span><span class="value" data-k="tel_rep_ug"></span></div>
         </div>
       </section>
-
       <!-- 3. SITUAÇÃO RELATIVA AO CRP -->
       <section class="term-section avoid-break page-break" id="sec-3">
         <h2>3. SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
@@ -157,6 +157,7 @@
           <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
           <p id="f43-plano"></p>
         </div>
+
         <!-- 4.4 -->
         <div class="avoid-break" id="fase-44" hidden>
           <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
@@ -221,14 +222,17 @@
 
           <p class="small mt"><strong>4.6.5 Justificativas quanto ao(s) Plano(s) de Ação:</strong></p>
           <div id="f46-just-planos"></div>
+
+          <p class="small mt"><strong>4.6.6 Comprovação de cumprimento:</strong></p>
+          <div id="f46-comp-cumpr"></div>
         </div>
       </section>
-
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section avoid-break">
         <h2>5. JUSTIFICATIVAS / INFORMAÇÕES ADICIONAIS</h2>
         <p data-k="justificativas_gerais"></p>
       </section>
+
       <!-- Força página nova antes das assinaturas -->
       <div class="break-before"></div>
 
@@ -266,7 +270,7 @@
       </div>
     </div>
   </div>
-  <!-- Script embutido (mantido e INALTERADO em lógica) -->
+  <!-- Script embutido (mantido e INALTERADO em lógica base, com patches de robustez) -->
   <script>
     (function () {
       const $  = (s, r=document) => r.querySelector(s);
@@ -301,7 +305,7 @@
         const ul = document.querySelector(sel);
         if (!ul) return;
         const a = asArr(arr);
-        ul.innerHTML = a.length ? a.map(x=>`<li>${x}</li>`).join('') : '<li>Não informado</li>';
+        ul.innerHTML = a.length ? a.map(x=>`<li>${escapeHtml(x)}</li>`).join('') : '<li>Não informado</li>';
       }
       // Helpers "sim/não" → boolean
       function asYes(v){ return ['sim','s','true','1','yes','y'].includes(String(v ?? '').trim().toLowerCase()); }
@@ -317,11 +321,13 @@
         p.EMAIL_ENTE = p.EMAIL_ENTE ?? p.email_ente; p.EMAIL_UG = p.EMAIL_UG ?? p.email_ug;
         p.SEI_PROCESSO = p.SEI_PROCESSO ?? p.sei_processo ?? p.PROC_SEI ?? p.proc_sei ?? '';
         p.PORTARIA_SRPC = p.PORTARIA_SRPC ?? p.portaria_srpc ?? p.PORTARIA_SRPC_MPS ?? '2.024/2025';
+
         p.ORGAO_VINCULACAO_UG = p.ORGAO_VINCULACAO_UG 
           || p.orgao_vinculacao_ug 
           || p.orgao_vinc_ug 
           || p.ug_orgao_vinc 
           || '';
+
         p.NOME_REP_ENTE = p.NOME_REP_ENTE ?? p.nome_rep_ente;
         p.CARGO_REP_ENTE = p.CARGO_REP_ENTE ?? p.cargo_rep_ente;
         p.CPF_REP_ENTE   = p.CPF_REP_ENTE   ?? p.cpf_rep_ente;
@@ -337,7 +343,7 @@
         // ===== (3.1 e 3.2) Prefill a partir de p.crp / p.CRP
         const crp = p.crp || p.CRP || {};
 
-        // 3.1 - aceitar várias variantes de nome/formatos de data que o form pode enviar
+        // 3.1
         p.DATA_VENC_ULTIMO_CRP = p.DATA_VENC_ULTIMO_CRP
           ?? p.data_vencimento_ultimo_crp
           ?? p.data_venc_ult_crp
@@ -350,14 +356,13 @@
           ?? crp.vencimento
           ?? '';
 
-        // 3.2 Tipo de emissão - normalizar a partir de várias chaves possíveis
+        // 3.2 Tipo de emissão
         p.TIPO_EMISSAO_ULTIMO_CRP = (p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ultimo_crp || p.tipo_emissao_ult_crp || p.tipo_emissao || '').trim();
         if (!p.TIPO_EMISSAO_ULTIMO_CRP) {
           const flag = crp.e_judicial ?? crp.tipo_simnao ?? p.CRP_E_JUDICIAL ?? p.CRP_TIPO_SIMNAO ?? crp.emissao ?? crp.tipo_emissao ?? '';
           if (asYes(flag))      p.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
           else if (asNo(flag))  p.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
           else {
-            // fallback textual
             const txt = String(crp.tipo || crp.emissao || p.tipo || '').trim();
             if (txt) p.TIPO_EMISSAO_ULTIMO_CRP = txt;
           }
@@ -379,8 +384,7 @@
           else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) p.OPT_3_2 = '3.2.4';
         }
 
-        // ===== 3.4 (novo) – código único vindo do form 2 (agora com detecção extra)
-        // aceita tanto 3.4.x (novo) quanto 3.2.x (legado) e diversas variantes de chave/valor
+        // ===== 3.4 (novo) — aceita códigos 3.4.x, 3.2.x, variações e números 1..4
         const _rawPrazo = String(
           p.PRAZO_ADICIONAL_COD
           || p.prazo_adicional_cod
@@ -394,22 +398,17 @@
 
         let _prazo = _rawPrazo || '';
 
-        // se vazio, varre chaves/valores do payload procurando um código 3.4.x ou 3.2.x
         if (!_prazo) {
           for (const k of Object.keys(p0 || p)) {
             const v = String((p0[k] ?? p[k] ?? '')).trim();
-            // valor contendo "3.4.1" etc
             const mv = v.match(/(3\.[24]\.\d)/);
             if (mv) { _prazo = mv[1]; break; }
-            // chave contendo 3.4.1 ou patterns tipo 3_4_1 ou fPrazo_3_4_1
             const mk = k.match(/(3[._-]?(?:2|4)[._-]?\d|3_4_\d|3_2_\d)/i);
             if (mk) {
               const codeFromKey = mk[0].replace(/_/g, '.').replace(/([^\d.])/g,'').replace(/\.\{2,}/g,'.');
-              // normalizar 3.2.x → 3.4.x
               _prazo = codeFromKey.replace(/^3\.2\.(\d)$/, '3.4.$1');
               break;
             }
-            // se valor for número 1..4 assumir 3.4.x (caso legacy envie só '1'..'4')
             if (/^[1-9]$/.test(v)) { _prazo = '3.4.' + v; break; }
           }
         }
@@ -432,13 +431,10 @@
           || ''
         ).trim();
 
-        // normaliza F41: aceita código em F41_OPCAO_CODE se F41_OPCAO vier descritivo
         p.F41_OPCAO = String(p.F41_OPCAO || p.F41_OPCAO_CODE || p.f41_opcao || '').trim();
 
-        // mantém como array (aceita string "A, B, C" ou array nativo)
         p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || '');
         p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || '');
-
 
         p.F44_CRITERIOS   = asArr(p.F44_CRITERIOS   || p.f44_criterios   || p.fase44_criterios   || '');
         p.F44_DECLS       = asArr(p.F44_DECLS       || p.f44_decls       || p.fase44_decls       || '');
@@ -463,23 +459,21 @@
         p.F46_JUST_E    = p.F46_JUST_E    || p.f46_just_e;
         p.F46_DOCS_E    = p.F46_DOCS_E    || p.f46_docs_e;
 
-         p.DATA_TERMO_GERADO = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
+        p.DATA_TERMO_GERADO = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
 
-        // ===== Fallbacks para 4.1 quando o valor vier em texto compat
+        // Fallbacks 4.1
         if (!p.F41_OPCAO) {
           const c = String(p.CELEBRACAO_TERMO_PARCELA_DEBITOS || '').trim();
           if (/4\.1\.1/.test(c) || /60\s*parcelas/i.test(c)) p.F41_OPCAO = '4.1.1';
           else if (/4\.1\.2/.test(c) || /(300\s*parcelas|nao possui|não possui)/i.test(c)) p.F41_OPCAO = '4.1.2';
         }
 
-        // --- Fallbacks extras para Fase 4 (quando vierem só campos "compat")
         if (!p.F41_OPCAO) {
           const s = String(p.CELEBRACAO_TERMO_PARCELA_DEBITOS || p.celebracao_termo_parcela_debitos || '').toLowerCase();
           if (s.includes('4.1.1') || s.includes('até 60'))  p.F41_OPCAO = '4.1.1';
           if (s.includes('4.1.2') || s.includes('até 300')) p.F41_OPCAO = '4.1.2';
         }
 
-        // Strings com códigos separadas por “; ” ou linhas → arrays
         const _split = v => Array.isArray(v) ? v : String(v||'').split(/[;\n\r]+/).map(s => s.trim()).filter(Boolean);
 
         if (!p.F42_LISTA?.length) p.F42_LISTA = _split(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA || p.reg_penden_admin || '');
@@ -487,8 +481,6 @@
         if (!p.F44_CRITERIOS?.length) p.F44_CRITERIOS = _split(p.CRITERIOS_ESTRUT_ESTABELECIDOS || p.criterios_estrut || '');
         if (!p.F46_CRITERIOS?.length) p.F46_CRITERIOS = _split(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || p.man_conformidade || '');
 
-
-        // Garante arrays para as fases – evita "Não informado" indevido
         ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
          'F45_DECLS','F46_CRITERIOS','F46_DECLS','F46_FINALIDADES','F462F_CRITERIOS']
           .forEach(k => { p[k] = asArr(p[k] || p[k.toLowerCase()] || ''); });
@@ -519,25 +511,19 @@
         Object.values(ids).forEach(id => show(id,false));
         if (ids[code]) show(ids[code], true);
       }
-
-      
-      // segunda função
+      // ========= Função principal =========
       function run(payload){
 
-        // PATCH E — passo 3a: log bruto do payload na entrada do template
         if (window.__DEBUG_SOLIC_CRP__) {
           try { console.log('[E3] template/run → payload (raw)', payload); } catch {}
         }
 
         const p = normalizePayload(payload || {});
 
-        // Espelha o payload normalizado no objeto global para que os fallbacks [data-k] funcionem
+        // Espelha o payload normalizado no objeto global
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
-        // Dispara um evento para o resolvedor de [data-k] preencher o que não foi coberto por fillText
         try { document.dispatchEvent(new Event('TERMO_DATA')); } catch {}
 
-
-        // PATCH E — passo 3b: campos críticos após normalização
         if (window.__DEBUG_SOLIC_CRP__) {
           try {
             console.log('[E3] template/run → payload (norm)', {
@@ -551,7 +537,6 @@
           } catch {}
         }
 
-
         /* 1) Cabeçalho/meta */
         fillText('ente', p.ENTE); fillText('uf', p.UF); fillText('ug', p.UG);
         fillText('cnpj_ente', p.CNPJ_ENTE); fillText('cnpj_ug', p.CNPJ_UG);
@@ -559,9 +544,8 @@
         fillText('N_GESCON', p.N_GESCON || p.n_gescon || '');
         fillText('DATA_ENC_VIA_GESCON', p.DATA_ENC_VIA_GESCON || p.data_enc_via_gescon || '');
         fillText('SEI_PROCESSO', p.SEI_PROCESSO); fillText('PORTARIA_SRPC', p.PORTARIA_SRPC);
-        // 1.3.4 Órgão de vinculação da UG (existe <span class="value" data-k="ORGAO_VINCULACAO_UG">)
+        // 1.3.4 Órgão de vinculação da UG
         fillText('ORGAO_VINCULACAO_UG', p.ORGAO_VINCULACAO_UG || '');
-
 
         /* 2) Responsáveis */
         fillText('nome_rep_ente',  p.NOME_REP_ENTE);
@@ -577,49 +561,34 @@
         fillText('tel_rep_ug',   p.TEL_REP_UG);
 
         /* 3) CRP */
-
-        // 3.1 – manter ambos os aliases aceitos no template
         fillText('venc_ult_crp', p.venc_ult_crp || p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || '');
         fillText('data_vencimento_ultimo_crp',
           p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || ''
         );
 
-        // 3.2 – CORREÇÃO: o template usa data-k="tipo_emissao_ult_crp"
+        // 3.2 – corrige nome usado no template
         fillText('tipo_emissao_ult_crp',    p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
-        // (opcional, para templates antigos com o nome extenso – não faz mal manter)
         fillText('tipo_emissao_ultimo_crp', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
 
-        // ACRESCENTE logo após os fillText de 3.1/3.2:
-        // 3.1 e 3.2 (espelhos para data-k)
+        // Espelhos (segurança)
         fillText('DATA_VENC_ULTIMO_CRP',  p.DATA_VENC_ULTIMO_CRP  || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
         fillText('TIPO_EMISSAO_ULTIMO_CRP', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
 
-
-
-        // === 3.4 — mostrar somente a alternativa selecionada e REMOVER as demais do DOM ===
+        // === 3.4 — mostrar somente a alternativa selecionada e remover demais ===
         const __prz = String(p.PRAZO_ADICIONAL_COD || p.prazo_adicional_cod || '').trim();
-
         (function applyPrazoAdicional(code){
           const itens = Array.from(document.querySelectorAll('[data-3_4]'));
           let mostrou = false;
-
           itens.forEach(el => {
             const tag = (el.getAttribute('data-3_4') || '').trim();
             const ok  = code && tag === code;
-            if (ok) {
-              el.style.display = '';
-              mostrou = true;
-            } else {
-              el.remove(); // remove do DOM para não “voltar” depois
-            }
+            if (ok) { el.style.display = ''; mostrou = true; }
+            else { el.remove(); }
           });
-
-          // Fallback: se nenhum bateu, usa texto livre (se existir) ou esconde o holder
           const holder = document.querySelector('[data-k="PRAZO_ADICIONAL_TEXTO"]');
           if (holder) {
-            if (mostrou) {
-              holder.classList.add('d-none');
-            } else {
+            if (mostrou) holder.classList.add('d-none');
+            else {
               const txt = p.PRAZO_ADICIONAL_TEXTO || p.prazo_adicional_texto || 'Não informado';
               holder.textContent = txt;
               holder.classList.toggle('d-none', !txt.trim());
@@ -627,9 +596,7 @@
           }
         })(__prz);
 
-
-
-        // 3.2 (opção antiga "motivo principal", se usar ul#opt-3-2)
+        // 3.2 (opção antiga se existir ul#opt-3-2)
         (function(){
           const ul = document.getElementById('opt-3-2'); if (!ul) return;
           const code = (p.OPT_3_2 || '').trim();
@@ -642,23 +609,19 @@
             ul.appendChild(li);
           }
         })();
-        
 
-        // Helpers
         const listify = v => Array.isArray(v) ? v.filter(Boolean).join('; ') : (v || '');
 
         // 4. Identificação da fase
         fillText('fase_selecionada', p.FASE_PROGRAMA || p.FASE || '');
 
-        // 4.1 / 4.2 / 4.4 — conteúdos vindos dos modais
-  
+        // 4.1 / 4.2 / 4.4 — conteúdos
         fillText('f42_lista', listify(p.F42_LISTA));
         fillText('f43_lista', listify(p.F43_LISTA));
         fillText('f44_criterios', listify(p.F44_CRITERIOS));
         fillText('f44_decls', listify(p.F44_DECLS));
         fillText('f44_finalidades', listify(p.F44_FINALIDADES));
 
-        // Opcional: se vier vazio, esconda o bloco “Não informado"
         ['f41_opcao','f42_lista','f43_lista','f44_criterios','f44_decls','f44_finalidades'].forEach(id=>{
           const el = document.getElementById(id);
           if (el && !el.textContent.trim()) {
@@ -686,27 +649,18 @@
             }
             break;
           }
-
           case '4.2': {
-            // Lista simples (já tem fallback “Não informado” em liList)
             liList('#f42-itens', p.F42_LISTA);
             break;
           }
-
           case '4.3': {
-            // Itens da 4.3
             liList('#f43-itens', p.F43_LISTA);
-
-            // Campos textuais: os elementos são por ID (não data-k), então setamos por getElementById
             (function(){
               const j = document.getElementById('f43-just');
               if (j) j.textContent = (p.F43_JUST || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-
               const pl = document.getElementById('f43-plano');
               if (pl) pl.textContent = (p.F43_PLANO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             })();
-
-            // (Opcional) Se você tiver um bloco extra f4310 no HTML, preenche aqui:
             (function(){
               const box = document.getElementById('f4310');
               if(!box) return;
@@ -716,23 +670,16 @@
               if (p.F4310_DOCS)       items.push('Docs: ' + p.F4310_DOCS);
               liList('#f4310', items);
             })();
-
             break;
           }
-
           case '4.4': {
-            // Listas principais
             liList('#f44-criterios',   p.F44_CRITERIOS);
             liList('#f44-decls',       p.F44_DECLS);
             liList('#f44-finalidades', p.F44_FINALIDADES);
-
-            // Legislação 4.4.1(d) — elemento é por ID (não data-k)
             (function(){
               const el = document.getElementById('f441-legislacao');
               if (el) el.textContent = (p.F441_LEGISLACAO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             })();
-
-            // Anexos 4.4
             (function(){
               const ax = splitLines(p.F44_ANEXOS || '');
               const box = document.getElementById('f44-anexos');
@@ -742,8 +689,6 @@
                   : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
               }
             })();
-
-            // Documentos / Execução 4.4.6
             (function(){
               const d = splitLines(p.F446_DOCS || '');
               const e = splitLines(p.F446_EXEC_RES || '');
@@ -756,14 +701,11 @@
                 ? '<ul>' + e.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
                 : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             })();
-
             break;
           }
-
           case '4.5': {
             const decls = p.F45_OK451 ? ['4.5.1 Mantida a regularidade das fases anteriores.'] : [];
             liList('#f45-decls', decls);
-
             const d = splitLines(p.F45_DOCS || '');
             const j = splitLines(p.F45_JUST || '');
             const docsBox = document.getElementById('f45-docs');
@@ -774,14 +716,11 @@
             if (justBox) justBox.innerHTML = j.length
               ? '<ul>' + j.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
               : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-
             break;
           }
-
           case '4.6': {
             liList('#f46-criterios', p.F46_CRITERIOS);
 
-            // Declarações 4.6 (mistura de lista + campos soltos)
             const decls = [];
             if (Array.isArray(p.F46_DECLS)) decls.push(...p.F46_DECLS);
             if (p.F46_PROGESTAO) decls.push('Nível Pró-Gestão RPPS: ' + p.F46_PROGESTAO);
@@ -792,10 +731,8 @@
             if (p.F46_DOCS_E)    decls.push('(e) Documentos: ' + p.F46_DOCS_E);
             liList('#f46-decls', decls);
 
-            // Finalidades 4.6.3
             liList('#f46-finalidades', p.F46_FINALIDADES);
 
-            // Anexos 4.6.4
             (function(){
               const ax = splitLines(p.F46_ANEXOS || '');
               const axBox = document.getElementById('f46-anexos');
@@ -804,7 +741,6 @@
                 : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
             })();
 
-            // Campos de texto 4.6.5 / extra
             (function(){
               const jp = document.getElementById('f46-just-planos');
               const cc = document.getElementById('f46-comp-cumpr');
@@ -812,10 +748,18 @@
               if (cc) cc.textContent = (p.F46_COMP_CUMPR  || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             })();
 
-            // Critérios 4.6.2(f)
             liList('#f462f-criterios', p.F462F_CRITERIOS);
 
-            // Docs/Execução adicionais 4.6.6
+            // PATCH: força render da lista 4.6.2(f) se CSS tentar ocultar
+            (function ensureF462F(){
+              const ul = document.getElementById('f462f-criterios');
+              if (!ul) return;
+              if (!ul.children.length && Array.isArray(p.F462F_CRITERIOS) && p.F462F_CRITERIOS.length) {
+                ul.innerHTML = p.F462F_CRITERIOS.map(x => `<li>${escapeHtml(x)}</li>`).join('');
+              }
+              ul.hidden = false;
+            })();
+
             (function(){
               const d = splitLines(p.F466_DOCS || '');
               const e = splitLines(p.F466_EXEC_RES || '');
@@ -833,28 +777,24 @@
           }
         }
 
-        // “Congela” o DOM de 3.4 e 4.1 para evitar que outro handler reexiba coisas
         (function freezeAfterRender(){
-          // 3.4: garanta que só exista 1 item em tela
           const prazos = document.querySelectorAll('[data-3_4]');
           if (prazos.length > 1) {
-            // por segurança extra (não deve acontecer, porque removemos os demais acima)
             for (let i = 1; i < prazos.length; i++) prazos[i].remove();
           }
-          // 4.1: nada a remover aqui, pois ul#f41-itens foi reescrito com um único <li>
         })();
-
 
         /* 5) Justificativas gerais */
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
 
-        /* 6) Data/assinaturas */
-        const preferida = (p.DATA_TERMO_GERADO || '').trim();
-        fillText('data_termo', preferida || hojeBR_robusto());
-        const dataNode = document.querySelector('[data-k="data_termo"]');
-        if (dataNode && !dataNode.textContent.trim()) dataNode.textContent = hojeBR_robusto();
+        /* 6) Data/assinaturas — robusto */
+        const preferida = (p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '').trim();
+        const resolvida = preferida || hojeBR_robusto();
+        window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, { data_termo: resolvida });
+        fillText('data_termo', resolvida);
+        try { document.dispatchEvent(new Event('TERMO_DATA')); } catch {}
 
-        /* 7) Esfera 1.1 + legenda assinatura dinâmica */
+        /* 7) Esfera e legenda assinatura dinâmica */
         const esferaTxt = normalizarEsfera(p.ESFERA || p.ESFERA_GOVERNO || p.ESFERA_SUGERIDA || p.fase_esfera);
         const esferaNode = document.querySelector('[data-esfera]');
         if (esferaNode) esferaNode.textContent = esferaTxt;
@@ -871,9 +811,24 @@
           }
         })();
 
-        /* pronto para imprimir */
-        try{
-          
+        // ========= PATCH: garante que listas críticas existam antes do print =========
+        (function ensureListsThenPrint(){
+          const mustHaveLis = [
+            '#f46-decls',
+            '#f462f-criterios',
+            '#f466-docs',
+            '#f466-exec'
+          ];
+          const ok = mustHaveLis.every(sel => {
+            const el = document.querySelector(sel);
+            return el && el.querySelector('li');
+          });
+          if (!ok) {
+            document.body.offsetHeight; // força reflow
+            setTimeout(() => ensureListsThenPrint(), 0);
+            return;
+          }
+
           if (!window.__TERMO_READY_FIRED__) {
             window.__TERMO_READY_FIRED__ = true;
             const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
@@ -881,13 +836,12 @@
             Promise.race([fontsReady, maxWait]).finally(() => {
               requestAnimationFrame(() => {
                 window.__TERMO_PRINT_READY__ = true;
-                document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY'));
+                try { document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY')); } catch {}
               });
             });
           }
-        }catch(_){ }
+        })();
       }
-
 
       /* Modal PDF (abrir/fechar) */
       window.ModalPDF = {
@@ -913,7 +867,6 @@
       window.addEventListener('message', (ev) => {
           const d = ev && ev.data;
           if (!d) return;
-          // aceita os tipos que o gerador pode enviar
           if (d.type === 'TERMO_DATA' || d.type === 'TERMO_DATA_READY' || d.type === 'TERMO_PREVIEW_DATA') {
             try { run(d.payload || {}); } catch (_) {}
           }
@@ -942,15 +895,11 @@
        Lógica centralizada em run() acima. */
   </script>
 
-    <!-- PATCH F — garantir que o template rode com o payload injetado -->
+  <!-- PATCH F — garantir que o template rode com o payload injetado -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      // No seu template, a função é exposta como window.__TERMO_RUN__
       const fn = window.__TERMO_RUN__ || window.run;
-
-      // evita rodar 2x se alguém já disparou antes
       if (window.__TERMO_PRINT_READY__ || window.__TERMO_READY_FIRED__) return;
-
       if (typeof fn === 'function') {
         const p = (window.__TERMO_DATA__ || {});
         try { console.log('[TERMO] __TERMO_DATA__:', p); } catch {}
@@ -964,13 +913,10 @@
     (function(){
       // Suporte a data-fallback="outra_chave" + data-na="Não informado"
       function resolveK(node, data){
-        // NÃO sobrescreve se já houver conteúdo útil
         const already = (node.textContent || '').trim();
         if (already && already !== 'Não informado' && already !== '—') return;
-
         const k = node.getAttribute('data-k');
         let v = (data && data[k]) || '';
-
         if(!v){
           const fb = node.getAttribute('data-fallback');
           if (fb && data && data[fb]) v = data[fb];
@@ -980,12 +926,10 @@
         }
         node.textContent = (v==null || v==='') ? (node.getAttribute('data-na')||'Não informado') : v;
       }
-
       function fillAll(){
         const data = window.__TERMO_DATA__ || {};
         document.querySelectorAll('[data-k]').forEach(n => resolveK(n, data));
       }
-
       document.addEventListener('TERMO_DATA', fillAll);
       document.addEventListener('TERMO_DATA_READY', fillAll);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fillAll);
@@ -996,27 +940,18 @@
   <script>
     (function(){
       function boot(){
-        // 1) payload vindo do Puppeteer (window.__TERMO_INJECT__)
         var p = window.__TERMO_INJECT__ || null;
-
-        // 2) fallback: sessionStorage (se você já salva lá)
         if (!p) {
           try { p = JSON.parse(sessionStorage.getItem('TERMO_SOLIC_CRP_PAYLOAD') || 'null'); } catch(_) {}
         }
-
-        // roda o template
-        if (p) {
+        if (p && typeof run === 'function') {
           try {
-            const fn = window.__TERMO_RUN__ || window.run;
-            if (typeof fn === 'function') {
-              window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
-              fn(p);
-              document.dispatchEvent(new Event('TERMO_DATA'));
-            }
+            window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
+            run(p);
+            document.dispatchEvent(new Event('TERMO_DATA'));
           } catch(e) { console.error('run bootstrap fail', e); }
         }
       }
-
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', boot);
       } else {
