@@ -15,7 +15,6 @@
   <link rel="stylesheet" href="./termo_solic_crp.css">
   
 </head>
-
 <body>
   <!-- Cabeçalho FIXO (anti-sobreposição em 2+ páginas) -->
   <header class="prp-header" aria-hidden="true">
@@ -60,7 +59,6 @@
           <div class="field"><span class="label"><strong>1.3.4 Órgão de vinculação da UG</strong></span><span class="value" data-k="ORGAO_VINCULACAO_UG"></span></div>
         </div>
       </section>
-
       <!-- 2. IDENTIFICAÇÃO DOS RESPONSÁVEIS -->
       <section class="term-section avoid-break">
         <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
@@ -83,6 +81,7 @@
           <div class="field"><span class="label"><strong>2.2.5 Telefone</strong></span><span class="value" data-k="tel_rep_ug"></span></div>
         </div>
       </section>
+
       <!-- 3. SITUAÇÃO RELATIVA AO CRP -->
       <section class="term-section avoid-break page-break" id="sec-3">
         <h2>3. SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
@@ -95,16 +94,13 @@
           </div>
         </div>
 
-
         <!-- 3.2 Tipo de emissão do último CRP -->
         <div class="linha">
           <div class="rotulo">3.2 Tipo de emissão do último CRP</div>
           <div class="valor">
             <span data-k="tipo_emissao_ult_crp" data-fallback="TIPO_EMISSAO_ULTIMO_CRP" data-na="Não informado"></span>
-
           </div>
         </div>
-
 
         <h3>3.3 Critério(s) atualmente irregular(es) no extrato previdenciário</h3>
         <p class="small">Selecione todos os itens apontados como irregulares no extrato.</p>
@@ -129,8 +125,6 @@
         </div>
 
       </section>
-
-
       <!-- 4. FASE DO PROGRAMA -->
       <section class="term-section avoid-break" id="sec-fase">
         <h2>4. IDENTIFICAÇÃO DA FASE DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
@@ -163,7 +157,6 @@
           <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
           <p id="f43-plano"></p>
         </div>
-
         <!-- 4.4 -->
         <div class="avoid-break" id="fase-44" hidden>
           <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
@@ -231,13 +224,11 @@
         </div>
       </section>
 
-
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section avoid-break">
         <h2>5. JUSTIFICATIVAS / INFORMAÇÕES ADICIONAIS</h2>
         <p data-k="justificativas_gerais"></p>
       </section>
-
       <!-- Força página nova antes das assinaturas -->
       <div class="break-before"></div>
 
@@ -275,8 +266,6 @@
       </div>
     </div>
   </div>
-
-
   <!-- Script embutido (mantido e INALTERADO em lógica) -->
   <script>
     (function () {
@@ -530,6 +519,8 @@
         Object.values(ids).forEach(id => show(id,false));
         if (ids[code]) show(ids[code], true);
       }
+
+      
       // segunda função
       function run(payload){
 
@@ -940,8 +931,6 @@
       })();
     })();
   </script>
-
-
   <!-- Força fallback “Não informado” também no preview local -->
   <script>
     window.__TERMO_DATA__ = Object.assign({ __NA_ALL: true, __NA_LABEL: 'Não informado' }, window.__TERMO_DATA__ || {});
@@ -1016,11 +1005,14 @@
         }
 
         // roda o template
-        if (p && typeof run === 'function') {
+        if (p) {
           try {
-            window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
-            run(p);
-            document.dispatchEvent(new Event('TERMO_DATA'));
+            const fn = window.__TERMO_RUN__ || window.run;
+            if (typeof fn === 'function') {
+              window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
+              fn(p);
+              document.dispatchEvent(new Event('TERMO_DATA'));
+            }
           } catch(e) { console.error('run bootstrap fail', e); }
         }
       }
@@ -1032,8 +1024,6 @@
       }
     })();
   </script>
-
-
 
 </body>
 </html>
