@@ -483,6 +483,7 @@
     // 4.2
     data.values['F42_LISTA[]'] = $$(`#F42_LISTA input[type="checkbox"]:checked`).map(i=>i.value);
 
+
     // 4.3
     data.values['F43_LISTA[]'] = $$(`#F43_LISTA input[type="checkbox"]:checked`).map(i=>i.value);
     data.values['F43_PLANO']   = $('#F43_PLANO')?.value || '';
@@ -1498,7 +1499,11 @@
 
     // 4.2, 4.3, 4.4... (listas vindas dos modais)
     const F42_LISTA = Array.from(
-      document.querySelectorAll('#F42_LISTA input[type="checkbox"]:checked, input[name="F42_LISTA[]"]:checked')
+      document.querySelectorAll(
+        '#F42_LISTA input[type="checkbox"]:checked,' +
+        'input[name="F42_LISTA[]"]:checked,' +
+        'input[name="F42_ITENS[]"]:checked'   // robustez caso o HTML venha com esse name
+      )
     ).map(i => i.value.trim());
 
     const F44_CRITERIOS = Array.from(new Set([
@@ -1635,9 +1640,6 @@
       F45_DOCS:  $('#F45_DOCS')?.value || '',
       F45_JUST:  $('#F45_JUST')?.value || '',
       F46_CRITERIOS: collectCheckedValues('#F46_CRITERIOS input[type="checkbox"]'),
-      F466_DOCS: collectTextValue('F466_DOCS'),
-      F466_EXEC_RES: collectTextValue('F466_EXEC_RES'),
-
 
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
       F46_PORTE:       $('#F46_PORTE')?.value || '',
@@ -1737,11 +1739,12 @@
     // MARCADOR: JOI_ARRAY_ALIASES
     ; 
     
-    ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
-      'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES']
-      .forEach(k => { if (!Array.isArray(obj[k])) obj[k]=[]; obj[k+'[]']=obj[k];
-    });
-
+    ['F42_LISTA','F43_LISTA','F43_INCLUIR','F43_INCLUIR_B',
+     'F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
+     'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES']
+       .forEach(k => { if (!Array.isArray(obj[k])) obj[k]=[]; obj[k+'[]']=obj[k];
+     });
+     
     // Log útil
     console.log('DEBUG buildPayload output:', {
       F44_CRITERIOS: obj.F44_CRITERIOS,
@@ -2176,10 +2179,6 @@
 
     ensureStepperFallback();
     window.addEventListener('beforeunload', saveState);
-
-    // >>> novo: liga os bridges da etapa 1 (registro do termo + espelhamento 1.3→1.3.2)
-    initEtapa1Bridges();
-    // <<<
 
     // >>> novo: liga os bridges da etapa 1 (registro do termo + espelhamento 1.3→1.3.2)
     initEtapa1Bridges();
