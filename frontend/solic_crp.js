@@ -1019,6 +1019,7 @@
       // Preencher <input type="date"> SEMPRE em ISO (AAAA-MM-DD)
       if (el.dataUltCrp) el.dataUltCrp.value = toISOForInput(dataVenc);
 
+
       // ===== NOVO BLOCO (sincronizar CRP com __TERMO_DATA__ para o template) =====
       try {
         window.__TERMO_DATA__ = window.__TERMO_DATA__ || {};
@@ -1349,7 +1350,8 @@
         `<label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F462F_CRITERIOS[]" value="${it.value}"><span class="form-check-label">${it.label}</span></label>`
       )).join('');
     }
-        // ===== NOVO BLOCO: refletir seleções DOM em __TERMO_DATA__ e notificar template =====
+
+    // ===== NOVO BLOCO: refletir seleções DOM em __TERMO_DATA__ e notificar template =====
     try {
       window.__TERMO_DATA__ = window.__TERMO_DATA__ || {};
 
@@ -1737,13 +1739,23 @@
 
     // ——— Aliases com [] para agradar validações Joi do backend ———
     // MARCADOR: JOI_ARRAY_ALIASES
-    ; 
     
-    ['F42_LISTA','F43_LISTA','F43_INCLUIR','F43_INCLUIR_B',
-     'F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
-     'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES']
-       .forEach(k => { if (!Array.isArray(obj[k])) obj[k]=[]; obj[k+'[]']=obj[k];
-     });
+    ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
+      'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES'
+    ].forEach(k => {
+      const v = obj[k];
+      const arr = Array.isArray(v) ? v : (v ? [String(v)] : []);
+      obj[k+'[]'] = arr;
+      // NÃO sobrescreva obj[k] — mantém o tipo original (string ou array)
+    });
+
+    // Campos que o schema exige STRING: preserva string e cria alias [] só para o template/UI
+    ['F43_INCLUIR','F43_INCLUIR_B'].forEach(k => {
+      const s = (obj[k] ?? '').toString();
+      obj[k] = s; // mantém string
+      obj[k+'[]'] = s ? s.split(';').map(t => t.trim()).filter(Boolean) : [];
+    });
+
      
     // Log útil
     console.log('DEBUG buildPayload output:', {

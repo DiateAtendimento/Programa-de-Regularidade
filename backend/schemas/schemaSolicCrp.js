@@ -1,6 +1,9 @@
 // schemas/schemaSolicCrp.js
 import { z } from "zod";
 
+const zStr = z.string().optional().default("");
+const zYesBlank = z.enum(["SIM",""]).optional().default("");
+
 export const schemaSolicCrp = z.object({
   // Gate (informativo)
   HAS_TERMO_ENC_GESCON: z.boolean().optional(),
@@ -9,8 +12,6 @@ export const schemaSolicCrp = z.object({
   SEI_PROCESSO: z.string().optional().default(""),
 
   // 1) Ente / UG
-  DATA_VENC_ULTIMO_CRP: Joi.string().allow(''),              // 3.1
-  TIPO_EMISSAO_ULTIMO_CRP: Joi.string().valid('Administrativa','Judicial','').allow(''), // 3.2
   ESFERA: z.enum(["RPPS Municipal","Estadual/Distrital"]),
   UF: z.string().min(2),
   ENTE: z.string().min(2),
@@ -20,6 +21,7 @@ export const schemaSolicCrp = z.object({
   UG: z.string().min(1),
   CNPJ_UG: z.string().min(14).max(14),
   EMAIL_UG: z.string().email(),
+  ORGAO_VINCULACAO_UG: zStr,
 
   // 2) Representantes
   CPF_REP_ENTE: z.string().min(11).max(11),
@@ -35,78 +37,73 @@ export const schemaSolicCrp = z.object({
   TEL_REP_UG: z.string().optional().default("").nullable(),
 
   // 3) CRP anterior (opcionais aqui)
-  DATA_VENCIMENTO_ULTIMO_CRP: z.string().optional().default(""),
+  DATA_VENC_ULTIMO_CRP: zStr,                       // 3.1 (front envia dd/mm/aaaa ou ISO)
+  DATA_VENCIMENTO_ULTIMO_CRP: zStr,                 // alias
   TIPO_EMISSAO_ULTIMO_CRP: z.enum(["Administrativa","Judicial"]).optional().or(z.literal("")).default(""),
   CRITERIOS_IRREGULARES: z.array(z.string()).optional().default([]),
 
-  // 3.2 — Finalidades (conforme front envia 'SIM' ou '')
-  ADESAO_SEM_IRREGULARIDADES: z.enum(["SIM",""]).optional().default(""),
-  FIN_3_2_MANUTENCAO_CONFORMIDADE: z.enum(["SIM",""]).optional().default(""),
-  FIN_3_2_DEFICIT_ATUARIAL: z.enum(["SIM",""]).optional().default(""),
-  FIN_3_2_CRITERIOS_ESTRUTURANTES: z.enum(["SIM",""]).optional().default(""),
-  FIN_3_2_OUTRO_CRITERIO_COMPLEXO: z.enum(["SIM",""]).optional().default(""),
+  // 3.2 — Finalidades
+  ADESAO_SEM_IRREGULARIDADES: zYesBlank,
+  FIN_3_2_MANUTENCAO_CONFORMIDADE: zYesBlank,
+  FIN_3_2_DEFICIT_ATUARIAL: zYesBlank,
+  FIN_3_2_CRITERIOS_ESTRUTURANTES: zYesBlank,
+  FIN_3_2_OUTRO_CRITERIO_COMPLEXO: zYesBlank,
 
   // 4) Fase
-  // Mantemos FASES_MARCADAS como legado (front novo não envia, fica vazio por padrão)
   FASES_MARCADAS: z.array(z.enum(["4.1","4.2","4.3","4.4","4.5","4.6"])).optional().default([]),
   FASE_PROGRAMA: z.enum(["4.1","4.2","4.3","4.4","4.5","4.6"]),
 
   // 4.1
-  F41_OPCAO: z.string().optional().default(""),
+  F41_OPCAO: zStr, // "4.1.1" ou "4.1.2"
 
   // 4.2
   F42_LISTA: z.array(z.string()).optional().default([]),
 
   // 4.3
   F43_LISTA: z.array(z.string()).optional().default([]),
-  // (campo antigo segue aceito; o front atual pode não enviar)
-  F43_JUST: z.string().optional().default(""),
-  F43_PLANO: z.string().optional().default(""),
-  // adição A–F: suporte a plano B e descrição de planos
-  F43_PLANO_B: z.string().optional().default(""),
-  F43_DESC_PLANOS: z.string().optional().default(""),
-  // 4.3.10
+  F43_JUST: zStr,
+  F43_PLANO: zStr,
+  F43_PLANO_B: zStr,
+  F43_DESC_PLANOS: zStr,
   F4310_OPCAO: z.enum(["A","B"]).optional().or(z.literal("")).default(""),
-  F4310_LEGISLACAO: z.string().optional().default(""),
-  F4310_DOCS: z.string().optional().default(""),
-  // 4.3.11 (incluir critérios)
+  F4310_LEGISLACAO: zStr,
+  F4310_DOCS: zStr,
   F43_INCLUIR: z.array(z.string()).optional().default([]),
 
   // 4.4
   F44_CRITERIOS: z.array(z.string()).optional().default([]),
   F44_DECLS: z.array(z.string()).optional().default([]),
   F44_FINALIDADES: z.array(z.string()).optional().default([]),
-  F44_ANEXOS: z.string().optional().default(""),
-  F441_LEGISLACAO: z.string().optional().default(""),
-  F445_DESC_PLANOS: z.string().optional().default(""),
-  F446_DOCS: z.string().optional().default(""),
-  F446_EXEC_RES: z.string().optional().default(""),
+  F44_ANEXOS: zStr,
+  F441_LEGISLACAO: zStr,
+  F445_DESC_PLANOS: zStr,
+  F446_DOCS: zStr,
+  F446_EXEC_RES: zStr,
 
   // 4.5
   F45_OK451: z.boolean().optional().default(false),
-  F45_DOCS: z.string().optional().default(""),
-  F45_JUST: z.string().optional().default(""),
-  F453_EXEC_RES: z.string().optional().default(""),
+  F45_DOCS: zStr,
+  F45_JUST: zStr,
+  F453_EXEC_RES: zStr,
 
   // 4.6
   F46_CRITERIOS: z.array(z.string()).optional().default([]),
-  F46_PROGESTAO: z.string().optional().default(""),
-  F46_PORTE: z.string().optional().default(""),
-  F46_JUST_D: z.string().optional().default(""),
-  F46_DOCS_D: z.string().optional().default(""),
-  F46_JUST_E: z.string().optional().default(""),
-  F46_DOCS_E: z.string().optional().default(""),
+  F46_PROGESTAO: zStr,
+  F46_PORTE: zStr,
+  F46_JUST_D: zStr,
+  F46_DOCS_D: zStr,
+  F46_JUST_E: zStr,
+  F46_DOCS_E: zStr,
   F46_FINALIDADES: z.array(z.string()).optional().default([]),
-  F46_ANEXOS: z.string().optional().default(""),
-  F46_JUST_PLANOS: z.string().optional().default(""),
-  F46_COMP_CUMPR: z.string().optional().default(""),
-  // 4.6.2 (f)
+  F46_ANEXOS: zStr,
+  F46_JUST_PLANOS: zStr,
+  F46_COMP_CUMPR: zStr,
   F462F_CRITERIOS: z.array(z.string()).optional().default([]),
-  F466_DOCS: z.string().optional().default(""),
-  F466_EXEC_RES: z.string().optional().default(""),
+  F466_DOCS: zStr,
+  F466_EXEC_RES: zStr,
 
   // 5) Justificativas gerais
-  JUSTIFICATIVAS_GERAIS: z.string().optional().default(""),
+  JUSTIFICATIVAS_GERAIS: zStr,
 
   // Carimbos
   MES: z.string().min(1),
@@ -116,36 +113,23 @@ export const schemaSolicCrp = z.object({
 
   // Idempotência
   IDEMP_KEY: z.string().optional().default(""),
+
+  // Prazo adicional (3.4) — os campos entram no payload final via buildPayload
+  PRAZO_ADICIONAL_COD: zStr,
+  PRAZO_ADICIONAL_TEXTO: zStr
 })
-/**
- * Regras de coerência por FASE (espelhando as validações do front):
- * - 4.1: exigir F41_OPCAO
- * - 4.2: exigir pelo menos 1 item em F42_LISTA
- * - 4.3: exigir pelo menos um dos campos/itens (lista OU plano/planoB/descs/incluir/just)
- * - 4.4: se finalidade "e)" (organização / critério estruturante) foi marcada, exigir algum critério em F44_CRITERIOS
- * - 4.5: exigir pelo menos um entre F45_OK451, F45_DOCS, F45_JUST, F453_EXEC_RES
- * - 4.6: exigir F46_CRITERIOS (>=1) E F46_PROGESTAO E F46_PORTE
- */
 .superRefine((data, ctx) => {
   const fase = data.FASE_PROGRAMA;
 
   if (fase === "4.1") {
     if (!data.F41_OPCAO?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["F41_OPCAO"],
-        message: "Na fase 4.1, selecione 4.1.1 ou 4.1.2."
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["F41_OPCAO"], message: "Na fase 4.1, selecione 4.1.1 ou 4.1.2." });
     }
   }
 
   if (fase === "4.2") {
     if (!data.F42_LISTA || data.F42_LISTA.length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["F42_LISTA"],
-        message: "Na fase 4.2, marque ao menos um item (a–i)."
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["F42_LISTA"], message: "Na fase 4.2, marque ao menos um item (a–i)." });
     }
   }
 
@@ -157,28 +141,17 @@ export const schemaSolicCrp = z.object({
       (data.F43_DESC_PLANOS && data.F43_DESC_PLANOS.trim() !== "") ||
       (data.F43_INCLUIR && data.F43_INCLUIR.length > 0) ||
       (data.F43_JUST && data.F43_JUST.trim() !== "");
-
     if (!algoPreenchido) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["F43_LISTA"],
-        message: "Na fase 4.3, marque ao menos um critério ou descreva/justifique no(s) campo(s) disponível(is)."
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["F43_LISTA"], message: "Na fase 4.3, marque ao menos um critério ou descreva/justifique no(s) campo(s) disponível(is)." });
     }
   }
 
   if (fase === "4.4") {
-    // Se a finalidade "e) Organização do RPPS / cumprimento de critério estruturante (especificar)" estiver marcada,
-    // exigir seleção em F44_CRITERIOS (regra espelhada do front: ao marcar 'e)', abrir critérios e obrigar pelo menos 1).
     const finalidadeE = (data.F44_FINALIDADES || []).some(f =>
       /Organização do RPPS.*critério estruturante/i.test(f)
     );
     if (finalidadeE && (!data.F44_CRITERIOS || data.F44_CRITERIOS.length === 0)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["F44_CRITERIOS"],
-        message: "Na 4.4, ao marcar a finalidade “e)”, selecione pelo menos um critério em 4.4.3."
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["F44_CRITERIOS"], message: "Na 4.4, ao marcar a finalidade “e)”, selecione pelo menos um critério em 4.4.3." });
     }
   }
 
@@ -189,35 +162,19 @@ export const schemaSolicCrp = z.object({
       (data.F45_JUST && data.F45_JUST.trim() !== "") ||
       (data.F453_EXEC_RES && data.F453_EXEC_RES.trim() !== "");
     if (!algum) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["F45_OK451"],
-        message: "Na fase 4.5, marque 4.5.1 ou preencha documentos/justificativas/execução."
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["F45_OK451"], message: "Na fase 4.5, marque 4.5.1 ou preencha documentos/justificativas/execução." });
     }
   }
 
   if (fase === "4.6") {
     if (!data.F46_CRITERIOS || data.F46_CRITERIOS.length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["F46_CRITERIOS"],
-        message: "Na fase 4.6, selecione ao menos um critério em 4.6.1."
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["F46_CRITERIOS"], message: "Na fase 4.6, selecione ao menos um critério em 4.6.1." });
     }
     if (!data.F46_PROGESTAO?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["F46_PROGESTAO"],
-        message: "Informe o nível Pró-Gestão em 4.6.1 (b)."
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["F46_PROGESTAO"], message: "Informe o nível Pró-Gestão em 4.6.1 (b)." });
     }
     if (!data.F46_PORTE?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["F46_PORTE"],
-        message: "Informe o Porte ISP-RPPS em 4.6.1 (c)."
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["F46_PORTE"], message: "Informe o Porte ISP-RPPS em 4.6.1 (c)." });
     }
   }
 });
