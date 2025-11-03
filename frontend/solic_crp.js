@@ -37,6 +37,68 @@
     return false;
   }
 
+  // === Serializador universal do form (suporta arrays, radios, checkboxes, selects múltiplos) ===
+  function serializeFormToPayload(formEl) {
+    const payload = {};
+    const push = (k, v) => {
+      if (v == null || v === '') return;
+      if (!Array.isArray(payload[k])) payload[k] = [];
+      payload[k].push(v);
+    };
+    const readVal = (el) => {
+      const tag = el.tagName.toLowerCase();
+      const type = (el.type || '').toLowerCase();
+      if (tag === 'select' && el.multiple) {
+        return Array.from(el.selectedOptions).map(o => o.value).filter(Boolean);
+      }
+      if (type === 'checkbox') return el.checked ? (el.value || 'SIM') : null;
+      if (type === 'radio')    return el.checked ? (el.value || '') : null;
+      return (el.value || '').trim();
+    };
+
+    // 1) Campos com [name]
+    formEl.querySelectorAll('[name]').forEach(el => {
+      if (el.disabled) return;
+      const name = el.getAttribute('name');
+      const val  = readVal(el);
+      if (val == null || (Array.isArray(val) && !val.length)) return;
+
+      if (name.endsWith('[]')) {
+        const base = name.slice(0, -2);
+        if (Array.isArray(val)) val.forEach(v => push(base, v)); else push(base, val);
+      } else {
+        if (Array.isArray(val)) {
+          payload[name] = val;
+        } else {
+          if (payload[name] === undefined) payload[name] = val;
+          else {
+            if (!Array.isArray(payload[name])) payload[name] = [payload[name]];
+            payload[name].push(val);
+          }
+        }
+      }
+    });
+
+    // 2) Campos com [data-k] (quando forem inputs/seletores no preview)
+    formEl.querySelectorAll('[data-k]').forEach(el => {
+      const key = el.getAttribute('data-k');
+      if (payload[key] !== undefined) return;
+      let val = ['input','select','textarea'].includes(el.tagName.toLowerCase())
+        ? readVal(el)
+        : (el.textContent || '').trim();
+      if (val == null || val === '') return;
+      payload[key] = val;
+    });
+
+    // 3) Compat: para cada array, também exponha "KEY[]"
+    Object.keys(payload).forEach(k => {
+      if (Array.isArray(payload[k])) payload[`${k}[]`] = payload[k].slice();
+    });
+
+    return payload;
+  }
+
+
 
   const FORM_STORAGE_KEY = 'solic-crp-form-v1';
   const IDEM_STORE_KEY   = 'rpps-idem-submit:solic-crp';
@@ -1816,6 +1878,25 @@
       });
       document.dispatchEvent(new Event('TERMO_DATA'));
     } catch (e) { /* não crítico */ }
+
+    // === Mescla universal: se algo não foi preenchido manualmente acima, pega do form ===
+    try {
+      const form = document.querySelector('form#form_solic_crp') || document.querySelector('form');
+      if (form) {
+        const extra = serializeFormToPayload(form);
+        for (const [k, v] of Object.entries(extra)) {
+          const curr = obj[k];
+          const isEmpty =
+            curr == null ||
+            (typeof curr === 'string' && curr.trim() === '') ||
+            (Array.isArray(curr) && curr.length === 0);
+
+          if (isEmpty) obj[k] = v; // só preenche o que estiver faltando
+          if (Array.isArray(v)) obj[`${k}[]`] = v; // mantêm compat com chaves terminadas em []
+        }
+      }
+    } catch (e) { /* não crítico */ }
+
 
     return obj;
   }

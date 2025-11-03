@@ -2472,7 +2472,32 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
 
     // Fases
     fillList('f41-itens', flat['f41_lista'] || flat['f41_itens']); // com schema acima, agora vem
+    
     fillList('f42-itens', flat['f42_lista']);
+        // === Listas das fases 4.x – garante preenchimento 1:1 com o payload ===
+    // 4.1
+    fillList('f41-itens',       flat['f41_lista'] || flat['f41_itens']);
+    // 4.2
+    fillList('f42-itens',       flat['f42_lista']);
+    // 4.3
+    fillList('f43-itens',       flat['f43_lista']);
+    // 4.4
+    fillList('f44-criterios',   flat['f44_criterios'] || flat['criterios_irregulares']);
+    fillList('f44-decls',       flat['f44_decls']);
+    fillList('f44-finalidades', flat['f44_finalidades']);
+    // 4.5
+    fillList('f45-decls',       flat['f45_decls']);
+    // 4.6
+    fillList('f46-criterios',     flat['f46_criterios']);
+    fillList('f46-decls',         flat['f46_decls']);
+    fillList('f462f-criterios',   flat['f462f_criterios']); // item 4.6.2(f)
+    fillList('f46-finalidades',   flat['f46_finalidades']);
+
+    // Campos textuais/observações 4.6 (quando existirem)
+    setText('#f46-anexos',       Array.isArray(flat['f46_anexos']) ? flat['f46_anexos'].join(', ') : (flat['f46_anexos'] || ''));
+    setText('#f46-just-planos',  flat['f46_just_planos']);
+    setText('#f46-comp-cumpr',   flat['f46_comp_cumpr']);
+
     fillList('f43-itens', flat['f43_lista']);
     fillList('f44-criterios', flat['f44_criterios']);
     fillList('f44-decls', flat['f44_decls']);
@@ -2490,6 +2515,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
       el.innerHTML = '';
       for (const it of items) { const p = document.createElement('p'); p.textContent = it; el.appendChild(p); }
     };
+
     fillBlockCsv('f446-docs', flat['f446_docs']);
     fillBlockCsv('f446-exec', flat['f446_exec_res']);
     fillBlockCsv('f45-docs',  flat['f45_docs']);
