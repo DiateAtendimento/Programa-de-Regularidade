@@ -32,7 +32,7 @@
       </h1>
 
       <p class="term-meta">
-        Ente: <strong data-k="ente"></strong> / UF: <strong data-k="uf"></strong> • UG: <strong data-k="ug"></strong>
+        Ente: <strong data-k="ente" data-bind="ente"></strong> / UF: <strong data-k="uf" data-bind="uf"></strong> • UG: <strong data-k="ug" data-bind="ug"></strong>
       </p>
       <!-- 1. IDENTIFICAÇÃO -->
       <section class="term-section avoid-break" id="sec-1">
@@ -41,22 +41,22 @@
         <h3><span class="label">1.1 Esfera de Governo</span></h3>
         <div class="linha">
           <div class="titulo"></div>
-          <div class="valor" data-esfera></div>
+          <div class="valor" data-esfera data-bind="ESFERA"></div>
         </div>
 
         <h3><strong>1.2 Ente Federativo</strong></h3>
         <div class="grid grid-num">
-          <div class="field"><span class="label"><strong>1.2.1 Ente</strong></span><span class="value" data-k="ente"></span></div>
-          <div class="field"><span class="label"><strong>1.2.2 CNPJ</strong></span><span class="value" data-k="cnpj_ente"></span></div>
-          <div class="field"><span class="label"><strong>1.2.3 E-mail oficial</strong></span><span class="value" data-k="email_ente"></span></div>
+          <div class="field"><span class="label"><strong>1.2.1 Ente</strong></span><span class="value" data-k="ente" data-bind="ente"></span></div>
+          <div class="field"><span class="label"><strong>1.2.2 CNPJ</strong></span><span class="value" data-k="cnpj_ente" data-bind="cnpj_ente"></span></div>
+          <div class="field"><span class="label"><strong>1.2.3 E-mail oficial</strong></span><span class="value" data-k="email_ente" data-bind="email_ente"></span></div>
         </div>
 
         <h3 id="sec-1-3"><strong>1.3 Regime Próprio de Previdência Social (RPPS)</strong></h3>
         <div class="grid grid-num">
-          <div class="field"><span class="label"><strong>1.3.1 Unidade Gestora</strong></span><span class="value" data-k="ug"></span></div>
-          <div class="field"><span class="label"><strong>1.3.2 CNPJ</strong></span><span class="value" data-k="cnpj_ug"></span></div>
-          <div class="field"><span class="label"><strong>1.3.3 E-mail oficial</strong></span><span class="value" data-k="email_ug"></span></div>
-          <div class="field"><span class="label"><strong>1.3.4 Órgão de vinculação da UG</strong></span><span class="value" data-k="ORGAO_VINCULACAO_UG"></span></div>
+          <div class="field"><span class="label"><strong>1.3.1 Unidade Gestora</strong></span><span class="value" data-k="ug" data-bind="ug"></span></div>
+          <div class="field"><span class="label"><strong>1.3.2 CNPJ</strong></span><span class="value" data-k="cnpj_ug" data-bind="cnpj_ug"></span></div>
+          <div class="field"><span class="label"><strong>1.3.3 E-mail oficial</strong></span><span class="value" data-k="email_ug" data-bind="email_ug"></span></div>
+          <div class="field"><span class="label"><strong>1.3.4 Órgão de vinculação da UG</strong></span><span class="value" data-k="ORGAO_VINCULACAO_UG" data-bind="ORGAO_VINCULACAO_UG"></span></div>
         </div>
       </section>
 
@@ -66,20 +66,20 @@
 
         <h3><strong>2.1 Representante legal do ente federativo</strong></h3>
         <div class="grid grid-num">
-          <div class="field"><span class="label"><strong>2.1.1 Nome</strong></span><span class="value" data-k="nome_rep_ente"></span></div>
-          <div class="field"><span class="label"><strong>2.1.2 Cargo/Função</strong></span><span class="value" data-k="cargo_rep_ente"></span></div>
-          <div class="field"><span class="label"><strong>2.1.3 CPF</strong></span><span class="value" data-k="cpf_rep_ente"></span></div>
-          <div class="field"><span class="label"><strong>2.1.4 E-mail</strong></span><span class="value" data-k="email_rep_ente"></span></div>
-          <div class="field"><span class="label"><strong>2.1.5 Telefone</strong></span><span class="value" data-k="tel_rep_ente"></span></div>
+          <div class="field"><span class="label"><strong>2.1.1 Nome</strong></span><span class="value" data-k="nome_rep_ente" data-bind="nome_rep_ente"></span></div>
+          <div class="field"><span class="label"><strong>2.1.2 Cargo/Função</strong></span><span class="value" data-k="cargo_rep_ente" data-bind="cargo_rep_ente"></span></div>
+          <div class="field"><span class="label"><strong>2.1.3 CPF</strong></span><span class="value" data-k="cpf_rep_ente" data-bind="cpf_rep_ente"></span></div>
+          <div class="field"><span class="label"><strong>2.1.4 E-mail</strong></span><span class="value" data-k="email_rep_ente" data-bind="email_rep_ente"></span></div>
+          <div class="field"><span class="label"><strong>2.1.5 Telefone</strong></span><span class="value" data-k="tel_rep_ente" data-bind="tel_rep_ente"></span></div>
         </div>
 
         <h3>2.2 Representante legal do RPPS</h3>
         <div class="grid grid-num">
-          <div class="field"><span class="label"><strong>2.2.1 Nome</strong></span><span class="value" data-k="nome_rep_ug"></span></div>
-          <div class="field"><span class="label"><strong>2.2.2 Cargo/Função</strong></span><span class="value" data-k="cargo_rep_ug"></span></div>
-          <div class="field"><span class="label"><strong>2.2.3 CPF</strong></span><span class="value" data-k="cpf_rep_ug"></span></div>
-          <div class="field"><span class="label"><strong>2.2.4 E-mail</strong></span><span class="value" data-k="email_rep_ug"></span></div>
-          <div class="field"><span class="label"><strong>2.2.5 Telefone</strong></span><span class="value" data-k="tel_rep_ug"></span></div>
+          <div class="field"><span class="label"><strong>2.2.1 Nome</strong></span><span class="value" data-k="nome_rep_ug" data-bind="nome_rep_ug"></span></div>
+          <div class="field"><span class="label"><strong>2.2.2 Cargo/Função</strong></span><span class="value" data-k="cargo_rep_ug" data-bind="cargo_rep_ug"></span></div>
+          <div class="field"><span class="label"><strong>2.2.3 CPF</strong></span><span class="value" data-k="cpf_rep_ug" data-bind="cpf_rep_ug"></span></div>
+          <div class="field"><span class="label"><strong>2.2.4 E-mail</strong></span><span class="value" data-k="email_rep_ug" data-bind="email_rep_ug"></span></div>
+          <div class="field"><span class="label"><strong>2.2.5 Telefone</strong></span><span class="value" data-k="tel_rep_ug" data-bind="tel_rep_ug"></span></div>
         </div>
       </section>
       <!-- 3. SITUAÇÃO RELATIVA AO CRP -->
@@ -90,7 +90,10 @@
         <div class="linha">
           <div class="rotulo">3.1 Data de vencimento do último CRP</div>
           <div class="valor">
-            <span data-k="data_vencimento_ultimo_crp" data-fallback="DATA_VENC_ULTIMO_CRP" data-na="Não informado"></span>
+            <span data-k="data_vencimento_ultimo_crp"
+                  data-bind="DATA_VENC_ULTIMO_CRP"
+                  data-fallback="DATA_VENC_ULTIMO_CRP"
+                  data-na="Não informado"></span>
           </div>
         </div>
 
@@ -98,7 +101,10 @@
         <div class="linha">
           <div class="rotulo">3.2 Tipo de emissão do último CRP</div>
           <div class="valor">
-            <span data-k="tipo_emissao_ult_crp" data-fallback="TIPO_EMISSAO_ULTIMO_CRP" data-na="Não informado"></span>
+            <span data-k="tipo_emissao_ult_crp"
+                  data-bind="TIPO_EMISSAO_ULTIMO_CRP"
+                  data-fallback="TIPO_EMISSAO_ULTIMO_CRP"
+                  data-na="Não informado"></span>
           </div>
         </div>
 
@@ -106,7 +112,9 @@
         <p class="small">Selecione todos os itens apontados como irregulares no extrato.</p>
         <ul id="criterios-list"
             data-k-array="CRITERIOS_IRREGULARES"
-            data-empty="Sem irregularidades informadas.">
+            data-empty="Sem irregularidades informadas."
+            data-list="CRITERIOS_IRREGULARES[]">
+          <li data-item></li>
         </ul>
 
         <!-- 3.4 -->
@@ -120,7 +128,7 @@
             <div data-3_4="3.4.4">3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade</div>
 
             <!-- Fallback: se nenhum code bater, usa o texto resolvido -->
-            <div data-k="PRAZO_ADICIONAL_TEXTO" class="d-none"></div>
+            <div data-k="PRAZO_ADICIONAL_TEXTO" data-bind="PRAZO_ADICIONAL_TEXTO" class="d-none"></div>
           </div>
         </div>
 
@@ -130,48 +138,47 @@
         <h2>4. IDENTIFICAÇÃO DA FASE DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
         <p class="small">
           Fase selecionada:
-          <strong id="fase-escolhida" data-k="FASE_PROGRAMA"></strong>
+          <strong id="fase-escolhida" data-k="FASE_PROGRAMA" data-bind="FASE_PROGRAMA"></strong>
         </p>
 
         <!-- 4.1 -->
         <div class="avoid-break" id="fase-41" hidden>
           <h3>4.1 Fase Geral/Introdutória – 1º CRP Emergencial</h3>
-          <ul id="f41-itens"></ul>
+          <ul id="f41-itens" data-list="F41_ITENS[]"><li data-item></li></ul>
         </div>
 
         <!-- 4.2 -->
         <div class="avoid-break" id="fase-42" hidden>
           <h3>4.2 Fase Geral/Introdutória – 2º CRP Emergencial</h3>
           <p class="small">Condições declaradas:</p>
-          <ul id="f42-itens"></ul>
+          <ul id="f42-itens" data-list="F42_LISTA[]"><li data-item></li></ul>
         </div>
 
         <!-- 4.3 -->
         <div class="avoid-break" id="fase-43" hidden>
           <h3>4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</h3>
-          <ul id="f43-itens"></ul>
+          <ul id="f43-itens" data-list="F43_LISTA[]"><li data-item></li></ul>
 
           <p class="small mt"><strong>4.3.10 Justificativas/Informações adicionais:</strong></p>
-          <p id="f43-just"></p>
+          <p id="f43-just" data-bind="F43_JUST"></p>
 
           <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
-          <p id="f43-plano"></p>
+          <p id="f43-plano" data-bind="F43_PLANO"></p>
         </div>
-
         <!-- 4.4 -->
         <div class="avoid-break" id="fase-44" hidden>
           <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
 
           <p class="small"><strong>4.4.1 Critério(s) do extrato objeto do(s) Plano(s) de Ação:</strong></p>
-          <ul id="f44-criterios"></ul>
+          <ul id="f44-criterios" data-list="F44_CRITERIOS[]"><li data-item></li></ul>
 
           <p class="small mt"><strong>4.4.2 Declarações:</strong></p>
-          <ul id="f44-decls"></ul>
+          <ul id="f44-decls" data-list="F44_DECLS[]"><li data-item></li></ul>
 
           <p class="small mt"><strong>4.4.3 Finalidade do(s) Plano(s) de Ação:</strong></p>
-          <ul id="f44-finalidades"></ul>
+          <ul id="f44-finalidades" data-list="F44_FINALIDADES[]"><li data-item></li></ul>
 
-          <p class="small mt"><strong>4.4.1(d) Legislação:</strong> <span id="f441-legislacao"></span></p>
+          <p class="small mt"><strong>4.4.1(d) Legislação:</strong> <span id="f441-legislacao" data-bind="F441_LEGISLACAO"></span></p>
 
           <p class="small mt"><strong>4.4.6 Documentos:</strong></p>
           <div id="f446-docs"></div>
@@ -186,7 +193,7 @@
         <!-- 4.5 -->
         <div class="avoid-break" id="fase-45" hidden>
           <h3>4.5 Fase Específica/Focalizada – 5º CRP Emergencial</h3>
-          <ul id="f45-decls"></ul>
+          <ul id="f45-decls" data-list="F45_DECLS[]"><li data-item></li></ul>
 
           <p class="small mt"><strong>4.5.2/4.5.3 Documentos:</strong></p>
           <div id="f45-docs"></div>
@@ -200,13 +207,13 @@
           <h3>4.6 Fase de Manutenção da Conformidade</h3>
 
           <p class="small"><strong>4.6.1 Critério(s) objeto do(s) Plano(s) de Ação:</strong></p>
-          <ul id="f46-criterios"></ul>
+          <ul id="f46-criterios" data-list="F46_CRITERIOS[]"><li data-item></li></ul>
 
           <p class="small mt"><strong>4.6.2 Declarações e informações:</strong></p>
-          <ul id="f46-decls"></ul>
+          <ul id="f46-decls" data-list="F46_DECLS[]"><li data-item></li></ul>
 
           <p class="small mt"><strong>4.6.2(f) Critérios:</strong></p>
-          <ul id="f462f-criterios"></ul>
+          <ul id="f462f-criterios" data-list="F462F_CRITERIOS[]"><li data-item></li></ul>
 
           <p class="small mt"><strong>Documentos adicionais (4.6):</strong></p>
           <div id="f466-docs"></div>
@@ -215,22 +222,22 @@
           <div id="f466-exec"></div>
 
           <p class="small mt"><strong>4.6.3 Finalidade do(s) Plano(s) de Ação:</strong></p>
-          <ul id="f46-finalidades"></ul>
+          <ul id="f46-finalidades" data-list="F46_FINALIDADES[]"><li data-item></li></ul>
 
           <p class="small mt"><strong>4.6.4 Anexos:</strong></p>
           <div id="f46-anexos"></div>
 
           <p class="small mt"><strong>4.6.5 Justificativas quanto ao(s) Plano(s) de Ação:</strong></p>
-          <div id="f46-just-planos"></div>
+          <div id="f46-just-planos" data-bind="F46_JUST_PLANOS"></div>
 
           <p class="small mt"><strong>4.6.6 Comprovação de cumprimento:</strong></p>
-          <div id="f46-comp-cumpr"></div>
+          <div id="f46-comp-cumpr" data-bind="F46_COMP_CUMPR"></div>
         </div>
       </section>
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section avoid-break">
         <h2>5. JUSTIFICATIVAS / INFORMAÇÕES ADICIONAIS</h2>
-        <p data-k="justificativas_gerais"></p>
+        <p data-k="justificativas_gerais" data-bind="JUSTIFICATIVAS_GERAIS"></p>
       </section>
 
       <!-- Força página nova antes das assinaturas -->
@@ -238,21 +245,24 @@
 
       <!-- Assinaturas -->
       <footer class="term-footer">
-        <p class="place-date"><span data-k="ente"></span>/<span data-k="uf"></span>, <span data-k="data_termo"></span>.</p>
+        <p class="place-date">
+          <span data-k="ente" data-bind="ente"></span>/<span data-k="uf" data-bind="uf"></span>,
+          <span data-k="data_termo" data-bind="data_termo"></span>.
+        </p>
 
         <div class="signature-block">
           <div class="signature-line" aria-hidden="true"></div>
           <p class="signature-caption">
-            <strong><span data-k="nome_rep_ente"></span></strong><br>
-            <span id="sig-cap-ente">Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span></span>
+            <strong><span data-k="nome_rep_ente" data-bind="nome_rep_ente"></span></strong><br>
+            <span id="sig-cap-ente">Representante legal do Município de <span data-k="ente" data-bind="ente"></span>/<span data-k="uf" data-bind="uf"></span></span>
           </p>
         </div>
 
         <div class="signature-block">
           <div class="signature-line" aria-hidden="true"></div>
           <p class="signature-caption">
-            <strong><span data-k="nome_rep_ug"></span></strong><br>
-            Representante legal do <span data-k="ug"></span>
+            <strong><span data-k="nome_rep_ug" data-bind="nome_rep_ug"></span></strong><br>
+            Representante legal do <span data-k="ug" data-bind="ug"></span>
           </p>
         </div>
       </footer>
@@ -487,7 +497,6 @@
 
         return p;
       }
-
       function hojeBR_robusto(){
         try{
           const s = new Date().toLocaleDateString('pt-BR');
@@ -956,6 +965,19 @@
         document.addEventListener('DOMContentLoaded', boot);
       } else {
         boot();
+      }
+    })();
+  </script>
+
+  <!-- OPCIONAL: Binder (só roda se o arquivo existir) -->
+  <script src="./binder.js"></script>
+  <script>
+    (function(){
+      if (window.Binder) {
+        try {
+          window.BINDER_DEBUG = false; // mude para true para diagnosticar campos vazios
+          Binder.bindAll(document, window.__TERMO_DATA__ || {}, { strict: true });
+        } catch(e) { try { console.warn('Binder não aplicado:', e); } catch(_){} }
       }
     })();
   </script>
