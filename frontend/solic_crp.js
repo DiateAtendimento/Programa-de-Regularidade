@@ -565,22 +565,31 @@
     data.values['F45_JUST']  = $('#F45_JUST')?.value || '';
     data.values['F453_EXEC_RES'] = $('#F453_EXEC_RES')?.value || '';
 
-    // 4.6
-    data.values['F46_CRITERIOS[]']   = $$(`#F46_CRITERIOS input[type="checkbox"]:checked`).map(i=>i.value);
-    data.values['F46_PROGESTAO']     = $('#F46_PROGESTAO')?.value || '';
-    data.values['F46_PORTE']         = $('#F46_PORTE')?.value || '';
-    data.values['F46_JUST_D']        = $('#F46_JUST_D')?.value || '';
-    data.values['F46_DOCS_D']        = $('#F46_DOCS_D')?.value || '';
-    data.values['F46_JUST_E']        = $('#F46_JUST_E')?.value || '';
-    data.values['F46_DOCS_E']        = $('#F46_DOCS_E')?.value || '';
-    data.values['F46_FINALIDADES[]'] = $$(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i=>i.value);
-    data.values['F46_ANEXOS']        = $('#F46_ANEXOS')?.value || '';
-    data.values['F46_JUST_PLANOS']   = $('#F46_JUST_PLANOS')?.value || '';
-    data.values['F46_COMP_CUMPR']    = $('#F46_COMP_CUMPR')?.value || '';
-    data.values['F462F_OPTF']       = !!$('#F462F_OPTF')?.checked;
-    data.values['F462F_CRITERIOS[]']= $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
-    data.values['F466_DOCS']        = $('#F466_DOCS')?.value || '';
-    data.values['F466_EXEC_RES']    = $('#F466_EXEC_RES')?.value || '';
+  // 4.6 — usar o contêiner F46_CRITERIOS se existir; senão, cair para F462F_CRITERIOS (que é o que o HTML tem)
+  const _critF46 = $$('#F46_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
+  const _critAlt = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
+  data.values['F46_CRITERIOS[]']   = _critF46.length ? _critF46 : _critAlt;
+
+  data.values['F46_PROGESTAO']     = $('#F46_PROGESTAO')?.value || '';
+  data.values['F46_PORTE']         = $('#F46_PORTE')?.value || '';
+  data.values['F46_JUST_D']        = $('#F46_JUST_D')?.value || '';
+  data.values['F46_DOCS_D']        = $('#F46_DOCS_D')?.value || '';
+  data.values['F46_JUST_E']        = $('#F46_JUST_E')?.value || '';
+  data.values['F46_DOCS_E']        = $('#F46_DOCS_E')?.value || '';
+
+  // finalidades já existem com esse ID
+  data.values['F46_FINALIDADES[]'] = $$(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i=>i.value);
+
+  // ANEXOS / JUSTIFICATIVAS / COMPROVAÇÃO — cair para os campos que o HTML realmente usa (F466_DOCS/F466_EXEC_RES, F46_JUST_D/E)
+  data.values['F46_ANEXOS']        = $('#F46_ANEXOS')?.value || $('#F466_DOCS')?.value || '';
+  data.values['F46_JUST_PLANOS']   = $('#F46_JUST_PLANOS')?.value || $('#F46_JUST_D')?.value || $('#F46_JUST_E')?.value || '';
+  data.values['F46_COMP_CUMPR']    = $('#F46_COMP_CUMPR')?.value || $('#F466_EXEC_RES')?.value || '';
+
+  data.values['F462F_OPTF']        = !!$('#F462F_OPTF')?.checked;
+  data.values['F462F_CRITERIOS[]'] = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
+  data.values['F466_DOCS']         = $('#F466_DOCS')?.value || '';
+  data.values['F466_EXEC_RES']     = $('#F466_EXEC_RES')?.value || '';
+
 
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
   }
@@ -1374,13 +1383,14 @@
         return { ok:false, motivo:'Na fase 4.5, marque 4.5.1 ou preencha documentos/justificativas/execução.' };
       }
     }
+    
     if (f==='4.6'){
-      const crits = $$('input[type="checkbox"]:checked', el.f46Crits);
-      const nivel = $('#F46_PROGESTAO')?.value || '';
-      const porte = $('#F46_PORTE')?.value || '';
-      if(!crits.length) return { ok:false, motivo:'Na fase 4.6, selecione ao menos um critério em 4.6.1.' };
+      const temCrit = (Array.isArray(p['F46_CRITERIOS']) && p['F46_CRITERIOS'].length)
+                    || (Array.isArray(p['F462F_CRITERIOS']) && p['F462F_CRITERIOS'].length);
+      if(!temCrit) return { ok:false, motivo:'Na fase 4.6, selecione ao menos um critério em 4.6.1.' };
       if(!nivel || !porte) return { ok:false, motivo:'Informe nível Pró-Gestão e Porte ISP-RPPS em 4.6.1 (b/c).' };
     }
+
     return { ok:true };
   }
 
