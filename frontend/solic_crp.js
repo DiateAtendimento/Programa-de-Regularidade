@@ -1348,10 +1348,12 @@
       const opt = $('input[name="F41_OPCAO"]:checked', el.blk41);
       if(!opt) return { ok:false, motivo:'Na fase 4.1, selecione 4.1.1 ou 4.1.2.' };
     }
+
     if (f==='4.2'){
       const marc = $$('input[type="checkbox"]:checked', el.f42Lista);
       if(!marc.length) return { ok:false, motivo:'Na fase 4.2, marque ao menos um item (a–i).' };
     }
+
     if (f==='4.3'){
       const marc       = $$('input[type="checkbox"]:checked', el.f43Lista);
       const plano      = ($('#F43_PLANO')?.value||'').trim();
@@ -1365,6 +1367,7 @@
         return { ok:false, motivo:'Na fase 4.3, marque ao menos um critério ou descreva/justifique no(s) campo(s) disponível(is).' };
       }
     }
+
     if (f==='4.4'){
       const optE = document.getElementById('F442_OPTE');
       if (optE?.checked) {
@@ -1374,6 +1377,7 @@
         }
       }
     }
+
     if (f==='4.5'){
       const ok451 = $('#blk_45 input[type="checkbox"]:checked');
       const docs = ($('#F45_DOCS')?.value||'').trim();
@@ -1383,16 +1387,23 @@
         return { ok:false, motivo:'Na fase 4.5, marque 4.5.1 ou preencha documentos/justificativas/execução.' };
       }
     }
-    
+
     if (f==='4.6'){
-      const temCrit = (Array.isArray(p['F46_CRITERIOS']) && p['F46_CRITERIOS'].length)
-                    || (Array.isArray(p['F462F_CRITERIOS']) && p['F462F_CRITERIOS'].length);
+      // NÃO use "p" aqui — leia do DOM
+      const critF46   = $$('#F46_CRITERIOS input[type="checkbox"]:checked').length;
+      const critF46_2 = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').length;
+      const temCrit   = (critF46 + critF46_2) > 0;
+
+      const nivel = ($('#F46_PROGESTAO')?.value || '').trim();
+      const porte = ($('#F46_PORTE')?.value     || '').trim();
+
       if(!temCrit) return { ok:false, motivo:'Na fase 4.6, selecione ao menos um critério em 4.6.1.' };
       if(!nivel || !porte) return { ok:false, motivo:'Informe nível Pró-Gestão e Porte ISP-RPPS em 4.6.1 (b/c).' };
     }
 
     return { ok:true };
   }
+
 
   // PATCH (A2) — reflete seleções da Fase 4 no __TERMO_DATA__
   function popularListasFaseComBaseNosCritérios(){
