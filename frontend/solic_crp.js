@@ -1068,30 +1068,76 @@
 
       // ===== NOVO BLOCO (sincronizar CRP com __TERMO_DATA__ para o template) =====
       try {
+        // helpers locais
+        const toBR = (v) => {
+          if (!v) return '';
+          const s = String(v).trim();
+          const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); // YYYY-MM-DD
+          return m ? `${m[3]}/${m[2]}/${m[1]}` : s;
+        };
+        const normTipo = (t) => {
+          const s = String(t || '').trim().toLowerCase();
+          if (!s) return '';
+          if (s.startsWith('adm')) return 'Administrativa';
+          if (s.startsWith('jud')) return 'Judicial';
+          if (s === 's' || s === 'sim' || s === 'true' || s === '1') return 'Judicial';
+          if (s === 'n' || s === 'nao' || s === 'não' || s === 'false' || s === '0') return 'Administrativa';
+          return t;
+        };
+        const setIfVal = (obj, k, v) => { if (v !== '' && v != null) obj[k] = v; };
+
+        // base de dados da página
         window.__TERMO_DATA__ = window.__TERMO_DATA__ || {};
 
-        const dataVencFormat = (el.dataUltCrp && String(el.dataUltCrp.value || '').trim()) || '';
-        const tipoFormat = (
-          (el.selectTipoUltCrp && String(el.selectTipoUltCrp.value || '').trim()) ||
-          (el.tipoAdm && el.tipoAdm.checked ? 'Administrativa' : (el.tipoJud && el.tipoJud.checked ? 'Judicial' : ''))
-        );
+        // 1) Captura dos campos na tela (já em ISO no input type="date")
+        const dataVencISO =
+          (el?.dataUltCrp && String(el.dataUltCrp.value || '').trim()) || '';
+        const dataVencBR  = toBR(dataVencISO);
 
-        // aliases usados pelo template / buildPayload
-        window.__TERMO_DATA__.DATA_VENC_ULTIMO_CRP = dataVencFormat;
-        window.__TERMO_DATA__.DATA_VENCIMENTO_ULTIMO_CRP = dataVencFormat;
-        window.__TERMO_DATA__.DATA_VENC_ULTIMO_CRP = dataVencFormat;
-        window.__TERMO_DATA__.venc_ult_crp = dataVencFormat;
-        window.__TERMO_DATA__.ULTIMO_CRP_DATA = dataVencFormat;
+        let tipoFormat =
+          (el?.selectTipoUltCrp && String(el.selectTipoUltCrp.value || '').trim()) ||
+          (el?.tipoAdm && el.tipoAdm.checked ? 'Administrativa'
+            : (el?.tipoJud && el.tipoJud.checked ? 'Judicial' : ''));
 
-        window.__TERMO_DATA__.TIPO_EMISSAO_ULTIMO_CRP = tipoFormat;
-        window.__TERMO_DATA__.tipo_emissao_ult_crp = tipoFormat;
-        window.__TERMO_DATA__.ULTIMO_CRP_TIPO = tipoFormat;
+        tipoFormat = normTipo(tipoFormat);
 
-        // dispara o evento para que o template re-execute run() e aplique os fallbacks/data-k
+        // 2) Data do termo (carimbo do formulário ou hoje)
+        const todayBR = (() => {
+          try { return new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }); }
+          catch { return ''; }
+        })();
+
+        const dataTermo =
+          (document.getElementById('DATA_SOLIC_GERADA')?.value || '').trim() ||
+          (el?.dataSol && String(el.dataSol.value || '').trim()) ||
+          todayBR;
+
+        // 3) Gravação segura dos aliases (só se houver valor)
+        const TD = window.__TERMO_DATA__;
+        // Datas do último CRP (preferência BR para o template)
+        setIfVal(TD, 'DATA_VENC_ULTIMO_CRP',          dataVencBR);
+        setIfVal(TD, 'DATA_VENCIMENTO_ULTIMO_CRP',    dataVencBR);
+        setIfVal(TD, 'venc_ult_crp',                  dataVencBR);
+        setIfVal(TD, 'ULTIMO_CRP_DATA',               dataVencBR);
+
+        // (opcional) manter uma cópia ISO se algum template/JS quiser
+        setIfVal(TD, 'DATA_VENC_ULTIMO_CRP_ISO',      dataVencISO);
+
+        // Tipo do último CRP
+        setIfVal(TD, 'TIPO_EMISSAO_ULTIMO_CRP',       tipoFormat);
+        setIfVal(TD, 'tipo_emissao_ult_crp',          tipoFormat);
+        setIfVal(TD, 'ULTIMO_CRP_TIPO',               tipoFormat);
+
+        // Data do termo (usada em alguns templates com data-k="data_termo")
+        setIfVal(TD, 'data_termo',                    dataTermo);
+
+        // 4) Notifica o template para re-render (data-k / fallbacks)
         document.dispatchEvent(new Event('TERMO_DATA'));
+
       } catch (e) {
         console.warn('Falha ao espelhar __TERMO_DATA__ após hidratarTermosRegistrados:', e);
       }
+
 
       // Regra “não ⇒ Administrativa / sim ⇒ Judicial”
       let tipo = '';
