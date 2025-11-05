@@ -2398,12 +2398,27 @@
   /* ========= Boot ========= */
   function init(){
     bindMasks();
-    bindSyncUg132(); 
+
+    // 1) Espelhamento 1.3 → 1.3.2
+    bindSyncUg132();
+
+    // 2) Stepper fallback (chamar uma única vez, logo após o bind)
+    ensureStepperFallback();
+
+    // (seus listeners e binds podem vir depois)
     el.btnPesquisar?.addEventListener('click', onPesquisar, false);
+
+    // 3) Toggles da Fase 4 (depois do fallback)
     setupFase4Toggles();
+
+    // 4) Botão "Voltar" nos modais da Fase 4 (uma única chamada)
+    ['modalF41','modalF42','modalF43','modalF44','modalF45','modalF46'].forEach(ensureBackButton);
+
     bindCondicionais();
+
     const faseSel = document.querySelector('input[name="FASE_PROGRAMA"]:checked');
     if (faseSel) faseSel.dispatchEvent(new Event('change'));
+
     popularListasFaseComBaseNosCritérios();
     initWelcome();
 
@@ -2418,18 +2433,14 @@
     form?.addEventListener('input', ()=> setTimeout(saveState, 300));
     form?.addEventListener('change', ()=> setTimeout(saveState, 300));
 
-    if(el.btnNext) el.btnNext.disabled = true;
+    if (el.btnNext) el.btnNext.disabled = true;
 
-    ensureStepperFallback();
     window.addEventListener('beforeunload', saveState);
 
-    // >>> novo: liga os bridges da etapa 1 (registro do termo + espelhamento 1.3→1.3.2)
+    // Bridges da etapa 1 (registro do termo + espelhamento 1.3→1.3.2)
     initEtapa1Bridges();
-    // <<<
-    // cria o botão "Voltar" nos modais da Fase 4
-    ['modalF41','modalF42','modalF43','modalF44','modalF45','modalF46'].forEach(ensureBackButton);
-
   }
+
 
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); }
   else{ init(); }
