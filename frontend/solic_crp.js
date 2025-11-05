@@ -2095,6 +2095,24 @@
       // Adiciona todos os extras no objeto final do payload (mantém nomes originais fase4_*)
       const FASE4_EXTRAS = { ...F41_EXTRA, ...F42_EXTRA, ...F43_EXTRA, ...F44_EXTRA, ...F45_EXTRA, ...F46_EXTRA };
 
+      // Fase 4.5 – alguns templates esperam texto em 4.5.1
+      const F451_TEXTO =
+        (p.F45_OK451 === true || p.F45_OK451 === 'true')
+            ? 'Foi mantida a regularidade quanto aos critérios exigidos nas fases anteriores.'
+            : 'Não informado';
+
+      // 4.6 – prioriza F46_* e faz fallback para F44_* (compat)
+      const F46_CRITERIOS   = Array.isArray(p.F46_CRITERIOS)   ? p.F46_CRITERIOS
+                             : Array.isArray(p.F44_CRITERIOS)  ? p.F44_CRITERIOS : [];
+      const F46_DECLS       = Array.isArray(p.F46_DECLS)       ? p.F46_DECLS
+                             : Array.isArray(p.F44_DECLS)      ? p.F44_DECLS : [];
+      const F46_FINALIDADES = Array.isArray(p.F46_FINALIDADES) ? p.F46_FINALIDADES
+                             : Array.isArray(p.F44_FINALIDADES)? p.F44_FINALIDADES : [];
+
+      // Representações em string (fallback se o template usar campo texto)
+      const F46_CRITERIOS_TXT   = F46_CRITERIOS.length ? F46_CRITERIOS.join('\n') : 'Não informado';
+      const F46_DECLS_TXT       = F46_DECLS.length ? F46_DECLS.join('\n') : 'Não informado';
+      const F46_FINALIDADES_TXT = F46_FINALIDADES.length ? F46_FINALIDADES.join('\n') : 'Não informado';
 
     return {
       CELEBRACAO_TERMO_PARCELA_DEBITOS,     // usado em alguns templates
@@ -2111,7 +2129,25 @@
       CONDICAO_VIGENCIA,
 
       DATA_TERMO_GERADO,
-      ESFERA: p.ESFERA || ''
+      ESFERA: p.ESFERA || '',
+      // --- NOVOS aliases p/ bater com o template do PDF ---
+      // 4.5
+      F451_TEXTO,             // (4.5.1) texto derivado do boolean
+      F45_DOCS: p.F45_DOCS || 'Não informado',         // (4.5.2/3)
+      F45_JUST: p.F45_JUST || 'Não informado',         // (4.5.4)
+
+      // 4.6 – arrays e versões em texto
+      F46_CRITERIOS,          // esperado pelo PDF em 4.6.1 quando lista
+      F46_DECLS,              // esperado pelo PDF em 4.6.2 quando lista
+      F46_FINALIDADES,        // 4.6.3 (já vinha ok, mantemos)
+      F46_CRITERIOS_TXT,      // fallback caso o template use campo texto
+      F46_DECLS_TXT,
+      F46_FINALIDADES_TXT,
+
+      // espelhar também campos “[]” se o seu gerador de PDF lê nomes com colchetes
+      'F46_CRITERIOS[]':   F46_CRITERIOS,
+      'F46_DECLS[]':       F46_DECLS,
+      'F46_FINALIDADES[]': F46_FINALIDADES
     };
   }
 
