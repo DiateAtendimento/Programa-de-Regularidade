@@ -116,8 +116,119 @@ export const schemaSolicCrp = z.object({
 
   // Prazo adicional (3.4) — os campos entram no payload final via buildPayload
   PRAZO_ADICIONAL_COD: zStr,
-  PRAZO_ADICIONAL_TEXTO: zStr
+  PRAZO_ADICIONAL_TEXTO: zStr,
+
+  // === [PATCH] Compat: aceitar todos os campos detalhados do Item 4 (nomes "fase4_*") ===
+  // 4.1
+  fase4_1_criterios:            z.array(z.string()).optional().default([]),
+  fase4_1_criterios_outros:     zStr,
+  fase4_1_declaracao_base:      zStr, // "Sim"/"Não"
+  fase4_1_decl_a_data:          zStr,
+  fase4_1_decl_b_conf:          z.array(z.string()).optional().default([]),
+  fase4_1_decl_f:               z.array(z.string()).optional().default([]),
+  fase4_1_finalidade:           z.array(z.string()).optional().default([]),
+  fase4_1_finalidade_protocolos:z.array(z.string()).optional().default([]),
+  fase4_1_anexos:               z.array(z.string()).optional().default([]),
+  fase4_1_anexos_desc:          z.array(z.string()).optional().default([]),
+  fase4_1_just:                 zStr,
+  fase4_1_comp_tipo:            zStr,
+  fase4_1_comp_protocolo:       zStr,
+  fase4_1_comp_data:            zStr,
+
+  // 4.2
+  fase4_2_criterios:            z.array(z.string()).optional().default([]),
+  fase4_2_decl:                 zStr,
+  fase4_2_decl_a_lei:           zStr,
+  fase4_2_decl_b_prazo:         zStr,
+  fase4_2_decl_f:               z.array(z.string()).optional().default([]),
+  fase4_2_finalidade:           zStr, // select
+  fase4_2_prazo_req:            zStr,
+  fase4_2_prazo_fund:           zStr,
+  fase4_2_anexos:               z.array(z.string()).optional().default([]),
+  fase4_2_anexos_desc:          z.array(z.string()).optional().default([]),
+  fase4_2_just:                 zStr,
+  fase4_2_comp_tipo:            zStr,
+  fase4_2_comp_num:             zStr,
+  fase4_2_comp_data:            zStr,
+
+  // 4.3
+  fase4_3_escopo:               z.array(z.string()).optional().default([]),
+  fase4_3_eq_massa_alvo:        z.array(z.string()).optional().default([]),
+  fase4_3_eq_crono:             zStr,
+  fase4_3_eq_indicadores:       z.array(z.string()).optional().default([]),
+  fase4_3_eq_indicadores_outros:zStr,
+  fase4_3_decl:                 zStr,
+  fase4_3_decl_a_param:         zStr,
+  fase4_3_decl_f:               z.array(z.string()).optional().default([]),
+  fase4_3_finalidade:           z.array(z.string()).optional().default([]),
+  fase4_3_alt_detalhe:          zStr,
+  fase4_3_anexos:               z.array(z.string()).optional().default([]),
+  fase4_3_anexos_desc:          z.array(z.string()).optional().default([]),
+  fase4_3_just:                 zStr,
+  fase4_3_comp_tipo:            zStr,
+  fase4_3_comp_num:             zStr,
+  fase4_3_comp_data:            zStr,
+
+  // 4.4
+  fase4_4_debitos_massa:        z.array(z.string()).optional().default([]),
+  fase4_4_debitos_outros:       zStr,
+  fase4_4_vinc_fpm:             zStr,
+  fase4_4_vinc_lei:             zStr,
+  fase4_4_vinc_proc:            zStr,
+  fase4_4_comp_tipo:            zStr,
+  fase4_4_comp_dipr_num:        zStr,
+  fase4_4_comp_dipr_data:       zStr,
+  fase4_4_anexos:               z.array(z.string()).optional().default([]),
+  fase4_4_anexos_desc:          z.array(z.string()).optional().default([]),
+  fase4_4_just:                 zStr,
+  fase4_4_comp_final_tipo:      zStr,
+  fase4_4_comp_final_num:       zStr,
+  fase4_4_comp_final_data:      zStr,
+
+  // 4.5
+  fase4_5_criterios:            z.array(z.string()).optional().default([]),
+  fase4_5_decl:                 zStr,
+  fase4_5_decl_a_dtcrp_ult:     zStr,
+  fase4_5_decl_b_tipo:          zStr,
+  fase4_5_decl_f:               z.array(z.string()).optional().default([]),
+  fase4_5_finalidade:           z.array(z.string()).optional().default([]),
+  fase4_5_crp_info:             zStr,
+  fase4_5_anexos:               z.array(z.string()).optional().default([]),
+  fase4_5_anexos_desc:          z.array(z.string()).optional().default([]),
+  fase4_5_just:                 zStr,
+  fase4_5_comp_tipo:            zStr,
+  fase4_5_comp_num:             zStr,
+  fase4_5_comp_data:            zStr,
+
+  // 4.6
+  fase4_6_criterios_plano:      z.array(z.string()).optional().default([]),
+  fase4_6_pg_nivel:             zStr,
+  fase4_6_criterios_outros:     zStr,
+  fase4_6_declaracoes:          zStr,
+  fase4_6_decl_a_base:          zStr,
+  fase4_6_decl_b_conferencia:   z.array(z.string()).optional().default([]),
+  fase4_6_crit_f:               z.array(z.string()).optional().default([]),
+  fase4_6_finalidade:           z.array(z.string()).optional().default([]),
+  fase4_6_alt_crono:            zStr,
+  fase4_6_alt_kpi:              z.array(z.string()).optional().default([]),
+  fase4_6_prazo_data:           zStr,
+  fase4_6_prazo_fund:           zStr,
+  fase4_6_anexos:               z.array(z.string()).optional().default([]),
+  fase4_6_anexos_desc:          z.array(z.string()).optional().default([]),
+  fase4_6_anexos_tipo:          zStr,
+  fase4_6_anexos_ref:           zStr,
+  fase4_6_just:                 zStr,
+  fase4_6_comp:                 zStr,
+  fase4_6_comp_kpi:             z.array(z.string()).optional().default([]),
+  fase4_6_comp_kpi_arq:         z.array(z.string()).optional().default([]),
+  fase4_6_comp_num:             zStr,
+  fase4_6_comp_data:            zStr,
+
+
+
 })
+
+
 .superRefine((data, ctx) => {
   const fase = data.FASE_PROGRAMA;
 

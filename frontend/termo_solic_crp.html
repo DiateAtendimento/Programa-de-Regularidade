@@ -139,6 +139,10 @@
           <ul id="f41-itens"></ul>
         </div>
 
+        <p class="small mt"><strong>Campos adicionais desta fase:</strong></p>
+        <div id="fase-extra-campos"></div>
+
+
         <!-- 4.2 -->
         <div class="avoid-break" id="fase-42" hidden>
           <h3>4.2 Fase Geral/Introdutória – 2º CRP Emergencial</h3>
@@ -776,6 +780,35 @@
             break;
           }
         }
+
+        // [PATCH] Render genérico de todos os "fase4_*" da fase ativa
+        (function renderFaseExtras(){
+          const box = document.getElementById('fase-extra-campos');
+          if (!box) return;
+
+          const p = window.__TERMO_DATA__ || {};
+          const fase = String(p.__FASE_SEL__ || p.FASE_PROGRAMA || '').trim(); // "4.1"..."4.6"
+          if (!fase) { box.innerHTML = '<span class="muted">—</span>'; return; }
+
+          const prefix = {
+            '4.1':'fase4_1_', '4.2':'fase4_2_', '4.3':'fase4_3_',
+            '4.4':'fase4_4_', '4.5':'fase4_5_', '4.6':'fase4_6_'
+          }[fase] || '';
+
+          const entries = Object.entries(p)
+            .filter(([k,v]) => prefix && k.startsWith(prefix) && v != null && (String(v).trim?.() || (Array.isArray(v) && v.length)))
+            .map(([k,v])=>{
+              const label = k.replace(prefix,'').replaceAll('_',' ').toUpperCase();
+              const val = Array.isArray(v) ? v : String(v).trim();
+              const htmlVal = Array.isArray(val) && val.length
+                ? ('<ul>' + val.map(x => '<li>' + escapeHtml(String(x)) + '</li>').join('') + '</ul>')
+                : (val ? escapeHtml(val) : ( __NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—' ));
+              return `<div class="linha"><div class="titulo">${escapeHtml(label)}</div><div class="valor">${htmlVal}</div></div>`;
+            });
+
+          box.innerHTML = entries.length ? entries.join('') : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+        })();
+
 
         (function freezeAfterRender(){
           const prazos = document.querySelectorAll('[data-3_4]');
