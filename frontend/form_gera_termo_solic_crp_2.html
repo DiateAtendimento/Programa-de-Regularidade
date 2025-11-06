@@ -54,6 +54,7 @@
             <div class="row g-2 align-items-end" id="pesquisaRow">
               <div class="col-12 col-md-6 col-lg-5">
                 <label for="CNPJ_ENTE_PESQ" class="form-label">CNPJ do Ente</label>
+                <!-- Campo de pesquisa (não vai para o termo) -->
                 <input type="text" class="form-control" id="CNPJ_ENTE_PESQ" placeholder="00.000.000/0000-00" />
               </div>
 
@@ -133,7 +134,7 @@
 
               <div class="col-md-2">
                 <label class="form-label" for="UF">UF</label>
-                <select id="UF" class="form-select">
+                <select id="UF" name="UF" class="form-select">
                   <option value="">Selecione…</option>
                   <option>AC</option><option>AL</option><option>AM</option><option>AP</option>
                   <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
@@ -147,34 +148,34 @@
 
               <div class="col-md-4">
                 <label class="form-label" for="ENTE">Ente</label>
-                <input type="text" id="ENTE" class="form-control" />
+                <input type="text" id="ENTE" name="ENTE" class="form-control" />
               </div>
 
               <div class="col-md-3">
                 <label class="form-label" for="CNPJ_ENTE">CNPJ</label>
-                <input type="text" id="CNPJ_ENTE" class="form-control" placeholder="00.000.000/0000-00" />
+                <input type="text" id="CNPJ_ENTE" name="CNPJ_ENTE" class="form-control" placeholder="00.000.000/0000-00" />
               </div>
 
               <div class="col-md-3">
                 <label class="form-label" for="EMAIL_ENTE">E-mail</label>
-                <input type="email" id="EMAIL_ENTE" class="form-control" placeholder="ente@exemplo.gov.br" />
+                <input type="email" id="EMAIL_ENTE" name="EMAIL_ENTE" class="form-control" placeholder="ente@exemplo.gov.br" />
               </div>
 
               <div class="col-12 mt-2"><div class="sub-title">1.3 Regime Próprio de Previdência Social (RPPS)</div></div>
 
               <div class="col-md-6">
                 <label class="form-label" for="UG">Unidade Gestora</label>
-                <input type="text" id="UG" class="form-control" />
+                <input type="text" id="UG" name="UG" class="form-control" />
               </div>
 
               <div class="col-md-3">
                 <label class="form-label" for="CNPJ_UG">CNPJ</label>
-                <input type="text" id="CNPJ_UG" class="form-control" placeholder="00.000.000/0000-00" />
+                <input type="text" id="CNPJ_UG" name="CNPJ_UG" class="form-control" placeholder="00.000.000/0000-00" />
               </div>
 
               <div class="col-md-3">
                 <label class="form-label" for="EMAIL_UG">E-mail</label>
-                <input type="email" id="EMAIL_UG" class="form-control" placeholder="ug@exemplo.gov.br" />
+                <input type="email" id="EMAIL_UG" name="EMAIL_UG" class="form-control" placeholder="ug@exemplo.gov.br" />
               </div>
               
               <!-- 1.3 Regime -->
@@ -237,16 +238,12 @@
                   </div>
                 </div>
 
-                <!-- dica visual quando ficar opcional -->
                 <small id="ugHint" class="help-text small text-muted d-none">
                   Com “RPPS em Extinção” selecionado, os dados da UG não são obrigatórios.
                 </small>
               </div>
-
-              
             </div>
           </section>
-
           <!-- ETAPA 2 -->
           <section class="app-section" data-step="2">
             <div class="section-head">
@@ -262,7 +259,7 @@
                 <!-- CPF + Pesquisar -->
                 <div class="col-12 col-md-6">
                   <label class="form-label" for="CPF_REP_ENTE">CPF</label>
-                  <input type="text" id="CPF_REP_ENTE" class="form-control" placeholder="000.000.000-00" />
+                  <input type="text" id="CPF_REP_ENTE" name="CPF_REP_ENTE" class="form-control" placeholder="000.000.000-00" />
                 </div>
                 <div class="col-auto">
                   <label class="d-none d-md-block">&nbsp;</label>
@@ -274,19 +271,19 @@
                 <!-- Campos empilhados -->
                 <div class="col-12">
                   <label class="form-label" for="NOME_REP_ENTE">Nome</label>
-                  <input id="NOME_REP_ENTE" class="form-control" />
+                  <input id="NOME_REP_ENTE" name="NOME_REP_ENTE" class="form-control" />
                 </div>
                 <div class="col-12">
                   <label class="form-label" for="CARGO_REP_ENTE">Cargo/Função</label>
-                  <input id="CARGO_REP_ENTE" class="form-control" />
+                  <input id="CARGO_REP_ENTE" name="CARGO_REP_ENTE" class="form-control" />
                 </div>
                 <div class="col-12">
                   <label class="form-label" for="EMAIL_REP_ENTE">E-mail</label>
-                  <input type="email" id="EMAIL_REP_ENTE" class="form-control" />
+                  <input type="email" id="EMAIL_REP_ENTE" name="EMAIL_REP_ENTE" class="form-control" />
                 </div>
                 <div class="col-12">
                   <label class="form-label" for="TEL_REP_ENTE">Telefone</label>
-                  <input type="text" id="TEL_REP_ENTE" class="form-control" placeholder="(00) 00000-0000" />
+                  <input type="text" id="TEL_REP_ENTE" name="TEL_REP_ENTE" class="form-control" placeholder="(00) 00000-0000" />
                 </div>
               </div>
             </div>
@@ -297,7 +294,7 @@
                 <!-- CPF + Pesquisar -->
                 <div class="col-12 col-md-6">
                   <label class="form-label" for="CPF_REP_UG">CPF</label>
-                  <input type="text" id="CPF_REP_UG" class="form-control" placeholder="000.000.000-00" />
+                  <input type="text" id="CPF_REP_UG" name="CPF_REP_UG" class="form-control" placeholder="000.000.000-00" />
                 </div>
                 <div class="col-auto">
                   <label class="d-none d-md-block">&nbsp;</label>
@@ -309,25 +306,23 @@
                 <!-- Campos empilhados -->
                 <div class="col-12">
                   <label class="form-label" for="NOME_REP_UG">Nome</label>
-                  <input id="NOME_REP_UG" class="form-control" />
+                  <input id="NOME_REP_UG" name="NOME_REP_UG" class="form-control" />
                 </div>
                 <div class="col-12">
                   <label class="form-label" for="CARGO_REP_UG">Cargo/Função</label>
-                  <input id="CARGO_REP_UG" class="form-control" />
+                  <input id="CARGO_REP_UG" name="CARGO_REP_UG" class="form-control" />
                 </div>
                 <div class="col-12">
                   <label class="form-label" for="EMAIL_REP_UG">E-mail</label>
-                  <input type="email" id="EMAIL_REP_UG" class="form-control" />
+                  <input type="email" id="EMAIL_REP_UG" name="EMAIL_REP_UG" class="form-control" />
                 </div>
                 <div class="col-12">
                   <label class="form-label" for="TEL_REP_UG">Telefone</label>
-                  <input type="text" id="TEL_REP_UG" class="form-control" placeholder="(00) 00000-0000" />
+                  <input type="text" id="TEL_REP_UG" name="TEL_REP_UG" class="form-control" placeholder="(00) 00000-0000" />
                 </div>
               </div>
             </div>
           </section>
-
-          
           <!-- ETAPA 3 -->
           <section id="secCRP" class="app-section" data-step="3">
             <h2 class="section-title">3. Situação relativa ao CRP</h2>
@@ -501,8 +496,6 @@
             </div>
 
           </section>
-
-
           <!-- ETAPA 4: Fase do Programa (D: radios seleção única) -->
           <section id="secFases" class="app-section" data-step="4">
             <div class="section-head">
@@ -510,7 +503,6 @@
               <p class="small text-muted mb-0">Selecione a fase. Apenas uma pode ser escolhida.</p>
             </div>
 
-            <!-- D: trocados para radios (seleção única) -->
             <div class="form-check">
               <input class="form-check-input" type="radio" name="FASE_PROGRAMA" id="fase_41" value="4.1">
               <label class="form-check-label" for="fase_41">4.1 Fase Geral/Introdutória – 1º CRP Emergencial</label>
@@ -543,7 +535,7 @@
               <h2 class="section-title">5. Justificativas/Informações Adicionais</h2>
             <p class="small text-muted mb-0">Campo livre para comentários pertinentes à solicitação.</p>
             </div>
-            <textarea id="JUSTIFICATIVAS_GERAIS" class="form-control" rows="4" placeholder="Escreva aqui…"></textarea>
+            <textarea id="JUSTIFICATIVAS_GERAIS" name="JUSTIFICATIVAS_GERAIS" class="form-control" rows="4" placeholder="Escreva aqui…"></textarea>
           </section>
           <!-- ETAPA 6: Importante / Ações finais (Assinatura como no modelo de Adesão) -->
           <section class="app-section" data-step="6">
@@ -573,18 +565,17 @@
             <button type="submit" id="btnSubmit" class="btn btn-success d-none">Salvar e Finalizar</button>
           </div>
           <!-- carimbos -->
-          <input type="hidden" id="MES" />
-          <input type="hidden" id="DATA_SOLIC_GERADA" />
-          <input type="hidden" id="HORA_SOLIC_GERADA" />
-          <input type="hidden" id="ANO_SOLIC_GERADA" />
+          <input type="hidden" id="MES" name="MES" />
+          <input type="hidden" id="DATA_SOLIC_GERADA" name="DATA_SOLIC_GERADA" />
+          <input type="hidden" id="HORA_SOLIC_GERADA" name="HORA_SOLIC_GERADA" />
+          <input type="hidden" id="ANO_SOLIC_GERADA" name="ANO_SOLIC_GERADA" />
 
           <!-- campos ocultos específicos do gate TERMO_ENC_GESCON -->
-          <input type="hidden" id="HAS_TERMO_ENC_GESCON" value="0" />
+          <input type="hidden" id="HAS_TERMO_ENC_GESCON" name="HAS_TERMO_ENC_GESCON" value="0" />
         </form>
       </div>
     </div>
   </div>
-
   <!-- Modal AVISO INICIAL (igual ao padrão) -->
   <div class="modal fade" id="modalWelcome" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
@@ -680,7 +671,6 @@
       </div>
     </div>
   </div>
-  <!-- (restante dos modais 4.1 a 4.6 com C: SRPC/MPS dinâmico) -->
   <!-- MODAL 4.1 -->
   <div class="modal fade" id="modalF41" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
@@ -702,7 +692,7 @@
               <input class="form-check-input me-2" type="radio" name="F41_OPCAO"
                     value="4.1.1 Foram incluídos em termos de acordo de parcelamento ou reparcelamento cadastrados no Cadprev todos os débitos do ente com o RPPS, relativos às competências até a data da adesão ao Programa de Regularidade Previdenciária e entre as datas da adesão e a do envio do presente requerimento.">
               <span class="form-check-label">
-                4.1.1 Foram incluídos em termos de acordo de parcelamento ou reparcelamento cadastrados no Cadprev todos os débitos do ente com o RPPS, relativos às competências até a data da adesão ao Programa de Regularidade Previdenciária.
+                4.1.1 Foram incluídos em termos de acordo de parcelamento ou reparcelamento cadastrados no Cadprev todos os débitos do ente federativo junto ao RPPS (até a data da adesão).
               </span>
             </label>
 
@@ -710,7 +700,7 @@
               <input class="form-check-input me-2" type="radio" name="F41_OPCAO"
                     value="4.1.2 O ente federativo não possui débitos de contribuições ou de quaisquer outros valores devidos ao RPPS ou que já não tenham sido parcelados ou regularizados anteriormente.">
               <span class="form-check-label">
-                4.1.2 O ente federativo não possui débitos de contribuições ou de quaisquer outros valores devidos ao RPPS ou que já não tenham sido parcelados ou regularizados até a data da adesão ao programa.
+                4.1.2 O ente federativo não possui débitos de contribuições ou de quaisquer outros valores devidos ao RPPS ou que já não tenham sido parcelados/regularizados até a adesão.
               </span>
             </label>
 
@@ -723,7 +713,7 @@
                 • Os entes serão comunicados por meio do e-mail <strong>programa.regularidade.RPPS@previdência.gov.br</strong> sobre eventuais pendências identificadas na análise dos Termos de Solicitação de CRP Emergenciais.
               </p>
               <p class="mb-0">
-                • Os prazos e condições para os entes federativos que celebrarem acordos de parcelamento de débitos junto ao RPPS, com base nas regras estabelecidas pela Emenda Constitucional nº 136, de 9 de setembro de 2025, e parâmetros previstos nos arts. 4º ao 14 do Anexo XVII da Portaria MTP nº 1.467, de 02 de junho de 2022, devem ser observados conjuntamente com os previstos no Pró-Regularidade RPPS, sendo exigíveis os que primeiro incidirem.
+                • Os prazos e condições para os entes federativos que celebrarem acordos de parcelamento junto ao RPPS (EC 136/2025 e arts. 4º a 14 do Anexo XVII da Portaria MTP nº 1.467/2022) devem ser observados com os do Pró-Regularidade RPPS, exigindo-se o que primeiro incidir.
               </p>
             </div>
           </div>
@@ -748,10 +738,9 @@
               <em>(art. 5º, caput, inciso I, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. <span id="ART_SRPC_42">—</span> da Portaria SRPC/MPS nº <span id="PORTARIA_SRPC_42">—</span>)</em>
             </p>
             <p class="mb-2">Declaro ter cumprido as seguintes condições:</p>
-            <p class="mb-2"><strong>4.2.1</strong>Declaro ter cumprido as seguintes condições, relativas à regularidade nos seguintes critérios do extrato previdenciário:</p>
+            <p class="mb-2"><strong>4.2.1</strong> Regularidade nos seguintes critérios do extrato previdenciário:</p>
 
             <div class="d-flex flex-column gap-2" id="F42_LISTA">
-              <!-- (itens mantidos) -->
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F42_ITENS[]" value="Demonstrativo de Informações Previdenciárias e Repasses - DIPR – Encaminhamento">
                 <span class="form-check-label">a) “Demonstrativo de Informações Previdenciárias e Repasses - DIPR – Encaminhamento”.</span>
@@ -762,7 +751,7 @@
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F42_ITENS[]" value="Caráter contributivo - Repasse (objeto de Processo Administrativo Previdenciário)">
-                <span class="form-check-label">c) “Caráter contributivo - Repasse (objeto de Processo Administrativo Previdenciário)”.</span>
+                <span class="form-check-label">c) “Caráter contributivo - Repasse (objeto de PAP)”.</span>
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F42_ITENS[]" value="Utilização dos recursos previdenciários (objeto de PAP)">
@@ -770,7 +759,7 @@
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F42_ITENS[]" value="Aplicações Financeiras Resol. CMN - Adequação DAIR e Política Investimentos (objeto de PAP) (após a adesão ao Programa)">
-                <span class="form-check-label">e) “Aplicações Financeiras Resol. CMN - Adequação DAIR e Política Investimentos (objeto de PAP)” (em relação a situações que ocorrerem após a data de adesão).</span>
+                <span class="form-check-label">e) “Aplicações Financeiras Resol. CMN - Adequação DAIR e Política Investimentos (objeto de PAP)” (pós-adesão).</span>
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F42_ITENS[]" value="Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR – Encaminhamento">
@@ -778,7 +767,7 @@
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F42_ITENS[]" value="Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR - Consistência (após a adesão ao Programa)">
-                <span class="form-check-label">g) “Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR - Consistência” (em relação a situações que ocorrerem após a data de adesão).</span>
+                <span class="form-check-label">g) “Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR - Consistência” (pós-adesão).</span>
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F42_ITENS[]" value="DPIN – Encaminhamento">
@@ -786,7 +775,7 @@
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F42_ITENS[]" value="DPIN – Consistência (pós-adesão)">
-                <span class="form-check-label">i) “Demonstrativo da Política de Investimentos - DPIN – Consistência” (em relação a situações que ocorrerem após a data de adesão).</span>
+                <span class="form-check-label">i) “DPIN – Consistência” (pós-adesão).</span>
               </label>
             </div>
 
@@ -798,7 +787,6 @@
       </div>
     </div>
   </div>
-
   <!-- MODAL 4.3 (F: 4.3.11 com toggle) -->
   <div class="modal fade" id="modalF43" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
@@ -817,7 +805,6 @@
             <p class="mb-2">Declaro ter cumprido as seguintes condições (marque o que se aplica e utilize os campos de justificativas se necessário):</p>
 
             <div class="d-flex flex-column gap-2" id="F43_LISTA">
-              <!-- (itens mantidos) -->
               <div class="fw-semibold mt-1">4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento:</div>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F43_ITENS[]" value="DIPR - Consistência e Caráter Contributivo">
@@ -881,11 +868,11 @@
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F43_ITENS[]" value="Equilíbrio Financeiro e Atuarial - Encaminhamento NTA, DRAA e resultados das análises (no que se refere ao envio da NTA e do DRAA)">
-                <span class="form-check-label">c) “Equilíbrio Financeiro e Atuarial - Encaminhamento NTA, DRAA e resultados das análises” (no que se refere ao envio da NTA e do DRAA).</span>
+                <span class="form-check-label">c) “Equilíbrio Financeiro e Atuarial - Encaminhamento NTA, DRAA e resultados das análises (envio de NTA e DRAA)”.</span>
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F43_ITENS[]" value="Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi">
-                <span class="form-check-label">d) “Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi”.</span>
+                <span class="form-check-label">d) “Envio da Matriz de Saldos Contábeis (MSC) por meio do Siconfi)”.</span>
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F43_ITENS[]" value="DPIN – Encaminhamento">
@@ -901,7 +888,7 @@
               </label>
               <label class="form-check">
                 <input class="form-check-input me-2" type="checkbox" name="F43_ITENS[]" value="Envio dos dados e eventos do eSocial relativos a segurados e beneficiários do RPPS">
-                <span class="form-check-label">h) envio dos dados e eventos do eSocial relativos a segurados e beneficiários do RPPS.</span>
+                <span class="form-check-label">h) “Envio dos dados e eventos do eSocial relativos a segurados e beneficiários do RPPS”.</span>
               </label>
 
               <div class="fw-semibold mt-2">4.3.8 Regularidade quanto à operacionalização da compensação previdenciária:</div>
@@ -924,15 +911,12 @@
               <label class="form-check mb-2">
                 <input class="form-check-input me-2" type="radio" name="F4310_OPCAO" value="A">
                 <span class="form-check-label">
-                  a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS (reforma das regras de benefícios) que:
-                  <br>– observam o art. 40 da CF/88 e o art. 164 da Portaria MTP nº 1.467/2022;
-                  <br>– são aplicadas aos atuais segurados e aos que ingressarem no ente federativo; e
-                  <br>– são, no mínimo, assemelhadas às do RPPS da União.
+                  a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS (reforma das regras de benefícios)...
                 </span>
               </label>
               <div class="mt-2 ms-4 d-none" id="F4310_LEGISLACAO_WRAP">
                 <label class="form-label" for="F4310_LEGISLACAO">Relacionar a legislação que adequou as regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</label>
-                <textarea id="F4310_LEGISLACAO" class="form-control" rows="3"></textarea>
+                <textarea id="F4310_LEGISLACAO" name="F4310_LEGISLACAO" class="form-control" rows="3"></textarea>
               </div>
 
               <div class="text-center my-2"><span class="badge bg-light text-dark">OU</span></div>
@@ -940,16 +924,16 @@
               <label class="form-check mb-2">
                 <input class="form-check-input me-2" type="radio" name="F4310_OPCAO" value="B">
                 <span class="form-check-label">
-                  b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração da legislação do RPPS visando à adoção dessas regras.
+                  b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...
                 </span>
               </label>
               <div class="mt-2 ms-4 d-none" id="F4310_DOCS_WRAP">
                 <label class="form-label" for="F4310_DOCS">Lista de documentos anexados, que comprovam o encaminhamento dos projetos de alteração das regras de benefícios:</label>
-                <textarea id="F4310_DOCS" class="form-control" rows="3"></textarea>
+                <textarea id="F4310_DOCS" name="F4310_DOCS" class="form-control" rows="3"></textarea>
               </div>
             </div>
 
-            <!-- 4.3.11 + 4.3.12 (F: toggle para 4.3.11) -->
+            <!-- 4.3.11 + 4.3.12 -->
             <div class="mt-3">
               <button type="button" id="BTN_TOGGLE_4311" class="btn btn-outline-secondary btn-sm">
                 4.3.11 – Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica
@@ -959,7 +943,7 @@
                 <div class="small text-muted mb-2">a) Critérios do extrato que o ente deseja incluir no Plano de Ação da Fase Específica:</div>
                 <div id="F43_INCLUIR" class="d-flex flex-column gap-2"></div>
                 <div class="small text-muted mt-2 mb-1">b) Justificativas/Informações apresentadas relativas a essa inclusão (anexos podem ser citados abaixo):</div>
-                <textarea id="F43_PLANO" class="form-control" rows="3" placeholder="Justificativas e documentos…"></textarea>
+                <textarea id="F43_PLANO" name="F43_PLANO" class="form-control" rows="3" placeholder="Justificativas e documentos…"></textarea>
                 <p class="small text-muted mt-2 mb-0">
                   <strong>Obs.:</strong> A solicitação de inclusão no Plano de Ação não se aplica aos seguintes critérios: “DIPR - Consistência e Caráter Contributivo”; “Caráter contributivo - Repasse (objeto de PAP)” e “Utilização dos recursos previdenciários (objeto de PAP)”.
                 </p>
@@ -968,7 +952,7 @@
 
             <div class="mt-3">
               <div class="form-check mb-2">
-                <input id="F43_SOLICITA_INCLUSAO" class="form-check-input me-2" type="checkbox">
+                <input id="F43_SOLICITA_INCLUSAO" name="F43_SOLICITA_INCLUSAO" class="form-check-input me-2" type="checkbox" value="SIM">
                 <label class="form-check-label" for="F43_SOLICITA_INCLUSAO">
                   4.3.12 Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica
                 </label>
@@ -981,11 +965,11 @@
                 <div id="F43_INCLUIR_B" class="d-flex flex-column gap-2"></div>
 
                 <div class="small text-muted mt-2 mb-1">b) Justificativas/informações apresentadas relativas à solicitação de inclusão (anexos podem ser citados abaixo):</div>
-                <textarea id="F43_PLANO_B" class="form-control" rows="3" placeholder="Justificativas e documentos…"></textarea>
+                <textarea id="F43_PLANO_B" name="F43_PLANO_B" class="form-control" rows="3" placeholder="Justificativas e documentos…"></textarea>
 
                 <div class="mt-2">
                   <label class="form-label" for="F43_DESC_PLANOS">c) Descrever sucintamente o(s) Plano(s) de Ação apresentado(s)</label>
-                  <textarea id="F43_DESC_PLANOS" class="form-control" rows="3"></textarea>
+                  <textarea id="F43_DESC_PLANOS" name="F43_DESC_PLANOS" class="form-control" rows="3"></textarea>
                 </div>
 
                 <p class="small text-muted mt-2 mb-0">
@@ -999,8 +983,6 @@
       </div>
     </div>
   </div>
-
-
   <!-- MODAL 4.4 -->
   <div class="modal fade" id="modalF44" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
@@ -1020,26 +1002,38 @@
             <div class="mb-2">
               <label class="form-label">4.4.1 Declaro ter cumprido as seguintes condições:</label>
               <div class="d-flex flex-column gap-2">
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Foi mantida a regularidade quanto aos critérios do extrato previdenciário exigidos nas fases anteriores."><span class="form-check-label">a) Foi mantida a regularidade quanto aos critérios do extrato previdenciário exigidos nas fases anteriores.</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="RPC vigente e operacionalizado"><span class="form-check-label">b) O Regime de Previdência Complementar – RPC dos servidores filiados ao RPPS encontra-se vigente (convênio de adesão autorizado pela Previc) e em efetiva operacionalização.</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Demais critérios não objeto do Plano estão regulares"><span class="form-check-label">c) Os demais critérios do extrato previdenciário que não são objeto do Plano(s) de Ação apresentado(s) estão regulares.</span></label>
-                <label class="form-check"><input id="F441_OPTD" class="form-check-input me-2" type="checkbox" value="Adoção de regras de benefícios conforme EC 103/2019"><span class="form-check-label">d) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS que (i) observam o art. 40 da CF/88 e o art. 164 da Portaria MTP nº 1.467/2022; (ii) aplicam-se aos atuais segurados e aos ingressantes; e (iii) são, no mínimo, assemelhadas às do RPPS da União.</span></label>
+                <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="F44_CONDICOES[]" value="Regularidade mantida nos critérios exigidos nas fases anteriores">
+                  <span class="form-check-label">a) Foi mantida a regularidade quanto aos critérios exigidos nas fases anteriores.</span>
+                </label>
+                <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="F44_CONDICOES[]" value="RPC vigente e operacionalização efetiva (convênio autorizado pela Previc)">
+                  <span class="form-check-label">b) RPC vigente (convênio autorizado pela Previc) e em efetiva operacionalização.</span>
+                </label>
+                <label class="form-check">
+                  <input class="form-check-input me-2" type="checkbox" name="F44_CONDICOES[]" value="Demais critérios não objeto de Plano em situação regular">
+                  <span class="form-check-label">c) Demais critérios que não são objeto do(s) Plano(s) de Ação estão regulares.</span>
+                </label>
+                <label class="form-check">
+                  <input id="F441_OPTD" class="form-check-input me-2" type="checkbox" name="F44_CONDICOES[]" value="Adoção de regras de benefícios conforme EC 103/2019">
+                  <span class="form-check-label">d) Adoção de regras de benefícios do RPPS conforme EC 103/2019, art. 40 da CF/88 e art. 164 da Portaria MTP nº 1.467/2022.</span>
+                </label>
                 <div class="mt-2 ms-4 d-none" id="F441_LEGISLACAO_WRAP">
-                  <label class="form-label" for="F441_LEGISLACAO">Relacionar a legislação que adequou as regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</label>
-                  <textarea id="F441_LEGISLACAO" class="form-control" rows="3"></textarea>
+                  <label class="form-label" for="F441_LEGISLACAO">Relacionar a legislação que adequou as regras de benefícios do RPPS à EC 103/2019:</label>
+                  <textarea id="F441_LEGISLACAO" name="F441_LEGISLACAO" class="form-control" rows="3"></textarea>
                 </div>
               </div>
             </div>
 
-            <!-- 4.4.2/3/4/5/6 (mantidos) -->
+            <!-- 4.4.2/3/4/5/6 -->
             <div class="mb-2">
               <label class="form-label">4.4.2 Finalidade do(s) Plano(s) de Ação apresentado(s)</label>
               <div class="d-flex flex-column gap-2" id="F44_FINALIDADES">
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Para implementação de plano de equacionamento do déficit atuarial do RPPS"><span class="form-check-label">a) Para implementação de plano de equacionamento do déficit atuarial do RPPS;</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Para prazos adicionais para comprovação de medidas"><span class="form-check-label">b) Para situações que exijam prazos adicionais para comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à adequação orçamentária, financeira e fiscal do ente;</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Plano de equacionamento alternativo (art. 55, § 7º, Portaria 1.467/2022)"><span class="form-check-label">c) Para implementação de plano de equacionamento de déficit atuarial alternativo (art. 55, § 7º, Portaria MTP nº 1.467/2022);</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Adequação da Unidade Gestora Única do RPPS (CF, art. 40, § 20)"><span class="form-check-label">d) Para adequação da Unidade Gestora Única do RPPS ao art. 40, § 20, da Constituição Federal; e/ou</span></label>
-                <label class="form-check"><input id="F442_OPTE" class="form-check-input me-2" type="checkbox" value="Organização do RPPS/critério estruturante (especificar)"><span class="form-check-label">e) Para a organização do RPPS conforme critérios estruturantes das normas gerais ou o cumprimento de outro critério do extrato com maior complexidade (especificar).</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F44_FINALIDADES[]" value="Equacionamento do déficit atuarial"><span class="form-check-label">a) Equacionamento do déficit atuarial do RPPS;</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F44_FINALIDADES[]" value="Prazos adicionais para comprovação de medidas"><span class="form-check-label">b) Prazos adicionais para comprovação de medidas visando ao equilíbrio financeiro e atuarial e à adequação orçamentária;</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F44_FINALIDADES[]" value="Plano alternativo de equacionamento (art. 55, §7º)"><span class="form-check-label">c) Plano de equacionamento alternativo (art. 55, § 7º, Portaria MTP nº 1.467/2022);</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F44_FINALIDADES[]" value="Adequação da Unidade Gestora Única (CF, art. 40, §20)"><span class="form-check-label">d) Adequação da Unidade Gestora Única do RPPS (CF, art. 40, § 20); e/ou</span></label>
+                <label class="form-check"><input id="F442_OPTE" class="form-check-input me-2" type="checkbox" name="F44_FINALIDADES[]" value="Organização do RPPS/critério estruturante (especificar)"><span class="form-check-label">e) Organização do RPPS conforme critérios estruturantes das normas gerais / outro critério de maior complexidade (especificar).</span></label>
               </div>
             </div>
 
@@ -1050,22 +1044,23 @@
 
             <div class="mb-3">
               <label class="form-label" for="F44_ANEXOS">4.4.4 Anexos (obrigatório o encaminhamento de Planos de Ação e documentação comprobatória)</label>
-              <textarea id="F44_ANEXOS" class="form-control" rows="3" placeholder="Relacione/descreva os documentos apresentados, um por linha…"></textarea>
+              <textarea id="F44_ANEXOS" name="F44_ANEXOS" class="form-control" rows="3" placeholder="Relacione/descreva os documentos apresentados, um por linha…"></textarea>
             </div>
 
             <div class="mb-3">
               <label class="form-label" for="F445_DESC_PLANOS">4.4.5 Descrever sucintamente o(s) Plano(s) de Ação apresentado(s):</label>
-              <textarea id="F445_DESC_PLANOS" class="form-control" rows="3"></textarea>
+              <textarea id="F445_DESC_PLANOS" name="F445_DESC_PLANOS" class="form-control" rows="3"></textarea>
             </div>
 
             <div class="mb-2">
-              <div class="fw-semibold mb-2">4.4.6 Em caso de Plano(s) de Ação que havia sido apresentado na Fase Intermediária:</div>
+              <div class="fw-semibold mb-2">4.4.6 Em caso de Plano(s) de Ação apresentado(s) na Fase Intermediária:</div>
               <label class="form-label" for="F446_DOCS">a) Comprovação do cumprimento do(s) Plano(s) de Ação (relacione os documentos, um por linha)</label>
-              <textarea id="F446_DOCS" class="form-control" rows="3"></textarea>
+              <textarea id="F446_DOCS" name="F446_DOCS" class="form-control" rows="3"></textarea>
               <label class="form-label mt-2" for="F446_EXEC_RES">b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados</label>
-              <textarea id="F446_EXEC_RES" class="form-control" rows="3"></textarea>
+              <textarea id="F446_EXEC_RES" name="F446_EXEC_RES" class="form-control" rows="3"></textarea>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -1080,7 +1075,6 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
         <div class="modal-body">
-          <!-- 4.5 -->
           <div class="card-subblock mt-3" id="blk_45">
             <div class="sub-title">4.5 Fase Específica/Focalizada – 5º CRP Emergencial</div>
             <p class="small text-muted mb-2">
@@ -1089,30 +1083,29 @@
 
             <div class="d-flex flex-column gap-2">
               <label class="form-check">
-                <input class="form-check-input me-2" type="checkbox" value="4.5.1 Mantida a regularidade dos critérios exigidos nas fases anteriores.">
-                <span class="form-check-label">4.5.1 Declaro ter mantido a regularidade dos critérios do extrato previdenciário exigidos nas fases anteriores.</span>
+                <input class="form-check-input me-2" type="checkbox" name="F45_CONDICOES[]" value="Mantida a regularidade dos critérios exigidos nas fases anteriores">
+                <span class="form-check-label">4.5.1 Mantida a regularidade dos critérios exigidos nas fases anteriores.</span>
               </label>
             </div>
 
             <div class="mt-2">
               <label class="form-label" for="F45_DOCS">4.5.2 Comprovação do cumprimento do(s) Plano(s) de Ação</label>
-              <textarea id="F45_DOCS" class="form-control" rows="3" placeholder="Liste os documentos apresentados."></textarea>
+              <textarea id="F45_DOCS" name="F45_DOCS" class="form-control" rows="3" placeholder="Liste os documentos apresentados."></textarea>
             </div>
 
             <div class="mt-2">
               <label class="form-label" for="F45_JUST">4.5.4 Justificativas</label>
-              <textarea id="F45_JUST" class="form-control" rows="3" placeholder="Justificativas sobre o cumprimento do(s) Plano(s)…"></textarea>
+              <textarea id="F45_JUST" name="F45_JUST" class="form-control" rows="3" placeholder="Justificativas sobre o cumprimento do(s) Plano(s)…"></textarea>
             </div>
             <div class="mt-2">
               <label class="form-label" for="F453_EXEC_RES">4.5.3 Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados</label>
-              <textarea id="F453_EXEC_RES" class="form-control" rows="3"></textarea>
+              <textarea id="F453_EXEC_RES" name="F453_EXEC_RES" class="form-control" rows="3"></textarea>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-
   <!-- MODAL 4.6 -->
   <div class="modal fade" id="modalF46" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
@@ -1122,24 +1115,22 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
         <div class="modal-body">
-          <!-- 4.6 -->
           <div class="card-subblock mt-3" id="blk_46">
             <div class="sub-title">4.6 Fase de Manutenção da Conformidade</div>
             <p class="small text-muted mb-2">
               <em>(art. 5º, caput, inciso IV, do Anexo XVIII da Portaria MTP nº 1.467/2022 e art. <span id="ART_SRPC_46">—</span> da Portaria SRPC/MPS nº <span id="PORTARIA_SRPC_46">—</span>)</em>
             </p>
 
-            <!-- 4.6.1/2 e complementos (mantidos) -->
             <div class="mb-2">
               <label class="form-label">4.6.1 Declaro ter cumprido as seguintes condições:</label>
               
               <div class="d-flex flex-column gap-2">
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Demais critérios não objeto do Plano estão regulares"><span class="form-check-label">a) Os demais critérios do extrato previdenciário que não são objeto do Plano(s) de Ação apresentado(s) estão regulares.</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F46_CONDICOES[]" value="Demais critérios não objeto do Plano(s) de Ação estão regulares"><span class="form-check-label">a) Demais critérios que não são objeto do Plano(s) de Ação estão regulares.</span></label>
 
                 <div class="row g-2 align-items-center">
                   <div class="col-md-6">
                     <label class="form-label" for="F46_PROGESTAO">b) Nível de certificação no Pró-Gestão RPPS</label>
-                    <select id="F46_PROGESTAO" class="form-select">
+                    <select id="F46_PROGESTAO" name="F46_PROGESTAO" class="form-select">
                       <option value="">Selecione…</option>
                       <option value="I">Nível I</option>
                       <option value="II">Nível II</option>
@@ -1152,23 +1143,22 @@
                   </div>
                   <div class="col-md-6">
                     <label class="form-label" for="F46_PORTE">c) Grupo de Porte (ISP-RPPS)</label>
-                    <select id="F46_PORTE" class="form-select">
+                    <select id="F46_PORTE" name="F46_PORTE" class="form-select">
                       <option value="">Selecione…</option>
-                      <option>Pequeno</option>
-                      <option>Médio</option>
-                      <option>Grande</option>
-                      <option>Porte Especial</option>
+                      <option value="Pequeno">Pequeno</option>
+                      <option value="Médio">Médio</option>
+                      <option value="Grande">Grande</option>
+                      <option value="Porte Especial">Porte Especial</option>
                     </select>
                   </div>
                 </div>
 
-                <label class="form-check mt-2"><input class="form-check-input me-2" type="checkbox" value="Houve melhora na situação financeira e atuarial do RPPS (indicadores ISP-RPPS) – anexos."><span class="form-check-label">d) Houve melhora na situação financeira e atuarial do RPPS com base, entre outros, nos indicadores do ISP-RPPS — anexar comprovações.</span></label>
+                <label class="form-check mt-2"><input class="form-check-input me-2" type="checkbox" name="F46_CONDICOES[]" value="Houve melhora na situação financeira e atuarial (indicadores ISP-RPPS) – anexos"><span class="form-check-label">d) Houve melhora na situação financeira e atuarial do RPPS com base, entre outros, nos indicadores do ISP-RPPS — anexar comprovações.</span></label>
                 <div>
                   <label class="form-label" for="F46_JUST_D">Justificativas (item d)</label>
-                  <textarea id="F46_JUST_D" class="form-control" rows="2"></textarea>
-                  <input type="hidden" id="F46_JUST_PLANOS">
+                  <textarea id="F46_JUST_D" name="F46_JUST_D" class="form-control" rows="2"></textarea>
+                  <input type="hidden" id="F46_JUST_PLANOS" name="F46_JUST_PLANOS">
                   <script>
-                    // usa a última justificativa digitada (D/E) como “justificativa do(s) plano(s)”
                     const jD = document.getElementById('F46_JUST_D');
                     const jE = document.getElementById('F46_JUST_E');
                     const h  = document.getElementById('F46_JUST_PLANOS');
@@ -1179,17 +1169,17 @@
                 </div>
                 <div>
                   <label class="form-label" for="F46_DOCS_D">Documentos (item d)</label>
-                  <textarea id="F46_DOCS_D" class="form-control" rows="2"></textarea>
+                  <textarea id="F46_DOCS_D" name="F46_DOCS_D" class="form-control" rows="2"></textarea>
                 </div>
 
-                <label class="form-check mt-2"><input class="form-check-input me-2" type="checkbox" value="Acompanhamento atuarial (arts. 67 a 69 da Portaria MTP nº 1.467/2022)"><span class="form-check-label">e) Comprovo que o ente vem adotando as medidas de acompanhamento atuarial previstas nos arts. 67 a 69 da Portaria MTP nº 1.467/2022.</span></label>
+                <label class="form-check mt-2"><input class="form-check-input me-2" type="checkbox" name="F46_CONDICOES[]" value="Acompanhamento atuarial (arts. 67 a 69 da Portaria MTP nº 1.467/2022)"><span class="form-check-label">e) Medidas de acompanhamento atuarial (arts. 67 a 69 da Portaria MTP nº 1.467/2022).</span></label>
                 <div>
                   <label class="form-label" for="F46_JUST_E">Justificativas (item e)</label>
-                  <textarea id="F46_JUST_E" class="form-control" rows="2"></textarea>
+                  <textarea id="F46_JUST_E" name="F46_JUST_E" class="form-control" rows="2"></textarea>
                 </div>
                 <div>
                   <label class="form-label" for="F46_DOCS_E">Documentos (item e)</label>
-                  <textarea id="F46_DOCS_E" class="form-control" rows="2"></textarea>
+                  <textarea id="F46_DOCS_E" name="F46_DOCS_E" class="form-control" rows="2"></textarea>
                 </div>
               </div>
             </div>
@@ -1197,11 +1187,11 @@
             <div class="mb-2">
               <label class="form-label">4.6.2 Finalidade do(s) Plano(s) de Ação apresentado(s)</label>
               <div class="d-flex flex-column gap-2" id="F46_FINALIDADES">
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Para implementação de plano de equacionamento do déficit atuarial do RPPS"><span class="form-check-label">a) Para implementação de plano de equacionamento do déficit atuarial do RPPS;</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Para prazos adicionais para comprovação de medidas"><span class="form-check-label">b) Para situações que exijam prazos adicionais para comprovação de medidas visando ao equilíbrio financeiro e atuarial do RPPS e à adequação orçamentária, financeira e fiscal do ente;</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Plano de equacionamento alternativo (art. 55, § 7º, Portaria 1.467/2022)"><span class="form-check-label">c) Para apresentação de plano de equacionamento de déficit atuarial alternativo (art. 55, § 7º, Portaria MTP nº 1.467/2022);</span></label>
-                <label class="form-check"><input class="form-check-input me-2" type="checkbox" value="Adequação da Unidade Gestora Única do RPPS (CF, art. 40, § 20)"><span class="form-check-label">d) Para adequação da Unidade Gestora Única do RPPS ao art. 40, § 20, da Constituição Federal; e/ou</span></label>
-                <label class="form-check"><input id="F462F_OPTF" class="form-check-input me-2" type="checkbox" value="Organização do RPPS/critério estruturante (especificar)"><span class="form-check-label">f) Para a organização do RPPS conforme critérios estruturantes das normas gerais ou o cumprimento de outro critério do extrato com maior complexidade (especificar).</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F462_FINALIDADES[]" value="Equacionamento do déficit atuarial do RPPS"><span class="form-check-label">a) Implementação de plano de equacionamento do déficit atuarial do RPPS;</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F462_FINALIDADES[]" value="Prazos adicionais para comprovação de medidas"><span class="form-check-label">b) Prazos adicionais para comprovação de medidas (equilíbrio financeiro/atuarial e adequação fiscal do ente);</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F462_FINALIDADES[]" value="Plano alternativo (art. 55, §7º)"><span class="form-check-label">c) Plano de equacionamento alternativo (art. 55, § 7º, Portaria MTP nº 1.467/2022);</span></label>
+                <label class="form-check"><input class="form-check-input me-2" type="checkbox" name="F462_FINALIDADES[]" value="Adequação da Unidade Gestora Única (CF, art. 40, §20)"><span class="form-check-label">d) Adequação da Unidade Gestora Única do RPPS (CF, art. 40, § 20); e/ou</span></label>
+                <label class="form-check"><input id="F462F_OPTF" class="form-check-input me-2" type="checkbox" name="F462_FINALIDADES[]" value="Organização do RPPS/critério estruturante (especificar)"><span class="form-check-label">f) Organização do RPPS conforme critérios estruturantes das normas gerais / outro critério de maior complexidade (especificar).</span></label>
               </div>
             </div>
 
@@ -1212,19 +1202,17 @@
             <div class="mb-2">
               <div class="fw-semibold mb-2">4.6.6 Em caso de Plano(s) de Ação em execução ou concluído(s):</div>
               <label class="form-label" for="F466_DOCS">a) Comprovação do cumprimento do(s) Plano(s) de Ação (relacione os documentos, um por linha)</label>
-              <textarea id="F466_DOCS" class="form-control" rows="3"></textarea>
-              <input type="hidden" id="F46_ANEXOS">
+              <textarea id="F466_DOCS" name="F466_DOCS" class="form-control" rows="3"></textarea>
+              <input type="hidden" id="F46_ANEXOS" name="F46_ANEXOS">
               <script>
-                // espelha F466_DOCS → F46_ANEXOS (compat)
                 document.getElementById('F466_DOCS')?.addEventListener('input', e => {
                   const h = document.getElementById('F46_ANEXOS'); if (h) h.value = e.target.value;
                 });
               </script>
               <label class="form-label mt-2" for="F466_EXEC_RES">b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados</label>
-              <textarea id="F466_EXEC_RES" class="form-control" rows="3"></textarea>
-              <input type="hidden" id="F46_COMP_CUMPR">
+              <textarea id="F466_EXEC_RES" name="F466_EXEC_RES" class="form-control" rows="3"></textarea>
+              <input type="hidden" id="F46_COMP_CUMPR" name="F46_COMP_CUMPR">
               <script>
-                // espelha Execução/Resultados → Comprovação de Cumprimento
                 document.getElementById('F466_EXEC_RES')?.addEventListener('input', e => {
                   const h = document.getElementById('F46_COMP_CUMPR'); if (h) h.value = e.target.value;
                 });
@@ -1320,15 +1308,12 @@
       </div>
     </div>
   </div>
-
-
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 
   <!-- C) Configuração de normas (preencha quando a Portaria e artigos estiverem definidos) -->
   <script>
-    // Pode ser sobrescrito por outro script antes do DOMContentLoaded.
     window.__NORMAS = Object.assign({
       PORTARIA_SRPC: "2.024/2025",
       PORTARIA_SRPC_B: "—",
@@ -1342,11 +1327,9 @@
     }, window.__NORMAS || {});
   </script>
 
-
   <!-- JS auxiliar (D, F e normas dinâmicas) -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // Garantir modais no body
       document.querySelectorAll('.modal').forEach(m => {
         if (m.parentElement !== document.body) document.body.appendChild(m);
       });
@@ -1364,35 +1347,30 @@
         if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
       });
 
-      // D: fase seleção única (já são radios; opcionalmente, podemos habilitar Next ao marcar)
       const faseRadios = document.querySelectorAll('input[name="FASE_PROGRAMA"]');
       const btnNext = document.getElementById('btnNext');
       faseRadios.forEach(r => r.addEventListener('change', () => {
         if (btnNext) btnNext.disabled = false;
       }));
 
-      // F: toggle 4.3.11
       const btn4311 = document.getElementById('BTN_TOGGLE_4311');
       const wrap4311 = document.getElementById('WRAP_4311');
       if (btn4311 && wrap4311) {
         btn4311.addEventListener('click', () => wrap4311.classList.toggle('d-none'));
       }
 
-      // 4.4: mostrar campo de legislação se marcar d)
       const optD = document.getElementById('F441_OPTD');
       const wrapD = document.getElementById('F441_LEGISLACAO_WRAP');
       if (optD && wrapD) {
         optD.addEventListener('change', () => wrapD.classList.toggle('d-none', !optD.checked));
       }
 
-      // 4.4.2 (e): exibir 4.4.3 critérios
       const optE = document.getElementById('F442_OPTE');
       const wrapCrit = document.getElementById('F44_CRIT_WRAP');
       if (optE && wrapCrit) {
         optE.addEventListener('change', () => wrapCrit.classList.toggle('d-none', !optE.checked));
       }
 
-      // 4.3.10: exibir campos conforme A/B
       const r4310 = document.querySelectorAll('input[name="F4310_OPCAO"]');
       const wLeg = document.getElementById('F4310_LEGISLACAO_WRAP');
       const wDocs = document.getElementById('F4310_DOCS_WRAP');
@@ -1404,14 +1382,12 @@
       r4310.forEach(r => r.addEventListener('change', sync4310));
       sync4310();
 
-      // 4.6.2 (f): exibir critérios quando marcado
       const optF = document.getElementById('F462F_OPTF');
       const wrapF = document.getElementById('F462F_WRAP');
       if (optF && wrapF) {
         optF.addEventListener('change', () => wrapF.classList.toggle('d-none', !optF.checked));
       }
 
-      // C) População dinâmica das referências normativas
       const N = window.__NORMAS || {};
       const setText = (id, val) => { const el = document.getElementById(id); if (el && typeof val === 'string' && val.trim()) el.textContent = val; };
       setText('PORTARIA_SRPC', N.PORTARIA_SRPC);
@@ -1423,7 +1399,6 @@
       setText('ART_SRPC_44', N.ART_SRPC_44);
       setText('ART_SRPC_45', N.ART_SRPC_45);
       setText('ART_SRPC_46', N.ART_SRPC_46);
-      // Para modais com IDs separados por fase:
       setText('PORTARIA_SRPC_42', N.PORTARIA_SRPC);
       setText('PORTARIA_SRPC_43', N.PORTARIA_SRPC);
       setText('PORTARIA_SRPC_44', N.PORTARIA_SRPC);
@@ -1433,32 +1408,23 @@
   </script>
 
   <script>
-    // DEBUG temporário: ativa logs detalhados no solicitante
     window.__DEBUG_SOLIC_CRP__ = true;
-
-    // Para teste: você pode definir aqui a URL do backend direto (se o proxy /_api estiver com problemas)
-    // Exemplo: window.__API_BASE = 'https://meu-backend.example.com/api';
-    // Se o backend exigir X-API-Key, coloque aqui (apenas para debug; não deixe a chave pública)
-    // Exemplo: window.__API_KEY = 'COLOQUE_SUA_API_KEY_AQUI';
   </script>
-      <!-- Ajustes de endpoints: chamar direto o Render (evita timeout da Netlify) -->
+
+  <!-- Ajustes de endpoints -->
   <script>
-        // endpoint público do backend (Render)
     const API_BASE = (() => {
       const direct   = (window.__API_DIRECT || '').replace(/\/+$/,'');
       const explicit = (window.__API_BASE   || '').replace(/\/+$/,'');
-      if (direct)   return direct;   // 1ª preferência: backend direto (Render)
-      if (explicit) return explicit; // 2ª: override explícito
-      return '/_api';                // 3ª: proxy (Netlify)
+      if (direct)   return direct;
+      if (explicit) return explicit;
+      return '/_api';
     })();
     const api = (p) => `${API_BASE}${p.startsWith('/') ? p : '/' + p}`;
 
-    // alguns pontos do solic_crp.js consultam __API_DIRECT primeiro:
     window.__API_DIRECT = window.__API_BASE;
-    // se o solic_crp.js enviar o header X-API-Key quando __API_KEY existir, defina-a aqui:
     window.__API_KEY    = 'fprpps_5uP3rL0ng_';
   </script>
-
 
   <script src="solic_crp.js?v=2025-09-26-2" defer></script>
 </body>
