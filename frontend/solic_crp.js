@@ -1946,7 +1946,7 @@
     const f43 = Array.isArray(p.F43_LISTA) ? p.F43_LISTA : [];
     let DEFICIT_ATUARIAL = f43.join('; ');
     if (!DEFICIT_ATUARIAL && (p.F43_PLANO || p.F43_DESC_PLANOS)) {
-      // se usuário descreveu mas não ticonou, ao menos marca 4.3 genericamente
+      // se descreveu mas não ticonou, marca 4.3 genericamente
       DEFICIT_ATUARIAL = '4.3';
     }
 
@@ -1966,158 +1966,182 @@
     // Data “que o template usa”
     const DATA_TERMO_GERADO = p.DATA_SOLIC_GERADA || p.DATA || '';
 
-    // [PATCH] Coleta explícita de TODOS os campos do Item 4 com nomes "fase4_*"
-    // Helpers
-    const byNameVals = (nameSel) => Array.from(document.querySelectorAll(`[name="${nameSel}"]`))
-      .map(el => (el.type === 'checkbox' || el.type === 'radio') ? (el.checked ? (el.value || 'on') : '') : (el.value || ''))
-      .filter(Boolean);
-    const byNameChecked = (nameSel) => Array.from(document.querySelectorAll(`[name="${nameSel}"]`))
-      .filter(el => (el.type === 'checkbox' || el.type === 'radio') && el.checked).map(el => el.value || 'on');
-    const byNameVal = (nameSel) => (document.querySelector(`[name="${nameSel}"]`)?.value || '').trim();
+    // ===== Helpers que aceitam múltiplos nomes (fase4_* e F4x_*) =====
+    const getAllByName = (n) => Array.from(document.querySelectorAll(`[name="${n}"]`));
 
-      // 4.1 — Fase Geral
-      const F41_EXTRA = {
-        'fase4_1_criterios':            byNameChecked('fase4_1_criterios[]'),
-        'fase4_1_criterios_outros':     byNameVal('fase4_1_criterios_outros'),
-        'fase4_1_declaracao_base':      byNameVal('fase4_1_declaracao_base'),
-        'fase4_1_decl_a_data':          byNameVal('fase4_1_decl_a_data'),
-        'fase4_1_decl_b_conf':          byNameChecked('fase4_1_decl_b_conf'),
-        'fase4_1_decl_f':               byNameChecked('fase4_1_decl_f[]'),
-        'fase4_1_finalidade':           byNameChecked('fase4_1_finalidade[]'),
-        'fase4_1_finalidade_protocolos':byNameVals('fase4_1_finalidade_protocolos[]'),
-        'fase4_1_anexos':               byNameVals('fase4_1_anexos[]'),
-        'fase4_1_anexos_desc':          byNameVals('fase4_1_anexos_desc[]'),
-        'fase4_1_just':                 byNameVal('fase4_1_just'),
-        'fase4_1_comp_tipo':            byNameVal('fase4_1_comp_tipo'),
-        'fase4_1_comp_protocolo':       byNameVal('fase4_1_comp_protocolo'),
-        'fase4_1_comp_data':            byNameVal('fase4_1_comp_data'),
-      };
+    const byNameValsAny = (names) =>
+      names.flatMap(n =>
+        getAllByName(n).map(el =>
+          (el.type === 'checkbox' || el.type === 'radio')
+            ? (el.checked ? (el.value || 'on') : '')
+            : (el.value || '')
+        )
+      ).filter(Boolean);
 
-      // 4.2 — Fase Intermediária
-      const F42_EXTRA = {
-        'fase4_2_criterios':            byNameChecked('fase4_2_criterios[]'),
-        'fase4_2_decl':                 byNameVal('fase4_2_decl'),
-        'fase4_2_decl_a_lei':           byNameVal('fase4_2_decl_a_lei'),
-        'fase4_2_decl_b_prazo':         byNameVal('fase4_2_decl_b_prazo'),
-        'fase4_2_decl_f':               byNameChecked('fase4_2_decl_f[]'),
-        'fase4_2_finalidade':           byNameVal('fase4_2_finalidade'),
-        'fase4_2_prazo_req':            byNameVal('fase4_2_prazo_req'),
-        'fase4_2_prazo_fund':           byNameVal('fase4_2_prazo_fund'),
-        'fase4_2_anexos':               byNameVals('fase4_2_anexos[]'),
-        'fase4_2_anexos_desc':          byNameVals('fase4_2_anexos_desc[]'),
-        'fase4_2_just':                 byNameVal('fase4_2_just'),
-        'fase4_2_comp_tipo':            byNameVal('fase4_2_comp_tipo'),
-        'fase4_2_comp_num':             byNameVal('fase4_2_comp_num'),
-        'fase4_2_comp_data':            byNameVal('fase4_2_comp_data'),
-      };
+    const byNameCheckedAny = (names) =>
+      names.flatMap(n =>
+        getAllByName(n)
+          .filter(el => (el.type === 'checkbox' || el.type === 'radio') && el.checked)
+          .map(el => el.value || 'on')
+      );
 
-      // 4.3 — Fase Específica (Equacionamento etc.)
-      const F43_EXTRA = {
-        'fase4_3_escopo':               byNameChecked('fase4_3_escopo[]'),
-        'fase4_3_eq_massa_alvo':        byNameChecked('fase4_3_eq_massa_alvo[]'),
-        'fase4_3_eq_crono':             byNameVal('fase4_3_eq_crono'),
-        'fase4_3_eq_indicadores':       byNameChecked('fase4_3_eq_indicadores[]'),
-        'fase4_3_eq_indicadores_outros':byNameVal('fase4_3_eq_indicadores_outros'),
-        'fase4_3_decl':                 byNameVal('fase4_3_decl'),
-        'fase4_3_decl_a_param':         byNameVal('fase4_3_decl_a_param'),
-        'fase4_3_decl_f':               byNameChecked('fase4_3_decl_f[]'),
-        'fase4_3_finalidade':           byNameChecked('fase4_3_finalidade[]'),
-        'fase4_3_alt_detalhe':          byNameVal('fase4_3_alt_detalhe'),
-        'fase4_3_anexos':               byNameVals('fase4_3_anexos[]'),
-        'fase4_3_anexos_desc':          byNameVals('fase4_3_anexos_desc[]'),
-        'fase4_3_just':                 byNameVal('fase4_3_just'),
-        'fase4_3_comp_tipo':            byNameVal('fase4_3_comp_tipo'),
-        'fase4_3_comp_num':             byNameVal('fase4_3_comp_num'),
-        'fase4_3_comp_data':            byNameVal('fase4_3_comp_data'),
-      };
+    const byNameValAny = (names) => {
+      for (const n of names) {
+        const el = document.querySelector(`[name="${n}"]`);
+        if (!el) continue;
+        const v = (el.type === 'checkbox' || el.type === 'radio')
+          ? (el.checked ? (el.value || 'on') : '')
+          : (el.value || '');
+        if (String(v).trim()) return String(v).trim();
+      }
+      return '';
+    };
 
-      // 4.4 — Fase de Parcelamentos
-      const F44_EXTRA = {
-        'fase4_4_debitos_massa':        byNameChecked('fase4_4_debitos_massa[]'),
-        'fase4_4_debitos_outros':       byNameVal('fase4_4_debitos_outros'),
-        'fase4_4_vinc_fpm':             byNameVal('fase4_4_vinc_fpm'),
-        'fase4_4_vinc_lei':             byNameVal('fase4_4_vinc_lei'),
-        'fase4_4_vinc_proc':            byNameVal('fase4_4_vinc_proc'),
-        'fase4_4_comp_tipo':            byNameVal('fase4_4_comp_tipo'),
-        'fase4_4_comp_dipr_num':        byNameVal('fase4_4_comp_dipr_num'),
-        'fase4_4_comp_dipr_data':       byNameVal('fase4_4_comp_dipr_data'),
-        'fase4_4_anexos':               byNameVals('fase4_4_anexos[]'),
-        'fase4_4_anexos_desc':          byNameVals('fase4_4_anexos_desc[]'),
-        'fase4_4_just':                 byNameVal('fase4_4_just'),
-        'fase4_4_comp_final_tipo':      byNameVal('fase4_4_comp_final_tipo'),
-        'fase4_4_comp_final_num':       byNameVal('fase4_4_comp_final_num'),
-        'fase4_4_comp_final_data':      byNameVal('fase4_4_comp_final_data'),
-      };
+    // ===== Item 4 — Extras por fase (mapeando fase4_*  ⇄  F4x_*) =====
 
-      // 4.5 — Fase CRP Administrativo
-      const F45_EXTRA = {
-        'fase4_5_criterios':            byNameChecked('fase4_5_criterios[]'),
-        'fase4_5_decl':                 byNameVal('fase4_5_decl'),
-        'fase4_5_decl_a_dtcrp_ult':     byNameVal('fase4_5_decl_a_dtcrp_ult'),
-        'fase4_5_decl_b_tipo':          byNameVal('fase4_5_decl_b_tipo'),
-        'fase4_5_decl_f':               byNameChecked('fase4_5_decl_f[]'),
-        'fase4_5_finalidade':           byNameChecked('fase4_5_finalidade[]'),
-        'fase4_5_crp_info':             byNameVal('fase4_5_crp_info'),
-        'fase4_5_anexos':               byNameVals('fase4_5_anexos[]'),
-        'fase4_5_anexos_desc':          byNameVals('fase4_5_anexos_desc[]'),
-        'fase4_5_just':                 byNameVal('fase4_5_just'),
-        'fase4_5_comp_tipo':            byNameVal('fase4_5_comp_tipo'),
-        'fase4_5_comp_num':             byNameVal('fase4_5_comp_num'),
-        'fase4_5_comp_data':            byNameVal('fase4_5_comp_data'),
-      };
+    // 4.1 — Fase Geral
+    const F41_EXTRA = {
+      'fase4_1_criterios':             byNameCheckedAny(['fase4_1_criterios[]','F41_CRITERIOS[]','F41_CONDICOES[]']),
+      'fase4_1_criterios_outros':      byNameValAny(['fase4_1_criterios_outros','F41_CRITERIOS_OUTROS','F41_OUTROS']),
+      'fase4_1_declaracao_base':       byNameValAny(['fase4_1_declaracao_base','F41_DECL_BASE']),
+      'fase4_1_decl_a_data':           byNameValAny(['fase4_1_decl_a_data','F41_DECL_A_DATA']),
+      'fase4_1_decl_b_conf':           byNameCheckedAny(['fase4_1_decl_b_conf','F41_DECL_B_CONF']),
+      'fase4_1_decl_f':                byNameCheckedAny(['fase4_1_decl_f[]','F41_DECL_F[]']),
+      'fase4_1_finalidade':            byNameCheckedAny(['fase4_1_finalidade[]','F41_FINALIDADES[]']),
+      'fase4_1_finalidade_protocolos': byNameValsAny(['fase4_1_finalidade_protocolos[]','F41_FINALIDADE_PROTO[]','F41_PROTO[]']),
+      'fase4_1_anexos':                byNameValsAny(['fase4_1_anexos[]','F41_ANEXOS[]','F41_ANEXOS']),
+      'fase4_1_anexos_desc':           byNameValsAny(['fase4_1_anexos_desc[]','F41_ANEXOS_DESC[]']),
+      'fase4_1_just':                  byNameValAny(['fase4_1_just','F41_JUST']),
+      'fase4_1_comp_tipo':             byNameValAny(['fase4_1_comp_tipo','F41_COMP_TIPO']),
+      'fase4_1_comp_protocolo':        byNameValAny(['fase4_1_comp_protocolo','F41_COMP_PROTO']),
+      'fase4_1_comp_data':             byNameValAny(['fase4_1_comp_data','F41_COMP_DATA']),
+    };
 
-      // 4.6 — Fase Manutenção da Conformidade
-      const F46_EXTRA = {
-        'fase4_6_criterios_plano':      byNameChecked('fase4_6_criterios_plano[]'),
-        'fase4_6_pg_nivel':             byNameVal('fase4_6_pg_nivel'),
-        'fase4_6_criterios_outros':     byNameVal('fase4_6_criterios_outros'),
-        'fase4_6_declaracoes':          byNameVal('fase4_6_declaracoes'),
-        'fase4_6_decl_a_base':          byNameVal('fase4_6_decl_a_base'),
-        'fase4_6_decl_b_conferencia':   byNameChecked('fase4_6_decl_b_conferencia'),
-        'fase4_6_crit_f':               byNameChecked('fase4_6_crit_f[]'),
-        'fase4_6_finalidade':           byNameChecked('fase4_6_finalidade[]'),
-        'fase4_6_alt_crono':            byNameVal('fase4_6_alt_crono'),
-        'fase4_6_alt_kpi':              byNameChecked('fase4_6_alt_kpi[]'),
-        'fase4_6_prazo_data':           byNameVal('fase4_6_prazo_data'),
-        'fase4_6_prazo_fund':           byNameVal('fase4_6_prazo_fund'),
-        'fase4_6_anexos':               byNameVals('fase4_6_anexos[]'),
-        'fase4_6_anexos_desc':          byNameVals('fase4_6_anexos_desc[]'),
-        'fase4_6_anexos_tipo':          byNameVal('fase4_6_anexos_tipo'),
-        'fase4_6_anexos_ref':           byNameVal('fase4_6_anexos_ref'),
-        'fase4_6_just':                 byNameVal('fase4_6_just'),
-        'fase4_6_comp':                 byNameVal('fase4_6_comp'),
-        'fase4_6_comp_kpi':             byNameChecked('fase4_6_comp_kpi[]'),
-        'fase4_6_comp_kpi_arq':         byNameVals('fase4_6_comp_kpi_arq[]'),
-        'fase4_6_comp_num':             byNameVal('fase4_6_comp_num'),
-        'fase4_6_comp_data':            byNameVal('fase4_6_comp_data'),
-      };
+    // 4.2 — Fase Intermediária
+    const F42_EXTRA = {
+      'fase4_2_criterios':             byNameCheckedAny(['fase4_2_criterios[]','F42_CRITERIOS[]','F42_LISTA[]']),
+      'fase4_2_decl':                  byNameValAny(['fase4_2_decl','F42_DECL']),
+      'fase4_2_decl_a_lei':            byNameValAny(['fase4_2_decl_a_lei','F42_DECL_A_LEI']),
+      'fase4_2_decl_b_prazo':          byNameValAny(['fase4_2_decl_b_prazo','F42_DECL_B_PRAZO']),
+      'fase4_2_decl_f':                byNameCheckedAny(['fase4_2_decl_f[]','F42_DECL_F[]']),
+      'fase4_2_finalidade':            byNameValAny(['fase4_2_finalidade','F42_FINALIDADE']),
+      'fase4_2_prazo_req':             byNameValAny(['fase4_2_prazo_req','F42_PRAZO_REQ']),
+      'fase4_2_prazo_fund':            byNameValAny(['fase4_2_prazo_fund','F42_PRAZO_FUND']),
+      'fase4_2_anexos':                byNameValsAny(['fase4_2_anexos[]','F42_ANEXOS[]','F42_ANEXOS']),
+      'fase4_2_anexos_desc':           byNameValsAny(['fase4_2_anexos_desc[]','F42_ANEXOS_DESC[]']),
+      'fase4_2_just':                  byNameValAny(['fase4_2_just','F42_JUST']),
+      'fase4_2_comp_tipo':             byNameValAny(['fase4_2_comp_tipo','F42_COMP_TIPO']),
+      'fase4_2_comp_num':              byNameValAny(['fase4_2_comp_num','F42_COMP_NUM']),
+      'fase4_2_comp_data':             byNameValAny(['fase4_2_comp_data','F42_COMP_DATA']),
+    };
 
-      // Adiciona todos os extras no objeto final do payload (mantém nomes originais fase4_*)
-      const FASE4_EXTRAS = { ...F41_EXTRA, ...F42_EXTRA, ...F43_EXTRA, ...F44_EXTRA, ...F45_EXTRA, ...F46_EXTRA };
+    // 4.3 — Fase Específica (Equacionamento etc.)
+    const F43_EXTRA = {
+      'fase4_3_escopo':                byNameCheckedAny(['fase4_3_escopo[]','F43_ESCOPO[]']),
+      'fase4_3_eq_massa_alvo':         byNameCheckedAny(['fase4_3_eq_massa_alvo[]','F43_MASSA[]']),
+      'fase4_3_eq_crono':              byNameValAny(['fase4_3_eq_crono','F43_CRONO']),
+      'fase4_3_eq_indicadores':        byNameCheckedAny(['fase4_3_eq_indicadores[]','F43_INDICADORES[]']),
+      'fase4_3_eq_indicadores_outros': byNameValAny(['fase4_3_eq_indicadores_outros','F43_INDICADORES_OUTROS']),
+      'fase4_3_decl':                  byNameValAny(['fase4_3_decl','F43_DECL']),
+      'fase4_3_decl_a_param':          byNameValAny(['fase4_3_decl_a_param','F43_DECL_A_PARAM']),
+      'fase4_3_decl_f':                byNameCheckedAny(['fase4_3_decl_f[]','F43_DECL_F[]']),
+      'fase4_3_finalidade':            byNameCheckedAny(['fase4_3_finalidade[]','F43_FINALIDADES[]']),
+      'fase4_3_alt_detalhe':           byNameValAny(['fase4_3_alt_detalhe','F43_ALT_DET']),
+      'fase4_3_anexos':                byNameValsAny(['fase4_3_anexos[]','F43_ANEXOS[]','F43_ANEXOS']),
+      'fase4_3_anexos_desc':           byNameValsAny(['fase4_3_anexos_desc[]','F43_ANEXOS_DESC[]']),
+      'fase4_3_just':                  byNameValAny(['fase4_3_just','F43_JUST']),
+      'fase4_3_comp_tipo':             byNameValAny(['fase4_3_comp_tipo','F43_COMP_TIPO']),
+      'fase4_3_comp_num':              byNameValAny(['fase4_3_comp_num','F43_COMP_NUM']),
+      'fase4_3_comp_data':             byNameValAny(['fase4_3_comp_data','F43_COMP_DATA']),
+    };
 
-      // Fase 4.5 – alguns templates esperam texto em 4.5.1
-      const F451_TEXTO =
-        (p.F45_OK451 === true || p.F45_OK451 === 'true')
-            ? 'Foi mantida a regularidade quanto aos critérios exigidos nas fases anteriores.'
-            : 'Não informado';
+    // 4.4 — Fase de Parcelamentos
+    const F44_EXTRA = {
+      'fase4_4_debitos_massa':         byNameCheckedAny(['fase4_4_debitos_massa[]','F44_CONDICOES[]','F44_DEBITOS[]']),
+      'fase4_4_debitos_outros':        byNameValAny(['fase4_4_debitos_outros','F44_DEBITOS_OUTROS']),
+      'fase4_4_vinc_fpm':              byNameValAny(['fase4_4_vinc_fpm','F44_VINC_FPM']),
+      'fase4_4_vinc_lei':              byNameValAny(['fase4_4_vinc_lei','F44_VINC_LEI']),
+      'fase4_4_vinc_proc':             byNameValAny(['fase4_4_vinc_proc','F44_VINC_PROC']),
+      'fase4_4_comp_tipo':             byNameValAny(['fase4_4_comp_tipo','F44_COMP_TIPO']),
+      'fase4_4_comp_dipr_num':         byNameValAny(['fase4_4_comp_dipr_num','F44_COMP_DIPR_NUM']),
+      'fase4_4_comp_dipr_data':        byNameValAny(['fase4_4_comp_dipr_data','F44_COMP_DIPR_DATA']),
+      'fase4_4_anexos':                byNameValsAny(['fase4_4_anexos[]','F44_ANEXOS[]','F44_ANEXOS']),
+      'fase4_4_anexos_desc':           byNameValsAny(['fase4_4_anexos_desc[]','F44_ANEXOS_DESC[]']),
+      'fase4_4_just':                  byNameValAny(['fase4_4_just','F44_JUST']),
+      'fase4_4_comp_final_tipo':       byNameValAny(['fase4_4_comp_final_tipo','F44_COMP_FINAL_TIPO']),
+      'fase4_4_comp_final_num':        byNameValAny(['fase4_4_comp_final_num','F44_COMP_FINAL_NUM']),
+      'fase4_4_comp_final_data':       byNameValAny(['fase4_4_comp_final_data','F44_COMP_FINAL_DATA']),
+    };
 
-      // 4.6 – prioriza F46_* e faz fallback para F44_* (compat)
-      const F46_CRITERIOS   = Array.isArray(p.F46_CRITERIOS)   ? p.F46_CRITERIOS
-                             : Array.isArray(p.F44_CRITERIOS)  ? p.F44_CRITERIOS : [];
-      const F46_DECLS       = Array.isArray(p.F46_DECLS)       ? p.F46_DECLS
-                             : Array.isArray(p.F44_DECLS)      ? p.F44_DECLS : [];
-      const F46_FINALIDADES = Array.isArray(p.F46_FINALIDADES) ? p.F46_FINALIDADES
-                             : Array.isArray(p.F44_FINALIDADES)? p.F44_FINALIDADES : [];
+    // 4.5 — Fase CRP Administrativo
+    const F45_EXTRA = {
+      'fase4_5_criterios':             byNameCheckedAny(['fase4_5_criterios[]','F45_CRITERIOS[]']),
+      'fase4_5_decl':                  byNameValAny(['fase4_5_decl','F45_DECL']),
+      'fase4_5_decl_a_dtcrp_ult':      byNameValAny(['fase4_5_decl_a_dtcrp_ult','F45_DECL_A_DTCRP_ULT']),
+      'fase4_5_decl_b_tipo':           byNameValAny(['fase4_5_decl_b_tipo','F45_DECL_B_TIPO']),
+      'fase4_5_decl_f':                byNameCheckedAny(['fase4_5_decl_f[]','F45_DECL_F[]']),
+      'fase4_5_finalidade':            byNameCheckedAny(['fase4_5_finalidade[]','F45_FINALIDADES[]']),
+      'fase4_5_crp_info':              byNameValAny(['fase4_5_crp_info','F45_CRP_INFO']),
+      'fase4_5_anexos':                byNameValsAny(['fase4_5_anexos[]','F45_ANEXOS[]','F45_ANEXOS']),
+      'fase4_5_anexos_desc':           byNameValsAny(['fase4_5_anexos_desc[]','F45_ANEXOS_DESC[]']),
+      'fase4_5_just':                  byNameValAny(['fase4_5_just','F45_JUST']),
+      'fase4_5_comp_tipo':             byNameValAny(['fase4_5_comp_tipo','F45_COMP_TIPO']),
+      'fase4_5_comp_num':              byNameValAny(['fase4_5_comp_num','F45_COMP_NUM']),
+      'fase4_5_comp_data':             byNameValAny(['fase4_5_comp_data','F45_COMP_DATA']),
+    };
 
-      // Representações em string (fallback se o template usar campo texto)
-      const F46_CRITERIOS_TXT   = F46_CRITERIOS.length ? F46_CRITERIOS.join('\n') : 'Não informado';
-      const F46_DECLS_TXT       = F46_DECLS.length ? F46_DECLS.join('\n') : 'Não informado';
-      const F46_FINALIDADES_TXT = F46_FINALIDADES.length ? F46_FINALIDADES.join('\n') : 'Não informado';
+    // 4.6 — Fase Manutenção da Conformidade
+    const F46_EXTRA = {
+      'fase4_6_criterios_plano':       byNameCheckedAny(['fase4_6_criterios_plano[]','F46_CONDICOES[]','F46_CRITERIOS[]']),
+      'fase4_6_pg_nivel':              byNameValAny(['fase4_6_pg_nivel','F46_PG_NIVEL']),
+      'fase4_6_criterios_outros':      byNameValAny(['fase4_6_criterios_outros','F46_CRITERIOS_OUTROS']),
+      'fase4_6_declaracoes':           byNameValAny(['fase4_6_declaracoes','F46_DECLARACOES','F46_DECLS_TXT']),
+      'fase4_6_decl_a_base':           byNameValAny(['fase4_6_decl_a_base','F46_DECL_A_BASE']),
+      'fase4_6_decl_b_conferencia':    byNameCheckedAny(['fase4_6_decl_b_conferencia','F46_DECL_B_CONF']),
+      'fase4_6_crit_f':                byNameCheckedAny(['fase4_6_crit_f[]','F46_CRIT_F[]']),
+      'fase4_6_finalidade':            byNameCheckedAny(['fase4_6_finalidade[]','F46_FINALIDADES[]']),
+      'fase4_6_alt_crono':             byNameValAny(['fase4_6_alt_crono','F46_ALT_CRONO']),
+      'fase4_6_alt_kpi':               byNameCheckedAny(['fase4_6_alt_kpi[]','F46_ALT_KPI[]']),
+      'fase4_6_prazo_data':            byNameValAny(['fase4_6_prazo_data','F46_PRAZO_DATA']),
+      'fase4_6_prazo_fund':            byNameValAny(['fase4_6_prazo_fund','F46_PRAZO_FUND']),
+      'fase4_6_anexos':                byNameValsAny(['fase4_6_anexos[]','F46_ANEXOS[]','F46_ANEXOS']),
+      'fase4_6_anexos_desc':           byNameValsAny(['fase4_6_anexos_desc[]','F46_ANEXOS_DESC[]']),
+      'fase4_6_anexos_tipo':           byNameValAny(['fase4_6_anexos_tipo','F46_ANEXOS_TIPO']),
+      'fase4_6_anexos_ref':            byNameValAny(['fase4_6_anexos_ref','F46_ANEXOS_REF']),
+      'fase4_6_just':                  byNameValAny(['fase4_6_just','F46_JUST']),
+      'fase4_6_comp':                  byNameValAny(['fase4_6_comp','F46_COMP']),
+      'fase4_6_comp_kpi':              byNameCheckedAny(['fase4_6_comp_kpi[]','F46_COMP_KPI[]']),
+      'fase4_6_comp_kpi_arq':          byNameValsAny(['fase4_6_comp_kpi_arq[]','F46_COMP_KPI_ARQ[]']),
+      'fase4_6_comp_num':              byNameValAny(['fase4_6_comp_num','F46_COMP_NUM']),
+      'fase4_6_comp_data':             byNameValAny(['fase4_6_comp_data','F46_COMP_DATA']),
+    };
+
+    // Agrega todos os extras mantendo as chaves "fase4_*" esperadas pelo template do PDF
+    const FASE4_EXTRAS = { ...F41_EXTRA, ...F42_EXTRA, ...F43_EXTRA, ...F44_EXTRA, ...F45_EXTRA, ...F46_EXTRA };
+
+    // Fase 4.5 – alguns templates esperam texto em 4.5.1
+    const F451_TEXTO =
+      (p.F45_OK451 === true || p.F45_OK451 === 'true')
+        ? 'Foi mantida a regularidade quanto aos critérios exigidos nas fases anteriores.'
+        : 'Não informado';
+
+    // 4.6 – prioriza F46_* e faz fallback para F44_* (compat)
+    const F46_CRITERIOS   = Array.isArray(p.F46_CRITERIOS)   ? p.F46_CRITERIOS
+                          : Array.isArray(p.F44_CRITERIOS)  ? p.F44_CRITERIOS : [];
+    const F46_DECLS       = Array.isArray(p.F46_DECLS)       ? p.F46_DECLS
+                          : Array.isArray(p.F44_DECLS)      ? p.F44_DECLS : [];
+    const F46_FINALIDADES = Array.isArray(p.F46_FINALIDADES) ? p.F46_FINALIDADES
+                          : Array.isArray(p.F44_FINALIDADES)? p.F44_FINALIDADES : [];
+
+    // Representações em string (fallback se o template usar campo texto)
+    const F46_CRITERIOS_TXT   = F46_CRITERIOS.length ? F46_CRITERIOS.join('\n') : 'Não informado';
+    const F46_DECLS_TXT       = F46_DECLS.length ? F46_DECLS.join('\n') : 'Não informado';
+    const F46_FINALIDADES_TXT = F46_FINALIDADES.length ? F46_FINALIDADES.join('\n') : 'Não informado';
 
     return {
-      CELEBRACAO_TERMO_PARCELA_DEBITOS,     // usado em alguns templates
-      F41_OPCAO_TXT: CELEBRACAO_TERMO_PARCELA_DEBITOS, // alias
-      FASE_41_DESC:  CELEBRACAO_TERMO_PARCELA_DEBITOS, // alias
+      CELEBRACAO_TERMO_PARCELA_DEBITOS,
+      F41_OPCAO_TXT: CELEBRACAO_TERMO_PARCELA_DEBITOS,
+      FASE_41_DESC:  CELEBRACAO_TERMO_PARCELA_DEBITOS,
 
       REGULARIZACAO_PENDEN_ADMINISTRATIVA,
       DEFICIT_ATUARIAL,
@@ -2130,26 +2154,28 @@
 
       DATA_TERMO_GERADO,
       ESFERA: p.ESFERA || '',
-      // --- NOVOS aliases p/ bater com o template do PDF ---
+
       // 4.5
-      F451_TEXTO,             // (4.5.1) texto derivado do boolean
-      F45_DOCS: p.F45_DOCS || 'Não informado',         // (4.5.2/3)
-      F45_JUST: p.F45_JUST || 'Não informado',         // (4.5.4)
+      F451_TEXTO,
+      F45_DOCS: p.F45_DOCS || 'Não informado',
+      F45_JUST: p.F45_JUST || 'Não informado',
 
       // 4.6 – arrays e versões em texto
-      F46_CRITERIOS,          // esperado pelo PDF em 4.6.1 quando lista
-      F46_DECLS,              // esperado pelo PDF em 4.6.2 quando lista
-      F46_FINALIDADES,        // 4.6.3 (já vinha ok, mantemos)
-      F46_CRITERIOS_TXT,      // fallback caso o template use campo texto
+      F46_CRITERIOS,
+      F46_DECLS,
+      F46_FINALIDADES,
+      F46_CRITERIOS_TXT,
       F46_DECLS_TXT,
       F46_FINALIDADES_TXT,
-
-      // espelhar também campos “[]” se o seu gerador de PDF lê nomes com colchetes
       'F46_CRITERIOS[]':   F46_CRITERIOS,
       'F46_DECLS[]':       F46_DECLS,
-      'F46_FINALIDADES[]': F46_FINALIDADES
+      'F46_FINALIDADES[]': F46_FINALIDADES,
+
+      // >>> chave do sucesso: enviar TODOS os extras que o template espera <<<
+      ...FASE4_EXTRAS,
     };
   }
+
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
