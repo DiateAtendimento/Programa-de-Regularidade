@@ -1738,7 +1738,11 @@
       F45_OK451: !!$('#blk_45 input[type="checkbox"]:checked'),
       F45_DOCS:  $('#F45_DOCS')?.value || '',
       F45_JUST:  $('#F45_JUST')?.value || '',
-      F46_CRITERIOS: collectCheckedValues('#F46_CRITERIOS input[type="checkbox"]'),
+      F46_CRITERIOS: Array.from(new Set([
+        collectCheckedValues('#F46_CRITERIOS input[type="checkbox"]'),
+        collectCheckedValues('#F46_CONDICOES input[type="checkbox"]')
+      ].flat().filter(Boolean))),
+
 
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
       F46_PORTE:       $('#F46_PORTE')?.value || '',
@@ -1935,8 +1939,10 @@
   function makeSolicCrpCompatFields(p) {
     // 4.1 (até 60 / até 300) a partir de F41_OPCAO
     let CELEBRACAO_TERMO_PARCELA_DEBITOS = '';
-    if (p.F41_OPCAO === '4.1.1') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.1 – até 60 parcelas';
-    if (p.F41_OPCAO === '4.1.2') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.2 – até 300 parcelas';
+    const _f41 = (p.F41_OPCAO_CODE || (String(p.F41_OPCAO||'').match(/4\.1\.[12]/)?.[0] || '')).trim();
+    if (_f41 === '4.1.1') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.1 – até 60 parcelas';
+    if (_f41 === '4.1.2') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.2 – até 300 parcelas';
+
 
     // 4.2 regularização administrativa (mapeia lista marcada → string com códigos)
     const f42 = Array.isArray(p.F42_LISTA) ? p.F42_LISTA : [];
@@ -1955,7 +1961,8 @@
     const CRITERIOS_ESTRUT_ESTABELECIDOS = f44c.join('; ');
 
     // 4.6 Manutenção da conformidade
-    const man = Array.isArray(p.F46_CRITERIOS) ? p.F46_CRITERIOS : [];
+    const man = Array.isArray(p.F46_CRITERIOS) ? p.F46_CRITERIOS : (Array.isArray(p.F46_CONDICOES) ? p.F46_CONDICOES : []);
+
     const MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS = man.join('; ');
 
     // Etapas 5–7 (se existirem campos textuais no teu form; senão ficam vazios)
