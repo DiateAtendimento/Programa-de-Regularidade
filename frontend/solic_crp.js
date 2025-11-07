@@ -185,6 +185,7 @@
   function isGesconNumber(x){
     return /^[SL]\d{6}\/\d{4}$/i.test(String(x).trim());
   }
+
   // --- GARANTIAS: fase_programa + datas normalizadas para o payload do PDF/submit
   function ensureDefaultsForPayload(payload){
     if (!payload.FASE_PROGRAMA && !payload.__FASE_SEL__) {
@@ -400,6 +401,7 @@
     dots: $$('#stepper .step'),
     navFooter: $('#navFooter')
   };
+
   /* ========= Máscaras ========= */
   function maskCNPJ(v){
     const d = digits(v).slice(0,14);
@@ -563,30 +565,31 @@
     data.values['F45_JUST']  = $('#F45_JUST')?.value || '';
     data.values['F453_EXEC_RES'] = $('#F453_EXEC_RES')?.value || '';
 
-    // 4.6 — usar o contêiner F46_CRITERIOS se existir; senão, cair para F462F_CRITERIOS (que é o que o HTML tem)
-    const _critF46 = $$('#F46_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
-    const _critAlt = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
-    data.values['F46_CRITERIOS[]']   = _critF46.length ? _critF46 : _critAlt;
+  // 4.6 — usar o contêiner F46_CRITERIOS se existir; senão, cair para F462F_CRITERIOS (que é o que o HTML tem)
+  const _critF46 = $$('#F46_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
+  const _critAlt = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
+  data.values['F46_CRITERIOS[]']   = _critF46.length ? _critF46 : _critAlt;
 
-    data.values['F46_PROGESTAO']     = $('#F46_PROGESTAO')?.value || '';
-    data.values['F46_PORTE']         = $('#F46_PORTE')?.value || '';
-    data.values['F46_JUST_D']        = $('#F46_JUST_D')?.value || '';
-    data.values['F46_DOCS_D']        = $('#F46_DOCS_D')?.value || '';
-    data.values['F46_JUST_E']        = $('#F46_JUST_E')?.value || '';
-    data.values['F46_DOCS_E']        = $('#F46_DOCS_E')?.value || '';
+  data.values['F46_PROGESTAO']     = $('#F46_PROGESTAO')?.value || '';
+  data.values['F46_PORTE']         = $('#F46_PORTE')?.value || '';
+  data.values['F46_JUST_D']        = $('#F46_JUST_D')?.value || '';
+  data.values['F46_DOCS_D']        = $('#F46_DOCS_D')?.value || '';
+  data.values['F46_JUST_E']        = $('#F46_JUST_E')?.value || '';
+  data.values['F46_DOCS_E']        = $('#F46_DOCS_E')?.value || '';
 
-    // finalidades já existem com esse ID
-    data.values['F46_FINALIDADES[]'] = $$(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i=>i.value);
+  // finalidades já existem com esse ID
+  data.values['F46_FINALIDADES[]'] = $$(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i=>i.value);
 
-    // ANEXOS / JUSTIFICATIVAS / COMPROVAÇÃO — cair para os campos que o HTML realmente usa (F466_DOCS/F466_EXEC_RES, F46_JUST_D/E)
-    data.values['F46_ANEXOS']        = $('#F46_ANEXOS')?.value || $('#F466_DOCS')?.value || '';
-    data.values['F46_JUST_PLANOS']   = $('#F46_JUST_PLANOS')?.value || $('#F46_JUST_D')?.value || $('#F46_JUST_E')?.value || '';
-    data.values['F46_COMP_CUMPR']    = $('#F46_COMP_CUMPR')?.value || $('#F466_EXEC_RES')?.value || '';
+  // ANEXOS / JUSTIFICATIVAS / COMPROVAÇÃO — cair para os campos que o HTML realmente usa (F466_DOCS/F466_EXEC_RES, F46_JUST_D/E)
+  data.values['F46_ANEXOS']        = $('#F46_ANEXOS')?.value || $('#F466_DOCS')?.value || '';
+  data.values['F46_JUST_PLANOS']   = $('#F46_JUST_PLANOS')?.value || $('#F46_JUST_D')?.value || $('#F46_JUST_E')?.value || '';
+  data.values['F46_COMP_CUMPR']    = $('#F46_COMP_CUMPR')?.value || $('#F466_EXEC_RES')?.value || '';
 
-    data.values['F462F_OPTF']        = !!$('#F462F_OPTF')?.checked;
-    data.values['F462F_CRITERIOS[]'] = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
-    data.values['F466_DOCS']         = $('#F466_DOCS')?.value || '';
-    data.values['F466_EXEC_RES']     = $('#F466_EXEC_RES')?.value || '';
+  data.values['F462F_OPTF']        = !!$('#F462F_OPTF')?.checked;
+  data.values['F462F_CRITERIOS[]'] = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
+  data.values['F466_DOCS']         = $('#F466_DOCS')?.value || '';
+  data.values['F466_EXEC_RES']     = $('#F466_EXEC_RES')?.value || '';
+
 
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
   }
@@ -787,6 +790,7 @@
     curStep = Number.isFinite(st?.step) ? Math.max(0, Math.min(el.sections.length-1, Number(st.step))) : 0;
     render();
   }
+
   /* ========= Modais (Atenção/Erro) ========= */
   function showAtencao(msgs){
     const list = $('#modalAtencaoLista'); if(list){ list.innerHTML = msgs.map(m=>`<li>${m}</li>`).join(''); }
@@ -878,6 +882,7 @@
     dbg('[consultarTermosRegistrados] <<', out);
     return out;
   }
+
   async function onPesquisar(ev){
     if (searching) return;
 
@@ -1054,7 +1059,9 @@
         el.emailRepUg.value = resp.ug.email || '';
         el.telRepUg.value   = resp.ug.telefone || '';
       }
+
       // 3) CRP anterior — preencher 3.1 (data) e 3.2 (tipo)
+      // depois (mais robusto)
       const dataVenc =
         crp.data_venc
         || crp.DATA_VALIDADE_DMY
@@ -1070,6 +1077,7 @@
 
       // ===== NOVO BLOCO (sincronizar CRP com __TERMO_DATA__ para o template) =====
       try {
+        // helpers locais
         const toBR = (v) => {
           if (!v) return '';
           const s = String(v).trim();
@@ -1090,7 +1098,7 @@
         // base de dados da página
         window.__TERMO_DATA__ = window.__TERMO_DATA__ || {};
 
-        // 1) Captura dos campos na tela
+        // 1) Captura dos campos na tela (já em ISO no input type="date")
         const dataVencISO =
           (el?.dataUltCrp && String(el.dataUltCrp.value || '').trim()) || '';
         const dataVencBR  = toBR(dataVencISO);
@@ -1102,7 +1110,7 @@
 
         tipoFormat = normTipo(tipoFormat);
 
-        // 2) Data do termo
+        // 2) Data do termo (carimbo do formulário ou hoje)
         const todayBR = (() => {
           try { return new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }); }
           catch { return ''; }
@@ -1113,28 +1121,39 @@
           (el?.dataSol && String(el.dataSol.value || '').trim()) ||
           todayBR;
 
-        // 3) Gravação segura dos aliases
+        // 3) Gravação segura dos aliases (só se houver valor)
         const TD = window.__TERMO_DATA__;
+        // Datas do último CRP (preferência BR para o template)
         setIfVal(TD, 'DATA_VENC_ULTIMO_CRP',          dataVencBR);
         setIfVal(TD, 'DATA_VENCIMENTO_ULTIMO_CRP',    dataVencBR);
         setIfVal(TD, 'venc_ult_crp',                  dataVencBR);
         setIfVal(TD, 'ULTIMO_CRP_DATA',               dataVencBR);
+
+        // (opcional) manter uma cópia ISO se algum template/JS quiser
         setIfVal(TD, 'DATA_VENC_ULTIMO_CRP_ISO',      dataVencISO);
+
+        // Tipo do último CRP
         setIfVal(TD, 'TIPO_EMISSAO_ULTIMO_CRP',       tipoFormat);
         setIfVal(TD, 'tipo_emissao_ult_crp',          tipoFormat);
         setIfVal(TD, 'ULTIMO_CRP_TIPO',               tipoFormat);
+
+        // Data do termo (usada em alguns templates com data-k="data_termo")
         setIfVal(TD, 'data_termo',                    dataTermo);
 
+        // 4) Notifica o template para re-render (data-k / fallbacks)
         document.dispatchEvent(new Event('TERMO_DATA'));
+
       } catch (e) {
         console.warn('Falha ao espelhar __TERMO_DATA__ após hidratarTermosRegistrados:', e);
       }
+
 
       // Regra “não ⇒ Administrativa / sim ⇒ Judicial”
       let tipo = '';
       const flag = (crp.DECISAO_JUDICIAL || crp.e_judicial || crp.tipo_simnao || '').toString().trim().toLowerCase();
       if (['sim','s','true','1','yes','y'].includes(flag))      tipo = 'Judicial';
       else if (['nao','não','n','false','0','no'].includes(flag)) tipo = 'Administrativa';
+      // fallback: usa crp.tipo se já vier normalizado
       if (!tipo && crp.tipo) tipo = crp.tipo;
 
       // Preenche select novo, ou rádios legados
@@ -1197,6 +1216,7 @@
         return !!t && !['NÃO','NAO','NO','0','FALSE','F'].includes(t);
       };
 
+      // “adesão sem irregularidades”
       const adesaoSemIrreg = data?.ADESAO_SEM_IRREGULARIDADES ?? crp?.adesao_sem_irregulares ?? '';
       const chkSemIrreg = $('#chkSemIrregularidades');
       if (chkSemIrreg) chkSemIrreg.checked = yes(adesaoSemIrreg);
@@ -1220,14 +1240,15 @@
         else if (/estadual|distrital/i.test(esfera)) { if (el.esfEst) el.esfEst.checked = true; if (el.esfMun) el.esfMun.checked = false; }
       }
 
-      // Fallback UG
+      // Fallback: se algum campo da UG ficou vazio, reforça com dados do "Formulário 1"
       if (!el.ug.value && ente.ug)            el.ug.value      = ente.ug;
       if (!el.cnpjUg.value && ente.cnpj_ug)   el.cnpjUg.value   = maskCNPJ(ente.cnpj_ug);
       if (!el.emailUg.value && ente.email_ug) el.emailUg.value  = ente.email_ug;
 
-      // Processo SEI visível
-      const procSei2 = data?.proc_sei ?? data?.PROCESSO_SEI ?? '';
-      if (procSei2 && el.infoProcSei) el.infoProcSei.textContent = procSei2;
+      // >>> NOVO: Processo SEI visível no quadro do passo 0 (se vier da planilha/API)
+      const procSei = data?.proc_sei ?? data?.PROCESSO_SEI ?? '';
+      if (procSei && el.infoProcSei) el.infoProcSei.textContent = procSei;
+      // <<<
 
       popularListasFaseComBaseNosCritérios();
       saveState();
@@ -1235,10 +1256,12 @@
 
     }catch(err){
       dbe('[hidratarTermosRegistrados] falhou:', err);
+      // Fallback mínimo p/ não travar
       if (!el.uf.value && el.spanUfGescon?.textContent) el.uf.value = el.spanUfGescon.textContent.trim();
       if (!el.ente.value && el.spanEnteGescon?.textContent) el.ente.value = el.spanEnteGescon.textContent.trim();
       if (!el.cnpjEnte.value) el.cnpjEnte.value = maskCNPJ(cnpj);
 
+      // mantém listas e estado
       popularListasFaseComBaseNosCritérios();
       saveState();
       const introNG = document.getElementById('intro_N_GESCON');
@@ -1246,6 +1269,7 @@
       if (introNG) introNG.textContent = el.spanNGescon?.textContent || '—';
       if (introDT) introDT.textContent = el.spanDataEnc?.textContent || '—';
 
+      // garante espelhamento
       syncUg132();
     }
   }
@@ -1365,6 +1389,7 @@
     }
 
     if (f==='4.6'){
+      // NÃO use "p" aqui — leia do DOM
       const critF46   = $$('#F46_CRITERIOS input[type="checkbox"]:checked').length;
       const critF46_2 = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').length;
       const temCrit   = (critF46 + critF46_2) > 0;
@@ -1412,6 +1437,7 @@
       }
     }
 
+
     if (el.f44Final && !document.querySelector('#F44_FINALIDADES input')) {
       const finals = [
         'Implementação do plano de equacionamento do déficit atuarial',
@@ -1449,6 +1475,7 @@
       console.warn('popularListasFaseComBaseNosCritérios sync fail:', e);
     }
   }
+
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
     const msgs=[];
@@ -1497,16 +1524,17 @@
 
   // --- ADICIONAR: helpers para coletar valores dos modais -------------------
   function collectCheckedValues(selector) {
+    // retorna array de valores (strings) dos checkbox/radio marcados dentro do seletor
     return Array.from(document.querySelectorAll(selector || ''))
       .filter(i => i && i.checked)
       .map(i => String(i.value || '').trim())
       .filter(Boolean);
   }
-  function collectTextValue(id) {
-    const elx = document.getElementById(id);
-    return elx ? String(elx.value || '').trim() : '';
-  }
 
+  function collectTextValue(id) {
+    const el = document.getElementById(id);
+    return el ? String(el.value || '').trim() : '';
+  }
   /* ========= Payload ========= */
   function buildPayload(){
     // === Coletas base ===
@@ -1532,7 +1560,7 @@
     let FIN_3_2_OUTRO_CRITERIO_COMPLEXO =
       document.querySelector('input[name="OUTRO_CRITERIO_COMPLEXO"]')?.checked ? 'SIM' : '';
 
-    // 3.1 / 3.2 (coleta crua + fallbacks)
+    // 3.1 / 3.2 (coleta “crua” do form) + fallbacks fortes
     const DATA_VENCIMENTO_ULTIMO_CRP = (()=>{
       const v =
         (el.dataUltCrp && el.dataUltCrp.value && el.dataUltCrp.value.trim()) ||
@@ -1556,19 +1584,20 @@
       return v;
     })();
 
-    // 4.1
+    // 4.1 opção
     const F41_OPCAO = (
       document.querySelector('input[name="F41_OPCAO"]:checked')?.value ||
       document.querySelector('input[name="F41_OPCAO_4_1"]:checked')?.value || ''
     ).trim();
 
+    // 4.1 — código normalizado (envia somente "4.1.1" ou "4.1.2" se houver)
     const F41_OPCAO_CODE = (()=>{
       const m = (F41_OPCAO || '').match(/4\.1\.[12]/);
       return m ? m[0]
               : (document.querySelector('input[name="F41_OPCAO"]:checked')?.value || '').trim();
     })();
 
-    // 4.2
+    // 4.2, 4.3, 4.4... (listas vindas dos modais)
     const F42_LISTA = Array.from(
       document.querySelectorAll(
         '#F42_LISTA input[type="checkbox"]:checked,' +
@@ -1578,7 +1607,7 @@
       )
     ).map(i => i.value.trim());
 
-    // 4.4 – listas
+
     const F44_CRITERIOS = Array.from(new Set([
       collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
       Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i => i.value.trim())
@@ -1596,7 +1625,7 @@
 
     // UG consolidados (1.3 OU 1.3.2)
     const UG_FINAL       = (el.ug?.value || el.ugNome?.value || '').trim();
-    let CNPJ_UG_FINAL    = obterCNPJUG();
+    let CNPJ_UG_FINAL    = obterCNPJUG(); // retorna 14 dígitos ou null
     if(!CNPJ_UG_FINAL) {
       const rawCnpj = (document.getElementById('CNPJ_UG')?.value || document.getElementById('ug_cnpj')?.value || '');
       const digitsOnly = String(rawCnpj).replace(/\D+/g,'');
@@ -1605,7 +1634,7 @@
     const EMAIL_UG_FINAL = (el.emailUg?.value || el.ugEmail?.value || '').trim();
     if (!CNPJ_UG_FINAL) { console.warn('[solic_crp] CNPJ_UG ausente — salvando como rascunho'); window.__CNPJ_UG_WARNING__ = true; }
 
-    // === 3.4 — PRAZO ADICIONAL
+    // === 3.4 — PRAZO ADICIONAL (garante ordem correta das consts) ===
     const _radioPrazo =
       document.querySelector('input[name="prazo_adicional"]:checked') ||
       document.querySelector('input[name="PRAZO_ADICIONAL_3_4"]:checked') ||
@@ -1614,14 +1643,16 @@
       document.querySelector('input[name*="3_4"]:checked') ||
       document.querySelector('input[data-prz]:checked');
 
+    // --- reforço da extração do código 3.4.x (substitui a captura original de PRAZO_ADICIONAL_COD)
     let PRAZO_ADICIONAL_COD = '';
     if (_radioPrazo) {
       let raw = String(_radioPrazo.value || _radioPrazo.dataset?.prz || '').trim();
       const m = raw.match(/(3\.[24]\.\d)/);
       if (m) raw = m[1];
-      PRAZO_ADICIONAL_COD = raw.replace(/^3\.2\.(\d)$/, '3.4.$1');
+      PRAZO_ADICIONAL_COD = raw.replace(/^3\.2\.(\d)$/, '3.4.$1'); // normaliza legacy 3.2.x
     }
 
+    // texto: usa um input/textarea opcional OU mapeamento padrão
     const _txtNode  = document.getElementById('przTexto') || document.querySelector('[name="prazo_adicional_texto"]');
     const _txtLivre = String(_txtNode?.value || _txtNode?.textContent || '').trim();
 
@@ -1633,6 +1664,7 @@
     };
     const PRAZO_ADICIONAL_TEXTO = _txtLivre || _mapPrazo[PRAZO_ADICIONAL_COD] || '';
 
+    // Reflete flags legadas 3.2.x conforme a seleção 3.4.x
     if (PRAZO_ADICIONAL_COD) {
       FIN_3_2_MANUTENCAO_CONFORMIDADE = '';
       FIN_3_2_DEFICIT_ATUARIAL = '';
@@ -1674,9 +1706,10 @@
       TEL_REP_UG: el.telRepUg.value.trim(),
       SEI_PROCESSO: (el.introProcSei?.textContent || el.infoProcSei?.textContent || '').trim(),
 
-      // 3.1/3.2
+      // 3.1/3.2 (base)
       DATA_VENCIMENTO_ULTIMO_CRP: DATA_VENCIMENTO_ULTIMO_CRP,
       TIPO_EMISSAO_ULTIMO_CRP: TIPO_EMISSAO_ULTIMO_CRP,
+      // compat: espelho
       DATA_VENC_ULTIMO_CRP: DATA_VENCIMENTO_ULTIMO_CRP,
 
       CRITERIOS_IRREGULARES: $$('input[name="CRITERIOS_IRREGULARES[]"]:checked').map(i => i.value),
@@ -1691,7 +1724,7 @@
       F41_OPCAO,
       F41_OPCAO_CODE: F41_OPCAO_CODE,
 
-      // 4.2/4.4/4.3
+      // Listas já calculadas (sem recomputar aqui)
       F42_LISTA,
       F44_CRITERIOS,
       F44_DECLS,
@@ -1714,6 +1747,7 @@
         collectCheckedValues('input[name="F46_CRITERIOS[]"]'),
         collectCheckedValues('input[name="fase4_6_criterios_plano[]"]')
       ].flat().filter(Boolean))),
+
 
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
       F46_PORTE:       $('#F46_PORTE')?.value || '',
@@ -1752,11 +1786,12 @@
 
       IDEMP_KEY: takeIdemKey() || ''
     };
-
+    // PORTARIA padronizada (caso não venha do formulário)
     if (!obj.PORTARIA_SRPC) obj.PORTARIA_SRPC = '2.024/2025';
 
     dbg('[SOLIC-CRP] Payload (parcial):', obj);
     ensureDefaultsForPayload(obj);
+
     // === [3.1 e 3.2] Normalização e aliases para o TERMO ===
     const byNameVal = (n) => document.querySelector(`[name="${n}"]`)?.value || '';
     const byIdVal   = (i) => document.getElementById(i)?.value || '';
@@ -1777,8 +1812,8 @@
 
     obj.DATA_VENC_ULTIMO_CRP = toBR(obj.DATA_VENC_ULTIMO_CRP || obj.DATA_VENCIMENTO_ULTIMO_CRP || '');
     obj.DATA_VENCIMENTO_ULTIMO_CRP = obj.DATA_VENC_ULTIMO_CRP;
-    obj.venc_ult_crp               = obj.DATA_VENC_ULTIMO_CRP;
-    obj.tipo_emissao_ult_crp       = obj.TIPO_EMISSAO_ULTIMO_CRP;
+    obj.venc_ult_crp               = obj.DATA_VENC_ULTIMO_CRP;   // <- data-k do termo
+    obj.tipo_emissao_ult_crp       = obj.TIPO_EMISSAO_ULTIMO_CRP; // <- data-k do termo
 
     const _tipoEmissaoUltCrpRaw =
       byNameVal('TIPO_EMISSAO_ULTIMO_CRP') ||
@@ -1790,28 +1825,87 @@
     obj.TIPO_EMISSAO_ULTIMO_CRP = String(_tipoEmissaoUltCrpRaw).trim();
     if (/^adm/i.test(obj.TIPO_EMISSAO_ULTIMO_CRP)) obj.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
     if (/^jud/i.test(obj.TIPO_EMISSAO_ULTIMO_CRP)) obj.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
-    obj.tipo_emissao_ult_crp = obj.TIPO_EMISSAO_ULTIMO_CRP;
+    obj.tipo_emissao_ult_crp = obj.TIPO_EMISSAO_ULTIMO_CRP;     // data-k do termo
 
     obj.ULTIMO_CRP_DATA = obj.DATA_VENC_ULTIMO_CRP;
     obj.ULTIMO_CRP_TIPO = obj.TIPO_EMISSAO_ULTIMO_CRP;
 
+    // Compat: objeto CRP legado (se alguma parte do backend/template ainda usa)
     obj.CRP = Object.assign({}, obj.CRP || {}, {
       data_venc: obj.DATA_VENC_ULTIMO_CRP,
       tipo:      obj.TIPO_EMISSAO_ULTIMO_CRP
     });
 
-    obj.PRAZO_ADICIONAL_COD   = obj.PRAZO_ADICIONAL_COD || '';
+    // >>> aplica 3.4 no payload (sem duplicar lógica)
+    obj.PRAZO_ADICIONAL_COD   = PRAZO_ADICIONAL_COD;
+    obj.PRAZO_ADICIONAL_TEXTO = PRAZO_ADICIONAL_TEXTO;
+    obj.PRAZO_ADICIONAL_FLAG  = obj.PRAZO_ADICIONAL_COD ? 'SIM' : 'NAO';
+
+    // ——— Aliases com [] para agradar validações Joi do backend ———
+    // MARCADOR: JOI_ARRAY_ALIASES
+    ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
+      'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES'
+    ].forEach(k => {
+      const v = obj[k];
+      const arr = Array.isArray(v) ? v : (v ? [String(v)] : []);
+      obj[k+'[]'] = arr;
+      // NÃO sobrescreva obj[k] — mantém o tipo original (string ou array)
+    });
+
+    // Campos que o schema exige STRING: preserva string e cria alias [] só para o template/UI
+    ['F43_INCLUIR','F43_INCLUIR_B'].forEach(k => {
+      const s = (obj[k] ?? '').toString();
+      obj[k] = s; // mantém string
+      obj[k+'[]'] = s ? s.split(';').map(t => t.trim()).filter(Boolean) : [];
+    });
+
+    // Log útil
+    console.log('DEBUG buildPayload output:', {
+      F44_CRITERIOS: obj.F44_CRITERIOS,
+      F44_DECLS: obj.F44_DECLS,
+      F44_FINALIDADES: obj.F44_FINALIDADES,
+      PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO,
+      PRAZO_ADICIONAL_FLAG: obj.PRAZO_ADICIONAL_FLAG
+    });
+
+    // PATCH E — passo 2 (log final)
+    if (window.__DEBUG_SOLIC_CRP__) {
+      try {
+        console.log('[E2] buildPayload() fim →', {
+          DATA_VENC_ULTIMO_CRP: obj.DATA_VENC_ULTIMO_CRP || obj.DATA_VENCIMENTO_ULTIMO_CRP,
+          TIPO_EMISSAO_ULTIMO_CRP: obj.TIPO_EMISSAO_ULTIMO_CRP,
+          PRAZO_ADICIONAL_COD: obj.PRAZO_ADICIONAL_COD,
+          PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO,
+          FASE_PROGRAMA: obj.FASE_PROGRAMA || obj.fase_programa
+        });
+      } catch {}
+    }
+
+    // no final do buildPayload(), antes do return:
+    if (!obj.IDEMP_KEY) {
+      obj.IDEMP_KEY = takeIdemKey() || (function(){ try{
+        const a=new Uint8Array(16); crypto.getRandomValues(a);
+        return 'id_'+Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
+      }catch{ return 'id_'+Math.random().toString(36).slice(2)+Date.now().toString(36); }})();
+    }
+
+    // ===== NOVO BLOCO: aliases compat/template para 3.1 / 3.2 / 3.4 =====
+    obj.PRAZO_ADICIONAL_COD = obj.PRAZO_ADICIONAL_COD || '';
     obj.PRAZO_ADICIONAL_TEXTO = obj.PRAZO_ADICIONAL_TEXTO || '';
 
+    // lowercase aliases (alguns templates / fallbacks usam chaves minúsculas)
     obj.prazo_adicional_cod = obj.PRAZO_ADICIONAL_COD;
     obj.prazo_adicional_texto = obj.PRAZO_ADICIONAL_TEXTO;
 
+    // 3.1 aliases lowercase e espelho
     obj.data_vencimento_ultimo_crp = obj.DATA_VENCIMENTO_ULTIMO_CRP || obj.DATA_VENC_ULTIMO_CRP || obj.venc_ult_crp || '';
     obj.data_venc_ultimo_crp = obj.data_vencimento_ultimo_crp;
     obj.venc_ult_crp = obj.data_vencimento_ultimo_crp;
 
+    // 3.2 aliases lowercase
     obj.tipo_emissao_ult_crp = obj.TIPO_EMISSAO_ULTIMO_CRP || obj.tipo_emissao_ult_crp || '';
 
+    // espelha no window.__TERMO_DATA__ para garantir que o template receba os valores
     try {
       window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, {
         DATA_VENC_ULTIMO_CRP: obj.data_venc_ultimo_crp,
@@ -1825,7 +1919,7 @@
       document.dispatchEvent(new Event('TERMO_DATA'));
     } catch (e) { /* não crítico */ }
 
-    // Mescla universal com o form (preenche vazios e cria aliases [])
+    // === Mescla universal: se algo não foi preenchido manualmente acima, pega do form ===
     try {
       const form = document.querySelector('form#form_solic_crp') || document.querySelector('form');
       if (form) {
@@ -1837,87 +1931,66 @@
             (typeof curr === 'string' && curr.trim() === '') ||
             (Array.isArray(curr) && curr.length === 0);
 
-          if (isEmpty) obj[k] = v;
-          if (Array.isArray(v)) obj[`${k}[]`] = v;
+          if (isEmpty) obj[k] = v; // só preenche o que estiver faltando
+          if (Array.isArray(v)) obj[`${k}[]`] = v; // mantêm compat com chaves terminadas em []
         }
       }
     } catch (e) { /* não crítico */ }
 
-    // Aliases TXT para o template
-    obj.F42_LISTA_TXT       = (obj.F42_LISTA && Array.isArray(obj.F42_LISTA)) ? obj.F42_LISTA.join('; ') : (obj.F42_LISTA || '');
-    obj.F43_LISTA_TXT       = (obj.F43_LISTA && Array.isArray(obj.F43_LISTA)) ? obj.F43_LISTA.join('; ') : (obj.F43_LISTA || '');
-    obj.F44_CRITERIOS_TXT   = (obj.F44_CRITERIOS && Array.isArray(obj.F44_CRITERIOS)) ? obj.F44_CRITERIOS.join('\n') : (obj.F44_CRITERIOS || '');
-    obj.F44_FINALIDADES_TXT = (obj.F44_FINALIDADES && Array.isArray(obj.F44_FINALIDADES)) ? obj.F44_FINALIDADES.join('\n') : (obj.F44_FINALIDADES || '');
-    obj.F44_DECLS_TXT       = (obj.F44_DECLS && Array.isArray(obj.F44_DECLS)) ? obj.F44_DECLS.join('\n') : (obj.F44_DECLS || '');
-    obj.F46_CRITERIOS_TXT   = (obj.F46_CRITERIOS && Array.isArray(obj.F46_CRITERIOS)) ? obj.F46_CRITERIOS.join('\n') : (obj.F46_CRITERIOS || '');
-    obj.F46_FINALIDADES_TXT = (obj.F46_FINALIDADES && Array.isArray(obj.F46_FINALIDADES)) ? obj.F46_FINALIDADES.join('\n') : (obj.F46_FINALIDADES || '');
+        // PATCH (TXT aliases) — versões em texto para o template
+      obj.F42_LISTA_TXT       = (obj.F42_LISTA && Array.isArray(obj.F42_LISTA)) ? obj.F42_LISTA.join('; ') : (obj.F42_LISTA || '');
+      obj.F43_LISTA_TXT       = (obj.F43_LISTA && Array.isArray(obj.F43_LISTA)) ? obj.F43_LISTA.join('; ') : (obj.F43_LISTA || '');
+      obj.F44_CRITERIOS_TXT   = (obj.F44_CRITERIOS && Array.isArray(obj.F44_CRITERIOS)) ? obj.F44_CRITERIOS.join('\n') : (obj.F44_CRITERIOS || '');
+      obj.F44_FINALIDADES_TXT = (obj.F44_FINALIDADES && Array.isArray(obj.F44_FINALIDADES)) ? obj.F44_FINALIDADES.join('\n') : (obj.F44_FINALIDADES || '');
+      obj.F44_DECLS_TXT       = (obj.F44_DECLS && Array.isArray(obj.F44_DECLS)) ? obj.F44_DECLS.join('\n') : (obj.F44_DECLS || '');
+      obj.F46_CRITERIOS_TXT   = (obj.F46_CRITERIOS && Array.isArray(obj.F46_CRITERIOS)) ? obj.F46_CRITERIOS.join('\n') : (obj.F46_CRITERIOS || '');
+      obj.F46_FINALIDADES_TXT = (obj.F46_FINALIDADES && Array.isArray(obj.F46_FINALIDADES)) ? obj.F46_FINALIDADES.join('\n') : (obj.F46_FINALIDADES || '');
 
-    // JOI_ARRAY_ALIASES
-    ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
-      'F46_CRITERIOS','F46_FINALIDADES','F462F_CRITERIOS','CRITERIOS_IRREGULARES'
-    ].forEach(k => {
-      const v = obj[k];
-      const arr = Array.isArray(v) ? v : (v ? [String(v)] : []);
-      obj[k+'[]'] = arr;
-    });
-
-    ['F43_INCLUIR','F43_INCLUIR_B'].forEach(k => {
-      const s = (obj[k] ?? '').toString();
-      obj[k] = s;
-      obj[k+'[]'] = s ? s.split(';').map(t => t.trim()).filter(Boolean) : [];
-    });
-
-    if (!obj.IDEMP_KEY) {
-      obj.IDEMP_KEY = takeIdemKey() || (function(){ try{
-        const a=new Uint8Array(16); crypto.getRandomValues(a);
-        return 'id_'+Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
-      }catch{ return 'id_'+Math.random().toString(36).slice(2)+Date.now().toString(36); }})();
-    }
-
-    // logs finais
-    if (window.__DEBUG_SOLIC_CRP__) {
-      try {
-        console.log('[E2] buildPayload() fim →', {
-          DATA_VENC_ULTIMO_CRP: obj.DATA_VENC_ULTIMO_CRP || obj.DATA_VENCIMENTO_ULTIMO_CRP,
-          TIPO_EMISSAO_ULTIMO_CRP: obj.TIPO_EMISSAO_ULTIMO_CRP,
-          PRAZO_ADICIONAL_COD: obj.PRAZO_ADICIONAL_COD,
-          PRAZO_ADICIONAL_TEXTO: obj.PRAZO_ADICIONAL_TEXTO,
-          FASE_PROGRAMA: obj.FASE_PROGRAMA || obj.fase_programa
-        });
-      } catch {}
-    }
 
     return obj;
   }
-
-  // === Compat converter → campos que o template termo_solic_crp.html espera ===
+  // === Compat converter → transforma os campos granulares do form 2
+  //     nas chaves que o template termo_solic_crp.html espera ===
   function makeSolicCrpCompatFields(p) {
+    // 4.1 (até 60 / até 300) a partir de F41_OPCAO
     let CELEBRACAO_TERMO_PARCELA_DEBITOS = '';
     const _f41 = (p.F41_OPCAO_CODE || (String(p.F41_OPCAO||'').match(/4\.1\.[12]/)?.[0] || '')).trim();
     if (_f41 === '4.1.1') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.1 – até 60 parcelas';
     if (_f41 === '4.1.2') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.2 – até 300 parcelas';
 
-    const f42 = Array.isArray(p.F42_LISTA) ? p.F42_LISTA : [];
-    const REGULARIZACAO_PENDEN_ADMINISTRATIVA = f42.join('; ');
 
+    // 4.2 regularização administrativa (mapeia lista marcada → string com códigos)
+    const f42 = Array.isArray(p.F42_LISTA) ? p.F42_LISTA : [];
+    const REGULARIZACAO_PENDEN_ADMINISTRATIVA = f42.join('; '); // ex.: "4.2.1; 4.2.2"
+
+    // 4.3 déficit atuarial (idem)
     const f43 = Array.isArray(p.F43_LISTA) ? p.F43_LISTA : [];
     let DEFICIT_ATUARIAL = f43.join('; ');
-    if (!DEFICIT_ATUARIAL && (p.F43_PLANO || p.F43_DESC_PLANOS)) DEFICIT_ATUARIAL = '4.3';
+    if (!DEFICIT_ATUARIAL && (p.F43_PLANO || p.F43_DESC_PLANOS)) {
+      // se descreveu mas não ticonou, marca 4.3 genericamente
+      DEFICIT_ATUARIAL = '4.3';
+    }
 
+    // 4.4 critérios estruturantes
     const f44c = Array.isArray(p.F44_CRITERIOS) ? p.F44_CRITERIOS : [];
     const CRITERIOS_ESTRUT_ESTABELECIDOS = f44c.join('; ');
 
-    const man = Array.isArray(p.F46_CRITERIOS) ? p.F46_CRITERIOS : (Array.isArray(p.F44_CRITERIOS) ? p.F44_CRITERIOS : []);
+    // 4.6 Manutenção da conformidade
+    const man = Array.isArray(p.F46_CRITERIOS) ? p.F46_CRITERIOS : (Array.isArray(p.F46_CONDICOES) ? p.F46_CONDICOES : []);
+
     const MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS = man.join('; ');
 
+    // Etapas 5–7 (se existirem campos textuais no teu form; senão ficam vazios)
     const COMPROMISSO_FIRMADO_ADESAO = String(p.F45_JUST || '').trim();
     const PROVIDENCIA_NECESS_ADESAO  = String(p.F45_DOCS || '').trim();
     const CONDICAO_VIGENCIA          = String(p.F46_JUST_PLANOS || '').trim();
 
+    // Data “que o template usa”
     const DATA_TERMO_GERADO = p.DATA_SOLIC_GERADA || p.DATA || '';
 
-    // Helpers genéricos
+    // ===== Helpers que aceitam múltiplos nomes (fase4_* e F4x_*) =====
     const getAllByName = (n) => Array.from(document.querySelectorAll(`[name="${n}"]`));
+
     const byNameValsAny = (names) =>
       names.flatMap(n =>
         getAllByName(n).map(el =>
@@ -1926,12 +1999,14 @@
             : (el.value || '')
         )
       ).filter(Boolean);
+
     const byNameCheckedAny = (names) =>
       names.flatMap(n =>
         getAllByName(n)
           .filter(el => (el.type === 'checkbox' || el.type === 'radio') && el.checked)
           .map(el => el.value || 'on')
       );
+
     const byNameValAny = (names) => {
       for (const n of names) {
         const el = document.querySelector(`[name="${n}"]`);
@@ -1944,7 +2019,9 @@
       return '';
     };
 
-    // Extras por fase (mapeando fase4_*  ⇄  F4x_*)
+    // ===== Item 4 — Extras por fase (mapeando fase4_*  ⇄  F4x_*) =====
+
+    // 4.1 — Fase Geral
     const F41_EXTRA = {
       'fase4_1_criterios':             byNameCheckedAny(['fase4_1_criterios[]','F41_CRITERIOS[]','F41_CONDICOES[]']),
       'fase4_1_criterios_outros':      byNameValAny(['fase4_1_criterios_outros','F41_CRITERIOS_OUTROS','F41_OUTROS']),
@@ -1962,6 +2039,7 @@
       'fase4_1_comp_data':             byNameValAny(['fase4_1_comp_data','F41_COMP_DATA']),
     };
 
+    // 4.2 — Fase Intermediária
     const F42_EXTRA = {
       'fase4_2_criterios':             byNameCheckedAny(['fase4_2_criterios[]','F42_CRITERIOS[]','F42_LISTA[]']),
       'fase4_2_decl':                  byNameValAny(['fase4_2_decl','F42_DECL']),
@@ -1979,6 +2057,7 @@
       'fase4_2_comp_data':             byNameValAny(['fase4_2_comp_data','F42_COMP_DATA']),
     };
 
+    // 4.3 — Fase Específica (Equacionamento etc.)
     const F43_EXTRA = {
       'fase4_3_escopo':                byNameCheckedAny(['fase4_3_escopo[]','F43_ESCOPO[]']),
       'fase4_3_eq_massa_alvo':         byNameCheckedAny(['fase4_3_eq_massa_alvo[]','F43_MASSA[]']),
@@ -1998,6 +2077,7 @@
       'fase4_3_comp_data':             byNameValAny(['fase4_3_comp_data','F43_COMP_DATA']),
     };
 
+    // 4.4 — Fase de Parcelamentos
     const F44_EXTRA = {
       'fase4_4_debitos_massa':         byNameCheckedAny(['fase4_4_debitos_massa[]','F44_CONDICOES[]','F44_DEBITOS[]']),
       'fase4_4_debitos_outros':        byNameValAny(['fase4_4_debitos_outros','F44_DEBITOS_OUTROS']),
@@ -2015,6 +2095,7 @@
       'fase4_4_comp_final_data':       byNameValAny(['fase4_4_comp_final_data','F44_COMP_FINAL_DATA']),
     };
 
+    // 4.5 — Fase CRP Administrativo
     const F45_EXTRA = {
       'fase4_5_criterios':             byNameCheckedAny(['fase4_5_criterios[]','F45_CRITERIOS[]']),
       'fase4_5_decl':                  byNameValAny(['fase4_5_decl','F45_DECL']),
@@ -2031,6 +2112,7 @@
       'fase4_5_comp_data':             byNameValAny(['fase4_5_comp_data','F45_COMP_DATA']),
     };
 
+    // 4.6 — Fase Manutenção da Conformidade
     const F46_EXTRA = {
       'fase4_6_criterios_plano':       byNameCheckedAny(['fase4_6_criterios_plano[]','F46_CONDICOES[]','F46_CRITERIOS[]']),
       'fase4_6_pg_nivel':              byNameValAny(['fase4_6_pg_nivel','F46_PG_NIVEL']),
@@ -2056,13 +2138,16 @@
       'fase4_6_comp_data':             byNameValAny(['fase4_6_comp_data','F46_COMP_DATA']),
     };
 
+    // Agrega todos os extras mantendo as chaves "fase4_*" esperadas pelo template do PDF
     const FASE4_EXTRAS = { ...F41_EXTRA, ...F42_EXTRA, ...F43_EXTRA, ...F44_EXTRA, ...F45_EXTRA, ...F46_EXTRA };
 
+    // Fase 4.5 – alguns templates esperam texto em 4.5.1
     const F451_TEXTO =
       (p.F45_OK451 === true || p.F45_OK451 === 'true')
         ? 'Foi mantida a regularidade quanto aos critérios exigidos nas fases anteriores.'
         : 'Não informado';
 
+    // 4.6 – prioriza F46_* e faz fallback para F44_* (compat)
     const F46_CRITERIOS   = Array.isArray(p.F46_CRITERIOS)   ? p.F46_CRITERIOS
                           : Array.isArray(p.F44_CRITERIOS)  ? p.F44_CRITERIOS : [];
     const F46_DECLS       = Array.isArray(p.F46_DECLS)       ? p.F46_DECLS
@@ -2070,6 +2155,7 @@
     const F46_FINALIDADES = Array.isArray(p.F46_FINALIDADES) ? p.F46_FINALIDADES
                           : Array.isArray(p.F44_FINALIDADES)? p.F44_FINALIDADES : [];
 
+    // Representações em string (fallback se o template usar campo texto)
     const F46_CRITERIOS_TXT   = F46_CRITERIOS.length ? F46_CRITERIOS.join('\n') : 'Não informado';
     const F46_DECLS_TXT       = F46_DECLS.length ? F46_DECLS.join('\n') : 'Não informado';
     const F46_FINALIDADES_TXT = F46_FINALIDADES.length ? F46_FINALIDADES.join('\n') : 'Não informado';
@@ -2107,109 +2193,122 @@
       'F46_DECLS[]':       F46_DECLS,
       'F46_FINALIDADES[]': F46_FINALIDADES,
 
-      // Extras esperados pelo template
+      // >>> chave do sucesso: enviar TODOS os extras que o template espera <<<
       ...FASE4_EXTRAS,
     };
   }
 
+  // PATCH (F4-TEMPLATE) — garante arrays E versões em texto nas chaves esperadas pelo template
   function __stringifyList(v, sep = '; ') {
     if (!v) return '';
     if (Array.isArray(v)) return v.filter(Boolean).join(sep);
     return String(v || '').trim();
   }
 
-  function mirrorFase4ToTermoData(payload, compat) {
-    try {
-      const TD = window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, {
-        // 4.1
-        CELEBRACAO_TERMO_PARCELA_DEBITOS: compat.CELEBRACAO_TERMO_PARCELA_DEBITOS || '',
-        F41_OPCAO_TXT: compat.F41_OPCAO_TXT || '',
-        FASE_41_DESC:  compat.FASE_41_DESC  || '',
+function mirrorFase4ToTermoData(payload, compat) {
+  try {
+    const TD = window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, {
+      // 4.1
+      CELEBRACAO_TERMO_PARCELA_DEBITOS: compat.CELEBRACAO_TERMO_PARCELA_DEBITOS || '',
+      F41_OPCAO_TXT: compat.F41_OPCAO_TXT || '',
+      FASE_41_DESC:  compat.FASE_41_DESC  || '',
 
-        // 4.2
-        'F42_LISTA[]':        payload.F42_LISTA || [],
-        F42_LISTA:            payload.F42_LISTA || [],
-        F42_LISTA_TXT:        __stringifyList(payload.F42_LISTA),
+      // 4.2
+      'F42_LISTA[]':        payload.F42_LISTA || [],
+      F42_LISTA:            payload.F42_LISTA || [],
+      F42_LISTA_TXT:        __stringifyList(payload.F42_LISTA),
 
-        // 4.3
-        'F43_LISTA[]':        payload.F43_LISTA || [],
-        F43_LISTA:            payload.F43_LISTA || [],
-        F43_LISTA_TXT:        __stringifyList(payload.F43_LISTA),
-        F43_PLANO:            payload.F43_PLANO || '',
-        F43_PLANO_B:          payload.F43_PLANO_B || '',
-        F43_INCLUIR:          payload.F43_INCLUIR || '',
-        'F43_INCLUIR[]':      (payload['F43_INCLUIR[]'] || []),
-        F43_DESC_PLANOS:      payload.F43_DESC_PLANOS || '',
-        F4310_OPCAO:          payload.F4310_OPCAO || '',
-        F4310_LEGISLACAO:     payload.F4310_LEGISLACAO || '',
-        F4310_DOCS:           payload.F4310_DOCS || '',
+      // 4.3
+      'F43_LISTA[]':        payload.F43_LISTA || [],
+      F43_LISTA:            payload.F43_LISTA || [],
+      F43_LISTA_TXT:        __stringifyList(payload.F43_LISTA),
+      F43_PLANO:            payload.F43_PLANO || '',
+      F43_PLANO_B:          payload.F43_PLANO_B || '',
+      F43_INCLUIR:          payload.F43_INCLUIR || '',
+      'F43_INCLUIR[]':      (payload['F43_INCLUIR[]'] || []),
+      F43_DESC_PLANOS:      payload.F43_DESC_PLANOS || '',
+      F4310_OPCAO:          payload.F4310_OPCAO || '',
+      F4310_LEGISLACAO:     payload.F4310_LEGISLACAO || '',
+      F4310_DOCS:           payload.F4310_DOCS || '',
 
-        // 4.4
-        'F44_CRITERIOS[]':    payload.F44_CRITERIOS || [],
-        F44_CRITERIOS:        payload.F44_CRITERIOS || [],
-        F44_CRITERIOS_TXT:    __stringifyList(payload.F44_CRITERIOS, '\n'),
-        'F44_FINALIDADES[]':  payload.F44_FINALIDADES || [],
-        F44_FINALIDADES:      payload.F44_FINALIDADES || [],
-        F44_FINALIDADES_TXT:  __stringifyList(payload.F44_FINALIDADES, '\n'),
-        'F44_DECLS[]':        payload.F44_DECLS || [],
-        F44_DECLS:            payload.F44_DECLS || [],
-        F44_DECLS_TXT:        __stringifyList(payload.F44_DECLS, '\n'),
-        F44_ANEXOS:           payload.F44_ANEXOS || '',
-        F441_LEGISLACAO:      payload.F441_LEGISLACAO || '',
-        F445_DESC_PLANOS:     payload.F445_DESC_PLANOS || '',
-        F446_DOCS:            payload.F446_DOCS || '',
-        F446_EXEC_RES:        payload.F446_EXEC_RES || '',
+      // 4.4
+      'F44_CRITERIOS[]':    payload.F44_CRITERIOS || [],
+      F44_CRITERIOS:        payload.F44_CRITERIOS || [],
+      F44_CRITERIOS_TXT:    __stringifyList(payload.F44_CRITERIOS, '\n'),
+      'F44_FINALIDADES[]':  payload.F44_FINALIDADES || [],
+      F44_FINALIDADES:      payload.F44_FINALIDADES || [],
+      F44_FINALIDADES_TXT:  __stringifyList(payload.F44_FINALIDADES, '\n'),
+      'F44_DECLS[]':        payload.F44_DECLS || [],
+      F44_DECLS:            payload.F44_DECLS || [],
+      F44_DECLS_TXT:        __stringifyList(payload.F44_DECLS, '\n'),
+      F44_ANEXOS:           payload.F44_ANEXOS || '',
+      F441_LEGISLACAO:      payload.F441_LEGISLACAO || '',
+      F445_DESC_PLANOS:     payload.F445_DESC_PLANOS || '',
+      F446_DOCS:            payload.F446_DOCS || '',
+      F446_EXEC_RES:        payload.F446_EXEC_RES || '',
 
-        // 4.5
-        F451_TEXTO:           compat.F451_TEXTO || '',
-        F45_DOCS:             payload.F45_DOCS || '',
-        F45_JUST:             payload.F45_JUST || '',
-        F453_EXEC_RES:        payload.F453_EXEC_RES || '',
+      // 4.5
+      F451_TEXTO:           compat.F451_TEXTO || '',
+      F45_DOCS:             payload.F45_DOCS || '',
+      F45_JUST:             payload.F45_JUST || '',
+      F453_EXEC_RES:        payload.F453_EXEC_RES || '',
 
-        // 4.6
-        'F46_CRITERIOS[]':    payload.F46_CRITERIOS || [],
-        F46_CRITERIOS:        payload.F46_CRITERIOS || [],
-        F46_CRITERIOS_TXT:    __stringifyList(payload.F46_CRITERIOS, '\n'),
-        'F46_FINALIDADES[]':  payload.F46_FINALIDADES || [],
-        F46_FINALIDADES:      payload.F46_FINALIDADES || [],
-        F46_FINALIDADES_TXT:  __stringifyList(payload.F46_FINALIDADES, '\n'),
-        'F462F_CRITERIOS[]':  payload.F462F_CRITERIOS || [],
-        F462F_CRITERIOS:      payload.F462F_CRITERIOS || [],
-        F46_PROGESTAO:        payload.F46_PROGESTAO || '',
-        F46_PORTE:            payload.F46_PORTE || '',
-        F46_JUST_D:           payload.F46_JUST_D || '',
-        F46_DOCS_D:           payload.F46_DOCS_D || '',
-        F46_JUST_E:           payload.F46_JUST_E || '',
-        F46_DOCS_E:           payload.F46_DOCS_E || '',
-        F46_ANEXOS:           payload.F46_ANEXOS || '',
-        F46_JUST_PLANOS:      payload.F46_JUST_PLANOS || '',
-        F46_COMP_CUMPR:       payload.F46_COMP_CUMPR || '',
-        F466_DOCS:            payload.F466_DOCS || '',
-        F466_EXEC_RES:        payload.F466_EXEC_RES || ''
-      });
+      // 4.6
+      'F46_CRITERIOS[]':    payload.F46_CRITERIOS || [],
+      F46_CRITERIOS:        payload.F46_CRITERIOS || [],
+      F46_CRITERIOS_TXT:    __stringifyList(payload.F46_CRITERIOS, '\n'),
+      'F46_FINALIDADES[]':  payload.F46_FINALIDADES || [],
+      F46_FINALIDADES:      payload.F46_FINALIDADES || [],
+      F46_FINALIDADES_TXT:  __stringifyList(payload.F46_FINALIDADES, '\n'),
+      'F462F_CRITERIOS[]':  payload.F462F_CRITERIOS || [],
+      F462F_CRITERIOS:      payload.F462F_CRITERIOS || [],
+      F46_PROGESTAO:        payload.F46_PROGESTAO || '',
+      F46_PORTE:            payload.F46_PORTE || '',
+      F46_JUST_D:           payload.F46_JUST_D || '',
+      F46_DOCS_D:           payload.F46_DOCS_D || '',
+      F46_JUST_E:           payload.F46_JUST_E || '',
+      F46_DOCS_E:           payload.F46_DOCS_E || '',
+      F46_ANEXOS:           payload.F46_ANEXOS || '',
+      F46_JUST_PLANOS:      payload.F46_JUST_PLANOS || '',
+      F46_COMP_CUMPR:       payload.F46_COMP_CUMPR || '',
+      F466_DOCS:            payload.F466_DOCS || '',
+      F466_EXEC_RES:        payload.F466_EXEC_RES || ''
+    });
 
-      document.dispatchEvent(new Event('TERMO_DATA'));
-    } catch (e) {
-      console.warn('mirrorFase4ToTermoData fail:', e);
-    }
+    document.dispatchEvent(new Event('TERMO_DATA'));
+  } catch (e) {
+    console.warn('mirrorFase4ToTermoData fail:', e);
   }
+}
 
-  /* ========= Fluxo de PDF (via backend) ========= */
+
+  /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
     const payloadForPdf = {
       ...payload,
       ...makeSolicCrpCompatFields(payload),
-      __NA_ALL: true,
+      __NA_ALL: true,                 // <- garante fallback "Não informado" no template
       __NA_LABEL: 'Não informado',
+      
       HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : '',
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
+      // (opcional) Portaria forçada — padronizada
       PORTARIA_SRPC: '2.024/2025'
     };
 
-    try { await fetchJSON(api('/warmup'), {}, { label: 'warmup', timeout: 8000, retries: 1 }); } catch (_) {}
+    // 🔥 Aquece o backend/Puppeteer ANTES de pedir o PDF (evita 502/restart)
+    try {
+      await fetchJSON(api('/warmup'), {}, { label: 'warmup', timeout: 8000, retries: 1 });
+    } catch (_) { /* segue se warmup falhar */ }
+
+    // Garante que o serviço está de pé (proxy → backend)
     await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
-    // preenche chaves ausentes do bloco 4.x para evitar "undefined" no template
+    const tryUrls = [
+      api('/termo-solic-crp-pdf') // rota do backend via proxy
+    ];
+
+    // PATCH (fill missing F4 keys) — cria chaves vazias para evitar "undefined"
     [
       'F42_LISTA','F42_LISTA_TXT',
       'F43_LISTA','F43_LISTA_TXT','F43_PLANO','F43_PLANO_B','F43_INCLUIR','F43_DESC_PLANOS',
@@ -2221,8 +2320,10 @@
       if (payloadForPdf[k] == null) payloadForPdf[k] = Array.isArray(payloadForPdf[k]) ? [] : '';
     });
 
+
+    // ⇩ novo bloco simples (substitui todo o trecho de retries)
     const blob = await fetchBinary(
-      api('/termo-solic-crp-pdf'),
+      tryUrls[0],
       {
         method: 'POST',
         headers: withKey({ 'Content-Type': 'application/json; charset=utf-8' }),
@@ -2231,6 +2332,7 @@
       { label: 'termo-solic-crp-pdf', timeout: 90000, retries: 3 }
     );
 
+    // download do PDF (igual ao seu)
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const enteSlug = String(payload.ENTE || 'solic-crp')
@@ -2260,8 +2362,19 @@
       if (window.__DEBUG_SOLIC_CRP__) {
         try {
           console.log('[solic_crp] buildPayload() (PDF) →', JSON.stringify(payload, null, 2));
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[solic_crp] falha ao serializar payload (PDF)', e);
+        }
       }
+
+      // DEBUG: ver o payload que será enviado
+      console.log('DEBUG payload (pre-send):', {
+        F44_CRITERIOS: payload.F44_CRITERIOS,
+        F44_DECLS: payload.F44_DECLS,
+        F44_FINALIDADES: payload.F44_FINALIDADES,
+        PRAZO_ADICIONAL_TEXTO: payload.PRAZO_ADICIONAL_TEXTO,
+        PRAZO_ADICIONAL_FLAG: payload.PRAZO_ADICIONAL_FLAG
+      });
 
       const md = bootstrap.Modal.getOrCreateInstance($('#modalGerandoPdf'));
       md.show();
@@ -2277,7 +2390,6 @@
       gerarBusy = false;
     }
   });
-
   // ——— SUBMIT ———
   const form = $('#solicCrpForm');
   form?.addEventListener('submit', async (ev)=>{
@@ -2291,8 +2403,9 @@
 
     const idem = takeIdemKey() || newIdemKey();
     rememberIdemKey(idem);
-    const payload = buildPayload();
+    const payload = buildPayload(); // já inclui IDEMP_KEY (se existir)
 
+    // 🔎 DEBUG (ANTES do postJSON)
     if (window.__DEBUG_SOLIC_CRP__) {
       try {
         console.log('[SUBMIT] payload →', JSON.stringify(payload, null, 2));
@@ -2318,11 +2431,12 @@
       await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
       const resp = await postJSON(
-        api('/gerar-solic-crp'),
-        payload,
-        withKey({ 'X-Idempotency-Key': idem })
+        api('/gerar-solic-crp'),                // ajuste a rota se a sua for diferente
+        payload,                                // corpo já em objeto
+        withKey({ 'X-Idempotency-Key': idem })  // headers extras (API key + Idempotency)
       );
 
+      // 🔎 DEBUG (DEPOIS do postJSON) — AQUI MESMO
       if (window.__DEBUG_SOLIC_CRP__) {
         try { console.log('[SUBMIT] resposta API →', resp); } catch {}
       }
@@ -2360,9 +2474,11 @@
       }, 800);
 
     } catch (err) {
+      // garante que o “salvando…” suma mesmo em falha
       clearTimeout(t);
       try { bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); } catch {}
 
+      // logs úteis de diagnóstico
       dbe('[SUBMIT][ERRO]', err);
       try {
         console.error('[SUBMIT][ERRO detalhe]', {
@@ -2372,9 +2488,14 @@
         });
       } catch {}
 
+      // mensagem amigável na UI
       showErro(friendlyErrorMessages(err, 'Falha ao registrar a solicitação.'));
 
+      // reativa o botão e restaura o rótulo
       if (btn) { btn.disabled = false; btn.innerHTML = old || 'Finalizar'; }
+
+      // mantém a chave de idempotência para permitir retry seguro
+      // (se preferir descartar, troque por: clearIdemKey();)
     }
   });
 
@@ -2403,45 +2524,141 @@
     const $gescon = document.getElementById('reg-gescon-consulta');
     const $data   = document.getElementById('reg-data-encam');
     const $sei    = document.getElementById('reg-proc-sei');
+
     if ($gescon) $gescon.textContent = reg?.gescon_consulta || '—';
     if ($data)   $data.textContent   = reg?.data_encaminhamento || '—';
     if ($sei)    $sei.textContent    = reg?.processo_sei || '—';
   }
 
-  // ========= Bindings globais + inicialização =========
-  function bindGlobalSavers(){
-    // salva periodicamente
-    setInterval(()=>{ try{ saveState(); }catch{} }, 5000);
-    // salva ao sair
-    window.addEventListener('beforeunload', ()=>{ try{ saveState(); }catch{} });
-    // salva em mudanças relevantes
-    document.addEventListener('change', (e)=>{
-      const t=e.target;
-      if(!t) return;
-      const tag=(t.tagName||'').toLowerCase();
-      const type=(t.type||'').toLowerCase();
-      if (tag==='input' || tag==='select' || tag==='textarea'){
-        saveState();
-      }
+  // chama quando conclui a etapa 0 (após buscar pelo CNPJ)
+  async function afterLookupCnpjEtapa0(payload) {
+    const reg = payload?.registro_termo || {};
+    window.__REGISTRO_TERMO__ = reg;
+    preencherRegistrosDoTermo(reg);
+    copiar_13_para_132();
+  }
+
+  // ---------- [ETAPA 1] copiar 1.3 -> 1.3.2 ----------
+  function copiar_13_para_132() {
+    // 1.3 (Regime RPPS) – campos fonte
+    const ug1_nome = document.querySelector('input[name="rpps_unidade_gestora_nome"]');
+    const ug1_cnpj = document.querySelector('input[name="rpps_unidade_gestora_cnpj"]');
+    const ug1_mail = document.querySelector('input[name="rpps_unidade_gestora_email"]');
+
+    // 1.3.2 (Unidade Gestora - UG) – campos destino
+    const ug2_nome = document.querySelector('input[name="ug_nome"]');
+    const ug2_cnpj = document.querySelector('input[name="ug_cnpj"]');
+    const ug2_mail = document.querySelector('input[name="ug_email"]');
+
+    if (ug1_nome && ug2_nome && !ug2_nome.value) ug2_nome.value = ug1_nome.value || '';
+    if (ug1_cnpj && ug2_cnpj && !ug2_cnpj.value) ug2_cnpj.value = ug1_cnpj.value || '';
+    if (ug1_mail && ug2_mail && !ug2_mail.value) ug2_mail.value = ug1_mail.value || '';
+  }
+
+  // quando usuário muda a "Situação do RPPS" (RPPS / RPPS em Extinção) continuamos espelhando
+  function wireSituacaoEspelhamento() {
+    document.querySelectorAll('input[name="situacao_rpps"]').forEach(radio => {
+      radio.addEventListener('change', copiar_13_para_132);
     });
+
+    ['rpps_unidade_gestora_nome','rpps_unidade_gestora_cnpj','rpps_unidade_gestora_email']
+      .forEach(name => {
+        const el = document.querySelector(`input[name="${name}"]`);
+        if (el) el.addEventListener('input', copiar_13_para_132);
+      });
   }
 
-  function bindPesquisa(){
-    el.btnPesquisar?.addEventListener('click', onPesquisar);
+  // Chame isto no seu init()
+  function initEtapa1Bridges() {
+    wireSituacaoEspelhamento();
+    if (window.__REGISTRO_TERMO__) {
+      preencherRegistrosDoTermo(window.__REGISTRO_TERMO__);
+    }
   }
-
-  ['modalF41','modalF42','modalF43','modalF44','modalF45','modalF46'].forEach(ensureBackButton);
-
-  // Inicialização
-  (function init(){
+  /* ========= Boot ========= */
+  function init(){
     bindMasks();
+
+    // 1) Espelhamento 1.3 → 1.3.2
     bindSyncUg132();
+
+    // 2) Stepper fallback (chamar uma única vez, logo após o bind)
     ensureStepperFallback();
+
+    // (seus listeners e binds podem vir depois)
+    el.btnPesquisar?.addEventListener('click', onPesquisar, false);
+
+    // 3) Toggles da Fase 4 (depois do fallback)
     setupFase4Toggles();
+
+    // 4) Botão "Voltar" nos modais da Fase 4 (uma única chamada)
+    ['modalF41','modalF42','modalF43','modalF44','modalF45','modalF46'].forEach(ensureBackButton);
+
     bindCondicionais();
-    bindPesquisa();
-    bindGlobalSavers();
+
+    const faseSel = document.querySelector('input[name="FASE_PROGRAMA"]:checked');
+    if (faseSel) faseSel.dispatchEvent(new Event('change'));
+
+    popularListasFaseComBaseNosCritérios();
     initWelcome();
+
+    $$('.esf-only-one').forEach(chk=>{
+      chk.addEventListener('change', ()=>{
+        if(chk.checked) $$('.esf-only-one').forEach(o=>{ if(o!==chk) o.checked=false; });
+        saveState();
+      });
+    });
+
+    const form = $('#solicCrpForm');
+    form?.addEventListener('input', ()=> setTimeout(saveState, 300));
+    form?.addEventListener('change', ()=> setTimeout(saveState, 300));
+
+    if (el.btnNext) el.btnNext.disabled = true;
+
+    window.addEventListener('beforeunload', saveState);
+
+    // Bridges da etapa 1 (registro do termo + espelhamento 1.3→1.3.2)
+    initEtapa1Bridges();
+  }
+
+
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); }
+  else{ init(); }
+
+  // ---- Fail-safe + Watcher: garante preenchimento dos campos F4.3 ----
+  (function(){
+    const KEYS = ['f43_plano','f43_just','justificativas_gerais']; // <- inclui justificativas_gerais
+
+    function getVal(k){
+      return (window.__TERMO_DATA__?.[k] ?? '').toString().trim() || 'Não informado';
+    }
+    function setVal(el, v){
+      if (el.matches('input, textarea, select')) {
+        el.value = v;
+        el.dispatchEvent(new Event('input',  { bubbles:true }));
+        el.dispatchEvent(new Event('change', { bubbles:true }));
+      } else {
+        el.textContent = v;
+      }
+    }
+    function fill(){
+      KEYS.forEach(k=>{
+        const v = getVal(k);
+        document.querySelectorAll(`[data-k="${k}"]`).forEach(el=>{
+          const cur = el.matches('input,textarea,select') ? (el.value || '') : (el.textContent || '');
+          if (cur.trim() !== v) setVal(el, v);
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fill); else fill();
+    document.addEventListener('TERMO_DATA', fill);
+    document.addEventListener('TERMO_DATA_READY', fill);
+
+    const mo = new MutationObserver(()=> fill());
+    mo.observe(document.body, { subtree:true, childList:true, characterData:true });
+
+    window.__killTermoWatcher = () => mo.disconnect();
   })();
 
-})(); // FIM IIFE
+})();
