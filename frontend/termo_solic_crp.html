@@ -300,7 +300,18 @@
       function asArr(v){
         if (Array.isArray(v)) return v;
         if (v == null || v === '') return [];
-        if (typeof v === 'string') return v.split(/[;,]\s*|\n+/).map(s=>s.trim()).filter(Boolean);
+        if (typeof v === 'string') {
+          const s = v.trim();
+          if (!s) return [];
+          /* PATCH D.1: tenta JSON primeiro */
+          if ((s.startsWith('[') && s.endsWith(']')) || (s.startsWith('{') && s.endsWith('}'))) {
+            try {
+              const j = JSON.parse(s);
+              if (Array.isArray(j)) return j.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
+            } catch(_) { /* cai no split */ }
+          }
+          return s.split(/[;,]\s*|\n+/).map(s=>s.trim()).filter(Boolean);
+        }
         return [String(v)].filter(Boolean);
       }
       
@@ -310,8 +321,15 @@
         const ul = document.querySelector(sel);
         if (!ul) return;
         const a = asArr(arr);
+
         const emptyMsg = ul.getAttribute('data-empty') || 'Não informado';
-        ul.innerHTML = a.length ? a.map(x=>`<li>${escapeHtml(x)}</li>`).join('') : `<li>${escapeHtml(emptyMsg)}</li>`;
+        /* PATCH D.2: quando __NA_ALL=false, não force "Não informado" em listas */
+        if (a.length) {
+          ul.innerHTML = a.map(x=>`<li>${escapeHtml(x)}</li>`).join('');
+        } else {
+          const useNA = (typeof __NA_ALL__ === 'function') ? __NA_ALL__() : true;
+          ul.innerHTML = useNA ? `<li>${escapeHtml(emptyMsg)}</li>` : '';
+        }
       }
 
       // Helpers "sim/não" → boolean
@@ -329,11 +347,28 @@
         p.SEI_PROCESSO = p.SEI_PROCESSO ?? p.sei_processo ?? p.PROC_SEI ?? p.proc_sei ?? '';
         p.PORTARIA_SRPC = p.PORTARIA_SRPC ?? p.portaria_srpc ?? p.PORTARIA_SRPC_MPS ?? '2.024/2025';
 
-        p.ORGAO_VINCULACAO_UG = p.ORGAO_VINCULACAO_UG 
+        p.ORGAO_VINCULACAO_UG = p.ORGAO_VINCULACAO_UG
           || p.orgao_vinculacao_ug 
           || p.orgao_vinc_ug 
           || p.ug_orgao_vinc 
           || '';
+        
+        /* PATCH C: tenta recuperar 1.3.4 de fontes auxiliares se ainda vazio */
+        if (!p.ORGAO_VINCULACAO_UG) {
+          try {
+            const ss = (k) => {
+              try { return (sessionStorage.getItem(k) || '').trim(); } catch(_) { return ''; }
+            };
+            const cand = ss('ORGAO_VINCULACAO_UG') || ss('ORGAO_VINCULACAO_UG__ADESAO');
+            if (cand) p.ORGAO_VINCULACAO_UG = cand;
+          } catch(_) {}
+        }
+        if (!p.ORGAO_VINCULACAO_UG) {
+          try {
+            const fromParent = (window.parent && window.parent.__TERMO_ADESAO__ && window.parent.__TERMO_ADESAO__.ORGAO_VINCULACAO_UG) || '';
+            if (fromParent) p.ORGAO_VINCULACAO_UG = String(fromParent).trim();
+          } catch(_) {}
+        }
 
         p.NOME_REP_ENTE = p.NOME_REP_ENTE ?? p.nome_rep_ente;
         p.CARGO_REP_ENTE = p.CARGO_REP_ENTE ?? p.cargo_rep_ente;
@@ -403,7 +438,13 @@
           || ''
         ).trim();
 
+        /* PATCH F: extrai "3.4.x" mesmo se vier com texto ou como "3.2.x" */
         let _prazo = _rawPrazo || '';
+        if (_prazo && !/3\.4\.\d/.test(_prazo)) {
+          const m = _prazo.match(/3\.(?:2|4)\.(\d)/);
+          if (m) _prazo = `3.4.${m[1]}`;
+          else if (/^\d$/.test(_prazo)) _prazo = `3.4.${_prazo}`;
+        }
 
         if (!_prazo) {
           for (const k of Object.keys(p0 || p)) {
@@ -451,7 +492,10 @@
         p.F45_DECLS = asArr(p.F45_DECLS || p.f45_decls || '');
         p.F45_DOCS  = p.F45_DOCS  || p.f45_docs  || '';
         p.F45_JUST  = p.F45_JUST  || p.f45_just  || '';
-        p.F45_OK451 = p.F45_OK451 || p.f45_ok451 || false;
+
+        /* PATCH E: aceitar valores truthy textuais */
+        const _ok451 = p.F45_OK451 ?? p.f45_ok451;
+        p.F45_OK451 = !!(['1','true','sim','s','yes','y'].includes(String(_ok451 ?? '').trim().toLowerCase()) || _ok451 === true);
 
         p.F46_CRITERIOS   = asArr(p.F46_CRITERIOS   || p.f46_criterios   || '');
         p.F46_DECLS       = asArr(p.F46_DECLS       || p.f46_decls       || '');
@@ -568,14 +612,14 @@
         fillText('tel_rep_ug',   p.TEL_REP_UG);
 
         /* 3) CRP */
-        fillText('venc_ult_crp', p.venc_ult_crp || p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || '');
-        fillText('data_vencimento_ultimo_crp',
-          p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || ''
-        );
+        const __venc = p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '';
+        fillText('venc_ult_crp', __venc);
+        fillText('data_vencimento_ultimo_crp', __venc);
 
         // 3.2 – corrige nome usado no template
-        fillText('tipo_emissao_ult_crp',    p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
-        fillText('tipo_emissao_ultimo_crp', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
+        const __tipo = p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '';
+        fillText('tipo_emissao_ult_crp',    __tipo);
+        fillText('tipo_emissao_ultimo_crp', __tipo);
 
         // Espelhos (segurança)
         fillText('DATA_VENC_ULTIMO_CRP',  p.DATA_VENC_ULTIMO_CRP  || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
@@ -639,7 +683,14 @@
         liList('#criterios-list', p.__CRITERIOS_ARR__);
 
         /* 4) Fase */
-        const faseSel = p.__FASE_SEL__;
+
+        /* normaliza a fase para o formato "4.x" mesmo se vier com texto */
+        let faseSel = p.__FASE_SEL__;
+        if (faseSel) {
+          const m = String(faseSel).match(/\b4\.\d\b/);
+          if (m) faseSel = m[0];
+        }
+
         showOnlyPhase(faseSel);
         fillText('fase_selecionada', faseSel || '—');
 
@@ -805,6 +856,7 @@
           ];
           function hasPref(k){ return prefList.some(({p:pre}) => k.startsWith(pre)); }
 
+          const useNA = (typeof __NA_ALL__ === 'function') ? __NA_ALL__() : true;
           const entries = Object.entries(p)
             .filter(([k,v]) => hasPref(k) && v != null && (String(v).trim?.() || (Array.isArray(v) && v.length)))
             .map(([k,v])=>{
@@ -812,11 +864,11 @@
               const val = Array.isArray(v) ? v : String(v).trim();
               const htmlVal = Array.isArray(val) && val.length
                 ? ('<ul>' + val.map(x => '<li>' + escapeHtml(String(x)) + '</li>').join('') + '</ul>')
-                : (val ? escapeHtml(val) : ( __NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—' ));
+                : (val ? escapeHtml(val) : ( useNA ? escapeHtml(__NA_LABEL__()) : '' ));
               return `<div class="linha"><div class="titulo">${escapeHtml(label)}</div><div class="valor">${htmlVal}</div></div>`;
             });
 
-          box.innerHTML = entries.length ? entries.join('') : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+          box.innerHTML = entries.length ? entries.join('') : (useNA ? `<span class="muted">${escapeHtml(__NA_LABEL__())}</span>` : '');
         })();
 
 
@@ -936,9 +988,10 @@
       })();
     })();
   </script>
-  <!-- Força fallback “Não informado” também no preview local -->
+
   <script>
-    window.__TERMO_DATA__ = Object.assign({ __NA_ALL: true, __NA_LABEL: 'Não informado' }, window.__TERMO_DATA__ || {});
+    /* PATCH A: não forçar NA global no preview; deixe o gerador decidir */
+    window.__TERMO_DATA__ = Object.assign({ __NA_ALL: false, __NA_LABEL: 'Não informado' }, window.__TERMO_DATA__ || {});
   </script>
 
   <script>
