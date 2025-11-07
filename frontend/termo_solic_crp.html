@@ -157,6 +157,7 @@
 
           <p class="small mt"><strong>4.3.10 Justificativas/Informações adicionais:</strong></p>
           <p id="f43-just"></p>
+          <ul id="f4310"></ul> <!-- NOVO: container para opção/legislação/docs do 4.3.10 -->
 
           <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
           <p id="f43-plano"></p>
@@ -622,13 +623,11 @@
         fillText('fase_selecionada', p.FASE_PROGRAMA || p.FASE || '');
 
         // 4.1 / 4.2 / 4.4 — conteúdos
-        fillText('f42_lista', listify(p.F42_LISTA));
-        fillText('f43_lista', listify(p.F43_LISTA));
         fillText('f44_criterios', listify(p.F44_CRITERIOS));
         fillText('f44_decls', listify(p.F44_DECLS));
         fillText('f44_finalidades', listify(p.F44_FINALIDADES));
 
-        ['f41_opcao','f42_lista','f43_lista','f44_criterios','f44_decls','f44_finalidades'].forEach(id=>{
+        ['f41-itens','f42-itens','f43-itens','f44-criterios','f44-decls','f44-finalidades'].forEach(id=>{
           const el = document.getElementById(id);
           if (el && !el.textContent.trim()) {
             const wrap = el.closest('.termo-bloco, .linha, li, p') || el;
