@@ -309,8 +309,10 @@
         const ul = document.querySelector(sel);
         if (!ul) return;
         const a = asArr(arr);
-        ul.innerHTML = a.length ? a.map(x=>`<li>${escapeHtml(x)}</li>`).join('') : '<li>Não informado</li>';
+        const emptyMsg = ul.getAttribute('data-empty') || 'Não informado';
+        ul.innerHTML = a.length ? a.map(x=>`<li>${escapeHtml(x)}</li>`).join('') : `<li>${escapeHtml(emptyMsg)}</li>`;
       }
+
       // Helpers "sim/não" → boolean
       function asYes(v){ return ['sim','s','true','1','yes','y'].includes(String(v ?? '').trim().toLowerCase()); }
       function asNo(v){  return ['nao','não','n','false','0','no'].includes(String(v ?? '').trim().toLowerCase()); }
@@ -646,9 +648,14 @@
           case '4.1': {
             const ul = document.getElementById('f41-itens');
             if (ul) {
-              const textoEscolhido = (p.F41_OPCAO || p.F41_OPCAO_CODE || '').trim();
-              ul.innerHTML = textoEscolhido
-                ? `<li>${escapeHtml(textoEscolhido)}</li>`
+              const code = String((p.F41_OPCAO || p.F41_OPCAO_CODE || '')).trim(); // ex.: "4.1.1"
+              const MAP = {
+                '4.1.1': '4.1.1 Foram incluídos em termos de acordo de parcelamento ou reparcelamento cadastrados no Cadprev todos os débitos do ente federativo junto ao RPPS (até a data da adesão).',
+                '4.1.2': '4.1.2 O ente federativo não possui débitos de contribuições ou de quaisquer outros valores devidos ao RPPS ou que já não tenham sido parcelados/regularizados até a adesão.'
+              };
+              const texto = MAP[code] || (p.F41_OPCAO && !/^\s*4\.1\.\d\s*$/.test(p.F41_OPCAO) ? String(p.F41_OPCAO) : '');
+              ul.innerHTML = texto
+                ? `<li>${escapeHtml(texto)}</li>`
                 : '<li>Não informado</li>';
             }
             break;
@@ -790,15 +797,19 @@
           const fase = String(p.__FASE_SEL__ || p.FASE_PROGRAMA || '').trim(); // "4.1"..."4.6"
           if (!fase) { box.innerHTML = '<span class="muted">—</span>'; return; }
 
-          const prefix = {
-            '4.1':'fase4_1_', '4.2':'fase4_2_', '4.3':'fase4_3_',
-            '4.4':'fase4_4_', '4.5':'fase4_5_', '4.6':'fase4_6_'
-          }[fase] || '';
+          // Aceita múltiplos prefixos comuns
+          const prefList = [
+            {p:`fase${fase.replace('.','_')}_`},     // "fase4_1_"
+            {p:`fase${fase.replace('.','-')}-`},     // "fase4-1-"
+            {p:`fase${fase}_`},                      // "fase4.1_"
+            {p:`f${fase.replace('.','')}_`}          // "f41_"
+          ];
+          function hasPref(k){ return prefList.some(({p:pre}) => k.startsWith(pre)); }
 
           const entries = Object.entries(p)
-            .filter(([k,v]) => prefix && k.startsWith(prefix) && v != null && (String(v).trim?.() || (Array.isArray(v) && v.length)))
+            .filter(([k,v]) => hasPref(k) && v != null && (String(v).trim?.() || (Array.isArray(v) && v.length)))
             .map(([k,v])=>{
-              const label = k.replace(prefix,'').replaceAll('_',' ').toUpperCase();
+              const label = k.replace(/^.*?(?:_|-)/,'').replaceAll('_',' ').replaceAll('-',' ').toUpperCase();
               const val = Array.isArray(v) ? v : String(v).trim();
               const htmlVal = Array.isArray(val) && val.length
                 ? ('<ul>' + val.map(x => '<li>' + escapeHtml(String(x)) + '</li>').join('') + '</ul>')
@@ -846,19 +857,28 @@
 
         // ========= PATCH: garante que listas críticas existam antes do print =========
         (function ensureListsThenPrint(){
-          const mustHaveLis = [
-            '#f46-decls',
-            '#f462f-criterios',
-            '#f466-docs',
-            '#f466-exec'
-          ];
+          const fase = String((window.__TERMO_DATA__ && (window.__TERMO_DATA__.__FASE_SEL__ || window.__TERMO_DATA__.FASE_PROGRAMA)) || '').trim();
+
+          // Mapear listas obrigatórias por fase (só checa o que faz sentido)
+          const mustByPhase = {
+            '4.1': ['#f41-itens'],
+            '4.2': ['#f42-itens'],
+            '4.3': ['#f43-itens', '#f4310'],                 // inclui 4.3.10
+            '4.4': ['#f44-criterios', '#f44-decls', '#f44-finalidades'],
+            '4.5': ['#f45-decls'],
+            '4.6': ['#f46-decls','#f462f-criterios','#f466-docs','#f466-exec']
+          };
+          const mustHaveLis = mustByPhase[fase] || [];
+
           const ok = mustHaveLis.every(sel => {
             const el = document.querySelector(sel);
-            return el && el.querySelector('li');
+            return el && (el.querySelector('li') || el.textContent.trim().length > 0);
           });
+
           if (!ok) {
-            document.body.offsetHeight; // força reflow
-            setTimeout(() => ensureListsThenPrint(), 0);
+            // Força reflow e tenta de novo, mas SEM loop infinito agressivo
+            document.body.offsetHeight;
+            setTimeout(() => ensureListsThenPrint(), 50);
             return;
           }
 
