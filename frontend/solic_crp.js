@@ -117,7 +117,6 @@
     try{ const raw=localStorage.getItem(IDEM_STORE_KEY); if(!raw) return null; const {key}=JSON.parse(raw)||{}; return key||null; }catch{ return null; }
   }
   function clearIdemKey(){ try{ localStorage.removeItem(IDEM_STORE_KEY); }catch{} }
-
   // --- Normalização de data vinda da planilha/API (número serial/ISO/string) -> dd/mm/aaaa
   function toDateBR(v){
     if (v == null || v === '') return '';
@@ -329,7 +328,6 @@
     if(status && status>=500) return ['Instabilidade no servidor. Tente novamente.'];
     return [fallback];
   }
-
   /* ========= Elementos ========= */
   const el = {
     // etapa 0
@@ -472,7 +470,6 @@
     // dispara uma vez na carga
     syncUg132();
   }
-
   /* ========= Persistência (TTL) ========= */
   function getState(){
     try{ return JSON.parse(localStorage.getItem(FORM_STORAGE_KEY) || 'null'); }catch{ return null; }
@@ -565,31 +562,30 @@
     data.values['F45_JUST']  = $('#F45_JUST')?.value || '';
     data.values['F453_EXEC_RES'] = $('#F453_EXEC_RES')?.value || '';
 
-  // 4.6 — usar o contêiner F46_CRITERIOS se existir; senão, cair para F462F_CRITERIOS (que é o que o HTML tem)
-  const _critF46 = $$('#F46_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
-  const _critAlt = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
-  data.values['F46_CRITERIOS[]']   = _critF46.length ? _critF46 : _critAlt;
+    // 4.6 — usar o contêiner F46_CRITERIOS se existir; senão, cair para F462F_CRITERIOS (que é o que o HTML tem)
+    const _critF46 = $$('#F46_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
+    const _critAlt = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
+    data.values['F46_CRITERIOS[]']   = _critF46.length ? _critF46 : _critAlt;
 
-  data.values['F46_PROGESTAO']     = $('#F46_PROGESTAO')?.value || '';
-  data.values['F46_PORTE']         = $('#F46_PORTE')?.value || '';
-  data.values['F46_JUST_D']        = $('#F46_JUST_D')?.value || '';
-  data.values['F46_DOCS_D']        = $('#F46_DOCS_D')?.value || '';
-  data.values['F46_JUST_E']        = $('#F46_JUST_E')?.value || '';
-  data.values['F46_DOCS_E']        = $('#F46_DOCS_E')?.value || '';
+    data.values['F46_PROGESTAO']     = $('#F46_PROGESTAO')?.value || '';
+    data.values['F46_PORTE']         = $('#F46_PORTE')?.value || '';
+    data.values['F46_JUST_D']        = $('#F46_JUST_D')?.value || '';
+    data.values['F46_DOCS_D']        = $('#F46_DOCS_D')?.value || '';
+    data.values['F46_JUST_E']        = $('#F46_JUST_E')?.value || '';
+    data.values['F46_DOCS_E']        = $('#F46_DOCS_E')?.value || '';
 
-  // finalidades já existem com esse ID
-  data.values['F46_FINALIDADES[]'] = $$(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i=>i.value);
+    // finalidades já existem com esse ID
+    data.values['F46_FINALIDADES[]'] = $$(`#F46_FINALIDADES input[type="checkbox"]:checked`).map(i=>i.value);
 
-  // ANEXOS / JUSTIFICATIVAS / COMPROVAÇÃO — cair para os campos que o HTML realmente usa (F466_DOCS/F466_EXEC_RES, F46_JUST_D/E)
-  data.values['F46_ANEXOS']        = $('#F46_ANEXOS')?.value || $('#F466_DOCS')?.value || '';
-  data.values['F46_JUST_PLANOS']   = $('#F46_JUST_PLANOS')?.value || $('#F46_JUST_D')?.value || $('#F46_JUST_E')?.value || '';
-  data.values['F46_COMP_CUMPR']    = $('#F46_COMP_CUMPR')?.value || $('#F466_EXEC_RES')?.value || '';
+    // ANEXOS / JUSTIFICATIVAS / COMPROVAÇÃO — cair para os campos que o HTML realmente usa (F466_DOCS/F466_EXEC_RES, F46_JUST_D/E)
+    data.values['F46_ANEXOS']        = $('#F46_ANEXOS')?.value || $('#F466_DOCS')?.value || '';
+    data.values['F46_JUST_PLANOS']   = $('#F46_JUST_PLANOS')?.value || $('#F46_JUST_D')?.value || $('#F46_JUST_E')?.value || '';
+    data.values['F46_COMP_CUMPR']    = $('#F46_COMP_CUMPR')?.value || $('#F466_EXEC_RES')?.value || '';
 
-  data.values['F462F_OPTF']        = !!$('#F462F_OPTF')?.checked;
-  data.values['F462F_CRITERIOS[]'] = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
-  data.values['F466_DOCS']         = $('#F466_DOCS')?.value || '';
-  data.values['F466_EXEC_RES']     = $('#F466_EXEC_RES')?.value || '';
-
+    data.values['F462F_OPTF']        = !!$('#F462F_OPTF')?.checked;
+    data.values['F462F_CRITERIOS[]'] = $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value);
+    data.values['F466_DOCS']         = $('#F466_DOCS')?.value || '';
+    data.values['F466_EXEC_RES']     = $('#F466_EXEC_RES')?.value || '';
 
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
   }
@@ -815,7 +811,6 @@
   $('#modalErro')?.addEventListener('shown.bs.modal', () =>
     mountLottie('lottieError', 'animacao/confirm-error.json', { loop:false, autoplay:true })
   );
-
   /* ========= Botão "Voltar" que fecha os modais da Fase 4 ========= */
   function ensureBackButton(modalId){
     const el = document.getElementById(modalId);
@@ -1014,7 +1009,6 @@
       searching = false;
     }
   }
-
   async function hidratarTermosRegistrados(cnpj){
     dbg('[hidratarTermosRegistrados] start →', cnpj);
     try{
@@ -1427,6 +1421,7 @@
     inject('#F44_CRITERIOS', 'F44_CRITERIOS[]');
     inject('#F46_CRITERIOS', 'F46_CRITERIOS[]');
     inject('#F462F_CRITERIOS', 'F462F_CRITERIOS[]');
+    inject('#F46_DECLS', 'F46_DECLS[]');
 
     if (el.f43Lista && !document.querySelector('#F43_INCLUIR input')) {
       const f43Incl = document.getElementById('F43_INCLUIR');
@@ -1436,7 +1431,6 @@
         )).join('');
       }
     }
-
 
     if (el.f44Final && !document.querySelector('#F44_FINALIDADES input')) {
       const finals = [
@@ -1475,7 +1469,6 @@
       console.warn('popularListasFaseComBaseNosCritérios sync fail:', e);
     }
   }
-
   /* ========= Validação geral (mínimos) ========= */
   function validarCamposBasicos(){
     const msgs=[];
@@ -1535,6 +1528,7 @@
     const el = document.getElementById(id);
     return el ? String(el.value || '').trim() : '';
   }
+
   /* ========= Payload ========= */
   function buildPayload(){
     // === Coletas base ===
@@ -1606,7 +1600,6 @@
         'input[name="fase4_2_criterios[]"]:checked'
       )
     ).map(i => i.value.trim());
-
 
     const F44_CRITERIOS = Array.from(new Set([
       collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
@@ -1747,7 +1740,6 @@
         collectCheckedValues('input[name="F46_CRITERIOS[]"]'),
         collectCheckedValues('input[name="fase4_6_criterios_plano[]"]')
       ].flat().filter(Boolean))),
-
 
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
       F46_PORTE:       $('#F46_PORTE')?.value || '',
@@ -1937,18 +1929,18 @@
       }
     } catch (e) { /* não crítico */ }
 
-        // PATCH (TXT aliases) — versões em texto para o template
-      obj.F42_LISTA_TXT       = (obj.F42_LISTA && Array.isArray(obj.F42_LISTA)) ? obj.F42_LISTA.join('; ') : (obj.F42_LISTA || '');
-      obj.F43_LISTA_TXT       = (obj.F43_LISTA && Array.isArray(obj.F43_LISTA)) ? obj.F43_LISTA.join('; ') : (obj.F43_LISTA || '');
-      obj.F44_CRITERIOS_TXT   = (obj.F44_CRITERIOS && Array.isArray(obj.F44_CRITERIOS)) ? obj.F44_CRITERIOS.join('\n') : (obj.F44_CRITERIOS || '');
-      obj.F44_FINALIDADES_TXT = (obj.F44_FINALIDADES && Array.isArray(obj.F44_FINALIDADES)) ? obj.F44_FINALIDADES.join('\n') : (obj.F44_FINALIDADES || '');
-      obj.F44_DECLS_TXT       = (obj.F44_DECLS && Array.isArray(obj.F44_DECLS)) ? obj.F44_DECLS.join('\n') : (obj.F44_DECLS || '');
-      obj.F46_CRITERIOS_TXT   = (obj.F46_CRITERIOS && Array.isArray(obj.F46_CRITERIOS)) ? obj.F46_CRITERIOS.join('\n') : (obj.F46_CRITERIOS || '');
-      obj.F46_FINALIDADES_TXT = (obj.F46_FINALIDADES && Array.isArray(obj.F46_FINALIDADES)) ? obj.F46_FINALIDADES.join('\n') : (obj.F46_FINALIDADES || '');
-
+    // PATCH (TXT aliases) — versões em texto para o template
+    obj.F42_LISTA_TXT       = (obj.F42_LISTA && Array.isArray(obj.F42_LISTA)) ? obj.F42_LISTA.join('; ') : (obj.F42_LISTA || '');
+    obj.F43_LISTA_TXT       = (obj.F43_LISTA && Array.isArray(obj.F43_LISTA)) ? obj.F43_LISTA.join('; ') : (obj.F43_LISTA || '');
+    obj.F44_CRITERIOS_TXT   = (obj.F44_CRITERIOS && Array.isArray(obj.F44_CRITERIOS)) ? obj.F44_CRITERIOS.join('\n') : (obj.F44_CRITERIOS || '');
+    obj.F44_FINALIDADES_TXT = (obj.F44_FINALIDADES && Array.isArray(obj.F44_FINALIDADES)) ? obj.F44_FINALIDADES.join('\n') : (obj.F44_FINALIDADES || '');
+    obj.F44_DECLS_TXT       = (obj.F44_DECLS && Array.isArray(obj.F44_DECLS)) ? obj.F44_DECLS.join('\n') : (obj.F44_DECLS || '');
+    obj.F46_CRITERIOS_TXT   = (obj.F46_CRITERIOS && Array.isArray(obj.F46_CRITERIOS)) ? obj.F46_CRITERIOS.join('\n') : (obj.F46_CRITERIOS || '');
+    obj.F46_FINALIDADES_TXT = (obj.F46_FINALIDADES && Array.isArray(obj.F46_FINALIDADES)) ? obj.F46_FINALIDADES.join('\n') : (obj.F46_FINALIDADES || '');
 
     return obj;
   }
+
   // === Compat converter → transforma os campos granulares do form 2
   //     nas chaves que o template termo_solic_crp.html espera ===
   function makeSolicCrpCompatFields(p) {
@@ -1958,16 +1950,14 @@
     if (_f41 === '4.1.1') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.1 – até 60 parcelas';
     if (_f41 === '4.1.2') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.2 – até 300 parcelas';
 
-
-    // 4.2 regularização administrativa (mapeia lista marcada → string com códigos)
+    // 4.2 regularização administrativa
     const f42 = Array.isArray(p.F42_LISTA) ? p.F42_LISTA : [];
-    const REGULARIZACAO_PENDEN_ADMINISTRATIVA = f42.join('; '); // ex.: "4.2.1; 4.2.2"
+    const REGULARIZACAO_PENDEN_ADMINISTRATIVA = f42.join('; ');
 
-    // 4.3 déficit atuarial (idem)
+    // 4.3 déficit atuarial
     const f43 = Array.isArray(p.F43_LISTA) ? p.F43_LISTA : [];
     let DEFICIT_ATUARIAL = f43.join('; ');
     if (!DEFICIT_ATUARIAL && (p.F43_PLANO || p.F43_DESC_PLANOS)) {
-      // se descreveu mas não ticonou, marca 4.3 genericamente
       DEFICIT_ATUARIAL = '4.3';
     }
 
@@ -1977,20 +1967,18 @@
 
     // 4.6 Manutenção da conformidade
     const man = Array.isArray(p.F46_CRITERIOS) ? p.F46_CRITERIOS : (Array.isArray(p.F46_CONDICOES) ? p.F46_CONDICOES : []);
-
     const MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS = man.join('; ');
 
-    // Etapas 5–7 (se existirem campos textuais no teu form; senão ficam vazios)
+    // Etapas 5–7 (textos)
     const COMPROMISSO_FIRMADO_ADESAO = String(p.F45_JUST || '').trim();
     const PROVIDENCIA_NECESS_ADESAO  = String(p.F45_DOCS || '').trim();
     const CONDICAO_VIGENCIA          = String(p.F46_JUST_PLANOS || '').trim();
 
-    // Data “que o template usa”
+    // Data
     const DATA_TERMO_GERADO = p.DATA_SOLIC_GERADA || p.DATA || '';
 
-    // ===== Helpers que aceitam múltiplos nomes (fase4_* e F4x_*) =====
+    // Helpers flex
     const getAllByName = (n) => Array.from(document.querySelectorAll(`[name="${n}"]`));
-
     const byNameValsAny = (names) =>
       names.flatMap(n =>
         getAllByName(n).map(el =>
@@ -1999,14 +1987,12 @@
             : (el.value || '')
         )
       ).filter(Boolean);
-
     const byNameCheckedAny = (names) =>
       names.flatMap(n =>
         getAllByName(n)
           .filter(el => (el.type === 'checkbox' || el.type === 'radio') && el.checked)
           .map(el => el.value || 'on')
       );
-
     const byNameValAny = (names) => {
       for (const n of names) {
         const el = document.querySelector(`[name="${n}"]`);
@@ -2020,8 +2006,6 @@
     };
 
     // ===== Item 4 — Extras por fase (mapeando fase4_*  ⇄  F4x_*) =====
-
-    // 4.1 — Fase Geral
     const F41_EXTRA = {
       'fase4_1_criterios':             byNameCheckedAny(['fase4_1_criterios[]','F41_CRITERIOS[]','F41_CONDICOES[]']),
       'fase4_1_criterios_outros':      byNameValAny(['fase4_1_criterios_outros','F41_CRITERIOS_OUTROS','F41_OUTROS']),
@@ -2039,7 +2023,6 @@
       'fase4_1_comp_data':             byNameValAny(['fase4_1_comp_data','F41_COMP_DATA']),
     };
 
-    // 4.2 — Fase Intermediária
     const F42_EXTRA = {
       'fase4_2_criterios':             byNameCheckedAny(['fase4_2_criterios[]','F42_CRITERIOS[]','F42_LISTA[]']),
       'fase4_2_decl':                  byNameValAny(['fase4_2_decl','F42_DECL']),
@@ -2057,7 +2040,6 @@
       'fase4_2_comp_data':             byNameValAny(['fase4_2_comp_data','F42_COMP_DATA']),
     };
 
-    // 4.3 — Fase Específica (Equacionamento etc.)
     const F43_EXTRA = {
       'fase4_3_escopo':                byNameCheckedAny(['fase4_3_escopo[]','F43_ESCOPO[]']),
       'fase4_3_eq_massa_alvo':         byNameCheckedAny(['fase4_3_eq_massa_alvo[]','F43_MASSA[]']),
@@ -2077,7 +2059,6 @@
       'fase4_3_comp_data':             byNameValAny(['fase4_3_comp_data','F43_COMP_DATA']),
     };
 
-    // 4.4 — Fase de Parcelamentos
     const F44_EXTRA = {
       'fase4_4_debitos_massa':         byNameCheckedAny(['fase4_4_debitos_massa[]','F44_CONDICOES[]','F44_DEBITOS[]']),
       'fase4_4_debitos_outros':        byNameValAny(['fase4_4_debitos_outros','F44_DEBITOS_OUTROS']),
@@ -2095,7 +2076,6 @@
       'fase4_4_comp_final_data':       byNameValAny(['fase4_4_comp_final_data','F44_COMP_FINAL_DATA']),
     };
 
-    // 4.5 — Fase CRP Administrativo
     const F45_EXTRA = {
       'fase4_5_criterios':             byNameCheckedAny(['fase4_5_criterios[]','F45_CRITERIOS[]']),
       'fase4_5_decl':                  byNameValAny(['fase4_5_decl','F45_DECL']),
@@ -2112,7 +2092,6 @@
       'fase4_5_comp_data':             byNameValAny(['fase4_5_comp_data','F45_COMP_DATA']),
     };
 
-    // 4.6 — Fase Manutenção da Conformidade
     const F46_EXTRA = {
       'fase4_6_criterios_plano':       byNameCheckedAny(['fase4_6_criterios_plano[]','F46_CONDICOES[]','F46_CRITERIOS[]']),
       'fase4_6_pg_nivel':              byNameValAny(['fase4_6_pg_nivel','F46_PG_NIVEL']),
@@ -2138,16 +2117,13 @@
       'fase4_6_comp_data':             byNameValAny(['fase4_6_comp_data','F46_COMP_DATA']),
     };
 
-    // Agrega todos os extras mantendo as chaves "fase4_*" esperadas pelo template do PDF
     const FASE4_EXTRAS = { ...F41_EXTRA, ...F42_EXTRA, ...F43_EXTRA, ...F44_EXTRA, ...F45_EXTRA, ...F46_EXTRA };
 
-    // Fase 4.5 – alguns templates esperam texto em 4.5.1
     const F451_TEXTO =
       (p.F45_OK451 === true || p.F45_OK451 === 'true')
         ? 'Foi mantida a regularidade quanto aos critérios exigidos nas fases anteriores.'
         : 'Não informado';
 
-    // 4.6 – prioriza F46_* e faz fallback para F44_* (compat)
     const F46_CRITERIOS   = Array.isArray(p.F46_CRITERIOS)   ? p.F46_CRITERIOS
                           : Array.isArray(p.F44_CRITERIOS)  ? p.F44_CRITERIOS : [];
     const F46_DECLS       = Array.isArray(p.F46_DECLS)       ? p.F46_DECLS
@@ -2155,7 +2131,6 @@
     const F46_FINALIDADES = Array.isArray(p.F46_FINALIDADES) ? p.F46_FINALIDADES
                           : Array.isArray(p.F44_FINALIDADES)? p.F44_FINALIDADES : [];
 
-    // Representações em string (fallback se o template usar campo texto)
     const F46_CRITERIOS_TXT   = F46_CRITERIOS.length ? F46_CRITERIOS.join('\n') : 'Não informado';
     const F46_DECLS_TXT       = F46_DECLS.length ? F46_DECLS.join('\n') : 'Não informado';
     const F46_FINALIDADES_TXT = F46_FINALIDADES.length ? F46_FINALIDADES.join('\n') : 'Não informado';
@@ -2193,7 +2168,7 @@
       'F46_DECLS[]':       F46_DECLS,
       'F46_FINALIDADES[]': F46_FINALIDADES,
 
-      // >>> chave do sucesso: enviar TODOS os extras que o template espera <<<
+      // extras esperados pelo template
       ...FASE4_EXTRAS,
     };
   }
@@ -2205,82 +2180,81 @@
     return String(v || '').trim();
   }
 
-function mirrorFase4ToTermoData(payload, compat) {
-  try {
-    const TD = window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, {
-      // 4.1
-      CELEBRACAO_TERMO_PARCELA_DEBITOS: compat.CELEBRACAO_TERMO_PARCELA_DEBITOS || '',
-      F41_OPCAO_TXT: compat.F41_OPCAO_TXT || '',
-      FASE_41_DESC:  compat.FASE_41_DESC  || '',
+  function mirrorFase4ToTermoData(payload, compat) {
+    try {
+      const TD = window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, {
+        // 4.1
+        CELEBRACAO_TERMO_PARCELA_DEBITOS: compat.CELEBRACAO_TERMO_PARCELA_DEBITOS || '',
+        F41_OPCAO_TXT: compat.F41_OPCAO_TXT || '',
+        FASE_41_DESC:  compat.FASE_41_DESC  || '',
 
-      // 4.2
-      'F42_LISTA[]':        payload.F42_LISTA || [],
-      F42_LISTA:            payload.F42_LISTA || [],
-      F42_LISTA_TXT:        __stringifyList(payload.F42_LISTA),
+        // 4.2
+        'F42_LISTA[]':        payload.F42_LISTA || [],
+        F42_LISTA:            payload.F42_LISTA || [],
+        F42_LISTA_TXT:        __stringifyList(payload.F42_LISTA),
 
-      // 4.3
-      'F43_LISTA[]':        payload.F43_LISTA || [],
-      F43_LISTA:            payload.F43_LISTA || [],
-      F43_LISTA_TXT:        __stringifyList(payload.F43_LISTA),
-      F43_PLANO:            payload.F43_PLANO || '',
-      F43_PLANO_B:          payload.F43_PLANO_B || '',
-      F43_INCLUIR:          payload.F43_INCLUIR || '',
-      'F43_INCLUIR[]':      (payload['F43_INCLUIR[]'] || []),
-      F43_DESC_PLANOS:      payload.F43_DESC_PLANOS || '',
-      F4310_OPCAO:          payload.F4310_OPCAO || '',
-      F4310_LEGISLACAO:     payload.F4310_LEGISLACAO || '',
-      F4310_DOCS:           payload.F4310_DOCS || '',
+        // 4.3
+        'F43_LISTA[]':        payload.F43_LISTA || [],
+        F43_LISTA:            payload.F43_LISTA || [],
+        F43_LISTA_TXT:        __stringifyList(payload.F43_LISTA),
+        F43_PLANO:            payload.F43_PLANO || '',
+        F43_PLANO_B:          payload.F43_PLANO_B || '',
+        F43_INCLUIR:          payload.F43_INCLUIR || '',
+        'F43_INCLUIR[]':      (payload['F43_INCLUIR[]'] || []),
+        F43_DESC_PLANOS:      payload.F43_DESC_PLANOS || '',
+        F4310_OPCAO:          payload.F4310_OPCAO || '',
+        F4310_LEGISLACAO:     payload.F4310_LEGISLACAO || '',
+        F4310_DOCS:           payload.F4310_DOCS || '',
 
-      // 4.4
-      'F44_CRITERIOS[]':    payload.F44_CRITERIOS || [],
-      F44_CRITERIOS:        payload.F44_CRITERIOS || [],
-      F44_CRITERIOS_TXT:    __stringifyList(payload.F44_CRITERIOS, '\n'),
-      'F44_FINALIDADES[]':  payload.F44_FINALIDADES || [],
-      F44_FINALIDADES:      payload.F44_FINALIDADES || [],
-      F44_FINALIDADES_TXT:  __stringifyList(payload.F44_FINALIDADES, '\n'),
-      'F44_DECLS[]':        payload.F44_DECLS || [],
-      F44_DECLS:            payload.F44_DECLS || [],
-      F44_DECLS_TXT:        __stringifyList(payload.F44_DECLS, '\n'),
-      F44_ANEXOS:           payload.F44_ANEXOS || '',
-      F441_LEGISLACAO:      payload.F441_LEGISLACAO || '',
-      F445_DESC_PLANOS:     payload.F445_DESC_PLANOS || '',
-      F446_DOCS:            payload.F446_DOCS || '',
-      F446_EXEC_RES:        payload.F446_EXEC_RES || '',
+        // 4.4
+        'F44_CRITERIOS[]':    payload.F44_CRITERIOS || [],
+        F44_CRITERIOS:        payload.F44_CRITERIOS || [],
+        F44_CRITERIOS_TXT:    __stringifyList(payload.F44_CRITERIOS, '\n'),
+        'F44_FINALIDADES[]':  payload.F44_FINALIDADES || [],
+        F44_FINALIDADES:      payload.F44_FINALIDADES || [],
+        F44_FINALIDADES_TXT:  __stringifyList(payload.F44_FINALIDADES, '\n'),
+        'F44_DECLS[]':        payload.F44_DECLS || [],
+        F44_DECLS:            payload.F44_DECLS || [],
+        F44_DECLS_TXT:        __stringifyList(payload.F44_DECLS, '\n'),
+        F44_ANEXOS:           payload.F44_ANEXOS || '',
+        F441_LEGISLACAO:      payload.F441_LEGISLACAO || '',
+        F445_DESC_PLANOS:     payload.F445_DESC_PLANOS || '',
+        F446_DOCS:            payload.F446_DOCS || '',
+        F446_EXEC_RES:        payload.F446_EXEC_RES || '',
 
-      // 4.5
-      F451_TEXTO:           compat.F451_TEXTO || '',
-      F45_DOCS:             payload.F45_DOCS || '',
-      F45_JUST:             payload.F45_JUST || '',
-      F453_EXEC_RES:        payload.F453_EXEC_RES || '',
+        // 4.5
+        F451_TEXTO:           compat.F451_TEXTO || '',
+        F45_DOCS:             payload.F45_DOCS || '',
+        F45_JUST:             payload.F45_JUST || '',
+        F453_EXEC_RES:        payload.F453_EXEC_RES || '',
 
-      // 4.6
-      'F46_CRITERIOS[]':    payload.F46_CRITERIOS || [],
-      F46_CRITERIOS:        payload.F46_CRITERIOS || [],
-      F46_CRITERIOS_TXT:    __stringifyList(payload.F46_CRITERIOS, '\n'),
-      'F46_FINALIDADES[]':  payload.F46_FINALIDADES || [],
-      F46_FINALIDADES:      payload.F46_FINALIDADES || [],
-      F46_FINALIDADES_TXT:  __stringifyList(payload.F46_FINALIDADES, '\n'),
-      'F462F_CRITERIOS[]':  payload.F462F_CRITERIOS || [],
-      F462F_CRITERIOS:      payload.F462F_CRITERIOS || [],
-      F46_PROGESTAO:        payload.F46_PROGESTAO || '',
-      F46_PORTE:            payload.F46_PORTE || '',
-      F46_JUST_D:           payload.F46_JUST_D || '',
-      F46_DOCS_D:           payload.F46_DOCS_D || '',
-      F46_JUST_E:           payload.F46_JUST_E || '',
-      F46_DOCS_E:           payload.F46_DOCS_E || '',
-      F46_ANEXOS:           payload.F46_ANEXOS || '',
-      F46_JUST_PLANOS:      payload.F46_JUST_PLANOS || '',
-      F46_COMP_CUMPR:       payload.F46_COMP_CUMPR || '',
-      F466_DOCS:            payload.F466_DOCS || '',
-      F466_EXEC_RES:        payload.F466_EXEC_RES || ''
-    });
+        // 4.6
+        'F46_CRITERIOS[]':    payload.F46_CRITERIOS || [],
+        F46_CRITERIOS:        payload.F46_CRITERIOS || [],
+        F46_CRITERIOS_TXT:    __stringifyList(payload.F46_CRITERIOS, '\n'),
+        'F46_FINALIDADES[]':  payload.F46_FINALIDADES || [],
+        F46_FINALIDADES:      payload.F46_FINALIDADES || [],
+        F46_FINALIDADES_TXT:  __stringifyList(payload.F46_FINALIDADES, '\n'),
+        'F462F_CRITERIOS[]':  payload.F462F_CRITERIOS || [],
+        F462F_CRITERIOS:      payload.F462F_CRITERIOS || [],
+        F46_PROGESTAO:        payload.F46_PROGESTAO || '',
+        F46_PORTE:            payload.F46_PORTE || '',
+        F46_JUST_D:           payload.F46_JUST_D || '',
+        F46_DOCS_D:           payload.F46_DOCS_D || '',
+        F46_JUST_E:           payload.F46_JUST_E || '',
+        F46_DOCS_E:           payload.F46_DOCS_E || '',
+        F46_ANEXOS:           payload.F46_ANEXOS || '',
+        F46_JUST_PLANOS:      payload.F46_JUST_PLANOS || '',
+        F46_COMP_CUMPR:       payload.F46_COMP_CUMPR || '',
+        F466_DOCS:            payload.F466_DOCS || '',
+        F466_EXEC_RES:        payload.F466_EXEC_RES || ''
+      });
 
-    document.dispatchEvent(new Event('TERMO_DATA'));
-  } catch (e) {
-    console.warn('mirrorFase4ToTermoData fail:', e);
+      document.dispatchEvent(new Event('TERMO_DATA'));
+    } catch (e) {
+      console.warn('mirrorFase4ToTermoData fail:', e);
+    }
   }
-}
-
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
@@ -2320,8 +2294,6 @@ function mirrorFase4ToTermoData(payload, compat) {
       if (payloadForPdf[k] == null) payloadForPdf[k] = Array.isArray(payloadForPdf[k]) ? [] : '';
     });
 
-
-    // ⇩ novo bloco simples (substitui todo o trecho de retries)
     const blob = await fetchBinary(
       tryUrls[0],
       {
@@ -2332,7 +2304,7 @@ function mirrorFase4ToTermoData(payload, compat) {
       { label: 'termo-solic-crp-pdf', timeout: 90000, retries: 3 }
     );
 
-    // download do PDF (igual ao seu)
+    // download do PDF
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const enteSlug = String(payload.ENTE || 'solic-crp')
@@ -2367,7 +2339,6 @@ function mirrorFase4ToTermoData(payload, compat) {
         }
       }
 
-      // DEBUG: ver o payload que será enviado
       console.log('DEBUG payload (pre-send):', {
         F44_CRITERIOS: payload.F44_CRITERIOS,
         F44_DECLS: payload.F44_DECLS,
@@ -2390,6 +2361,7 @@ function mirrorFase4ToTermoData(payload, compat) {
       gerarBusy = false;
     }
   });
+
   // ——— SUBMIT ———
   const form = $('#solicCrpForm');
   form?.addEventListener('submit', async (ev)=>{
@@ -2405,7 +2377,6 @@ function mirrorFase4ToTermoData(payload, compat) {
     rememberIdemKey(idem);
     const payload = buildPayload(); // já inclui IDEMP_KEY (se existir)
 
-    // 🔎 DEBUG (ANTES do postJSON)
     if (window.__DEBUG_SOLIC_CRP__) {
       try {
         console.log('[SUBMIT] payload →', JSON.stringify(payload, null, 2));
@@ -2431,12 +2402,11 @@ function mirrorFase4ToTermoData(payload, compat) {
       await waitForService({ timeoutMs: 60000, pollMs: 1500 });
 
       const resp = await postJSON(
-        api('/gerar-solic-crp'),                // ajuste a rota se a sua for diferente
-        payload,                                // corpo já em objeto
-        withKey({ 'X-Idempotency-Key': idem })  // headers extras (API key + Idempotency)
+        api('/gerar-solic-crp'),
+        payload,
+        withKey({ 'X-Idempotency-Key': idem })
       );
 
-      // 🔎 DEBUG (DEPOIS do postJSON) — AQUI MESMO
       if (window.__DEBUG_SOLIC_CRP__) {
         try { console.log('[SUBMIT] resposta API →', resp); } catch {}
       }
@@ -2474,11 +2444,9 @@ function mirrorFase4ToTermoData(payload, compat) {
       }, 800);
 
     } catch (err) {
-      // garante que o “salvando…” suma mesmo em falha
       clearTimeout(t);
       try { bootstrap.Modal.getOrCreateInstance($('#modalSalvando')).hide(); } catch {}
 
-      // logs úteis de diagnóstico
       dbe('[SUBMIT][ERRO]', err);
       try {
         console.error('[SUBMIT][ERRO detalhe]', {
@@ -2488,14 +2456,9 @@ function mirrorFase4ToTermoData(payload, compat) {
         });
       } catch {}
 
-      // mensagem amigável na UI
       showErro(friendlyErrorMessages(err, 'Falha ao registrar a solicitação.'));
 
-      // reativa o botão e restaura o rótulo
       if (btn) { btn.disabled = false; btn.innerHTML = old || 'Finalizar'; }
-
-      // mantém a chave de idempotência para permitir retry seguro
-      // (se preferir descartar, troque por: clearIdemKey();)
     }
   });
 
@@ -2526,139 +2489,47 @@ function mirrorFase4ToTermoData(payload, compat) {
     const $sei    = document.getElementById('reg-proc-sei');
 
     if ($gescon) $gescon.textContent = reg?.gescon_consulta || '—';
-    if ($data)   $data.textContent   = reg?.data_encaminhamento || '—';
+    if ($data)   $data.textContent   = toDateBR(reg?.data_encaminhamento || '') || '—';
     if ($sei)    $sei.textContent    = reg?.processo_sei || '—';
+
+    // Espelha também no intro (quando existir)
+    if (el.introNGescon) el.introNGescon.textContent = reg?.gescon_consulta || '—';
+    if (el.introDataEnc) el.introDataEnc.textContent = toDateBR(reg?.data_encaminhamento || '') || '—';
+    if (el.introProcSei) el.introProcSei.textContent = reg?.processo_sei || '—';
   }
 
-  // chama quando conclui a etapa 0 (após buscar pelo CNPJ)
-  async function afterLookupCnpjEtapa0(payload) {
-    const reg = payload?.registro_termo || {};
-    window.__REGISTRO_TERMO__ = reg;
-    preencherRegistrosDoTermo(reg);
-    copiar_13_para_132();
-  }
-
-  // ---------- [ETAPA 1] copiar 1.3 -> 1.3.2 ----------
-  function copiar_13_para_132() {
-    // 1.3 (Regime RPPS) – campos fonte
-    const ug1_nome = document.querySelector('input[name="rpps_unidade_gestora_nome"]');
-    const ug1_cnpj = document.querySelector('input[name="rpps_unidade_gestora_cnpj"]');
-    const ug1_mail = document.querySelector('input[name="rpps_unidade_gestora_email"]');
-
-    // 1.3.2 (Unidade Gestora - UG) – campos destino
-    const ug2_nome = document.querySelector('input[name="ug_nome"]');
-    const ug2_cnpj = document.querySelector('input[name="ug_cnpj"]');
-    const ug2_mail = document.querySelector('input[name="ug_email"]');
-
-    if (ug1_nome && ug2_nome && !ug2_nome.value) ug2_nome.value = ug1_nome.value || '';
-    if (ug1_cnpj && ug2_cnpj && !ug2_cnpj.value) ug2_cnpj.value = ug1_cnpj.value || '';
-    if (ug1_mail && ug2_mail && !ug2_mail.value) ug2_mail.value = ug1_mail.value || '';
-  }
-
-  // quando usuário muda a "Situação do RPPS" (RPPS / RPPS em Extinção) continuamos espelhando
-  function wireSituacaoEspelhamento() {
-    document.querySelectorAll('input[name="situacao_rpps"]').forEach(radio => {
-      radio.addEventListener('change', copiar_13_para_132);
-    });
-
-    ['rpps_unidade_gestora_nome','rpps_unidade_gestora_cnpj','rpps_unidade_gestora_email']
-      .forEach(name => {
-        const el = document.querySelector(`input[name="${name}"]`);
-        if (el) el.addEventListener('input', copiar_13_para_132);
-      });
-  }
-
-  // Chame isto no seu init()
-  function initEtapa1Bridges() {
-    wireSituacaoEspelhamento();
-    if (window.__REGISTRO_TERMO__) {
-      preencherRegistrosDoTermo(window.__REGISTRO_TERMO__);
-    }
-  }
-  /* ========= Boot ========= */
-  function init(){
+  /* ========= Bootstrap geral na carga ========= */
+  function initAll(){
     bindMasks();
-
-    // 1) Espelhamento 1.3 → 1.3.2
     bindSyncUg132();
-
-    // 2) Stepper fallback (chamar uma única vez, logo após o bind)
     ensureStepperFallback();
-
-    // (seus listeners e binds podem vir depois)
-    el.btnPesquisar?.addEventListener('click', onPesquisar, false);
-
-    // 3) Toggles da Fase 4 (depois do fallback)
     setupFase4Toggles();
-
-    // 4) Botão "Voltar" nos modais da Fase 4 (uma única chamada)
-    ['modalF41','modalF42','modalF43','modalF44','modalF45','modalF46'].forEach(ensureBackButton);
-
     bindCondicionais();
 
-    const faseSel = document.querySelector('input[name="FASE_PROGRAMA"]:checked');
-    if (faseSel) faseSel.dispatchEvent(new Event('change'));
+    // Botão pesquisar
+    el.btnPesquisar?.addEventListener('click', onPesquisar);
 
-    popularListasFaseComBaseNosCritérios();
+    // Garantir botões "Voltar" nos modais das fases
+    ['modalF41','modalF42','modalF43','modalF44','modalF45','modalF46','modalGesconNaoEncontrado','modalAtencao','modalErro','modalSucesso','modalGerandoPdf','modalSalvando']
+      .forEach(ensureBackButton);
+
+    // Bem-vindo
     initWelcome();
 
-    $$('.esf-only-one').forEach(chk=>{
-      chk.addEventListener('change', ()=>{
-        if(chk.checked) $$('.esf-only-one').forEach(o=>{ if(o!==chk) o.checked=false; });
-        saveState();
-      });
-    });
+    // Reidrata estado
+    loadState();
+    // Popular listas Fase 4 (caso chegue já no passo avançado)
+    popularListasFaseComBaseNosCritérios();
 
-    const form = $('#solicCrpForm');
-    form?.addEventListener('input', ()=> setTimeout(saveState, 300));
-    form?.addEventListener('change', ()=> setTimeout(saveState, 300));
-
-    if (el.btnNext) el.btnNext.disabled = true;
-
-    window.addEventListener('beforeunload', saveState);
-
-    // Bridges da etapa 1 (registro do termo + espelhamento 1.3→1.3.2)
-    initEtapa1Bridges();
+    // Dispara um evento para templates data-k ouvirem
+    try { document.dispatchEvent(new Event('TERMO_READY')); } catch {}
   }
 
+  // DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll, { once:true });
+  } else {
+    initAll();
+  }
 
-  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); }
-  else{ init(); }
-
-  // ---- Fail-safe + Watcher: garante preenchimento dos campos F4.3 ----
-  (function(){
-    const KEYS = ['f43_plano','f43_just','justificativas_gerais']; // <- inclui justificativas_gerais
-
-    function getVal(k){
-      return (window.__TERMO_DATA__?.[k] ?? '').toString().trim() || 'Não informado';
-    }
-    function setVal(el, v){
-      if (el.matches('input, textarea, select')) {
-        el.value = v;
-        el.dispatchEvent(new Event('input',  { bubbles:true }));
-        el.dispatchEvent(new Event('change', { bubbles:true }));
-      } else {
-        el.textContent = v;
-      }
-    }
-    function fill(){
-      KEYS.forEach(k=>{
-        const v = getVal(k);
-        document.querySelectorAll(`[data-k="${k}"]`).forEach(el=>{
-          const cur = el.matches('input,textarea,select') ? (el.value || '') : (el.textContent || '');
-          if (cur.trim() !== v) setVal(el, v);
-        });
-      });
-    }
-
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fill); else fill();
-    document.addEventListener('TERMO_DATA', fill);
-    document.addEventListener('TERMO_DATA_READY', fill);
-
-    const mo = new MutationObserver(()=> fill());
-    mo.observe(document.body, { subtree:true, childList:true, characterData:true });
-
-    window.__killTermoWatcher = () => mo.disconnect();
-  })();
-
-})();
+})(); 
