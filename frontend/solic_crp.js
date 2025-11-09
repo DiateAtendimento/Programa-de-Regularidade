@@ -1592,28 +1592,35 @@
     })();
 
     // 4.2, 4.3, 4.4... (listas vindas dos modais)
-    const F42_LISTA = Array.from(
+    // FIX: Query modais diretamente para garantir captura de todos os inputs
+    const F42_LISTA = Array.from(new Set(
       document.querySelectorAll(
         '#F42_LISTA input[type="checkbox"]:checked,' +
         'input[name="F42_LISTA[]"]:checked,' +
         'input[name="F42_ITENS[]"]:checked,' +
-        'input[name="fase4_2_criterios[]"]:checked'
+        'input[name="fase4_2_criterios[]"]:checked,' +
+        '#modalF42 input[type="checkbox"]:checked'
       )
-    ).map(i => i.value.trim());
+    )).map(i => i.value.trim()).filter(Boolean);
 
     const F44_CRITERIOS = Array.from(new Set([
       collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
-      Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i => i.value.trim())
+      Array.from(document.querySelectorAll('input[name="F44_CRITERIOS[]"]:checked')).map(i => i.value.trim()),
+      Array.from(document.querySelectorAll('#modalF44 #F44_CRITERIOS input[type="checkbox"]:checked')).map(i => i.value.trim())
     ].flat().filter(Boolean)));
 
+    // FIX: F44_DECLS deve capturar F44_CONDICOES[] do modal
     const F44_DECLS = Array.from(new Set([
       collectCheckedValues('#blk_44 .d-flex input[type="checkbox"]'),
-      Array.from(document.querySelectorAll('input[name="F44_DECLS[]"]:checked')).map(i => i.value.trim())
+      Array.from(document.querySelectorAll('input[name="F44_DECLS[]"]:checked')).map(i => i.value.trim()),
+      Array.from(document.querySelectorAll('input[name="F44_CONDICOES[]"]:checked')).map(i => i.value.trim()),
+      Array.from(document.querySelectorAll('#modalF44 input[name="F44_CONDICOES[]"]:checked')).map(i => i.value.trim())
     ].flat().filter(Boolean)));
 
     const F44_FINALIDADES = Array.from(new Set([
       collectCheckedValues('#F44_FINALIDADES input[type="checkbox"]'),
-      Array.from(document.querySelectorAll('input[name="F44_FINALIDADES[]"]:checked')).map(i => i.value.trim())
+      Array.from(document.querySelectorAll('input[name="F44_FINALIDADES[]"]:checked')).map(i => i.value.trim()),
+      Array.from(document.querySelectorAll('#modalF44 input[name="F44_FINALIDADES[]"]:checked')).map(i => i.value.trim())
     ].flat().filter(Boolean)));
 
     // UG consolidados (1.3 OU 1.3.2)
@@ -1723,22 +1730,39 @@
       F44_DECLS,
       F44_FINALIDADES,
 
-      F43_LISTA: collectCheckedValues('#F43_LISTA input[type="checkbox"]'),
+      // FIX: F43_LISTA deve capturar também F43_ITENS[] do modal
+      F43_LISTA: Array.from(new Set([
+        ...collectCheckedValues('#F43_LISTA input[type="checkbox"]'),
+        ...Array.from(document.querySelectorAll('input[name="F43_LISTA[]"]:checked')).map(i => i.value.trim()),
+        ...Array.from(document.querySelectorAll('input[name="F43_ITENS[]"]:checked')).map(i => i.value.trim()),
+        ...Array.from(document.querySelectorAll('#modalF43 input[type="checkbox"]:checked')).map(i => i.value.trim())
+      ].filter(Boolean))),
       F43_PLANO: collectTextValue('F43_PLANO'),
       F43_PLANO_B: collectTextValue('F43_PLANO_B'),
-      F43_INCLUIR: collectCheckedValues('#F43_INCLUIR input[type="checkbox"]').join('; '),
-      F43_INCLUIR_B: collectCheckedValues('#F43_INCLUIR_B input[type="checkbox"]').join('; '),
+      // FIX: F43_INCLUIR deve capturar também do modal
+      F43_INCLUIR: Array.from(new Set([
+        ...collectCheckedValues('#F43_INCLUIR input[type="checkbox"]'),
+        ...Array.from(document.querySelectorAll('input[name="F43_INCLUIR[]"]:checked')).map(i => i.value.trim()),
+        ...Array.from(document.querySelectorAll('#modalF43 #F43_INCLUIR input[type="checkbox"]:checked')).map(i => i.value.trim())
+      ].filter(Boolean))).join('; '),
+      F43_INCLUIR_B: Array.from(new Set([
+        ...collectCheckedValues('#F43_INCLUIR_B input[type="checkbox"]'),
+        ...Array.from(document.querySelectorAll('input[name="F43_INCLUIR_B[]"]:checked')).map(i => i.value.trim()),
+        ...Array.from(document.querySelectorAll('#modalF43 #F43_INCLUIR_B input[type="checkbox"]:checked')).map(i => i.value.trim())
+      ].filter(Boolean))).join('; '),
 
       F44_ANEXOS: collectTextValue('F44_ANEXOS'),
       F45_OK451: !!$('#blk_45 input[type="checkbox"]:checked'),
       F45_DOCS:  $('#F45_DOCS')?.value || '',
       F45_JUST:  $('#F45_JUST')?.value || '',
 
+      // FIX: F46_CRITERIOS deve capturar também do modal
       F46_CRITERIOS: Array.from(new Set([
         collectCheckedValues('#F46_CRITERIOS input[type="checkbox"]'),
         collectCheckedValues('#F46_CONDICOES input[type="checkbox"]'),
         collectCheckedValues('input[name="F46_CRITERIOS[]"]'),
-        collectCheckedValues('input[name="fase4_6_criterios_plano[]"]')
+        collectCheckedValues('input[name="fase4_6_criterios_plano[]"]'),
+        ...Array.from(document.querySelectorAll('#modalF46 input[type="checkbox"]:checked')).map(i => i.value.trim())
       ].flat().filter(Boolean))),
 
       F46_PROGESTAO:   $('#F46_PROGESTAO')?.value || '',
@@ -1747,7 +1771,12 @@
       F46_DOCS_D:      $('#F46_DOCS_D')?.value || '',
       F46_JUST_E:      $('#F46_JUST_E')?.value || '',
       F46_DOCS_E:      $('#F46_DOCS_E')?.value || '',
-      F46_FINALIDADES: collectCheckedValues('#F46_FINALIDADES input[type="checkbox"]'),
+      // FIX: F46_FINALIDADES deve capturar também do modal
+      F46_FINALIDADES: Array.from(new Set([
+        ...collectCheckedValues('#F46_FINALIDADES input[type="checkbox"]'),
+        ...Array.from(document.querySelectorAll('input[name="F46_FINALIDADES[]"]:checked')).map(i => i.value.trim()),
+        ...Array.from(document.querySelectorAll('#modalF46 input[name="F46_FINALIDADES[]"]:checked')).map(i => i.value.trim())
+      ].filter(Boolean))),
       F46_ANEXOS:      $('#F46_ANEXOS')?.value || '',
       F46_JUST_PLANOS: $('#F46_JUST_PLANOS')?.value || '',
       F46_COMP_CUMPR:  $('#F46_COMP_CUMPR')?.value || '',
@@ -1765,7 +1794,12 @@
 
       F453_EXEC_RES: $('#F453_EXEC_RES')?.value || '',
 
-      F462F_CRITERIOS: $$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value),
+      // FIX: F462F_CRITERIOS deve capturar também do modal
+      F462F_CRITERIOS: Array.from(new Set([
+        ...$$('#F462F_CRITERIOS input[type="checkbox"]:checked').map(i=>i.value),
+        ...Array.from(document.querySelectorAll('input[name="F462F_CRITERIOS[]"]:checked')).map(i => i.value.trim()),
+        ...Array.from(document.querySelectorAll('#modalF46 #F462F_CRITERIOS input[type="checkbox"]:checked')).map(i => i.value.trim())
+      ].filter(Boolean))),
       F466_DOCS:      $('#F466_DOCS')?.value || '',
       F466_EXEC_RES:  $('#F466_EXEC_RES')?.value || '',
 
