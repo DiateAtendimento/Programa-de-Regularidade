@@ -58,6 +58,7 @@
           <div class="field"><span class="label"><strong>1.3.4 Órgão de vinculação da UG</strong></span><span class="value" data-k="ORGAO_VINCULACAO_UG"></span></div>
         </div>
       </section>
+
       <!-- 2. IDENTIFICAÇÃO DOS RESPONSÁVEIS -->
       <section class="term-section avoid-break">
         <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
@@ -145,6 +146,7 @@
           <p class="small">Condições declaradas:</p>
           <ul id="f42-itens"></ul>
         </div>
+
         <!-- 4.3 -->
         <div class="avoid-break" id="fase-43" hidden>
           <h3>4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</h3>
@@ -194,6 +196,7 @@
           <p class="small mt"><strong>4.4.4 Anexos:</strong></p>
           <div id="f44-anexos"></div>
         </div>
+
         <!-- 4.5 -->
         <div class="avoid-break" id="fase-45" hidden>
           <h3>4.5 Fase Específica/Focalizada – 5º CRP Emergencial</h3>
@@ -283,6 +286,7 @@
       </div>
     </div>
   </div>
+
   <!-- Script embutido -->
   <script>
     (function () {
@@ -535,7 +539,7 @@
 
         ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
          'F45_DECLS','F46_CRITERIOS','F46_DECLS','F46_FINALIDADES','F462F_CRITERIOS']
-          .forEach(k => { p[k] = asArr(p[k] || p[k].toLowerCase?.() ? p[k] : p[k] || ''); });
+          .forEach(k => { p[k] = asArr(p[k] || p[k.toLowerCase()] || ''); });
 
         return p;
       }
@@ -562,6 +566,7 @@
         Object.values(ids).forEach(id => show(id,false));
         if (ids[code]) show(ids[code], true);
       }
+
       // ========= Função principal =========
       function run(payload){
         if (window.__DEBUG_SOLIC_CRP__) {
@@ -603,7 +608,8 @@
         fillText('tipo_emissao_ult_crp',    __tipo);
         fillText('tipo_emissao_ultimo_crp', __tipo);
 
-        fillText('DATA_VENC_ULTIMO_CRP', p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');        fillText('TIPO_EMISSAO_ULTIMO_CRP', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
+        fillText('DATA_VENC_ULTIMO_CRP',  p.DATA_VENC_ULTIMO_CRP  || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
+        fillText('TIPO_EMISSAO_ULTIMO_CRP', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
 
         // 3.4 — mostra somente a alternativa selecionada
         const __prz = String(p.PRAZO_ADICIONAL_COD || p.prazo_adicional_cod || '').trim();
