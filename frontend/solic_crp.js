@@ -2192,6 +2192,8 @@
   function mirrorFase4ToTermoData(payload, compat) {
     try {
       const TD = window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, {
+      FASE_PROGRAMA: payload.FASE_PROGRAMA || (window.__TERMO_DATA__ && window.__TERMO_DATA__.FASE_PROGRAMA) || '',
+      __FASE_SEL__:  payload.FASE_PROGRAMA || (window.__TERMO_DATA__ && window.__TERMO_DATA__.__FASE_SEL__) || '',
         // 4.1
         CELEBRACAO_TERMO_PARCELA_DEBITOS: compat.CELEBRACAO_TERMO_PARCELA_DEBITOS || '',
         F41_OPCAO_TXT: compat.F41_OPCAO_TXT || '',
@@ -2406,12 +2408,41 @@
       }
     }
 
+    // === PATCH: Fase 4.5 (template espera F45_DECLS; form usa F45_CONDICOES[])
+    if (!payload.F45_DECLS) {
+      if (Array.isArray(payload['F45_DECLS[]'])) {
+        payload.F45_DECLS = payload['F45_DECLS[]'];
+      } else if (Array.isArray(payload['F45_CONDICOES[]'])) {
+        payload.F45_DECLS = payload['F45_CONDICOES[]'];
+        payload['F45_DECLS[]'] = payload['F45_CONDICOES[]'];
+      }
+    }
 
-    // 7) Garantias finais para chaves esperadas em mirror/templating
+    // === PATCH: Fase 4.6 (template espera F46_CRITERIOS/F46_DECLS; form usa F46_CONDICOES[])
+    if (!payload.F46_CRITERIOS) {
+      if (Array.isArray(payload['F46_CRITERIOS[]'])) {
+        payload.F46_CRITERIOS = payload['F46_CRITERIOS[]'];
+      } else if (Array.isArray(payload['F46_CONDICOES[]'])) {
+        payload.F46_CRITERIOS = payload['F46_CONDICOES[]'];
+        payload['F46_CRITERIOS[]'] = payload['F46_CONDICOES[]'];
+      }
+    }
+    if (!payload.F46_DECLS) {
+      if (Array.isArray(payload['F46_DECLS[]'])) {
+        payload.F46_DECLS = payload['F46_DECLS[]'];
+      } else if (Array.isArray(payload['F46_CONDICOES[]'])) {
+        payload.F46_DECLS = payload['F46_CONDICOES[]'];
+        payload['F46_DECLS[]'] = payload['F46_CONDICOES[]'];
+      }
+    }
+
+    // Garantias finais (arrays)
     if (!Array.isArray(payload['F44_CRITERIOS[]'])) payload['F44_CRITERIOS[]'] = payload['F44_CRITERIOS[]'] || [];
+    if (!Array.isArray(payload['F45_DECLS[]'])) payload['F45_DECLS[]'] = payload['F45_DECLS[]'] || [];
+    if (!Array.isArray(payload['F46_DECLS[]'])) payload['F46_DECLS[]'] = payload['F46_DECLS[]'] || [];
     if (!Array.isArray(payload['F46_CRITERIOS[]'])) payload['F46_CRITERIOS[]'] = payload['F46_CRITERIOS[]'] || [];
+
   }
-  // --- FIM: collectFase4IntoPayload ---
 
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
@@ -2445,7 +2476,7 @@
       'F42_LISTA','F42_LISTA_TXT',
       'F43_LISTA','F43_LISTA_TXT','F43_PLANO','F43_PLANO_B','F43_INCLUIR','F43_DESC_PLANOS',
       'F44_CRITERIOS','F44_CRITERIOS_TXT','F44_FINALIDADES','F44_FINALIDADES_TXT','F44_DECLS','F44_DECLS_TXT','F44_ANEXOS','F441_LEGISLACAO','F445_DESC_PLANOS','F446_DOCS','F446_EXEC_RES',
-      'F451_TEXTO','F45_DOCS','F45_JUST','F453_EXEC_RES',
+      'F451_TEXTO','F45_DOCS','F45_JUST','F453_EXEC_RES','F45_DECLS','F46_DECLS',
       'F46_CRITERIOS','F46_CRITERIOS_TXT','F46_FINALIDADES','F46_FINALIDADES_TXT',
       'F46_PROGESTAO','F46_PORTE','F46_JUST_D','F46_DOCS_D','F46_JUST_E','F46_DOCS_E','F46_ANEXOS','F46_JUST_PLANOS','F46_COMP_CUMPR','F466_DOCS','F466_EXEC_RES'
     ].forEach(k=>{
