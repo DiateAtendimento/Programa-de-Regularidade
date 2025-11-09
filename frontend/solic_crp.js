@@ -1951,18 +1951,27 @@
     if (_f41 === '4.1.2') CELEBRACAO_TERMO_PARCELA_DEBITOS = '4.1.2 – até 300 parcelas';
 
     // 4.2 regularização administrativa
-    const f42 = Array.isArray(p.F42_LISTA) ? p.F42_LISTA : [];
+    const f42 = Array.isArray(p.F42_LISTA) ? p.F42_LISTA
+          : Array.isArray(p['F42_LISTA[]']) ? p['F42_LISTA[]']
+          : Array.isArray(p['F42_ITENS[]']) ? p['F42_ITENS[]']
+          : Array.isArray(p.F42_ITENS) ? p.F42_ITENS : [];
     const REGULARIZACAO_PENDEN_ADMINISTRATIVA = f42.join('; ');
 
     // 4.3 déficit atuarial
-    const f43 = Array.isArray(p.F43_LISTA) ? p.F43_LISTA : [];
+    const f43 = Array.isArray(p.F43_LISTA) ? p.F43_LISTA
+          : Array.isArray(p['F43_LISTA[]']) ? p['F43_LISTA[]']
+          : Array.isArray(p['F43_ITENS[]']) ? p['F43_ITENS[]']
+          : Array.isArray(p.F43_ITENS) ? p.F43_ITENS : [];
     let DEFICIT_ATUARIAL = f43.join('; ');
     if (!DEFICIT_ATUARIAL && (p.F43_PLANO || p.F43_DESC_PLANOS)) {
       DEFICIT_ATUARIAL = '4.3';
     }
 
     // 4.4 critérios estruturantes
-    const f44c = Array.isArray(p.F44_CRITERIOS) ? p.F44_CRITERIOS : [];
+    const f44c = Array.isArray(p.F44_CRITERIOS) ? p.F44_CRITERIOS
+          : Array.isArray(p['F44_CRITERIOS[]']) ? p['F44_CRITERIOS[]']
+          : Array.isArray(p['F44_CONDICOES[]']) ? p['F44_CONDICOES[]']
+          : Array.isArray(p.F44_CONDICOES) ? p.F44_CONDICOES : [];
     const CRITERIOS_ESTRUT_ESTABELECIDOS = f44c.join('; ');
 
     // 4.6 Manutenção da conformidade
@@ -2378,6 +2387,25 @@
 
     // 6) Checkbox simples (SIM/nada)
     payload.F43_SOLICITA_INCLUSAO = document.getElementById('F43_SOLICITA_INCLUSAO')?.checked ? 'SIM' : (payload.F43_SOLICITA_INCLUSAO || '');
+
+    // 6.5) Normalizações de nome (aceita nomes antigos do HTML)
+    if (!payload.F42_LISTA && Array.isArray(payload['F42_ITENS[]'])) {
+      payload.F42_LISTA = payload['F42_ITENS[]'];
+      payload['F42_LISTA[]'] = payload['F42_ITENS[]'];
+    }
+    if (!payload.F43_LISTA && Array.isArray(payload['F43_ITENS[]'])) {
+      payload.F43_LISTA = payload['F43_ITENS[]'];
+      payload['F43_LISTA[]'] = payload['F43_ITENS[]'];
+    }
+    if (!payload.F44_CRITERIOS) {
+      if (Array.isArray(payload['F44_CRITERIOS[]'])) {
+        payload.F44_CRITERIOS = payload['F44_CRITERIOS[]'];
+      } else if (Array.isArray(payload['F44_CONDICOES[]'])) {
+        payload.F44_CRITERIOS = payload['F44_CONDICOES[]'];
+        payload['F44_CRITERIOS[]'] = payload['F44_CONDICOES[]'];
+      }
+    }
+
 
     // 7) Garantias finais para chaves esperadas em mirror/templating
     if (!Array.isArray(payload['F44_CRITERIOS[]'])) payload['F44_CRITERIOS[]'] = payload['F44_CRITERIOS[]'] || [];

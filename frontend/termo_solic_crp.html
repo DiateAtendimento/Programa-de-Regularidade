@@ -482,6 +482,17 @@
         p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || '');
 
         p.F44_CRITERIOS   = asArr(p.F44_CRITERIOS   || p.f44_criterios   || p.fase44_criterios   || '');
+        // Fallbacks para nomes antigos do form
+        if (!p.F42_LISTA?.length) {
+          p.F42_LISTA = asArr(p['F42_LISTA[]'] || p['F42_ITENS[]'] || p.F42_ITENS || p.f42_itens || p.fase42_itens || '');
+        }
+        if (!p.F43_LISTA?.length) {
+          p.F43_LISTA = asArr(p['F43_LISTA[]'] || p['F43_ITENS[]'] || p.F43_ITENS || p.f43_itens || p.fase43_itens || '');
+        }
+        if (!p.F44_CRITERIOS?.length) {
+          p.F44_CRITERIOS = asArr(p['F44_CRITERIOS[]'] || p['F44_CONDICOES[]'] || p.F44_CONDICOES || p.f44_criterios || p.fase44_criterios || '');
+        }
+
         p.F44_DECLS       = asArr(p.F44_DECLS       || p.f44_decls       || p.fase44_decls       || '');
         p.F44_FINALIDADES = asArr(p.F44_FINALIDADES || p.f44_finalidades || p.fase44_finalidades || '');
         p.F44_ANEXOS      = p.F44_ANEXOS || p.f44_anexos || p.fase44_anexos || '';
