@@ -286,7 +286,6 @@
       </div>
     </div>
   </div>
-
   <!-- Script embutido -->
   <script>
     (function () {
@@ -643,7 +642,8 @@
           if (m) faseSel = m[0];
         }
         showOnlyPhase(faseSel);
-        fillText('fase_selecionada', faseSel || '—');
+        // PATCH: preencher o texto visível da fase selecionada
+        fillText('FASE_PROGRAMA', faseSel || '—');
 
         switch (faseSel) {
           case '4.1': {
@@ -908,7 +908,6 @@
         close(){ document.getElementById('pdf-modal')?.classList.remove('pdf-modal--open'); }
       };
       window.__TERMO_RUN__ = run;
-
       // Injeção por querystring
       (function injectFromQueryIfPresent(){
         try{
