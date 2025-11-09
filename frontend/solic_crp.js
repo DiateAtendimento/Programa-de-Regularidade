@@ -2256,6 +2256,136 @@
     }
   }
 
+  // --- INÍCIO: collectFase4IntoPayload (coleta inputs dos modais fora do <form>) ---
+  function collectFase4IntoPayload(payload) {
+    // Helpers
+    const qsa = (sel) => Array.from(document.querySelectorAll(sel));
+    const readId = (id) => document.getElementById(id)?.value?.trim() || '';
+    const makeText = (arr, sep = '; ') =>
+      (Array.isArray(arr) && arr.length ? arr.filter(Boolean).join(sep) : '');
+
+    // 1) Captura genérica de TODOS os inputs name^="F4"
+    //    - checkbox/[] → arrays
+    //    - radio → valor único
+    //    - text/select → valor único
+    const allF4Inputs = qsa('input[name^="F4"], select[name^="F4"], textarea[name^="F4"]');
+
+    // Normalizar por name
+    const buckets = {};
+    for (const el of allF4Inputs) {
+      const name = el.getAttribute('name');
+      if (!name) continue;
+
+      const isArray = name.endsWith('[]');
+      const base = isArray ? name : name; // manter a chave como está (com [] quando houver)
+
+      // checkbox (array)
+      if (el.type === 'checkbox') {
+        if (!isArray) {
+          // checkbox simples não-array
+          if (el.checked) {
+            payload[name] = (payload[name] ?? '') || 'SIM';
+          } else {
+            payload[name] = payload[name] ?? '';
+          }
+        } else {
+          if (!buckets[base]) buckets[base] = [];
+          if (el.checked) buckets[base].push(el.value);
+        }
+        continue;
+      }
+
+      // radio
+      if (el.type === 'radio') {
+        if (el.checked) payload[name] = el.value;
+        else payload[name] = payload[name] ?? '';
+        continue;
+      }
+
+      // demais (text, textarea, select-one)
+      const val = (el.value ?? '').trim();
+      // manter o último preenchido; se vazio, não sobrescreve caso já exista
+      if (val) payload[name] = val;
+      else payload[name] = payload[name] ?? '';
+    }
+
+    // Despejar buckets de arrays no payload
+    for (const [k, arr] of Object.entries(buckets)) {
+      payload[k] = arr;
+    }
+
+    // 2) Compatibilidades / variações usadas no HTML
+    //    (garantir que os aliases existam, mesmo que sob nomes alternativos no form)
+    const alias = (prim, ...alts) => {
+      if (Array.isArray(payload[prim]) ? payload[prim].length : payload[prim]) return;
+      for (const a of alts) {
+        if (Array.isArray(payload[a]) ? payload[a].length : payload[a]) {
+          payload[prim] = payload[a];
+          return;
+        }
+      }
+      // default
+      if (prim.endsWith('[]')) payload[prim] = payload[prim] || [];
+      else payload[prim] = payload[prim] || '';
+    };
+
+    alias('F43_INCLUIR[]', 'F43_INCLUIR_B[]');
+    alias('F44_CRITERIOS[]', 'F44_CRITERIOS');
+
+    // 3) Leitura por ID dos campos livres (garantia extra)
+    [
+      'F4310_LEGISLACAO','F4310_DOCS',
+      'F43_PLANO','F43_PLANO_B','F43_DESC_PLANOS',
+      'F44_ANEXOS','F45_DOCS',
+      'F441_LEGISLACAO','F441_DOCS',
+      'F442_DOCS','F443_DOCS',
+      'F461_DOCS','F462_DOCS',
+    ].forEach(id => {
+      const v = readId(id);
+      if (v) payload[id] = v; else payload[id] = payload[id] ?? '';
+    });
+
+    // 4) Derivações “*_LISTA / *_TXT” esperadas no template/espelhos
+    //    4.2
+    payload.F42_LISTA = payload['F42_ITENS[]'] || payload.F42_LISTA || [];
+    payload.F42_LISTA_TXT = makeText(payload.F42_LISTA);
+    //    4.3
+    payload.F43_LISTA = payload['F43_ITENS[]'] || payload.F43_LISTA || [];
+    payload.F43_LISTA_TXT = makeText(payload.F43_LISTA);
+    payload.F43_INCLUIR = payload['F43_INCLUIR[]'] || payload.F43_INCLUIR || [];
+    payload.F43_INCLUIR_TXT = makeText(payload.F43_INCLUIR);
+    //    4.4
+    payload.F44_LISTA_CRITERIOS = payload['F44_CRITERIOS[]'] || payload.F44_LISTA_CRITERIOS || [];
+    payload.F44_LISTA_CRITERIOS_TXT = makeText(payload.F44_LISTA_CRITERIOS);
+
+    // Sublistas de finalidades 4.4.x / 4.5 / 4.6 (usadas nos espelhos)
+    const ensureList = (k) => (payload[k] = Array.isArray(payload[k]) ? payload[k] : (payload[k] ? [payload[k]] : []));
+    [
+      'F441_FINALIDADES[]','F442_FINALIDADES[]','F443_FINALIDADES[]','F444_FINALIDADES[]',
+      'F45_FINALIDADES[]','F462_FINALIDADES[]'
+    ].forEach(k => ensureList(k));
+
+    payload.F441_FINALIDADES_TXT = makeText(payload['F441_FINALIDADES[]']);
+    payload.F442_FINALIDADES_TXT = makeText(payload['F442_FINALIDADES[]']);
+    payload.F443_FINALIDADES_TXT = makeText(payload['F443_FINALIDADES[]']);
+    payload.F444_FINALIDADES_TXT = makeText(payload['F444_FINALIDADES[]']);
+    payload.F45_FINALIDADES_TXT  = makeText(payload['F45_FINALIDADES[]']);
+    payload.F462_FINALIDADES_TXT = makeText(payload['F462_FINALIDADES[]']);
+
+    // 5) Radios simples (garantia de string vazia se não marcado)
+    payload.F41_OPCAO      = payload.F41_OPCAO      || (document.querySelector('input[name="F41_OPCAO"]:checked')?.value || '');
+    payload.F4310_OPCAO    = payload.F4310_OPCAO    || (document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || '');
+
+    // 6) Checkbox simples (SIM/nada)
+    payload.F43_SOLICITA_INCLUSAO = document.getElementById('F43_SOLICITA_INCLUSAO')?.checked ? 'SIM' : (payload.F43_SOLICITA_INCLUSAO || '');
+
+    // 7) Garantias finais para chaves esperadas em mirror/templating
+    if (!Array.isArray(payload['F44_CRITERIOS[]'])) payload['F44_CRITERIOS[]'] = payload['F44_CRITERIOS[]'] || [];
+    if (!Array.isArray(payload['F46_CRITERIOS[]'])) payload['F46_CRITERIOS[]'] = payload['F46_CRITERIOS[]'] || [];
+  }
+  // --- FIM: collectFase4IntoPayload ---
+
+
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
     const payloadForPdf = {
@@ -2330,6 +2460,9 @@
     try {
       fillNowHiddenFields();
       const payload = buildPayload();
+      collectFase4IntoPayload(payload);
+
+
 
       if (window.__DEBUG_SOLIC_CRP__) {
         try {
@@ -2376,6 +2509,7 @@
     const idem = takeIdemKey() || newIdemKey();
     rememberIdemKey(idem);
     const payload = buildPayload(); // já inclui IDEMP_KEY (se existir)
+    collectFase4IntoPayload(payload); 
 
     if (window.__DEBUG_SOLIC_CRP__) {
       try {
