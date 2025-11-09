@@ -572,105 +572,8 @@
 
           <!-- campos ocultos específicos do gate TERMO_ENC_GESCON -->
           <input type="hidden" id="HAS_TERMO_ENC_GESCON" name="HAS_TERMO_ENC_GESCON" value="0" />
-        </form>
-      </div>
-    </div>
-  </div>
-  <!-- Modal AVISO INICIAL (igual ao padrão) -->
-  <div class="modal fade" id="modalWelcome" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">
-            TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL<br>
-            <small class="fw-normal">PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</small>
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
 
-        <div class="modal-body">
-          <p class="fw-semibold">FORMULÁRIO PARA GERAÇÃO DO TERMO DE SOLICITAÇÃO DE CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP) EMERGENCIAL PARA EXECUÇÃO DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</p>
-
-          <p>
-            O Termo de Solicitação de Certificado de Regularidade Previdenciária Emergencial visa à obtenção de prazos para regularização de pendências para emissão de Certificados de Regularidade Previdenciária – CRP emergenciais, durante a vigência do Programa de Regularidade Previdenciária.
-          </p>
-          <p>
-            O Termo tem por objetivo também a orientação dos entes federativos quanto aos requisitos e condições exigidos, a padronização das informações requeridas e a maior agilidade no atendimento ao requerimento.
-          </p>
-          <p>
-            Após seu preenchimento, o Termo deverá ser impresso, assinado eletronicamente (poderá ser utilizada a plataforma gov.br) e encaminhado ao Ministério da Previdência Social por meio do Sistema de Gestão de Consultas e Normas – Gescon-RPPS.
-          </p>
-
-          <p class="fw-semibold mb-1">No <span class="text-primary">Gescon</span>, o ente deverá:</p>
-          <ol class="mb-3">
-            <li>Selecionar no menu <strong>Consultas → Sobre RPPS</strong>;</li>
-            <li>Clicar no botão <strong>+ Incluir</strong>;</li>
-            <li>Escolher o Assunto <strong>Programa de Regularidade Previdenciária</strong>;</li>
-            <li>Selecionar o Assunto Específico <strong>Encaminhar Termo de Solicitação de CRP Emergencial</strong>;</li>
-            <li>Preencher os campos solicitados;</li>
-            <li>Anexar o Termo de Adesão em PDF com a assinatura eletrônica dos responsáveis (Gov.br);</li>
-            <li>Clicar no botão <strong>Confirmar</strong>.</li>
-          </ol>
-
-          <p>
-            Será considerada como data do Termo de Solicitação de CRP Emergencial a do seu encaminhamento pelo Gescon-RPPS.
-          </p>
-          <p>
-            O Termo de Solicitação de CRP Emergencial será apensado ao processo eletrônico no SEI para acompanhamento pelo ente federativo do Programa de Regularidade Previdenciária.
-          </p>
-          <!-- C) parágrafo normativo atualizado com spans dinâmicos -->
-          <p>
-            Para maiores esclarecimentos sobre as condições para emissão de CRP na vigência do Programa de Regularidade Previdenciária, consulte o Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022,
-            <em>incluído pela Portaria MPS nº <span id="PORTARIA_MPS_INC">—</span></em>, e a
-            <em>Portaria SRPC/MPS nº <span id="PORTARIA_SRPC_B">—</span></em>, que detalha todo o fluxo de procedimentos do Programa.
-          </p>
-          <p class="mb-0">
-            Em caso de dúvidas, o ente deverá comunicar-se com a Coordenação de Atendimento Colaborativo do Departamento dos Regimes Próprios de Previdência Social – DRPPS, pelos telefones <strong>61-2021-5555</strong>, WhatsApp de mesmo número, ou pelo e-mail <strong>programa.regularidade.rpps@previdencia.gov.br</strong>.
-          </p>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal ATENÇÃO (lista à esquerda) -->
-  <div class="modal fade" id="modalAtencao" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-warning">
-          <h5 class="modal-title">Atenção</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="d-flex gap-3 align-items-start">
-            <div id="lottieAtencao" class="lottie-box"></div>
-            <ul id="modalAtencaoLista" class="mb-0 small flex-grow-1 ps-3 text-start"></ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal ERRO (sistêmico) -->
-  <div class="modal fade" id="modalErro" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title">Erro</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="d-flex gap-3 align-items-start">
-            <div id="lottieError" class="lottie-box"></div>
-            <ul id="modalErroLista" class="mb-0 small flex-grow-1 ps-3 text-start"></ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+          <!-- Phase 4 Modals (moved inside form for proper data collection) -->
   <!-- MODAL 4.1 -->
   <div class="modal fade" id="modalF41" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
@@ -1220,6 +1123,105 @@
             </div>
           </div>
 
+        </div>
+      </div>
+    </div>
+  </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Modal AVISO INICIAL (igual ao padrão) -->
+  <div class="modal fade" id="modalWelcome" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">
+            TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL<br>
+            <small class="fw-normal">PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</small>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body">
+          <p class="fw-semibold">FORMULÁRIO PARA GERAÇÃO DO TERMO DE SOLICITAÇÃO DE CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP) EMERGENCIAL PARA EXECUÇÃO DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</p>
+
+          <p>
+            O Termo de Solicitação de Certificado de Regularidade Previdenciária Emergencial visa à obtenção de prazos para regularização de pendências para emissão de Certificados de Regularidade Previdenciária – CRP emergenciais, durante a vigência do Programa de Regularidade Previdenciária.
+          </p>
+          <p>
+            O Termo tem por objetivo também a orientação dos entes federativos quanto aos requisitos e condições exigidos, a padronização das informações requeridas e a maior agilidade no atendimento ao requerimento.
+          </p>
+          <p>
+            Após seu preenchimento, o Termo deverá ser impresso, assinado eletronicamente (poderá ser utilizada a plataforma gov.br) e encaminhado ao Ministério da Previdência Social por meio do Sistema de Gestão de Consultas e Normas – Gescon-RPPS.
+          </p>
+
+          <p class="fw-semibold mb-1">No <span class="text-primary">Gescon</span>, o ente deverá:</p>
+          <ol class="mb-3">
+            <li>Selecionar no menu <strong>Consultas → Sobre RPPS</strong>;</li>
+            <li>Clicar no botão <strong>+ Incluir</strong>;</li>
+            <li>Escolher o Assunto <strong>Programa de Regularidade Previdenciária</strong>;</li>
+            <li>Selecionar o Assunto Específico <strong>Encaminhar Termo de Solicitação de CRP Emergencial</strong>;</li>
+            <li>Preencher os campos solicitados;</li>
+            <li>Anexar o Termo de Adesão em PDF com a assinatura eletrônica dos responsáveis (Gov.br);</li>
+            <li>Clicar no botão <strong>Confirmar</strong>.</li>
+          </ol>
+
+          <p>
+            Será considerada como data do Termo de Solicitação de CRP Emergencial a do seu encaminhamento pelo Gescon-RPPS.
+          </p>
+          <p>
+            O Termo de Solicitação de CRP Emergencial será apensado ao processo eletrônico no SEI para acompanhamento pelo ente federativo do Programa de Regularidade Previdenciária.
+          </p>
+          <!-- C) parágrafo normativo atualizado com spans dinâmicos -->
+          <p>
+            Para maiores esclarecimentos sobre as condições para emissão de CRP na vigência do Programa de Regularidade Previdenciária, consulte o Anexo XVIII da Portaria MTP nº 1.467, de 02 de junho de 2022,
+            <em>incluído pela Portaria MPS nº <span id="PORTARIA_MPS_INC">—</span></em>, e a
+            <em>Portaria SRPC/MPS nº <span id="PORTARIA_SRPC_B">—</span></em>, que detalha todo o fluxo de procedimentos do Programa.
+          </p>
+          <p class="mb-0">
+            Em caso de dúvidas, o ente deverá comunicar-se com a Coordenação de Atendimento Colaborativo do Departamento dos Regimes Próprios de Previdência Social – DRPPS, pelos telefones <strong>61-2021-5555</strong>, WhatsApp de mesmo número, ou pelo e-mail <strong>programa.regularidade.rpps@previdencia.gov.br</strong>.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ATENÇÃO (lista à esquerda) -->
+  <div class="modal fade" id="modalAtencao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">Atenção</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex gap-3 align-items-start">
+            <div id="lottieAtencao" class="lottie-box"></div>
+            <ul id="modalAtencaoLista" class="mb-0 small flex-grow-1 ps-3 text-start"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ERRO (sistêmico) -->
+  <div class="modal fade" id="modalErro" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Erro</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex gap-3 align-items-start">
+            <div id="lottieError" class="lottie-box"></div>
+            <ul id="modalErroLista" class="mb-0 small flex-grow-1 ps-3 text-start"></ul>
+          </div>
         </div>
       </div>
     </div>
