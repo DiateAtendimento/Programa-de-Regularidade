@@ -1594,14 +1594,14 @@
     // 4.2, 4.3, 4.4... (listas vindas dos modais)
     // FIX: Query modais diretamente para garantir captura de todos os inputs
     const F42_LISTA = Array.from(new Set(
-      document.querySelectorAll(
+      Array.from(document.querySelectorAll(
         '#F42_LISTA input[type="checkbox"]:checked,' +
         'input[name="F42_LISTA[]"]:checked,' +
         'input[name="F42_ITENS[]"]:checked,' +
         'input[name="fase4_2_criterios[]"]:checked,' +
         '#modalF42 input[type="checkbox"]:checked'
-      )
-    )).map(i => i.value.trim()).filter(Boolean);
+      )).map(i => i.value.trim())
+    )).filter(Boolean);
 
     const F44_CRITERIOS = Array.from(new Set([
       collectCheckedValues('#F44_CRITERIOS input[type="checkbox"]'),
