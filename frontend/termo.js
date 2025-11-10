@@ -37,6 +37,15 @@
     document.querySelectorAll(`[data-k="${k}"]`).forEach(el => el.textContent = text);
   };
 
+  // pega o primeiro valor "preenchido" dentre várias chaves (upper/lower/aliases)
+  const get = (obj, ...keys) => {
+    for (const k of keys) {
+      const v = obj != null ? obj[k] : undefined;
+      if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+    }
+    return '';
+  };
+
   const NOT_INFORMED = '<em>Não informado</em>';
 
   // ===== util para filtrar listas por códigos =====
@@ -68,6 +77,20 @@
     setTextAll('ug',          p.UG || p.ug || '');
     setTextAll('cnpj_ug',     fmtCNPJ(p.CNPJ_UG || p.cnpj_ug || ''));
     setTextAll('email_ug',    p.EMAIL_UG || p.email_ug || '');
+    // 3.1 Data de vencimento do último CRP (mostra formatada)
+    const rawVencUlt = get(
+      p,
+      'CRP_DATA_VALIDADE_ISO', 'CRP_DATA_VALIDADE_DMY',
+      'DATA_VENCIMENTO_ULTIMO_CRP', 'DATA_VENC_ULTIMO_CRP',
+      'data_vencimento_ultimo_crp', 'data_venc_ultimo_crp', 'venc_ult_crp'
+    );
+    setTextAll('data_vencimento_ultimo_crp', rawVencUlt ? fmtDataBR(rawVencUlt) : '');
+
+    // Órgão de Vinculação (UG)
+    setTextAll('ORGAO_VINCULACAO_UG', get(
+      p,
+      'ORGAO_VINCULACAO_UG', 'orgao_vinculacao_ug', 'ug_orgao_vinc', 'ORGAO_VINC'
+    ));
 
     setTextAll('nome_rep_ente',  p.NOME_REP_ENTE || p.nome_rep_ente || '');
     setTextAll('cargo_rep_ente', p.CARGO_REP_ENTE || p.cargo_rep_ente || '');
@@ -79,8 +102,9 @@
     setTextAll('cpf_rep_ug',   fmtCPF(p.CPF_REP_UG || p.cpf_rep_ug || ''));
     setTextAll('email_rep_ug', p.EMAIL_REP_UG || p.email_rep_ug || '');
 
-    // ORGAO DE VINCULAÇÃO da UG (se existir no payload)
-    setTextAll('orgao_vinculacao_ug', p.ORGAO_VINCULACAO_UG || p.orgao_vinculacao_ug || '');
+    // ORGAO DE VINCULAÇÃO da UG (espelha para ambos data-k usados no HTML)
+    const orgVincUG = get(p, 'ORGAO_VINCULACAO_UG', 'orgao_vinculacao_ug', 'ug_orgao_vinc', 'ORGAO_VINC');
+    setTextAll('orgao_vinculacao_ug', orgVincUG);
 
     // Data do termo (registro) — com fallback para hoje
     const dataTermoRaw = p.DATA_TERMO_GERADO || p.DATA_TERMO || p.data_termo || '';
@@ -96,7 +120,7 @@
     setTextAll('crp_venc', crpVenc ? fmtDataBR(crpVenc) : '');
 
     // 3.2 Tipo de emissão do último CRP (inferência robusta)
-    let crpTipo = (p.TIPO_EMISSAO_ULTIMO_CRP || p.TIPO_EMISSAO || p.crp_tipo || '').trim();
+    let crpTipo = (get(p, 'TIPO_EMISSAO_ULTIMO_CRP', 'TIPO_EMISSAO', 'crp_tipo') || '').trim();
     if (!crpTipo) {
       const raw = String(p.CRP_DECISAO_JUDICIAL || p.DECISAO_JUDICIAL || p.DEC_JUDICIAL || p.CRP_DJ || '').toLowerCase();
       const hasValidade =
@@ -114,6 +138,9 @@
       }
     }
     setTextAll('crp_tipo', crpTipo || '');
+    
+    // mantém data-k legado se existir no template
+    setTextAll('tipo_emissao_ult_crp', crpTipo || '');
 
     // 3.3 Critérios irregulares (pode vir como string separada por ';' ou array)
     (function () {
@@ -294,10 +321,17 @@
         NOME_REP_UG: q.get('nome_rep_ug') || '', CPF_REP_UG: q.get('cpf_rep_ug') || '',
         CARGO_REP_UG: q.get('cargo_rep_ug') || '', EMAIL_REP_UG: q.get('email_rep_ug') || '',
 
-        CRITERIOS_IRREGULARES: (()=>{
-          const multi = q.getAll('criterio'); if (multi && multi.length) return multi;
-          const joined = q.get('criterios') || ''; return joined ? joined.split(/[;,]/).map(s=>s.trim()).filter(Boolean) : [];
+        CRITERIOS_IRREGULARES: (function(){
+          const list = [];
+          // aceita criterio, criterio[], criterios, criterios[]
+          list.push(...q.getAll('criterio'));
+          list.push(...q.getAll('criterio[]'));
+          const joined = q.get('criterios') || '';
+          if (joined) list.push(...joined.split(/[;,]/).map(s=>s.trim()).filter(Boolean));
+          list.push(...q.getAll('criterios[]'));
+          return list.filter(Boolean);
         })(),
+
         ADESAO_SEM_IRREGULARIDADES: q.get('adesao_sem_irregularidades') || '',
         OUTRO_CRITERIO_COMPLEXO: q.get('outro_criterio_complexo') || '',
 
@@ -311,7 +345,13 @@
         ESFERA_COD: q.get('esfera_cod') || '',
 
         // apenas a flag do prazo adicional (se fornecida via QS)
-        PRAZO_ADICIONAL_FLAG: q.get('prazo_adicional_flag') || ''
+        PRAZO_ADICIONAL_FLAG: q.get('prazo_adicional_flag') || '',
+
+        // inclusões QS para 3.1 / 3.2 e órgão de vinculação (UG)
+        DATA_VENCIMENTO_ULTIMO_CRP: q.get('data_vencimento_ultimo_crp') || q.get('data_venc_ultimo_crp') || q.get('venc_ult_crp') || '',
+        TIPO_EMISSAO_ULTIMO_CRP: q.get('tipo_emissao_ult_crp') || q.get('crp_tipo') || '',
+        ORGAO_VINCULACAO_UG: q.get('orgao_vinculacao_ug') || q.get('ORGAO_VINCULACAO_UG') || q.get('ug_orgao_vinc') || q.get('orgao_vinc') || ''
+       
       };
       try { renderizarTermo(payload); } catch (e) { console.error('[TERMO_QS] render error:', e); }
     }

@@ -231,10 +231,19 @@
 
                   <div class="col-md-6">
                     <label class="form-label" for="ug_orgao_vinc">Órgão de Vinculação</label>
-                    <input type="text" class="form-control"
-                          id="ug_orgao_vinc" name="ug_orgao_vinc"
-                          required aria-required="true"
-                          placeholder="Ex.: Secretaria de Administração">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="ug_orgao_vinc"
+                      name="ug_orgao_vinc"
+                      oninput="document.getElementById('ORGAO_VINCULACAO_UG_hidden').value=this.value"
+                      required aria-required="true"
+                      placeholder="Ex.: Secretaria de Administração">
+                    <input
+                      type="hidden"
+                      id="ORGAO_VINCULACAO_UG_hidden"
+                      name="ORGAO_VINCULACAO_UG"
+                      value="">
                   </div>
                 </div>
 
@@ -1314,18 +1323,27 @@
 
   <!-- C) Configuração de normas (preencha quando a Portaria e artigos estiverem definidos) -->
   <script>
+    // Preenchimentos mínimos e seguros de exibir
     window.__NORMAS = Object.assign({
-      PORTARIA_SRPC: "2.024/2025",
-      PORTARIA_SRPC_B: "—",
-      PORTARIA_MPS_INC: "—",
-      ART_SRPC_41: "—",
-      ART_SRPC_42: "—",
-      ART_SRPC_43: "—",
-      ART_SRPC_44: "—",
-      ART_SRPC_45: "—",
-      ART_SRPC_46: "—"
+      PORTARIA_SRPC:    "",          // se houver ato SRPC, preencha aqui (ex.: "2.024/2025")
+      PORTARIA_SRPC_B:  "",          // opcional
+      PORTARIA_MPS_INC: "2.010/2025",
+      ART_SRPC_41: "", ART_SRPC_42: "", ART_SRPC_43: "",
+      ART_SRPC_44: "", ART_SRPC_45: "", ART_SRPC_46: ""
     }, window.__NORMAS || {});
+
+    function hideWhenEmpty(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      const txt = (el.textContent || "").trim();
+      if(!txt || txt === "—") {
+        const em = el.closest('em');
+        if(em) em.style.display = 'none';
+        else el.style.display = 'none';
+      }
+    }
   </script>
+
 
   <!-- JS auxiliar (D, F e normas dinâmicas) -->
   <script>

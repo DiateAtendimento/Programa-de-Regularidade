@@ -998,5 +998,25 @@
     })();
   </script>
 
+  <script>
+    // Recebe payload via postMessage e renderiza
+    (function(){
+      function onMsg(ev){
+        try {
+          if (ev.origin !== window.location.origin) return;
+          const m = ev.data || {};
+          if (m && m.type === 'TERMO_PAYLOAD' && m.data) {
+            window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, m.data);
+            if (typeof window.run === 'function') {
+              window.run(m.data);
+              document.dispatchEvent(new Event('TERMO_DATA'));
+            }
+          }
+        } catch(_) {}
+      }
+      window.addEventListener('message', onMsg, false);
+    })();
+  </script>
+
 </body>
 </html>

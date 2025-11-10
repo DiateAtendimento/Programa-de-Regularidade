@@ -5,6 +5,28 @@
   function dbg(...args){ if (window.__DEBUG_SOLIC_CRP__) console.log(...args); }
   function dbe(...args){ if (window.__DEBUG_SOLIC_CRP__) console.error(...args); }
 
+  // === Preview helpers (fallback quando o PDF falhar) ===
+  const TERMO_SESSION_KEY = 'TERMO_SOLIC_CRP_PAYLOAD';
+  function stashPayloadForPreview(p){
+    try { sessionStorage.setItem(TERMO_SESSION_KEY, JSON.stringify(p)); } catch(_){}
+  }
+  function openPreviewWindow(payload){
+    try {
+      const w = window.open('termo_solic_crp.html', '_blank', 'noopener');
+      if (!w) return;
+      // envia o payload repetidamente por alguns segundos até o template estar pronto
+      const send = ()=>{ try { w.postMessage({ type:'TERMO_PAYLOAD', data: payload }, window.location.origin); } catch(_){ } };
+      let tries = 0;
+      const t = setInterval(()=>{
+        if (w.closed || tries++ > 30) return clearInterval(t);
+        send();
+      }, 200);
+      w.addEventListener?.('load', () => { try { send(); } catch(_){} }, { once:true });
+    } catch(e) {
+      dbe('[openPreviewWindow] falhou', e);
+    }
+  }
+
   /* ========= Config ========= */
   // Preferir o proxy do Netlify SEMPRE (injeta API Key)
   // Em dev local você pode sobrescrever com window.__API_BASE = 'http://localhost:3000/api'
@@ -1240,8 +1262,8 @@
       if (!el.emailUg.value && ente.email_ug) el.emailUg.value  = ente.email_ug;
 
       // >>> NOVO: Processo SEI visível no quadro do passo 0 (se vier da planilha/API)
-      const procSei = data?.proc_sei ?? data?.PROCESSO_SEI ?? '';
-      if (procSei && el.infoProcSei) el.infoProcSei.textContent = procSei;
+      const procSeiUpper = data?.proc_sei ?? data?.PROCESSO_SEI ?? '';
+      if (procSeiUpper && el.infoProcSei) el.infoProcSei.textContent = procSeiUpper;
       // <<<
 
       popularListasFaseComBaseNosCritérios();
@@ -1294,6 +1316,10 @@
         saveState();
       });
     });
+
+    // (UX) garante que todos os modais da Fase 4 tenham o botão "Voltar"
+    ['modalF41','modalF42','modalF43','modalF44','modalF45','modalF46']
+      .forEach(id => ensureBackButton(id));
   }
 
   /* === Condicionais dos modais === */
@@ -1779,7 +1805,7 @@
       IDEMP_KEY: takeIdemKey() || ''
     };
     // PORTARIA padronizada (caso não venha do formulário)
-    if (!obj.PORTARIA_SRPC) obj.PORTARIA_SRPC = '2.024/2025';
+    if (!obj.PORTARIA_SRPC) obj.PORTARIA_SRPC = '2.010/2025';
 
     dbg('[SOLIC-CRP] Payload (parcial):', obj);
     ensureDefaultsForPayload(obj);
@@ -2447,6 +2473,7 @@
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
+    stashPayloadForPreview(payload);
     const payloadForPdf = {
       ...payload,
       ...makeSolicCrpCompatFields(payload),
@@ -2456,7 +2483,24 @@
       HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : '',
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
       // (opcional) Portaria forçada — padronizada
-      PORTARIA_SRPC: '2.024/2025'
+      PORTARIA_SRPC: '2.024/2025',
+      // Espelhos em minúsculas para o template (data-k)
+      data_vencimento_ultimo_crp: (
+        payload.DATA_VENCIMENTO_ULTIMO_CRP ||
+        payload.DATA_VENC_ULTIMO_CRP ||
+        payload.venc_ult_crp || ''
+      ),
+        tipo_emissao_ult_crp: (
+        payload.TIPO_EMISSAO_ULTIMO_CRP ||
+        payload.tipo_emissao_ult_crp || ''
+      ),
+        orgao_vinculacao_ug: (
+        payload.ORGAO_VINCULACAO_UG ||
+        payload.ug_orgao_vinc || ''
+      ),
+
+      // Texto exibível para 3.4 (o template mostra PRAZO_ADICIONAL_TEXTO)
+      PRAZO_ADICIONAL_TEXTO: (payload.PRAZO_ADICIONAL_FLAG === 'SIM' ? 'SIM' : ''),
     };
 
     // 🔥 Aquece o backend/Puppeteer ANTES de pedir o PDF (evita 502/restart)
@@ -2548,6 +2592,8 @@
     } catch (e) {
       bootstrap.Modal.getOrCreateInstance($('#modalGerandoPdf')).hide();
       showErro(friendlyErrorMessages(e, 'Não foi possível gerar o PDF.'));
+      // fallback: abre o preview em nova aba com os dados já preenchidos
+      openPreviewWindow(payload);
     } finally {
       el.btnGerar.disabled = false;
       gerarBusy = false;
