@@ -321,7 +321,7 @@
               if (Array.isArray(j)) return j.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
             } catch(_) {}
           }
-          return s.split(/[;,]\s*|\n+/).map(s=>s.trim()).filter(Boolean);
+          return s.split(/,\s*|\n+/).map(s=>s.trim()).filter(Boolean);
         }
         return [String(v)].filter(Boolean);
       }
@@ -543,6 +543,11 @@
         p.F46_DOCS_D      = p.F46_DOCS_D      || p.f46_docs_d;
         p.F46_JUST_E      = p.F46_JUST_E      || p.f46_just_e;
         p.F46_DOCS_E      = p.F46_DOCS_E      || p.f46_docs_e;
+
+        // 4.6.6 (a) e (b) — aliases robustos
+        p.F466_DOCS     = p.F466_DOCS     || p.F46_DOCS     || p.f46_docs     || p.f466_docs     || '';
+        p.F466_EXEC_RES = p.F466_EXEC_RES || p.F46_EXEC_RES || p.f46_exec_res || p.f466_exec_res || '';
+
 
         p.DATA_TERMO_GERADO = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
 
@@ -794,7 +799,17 @@
             break;
           }
           case '4.6': {
-            liList('#f46-criterios', p.F46_CRITERIOS);
+            (function(){
+              let arr = asArr(p.F46_CRITERIOS);
+              // Se vier só a declaração (a) marcada nas condições, preenche com um texto padrão
+              const decls = asArr(p.F46_DECLS);
+              const conds = asArr(p['F46_CONDICOES[]'] || p.F46_CONDICOES || []);
+              const aMarcado = decls.concat(conds).some(t => /4\.6\.1\s*\(?.*a\)?/i.test(String(t)));
+              if (!arr.length && aMarcado) {
+                arr = ['Demais critérios não abrangidos por Plano(s) de Ação foram declarados regulares (4.6.1, item a).'];
+              }
+              liList('#f46-criterios', arr);
+            })();
 
             const decls = [];
             if (Array.isArray(p.F46_DECLS)) decls.push(...p.F46_DECLS);
