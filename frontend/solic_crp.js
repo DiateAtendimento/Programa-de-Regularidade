@@ -2875,7 +2875,7 @@ function syncF46ToTemplate(){
       popularListasFaseComBaseNosCritérios();
       // cria/selects/áreas de texto para (b–e)
       ensureF46UI();
-});
+  });
 
     bindCondicionais();
 
