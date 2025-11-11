@@ -15,7 +15,7 @@
       const w = window.open('termo_solic_crp.html', '_blank', 'noopener');
       if (!w) return;
       // envia o payload repetidamente por alguns segundos até o template estar pronto
-      const send = ()=>{ try { w.postMessage({ type:'TERMO_PAYLOAD', data: payload }, window.location.origin); } catch(_){ } };
+      const send = ()=>{ try { w.postMessage({ type:'TERMO_PAYLOAD', data: payload }, '*'); } catch(_){ } };
       let tries = 0;
       const t = setInterval(()=>{
         if (w.closed || tries++ > 30) return clearInterval(t);
