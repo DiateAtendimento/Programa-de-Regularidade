@@ -833,6 +833,13 @@
   $('#modalErro')?.addEventListener('shown.bs.modal', () =>
     mountLottie('lottieError', 'animacao/confirm-error.json', { loop:false, autoplay:true })
   );
+
+  document.addEventListener('shown.bs.modal', (ev) => {
+    if (ev.target && ev.target.id === 'modalF46') {
+      popularListasFaseComBaseNosCritérios();
+      ensureF46UI();
+    }
+  });
   /* ========= Botão "Voltar" que fecha os modais da Fase 4 ========= */
   function ensureBackButton(modalId){
     const el = document.getElementById(modalId);
@@ -2869,13 +2876,6 @@ function syncF46ToTemplate(){
     bindSyncUg132();
     ensureStepperFallback();
     setupFase4Toggles();
-    // Garante que os controles 4.6 existam e estejam ligados ao abrir o modal
-    document.getElementById('modalF46')?.addEventListener('shown.bs.modal', () => {
-      // injeta lista de critérios (a) se ainda não foi feito
-      popularListasFaseComBaseNosCritérios();
-      // cria/selects/áreas de texto para (b–e)
-      ensureF46UI();
-    });
 
     bindCondicionais();
 
