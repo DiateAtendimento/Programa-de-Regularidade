@@ -234,14 +234,12 @@
           <p class="small mt"><strong>4.6.5 Justificativas quanto ao(s) Plano(s) de Ação:</strong></p>
           <div id="f46-just-planos"></div>
 
-          <p class="small mt"><strong>4.6.6 Comprovação de cumprimento:</strong></p>
-          <div id="f46-comp-cumpr"></div>
-
-          <p class="small mt"><strong>Documentos adicionais (4.6):</strong></p>
+          <p class="small mt"><strong>4.6.6 (a) Comprovação do cumprimento do(s) Plano(s) de Ação:</strong></p>
           <div id="f466-docs"></div>
 
-          <p class="small mt"><strong>Execução/Resultados adicionais (4.6):</strong></p>
+          <p class="small mt"><strong>4.6.6 (b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados:</strong></p>
           <div id="f466-exec"></div>
+
         </div>
       </section>
 
@@ -519,22 +517,22 @@
         }
 
 
-        p.F46_CRITERIOS   = asArr(p.F46_CRITERIOS   || p.f46_criterios   || '');
-        p.F46_DECLS       = asArr(
-          p.F46_DECLS
-          || p['F46_DECLS[]']
-          || p['F46_CONDICOES[]']   // <— vem do formulário (4.6.1)
-          || p.F46_CONDICOES
-          || p.f46_decls
+        p.F46_CRITERIOS = asArr(
+          p.F46_CRITERIOS
+          || p['F46_CRITERIOS[]']     // <— cobre o name do form
+          || p.f46_criterios
           || ''
         );
+
         p.F46_FINALIDADES = asArr(
           p.F46_FINALIDADES
-          || p.f46_finalidades
-          || p['F462_FINALIDADES[]']  // <— nome de campo do form (4.6.2)
+          || p['F46_FINALIDADES[]']   // <— cobre o name mais comum
+          || p['F462_FINALIDADES[]']  // <— mantém compat do patch antigo
           || p.F462_FINALIDADES
+          || p.f46_finalidades
           || ''
         );
+
 
         p.F46_ANEXOS      = p.F46_ANEXOS      || p.f46_anexos      || '';
         p.F46_COMP_CUMPR  = p.F46_COMP_CUMPR  || p.f46_comp_cumpr  || '';
@@ -574,7 +572,7 @@
           || p.f462f_criterios
           || ''
         );
-        
+
         ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
          'F45_DECLS','F46_CRITERIOS','F46_DECLS','F46_FINALIDADES','F462F_CRITERIOS']
 
