@@ -481,6 +481,7 @@
 
         p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || '');
         p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || '');
+        p.F43_INCLUIR = asArr(p.F43_INCLUIR || p['F43_INCLUIR[]'] || '');
 
         p.F44_CRITERIOS   = asArr(p.F44_CRITERIOS   || p.f44_criterios   || p.fase44_criterios   || '');
         if (!p.F42_LISTA?.length) {
@@ -489,11 +490,20 @@
         if (!p.F43_LISTA?.length) {
           p.F43_LISTA = asArr(p['F43_LISTA[]'] || p['F43_ITENS[]'] || p.F43_ITENS || p.f43_itens || p.fase43_itens || '');
         }
+        
         if (!p.F44_CRITERIOS?.length) {
-          p.F44_CRITERIOS = asArr(p['F44_CRITERIOS[]'] || p['F44_CONDICOES[]'] || p.F44_CONDICOES || p.f44_criterios || p.fase44_criterios || '');
+          p.F44_CRITERIOS = asArr(p['F44_CRITERIOS[]'] || p.F44_CRITERIOS || p.f44_criterios || p.fase44_criterios || '');
         }
 
-        p.F44_DECLS       = asArr(p.F44_DECLS       || p.f44_decls       || p.fase44_decls       || '');
+        p.F44_DECLS       = asArr(
+          p.F44_DECLS
+          || p['F44_DECLS[]']
+          || p['F44_CONDICOES[]']   // <— vem do formulário (4.4.1)
+          || p.F44_CONDICOES
+          || p.f44_decls
+          || p.fase44_decls
+          || ''
+        );
         p.F44_FINALIDADES = asArr(p.F44_FINALIDADES || p.f44_finalidades || p.fase44_finalidades || '');
         p.F44_ANEXOS      = p.F44_ANEXOS || p.f44_anexos || p.fase44_anexos || '';
 
@@ -502,10 +512,30 @@
         p.F45_JUST  = p.F45_JUST  || p.f45_just  || '';
         const _ok451 = p.F45_OK451 ?? p.f45_ok451;
         p.F45_OK451 = !!(['1','true','sim','s','yes','y'].includes(String(_ok451 ?? '').trim().toLowerCase()) || _ok451 === true);
+        // Deriva F45_OK451 quando vier como checkbox (F45_CONDICOES[])
+        if (p.F45_OK451 !== true && p.F45_OK451 !== false) {
+          const _f451 = asArr(p['F45_CONDICOES[]'] || p.F45_CONDICOES || '');
+          if (_f451.length) p.F45_OK451 = _f451.some(x => /4\.5\.1/.test(String(x)));
+        }
+
 
         p.F46_CRITERIOS   = asArr(p.F46_CRITERIOS   || p.f46_criterios   || '');
-        p.F46_DECLS       = asArr(p.F46_DECLS       || p.f46_decls       || '');
-        p.F46_FINALIDADES = asArr(p.F46_FINALIDADES || p.f46_finalidades || '');
+        p.F46_DECLS       = asArr(
+          p.F46_DECLS
+          || p['F46_DECLS[]']
+          || p['F46_CONDICOES[]']   // <— vem do formulário (4.6.1)
+          || p.F46_CONDICOES
+          || p.f46_decls
+          || ''
+        );
+        p.F46_FINALIDADES = asArr(
+          p.F46_FINALIDADES
+          || p.f46_finalidades
+          || p['F462_FINALIDADES[]']  // <— nome de campo do form (4.6.2)
+          || p.F462_FINALIDADES
+          || ''
+        );
+
         p.F46_ANEXOS      = p.F46_ANEXOS      || p.f46_anexos      || '';
         p.F46_COMP_CUMPR  = p.F46_COMP_CUMPR  || p.f46_comp_cumpr  || '';
         p.F46_JUST_PLANOS = p.F46_JUST_PLANOS || p.f46_just_planos || '';
@@ -537,8 +567,18 @@
         if (!p.F44_CRITERIOS?.length) p.F44_CRITERIOS = _split(p.CRITERIOS_ESTRUT_ESTABELECIDOS || p.criterios_estrut || '');
         if (!p.F46_CRITERIOS?.length) p.F46_CRITERIOS = _split(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || p.man_conformidade || '');
 
+        // 4.6.2(f) - critérios (quando 'f' ativo)
+        p.F462F_CRITERIOS = asArr(
+          p.F462F_CRITERIOS
+          || p['F462F_CRITERIOS[]']   // suporte ao name do form
+          || p.f462f_criterios
+          || ''
+        );
+        
         ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
          'F45_DECLS','F46_CRITERIOS','F46_DECLS','F46_FINALIDADES','F462F_CRITERIOS']
+
+
           .forEach(k => { p[k] = asArr(p[k] || p[k.toLowerCase()] || ''); });
 
         return p;
@@ -676,7 +716,7 @@
               const pl = document.getElementById('f43-plano');
               if (pl) pl.textContent = (p.F43_PLANO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
               const plb = document.getElementById('f43-plano-b');
-              if (plb) pl.textContent = (p.F43_PLANO_B || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+              if (plb) plb.textContent = (p.F43_PLANO_B || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             })();
             (function(){
               const box = document.getElementById('f4310');
