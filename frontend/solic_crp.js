@@ -834,12 +834,6 @@
     mountLottie('lottieError', 'animacao/confirm-error.json', { loop:false, autoplay:true })
   );
 
-  document.addEventListener('shown.bs.modal', (ev) => {
-    if (ev.target && ev.target.id === 'modalF46') {
-      popularListasFaseComBaseNosCritérios();
-      ensureF46UI();
-    }
-  });
   /* ========= Botão "Voltar" que fecha os modais da Fase 4 ========= */
   function ensureBackButton(modalId){
     const el = document.getElementById(modalId);
