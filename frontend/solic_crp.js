@@ -1360,6 +1360,132 @@
     if (optF && critWrap46) optF.addEventListener('change', () => critWrap46.classList.toggle('d-none', !optF.checked));
   }
 
+  // === UI dinâmica para 4.6 (cria inputs se não existirem e sincroniza com o template) ===
+  function ensureF46UI(){
+    const modal = document.getElementById('modalF46');
+    const host  = document.querySelector('#blk_46 .modal-body') || modal?.querySelector('.modal-body') || modal;
+    if (!host) return;
+
+    // Cria um wrapper uma única vez
+    let wrap = host.querySelector('[data-f46-ui]');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.setAttribute('data-f46-ui', '1');
+      wrap.className = 'mt-3';
+      wrap.innerHTML = `
+        <div class="mb-3">
+          <label class="form-label fw-semibold">4.6.1 (b) Nível de certificação no Pró-Gestão RPPS</label>
+          <select id="F46_PROGESTAO" class="form-select">
+            <option value="">Selecione…</option>
+            <option value="Nível II">Nível II</option>
+            <option value="Nível III">Nível III</option>
+            <option value="Nível IV">Nível IV</option>
+          </select>
+          <div class="form-text">Requisitos mínimos: Nível II (Porte Pequeno – ISP-RPPS); Nível III (Porte Médio/Grande); Nível IV (Porte Especial).</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">4.6.1 (c) Grupo de Porte (ISP-RPPS)</label>
+          <select id="F46_PORTE" class="form-select">
+            <option value="">Selecione…</option>
+            <option value="Porte Pequeno">Porte Pequeno (ISP-RPPS)</option>
+            <option value="Porte Médio">Porte Médio (ISP-RPPS)</option>
+            <option value="Porte Grande">Porte Grande (ISP-RPPS)</option>
+            <option value="Porte Especial">Porte Especial (ISP-RPPS)</option>
+          </select>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="mb-2 fw-semibold">4.6.1 (d) Houve melhora na situação financeira e atuarial do RPPS (anexar comprovações)</div>
+        <div class="mb-2">
+          <label for="F46_JUST_D" class="form-label">Justificativas (item d)</label>
+          <textarea id="F46_JUST_D" class="form-control" rows="3" placeholder="Descreva as evidências de melhora (ex.: ISP-RPPS, fluxo, etc.)"></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="F46_DOCS_D" class="form-label">Documentos (item d)</label>
+          <textarea id="F46_DOCS_D" class="form-control" rows="2" placeholder="Liste os documentos/links ou referência dos anexos"></textarea>
+        </div>
+
+        <div class="mb-2 fw-semibold">4.6.1 (e) Medidas de acompanhamento atuarial (arts. 67 a 69 da Portaria MTP nº 1.467/2022)</div>
+        <div class="mb-2">
+          <label for="F46_JUST_E" class="form-label">Justificativas (item e)</label>
+          <textarea id="F46_JUST_E" class="form-control" rows="3" placeholder="Descreva as medidas e o acompanhamento realizado"></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="F46_DOCS_E" class="form-label">Documentos (item e)</label>
+          <textarea id="F46_DOCS_E" class="form-control" rows="2" placeholder="Liste os documentos/links ou referência dos anexos"></textarea>
+        </div>
+      `;
+      host.appendChild(wrap);
+    }
+
+    // (a) já é coberto pela sua função popularListasFaseComBaseNosCritérios(): #F46_CRITERIOS
+
+    // Bind de sincronização: qualquer mudança reflete no preview e salva estado
+    const ids = ['F46_PROGESTAO','F46_PORTE','F46_JUST_D','F46_DOCS_D','F46_JUST_E','F46_DOCS_E'];
+    ids.forEach(id => {
+      const node = document.getElementById(id);
+      if (!node) return;
+      if (!node.__f46Bound) {
+        node.__f46Bound = true;
+        node.addEventListener('input', syncF46ToTemplate);
+        node.addEventListener('change', syncF46ToTemplate);
+      }
+    });
+
+    // Também refletir checkboxes dos critérios (a) imediatamente
+    ['#F46_CRITERIOS input[type="checkbox"]',
+    '#F462F_CRITERIOS input[type="checkbox"]',
+    '#F46_FINALIDADES input[type="checkbox"]']
+    .forEach(sel => {
+      document.querySelectorAll(sel).forEach(chk=>{
+        if (!chk.__f46Bound) {
+          chk.__f46Bound = true;
+          chk.addEventListener('change', ()=>{ syncF46ToTemplate(); saveState(); });
+        }
+      });
+    });
+
+    // Restaurar valores salvos (se houver)
+    const st = (function(){ try { return JSON.parse(localStorage.getItem('solic-crp-form-v1')||'{}'); } catch(_) { return {}; } })();
+    const v = st.values || {};
+    if (v.F46_PROGESTAO) document.getElementById('F46_PROGESTAO').value = v.F46_PROGESTAO;
+    if (v.F46_PORTE)     document.getElementById('F46_PORTE').value     = v.F46_PORTE;
+    if (v.F46_JUST_D)    document.getElementById('F46_JUST_D').value    = v.F46_JUST_D;
+    if (v.F46_DOCS_D)    document.getElementById('F46_DOCS_D').value    = v.F46_DOCS_D;
+    if (v.F46_JUST_E)    document.getElementById('F46_JUST_E').value    = v.F46_JUST_E;
+    if (v.F46_DOCS_E)    document.getElementById('F46_DOCS_E').value    = v.F46_DOCS_E;
+
+    // Primeira sincronização para garantir exibição
+    syncF46ToTemplate();
+  }
+
+function syncF46ToTemplate(){
+  try{
+    window.__TERMO_DATA__ = window.__TERMO_DATA__ || {};
+
+    const pickChecked = (sel) => Array.from(document.querySelectorAll(sel))
+      .filter(i=>i.checked)
+      .map(i=>i.value);
+
+    __TERMO_DATA__.F46_CRITERIOS   = pickChecked('#F46_CRITERIOS input[type="checkbox"]');
+    __TERMO_DATA__.F462F_CRITERIOS = pickChecked('#F462F_CRITERIOS input[type="checkbox"]');
+    __TERMO_DATA__.F46_FINALIDADES = pickChecked('#F46_FINALIDADES input[type="checkbox"]');
+
+    __TERMO_DATA__.F46_PROGESTAO = document.getElementById('F46_PROGESTAO')?.value || '';
+    __TERMO_DATA__.F46_PORTE     = document.getElementById('F46_PORTE')?.value     || '';
+    __TERMO_DATA__.F46_JUST_D    = document.getElementById('F46_JUST_D')?.value    || '';
+    __TERMO_DATA__.F46_DOCS_D    = document.getElementById('F46_DOCS_D')?.value    || '';
+    __TERMO_DATA__.F46_JUST_E    = document.getElementById('F46_JUST_E')?.value    || '';
+    __TERMO_DATA__.F46_DOCS_E    = document.getElementById('F46_DOCS_E')?.value    || '';
+
+    document.dispatchEvent(new Event('TERMO_DATA'));
+    saveState();
+  }catch(e){ console.warn('syncF46ToTemplate fail', e); }
+}
+
+
   function validarFaseSelecionada(){
     const f = document.querySelector('input[name="FASE_PROGRAMA"]:checked')?.value || '';
     if(!f) return { ok:false, motivo:'Selecione a fase do Programa (4.1 a 4.6).' };
@@ -2743,6 +2869,14 @@
     bindSyncUg132();
     ensureStepperFallback();
     setupFase4Toggles();
+    // Garante que os controles 4.6 existam e estejam ligados ao abrir o modal
+    document.getElementById('modalF46')?.addEventListener('shown.bs.modal', () => {
+      // injeta lista de critérios (a) se ainda não foi feito
+      popularListasFaseComBaseNosCritérios();
+      // cria/selects/áreas de texto para (b–e)
+      ensureF46UI();
+});
+
     bindCondicionais();
 
     // Botão pesquisar
