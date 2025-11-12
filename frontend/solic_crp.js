@@ -2099,6 +2099,18 @@ function syncF46ToTemplate(){
     obj.F46_CRITERIOS_TXT   = (obj.F46_CRITERIOS && Array.isArray(obj.F46_CRITERIOS)) ? obj.F46_CRITERIOS.join('\n') : (obj.F46_CRITERIOS || '');
     obj.F46_FINALIDADES_TXT = (obj.F46_FINALIDADES && Array.isArray(obj.F46_FINALIDADES)) ? obj.F46_FINALIDADES.join('\n') : (obj.F46_FINALIDADES || '');
 
+    // HOTFIX compat: alguns backends exigem string para F43_INCLUIR
+    if (Array.isArray(payload.F43_INCLUIR)) {
+      payload.F43_INCLUIR = payload.F43_INCLUIR.filter(Boolean).join('; ');
+    }
+    if (Array.isArray(payload.F43_INCLUIR_B)) {
+      payload.F43_INCLUIR_B = payload.F43_INCLUIR_B.filter(Boolean).join('; ');
+    }
+    // (mantém, se existir) o campo de apoio para espelhos
+    if (!payload.F43_INCLUIR_TXT) {
+      payload.F43_INCLUIR_TXT = String(payload.F43_INCLUIR || '').trim();
+    }
+
     return obj;
   }
 
@@ -2774,6 +2786,9 @@ function syncF46ToTemplate(){
 
     try {
       await waitForService({ timeoutMs: 60000, pollMs: 1500 });
+
+
+
 
       const resp = await postJSON(
         api('/gerar-solic-crp'),
