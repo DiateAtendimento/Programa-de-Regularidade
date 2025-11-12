@@ -12,7 +12,9 @@
   }
   function openPreviewWindow(payload){
     try {
-      const w = window.open('termo_solic_crp.html', '_blank', 'noopener');
+      const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+      const url = `termo_solic_crp.html#payload_b64=${b64}`;
+      const w = window.open(url, '_blank', 'noopener');
       if (!w) return;
       // envia o payload repetidamente por alguns segundos até o template estar pronto
       const send = ()=>{ try { w.postMessage({ type:'TERMO_PAYLOAD', data: payload }, '*'); } catch(_){ } };
@@ -113,6 +115,12 @@
     Object.keys(payload).forEach(k => {
       if (Array.isArray(payload[k])) payload[`${k}[]`] = payload[k].slice();
     });
+
+    // espelha a fase também em __FASE_SEL__ (o template usa isso para resolver 4.x)
+    if (!payload.__FASE_SEL__) {
+      payload.__FASE_SEL__ = payload.FASE_PROGRAMA || '';
+    }
+
 
     return payload;
   }

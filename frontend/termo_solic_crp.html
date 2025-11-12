@@ -533,6 +533,13 @@
           || ''
         );
 
+        /* merge 4.6.2(f) em F46_CRITERIOS (lista canônica) */
+        p.F46_CRITERIOS = Array.from(new Set([
+          ...asArr(p.F46_CRITERIOS),
+          ...asArr(p.F462F_CRITERIOS)
+        ]));
+
+
 
         p.F46_ANEXOS      = p.F46_ANEXOS      || p.f46_anexos      || '';
         p.F46_COMP_CUMPR  = p.F46_COMP_CUMPR  || p.f46_comp_cumpr  || '';
@@ -683,12 +690,17 @@
         liList('#criterios-list', p.__CRITERIOS_ARR__);
 
         // 4) Fase
-        let faseSel = p.__FASE_SEL__;
-        if (faseSel) {
-          const m = String(faseSel).match(/\b4\.\d\b/);
-          if (m) faseSel = m[0];
+        // fallback: tentar deduzir a fase pelos campos presentes no payload
+        if (!faseSel) {
+          const has = (pref) => Object.keys(p||{}).some(k => k.startsWith(pref));
+          if      (has('F41_')) faseSel = '4.1';
+          else if (has('F42_')) faseSel = '4.2';
+          else if (has('F43_')) faseSel = '4.3';
+          else if (has('F44_')) faseSel = '4.4';
+          else if (has('F45_')) faseSel = '4.5';
+          else if (has('F46_') || has('F462F_')) faseSel = '4.6';
         }
-        showOnlyPhase(faseSel);
+                showOnlyPhase(faseSel);
         fillText('FASE_PROGRAMA', faseSel || '—');
 
         switch (faseSel) {
@@ -800,8 +812,7 @@
           }
           case '4.6': {
             (function(){
-              let arr = asArr(p.F46_CRITERIOS);
-              // Se vier só a declaração (a) marcada nas condições, preenche com um texto padrão
+              let arr = asArr(p.F46_CRITERIOS); // já vem mesclado no normalize
               const decls = asArr(p.F46_DECLS);
               const conds = asArr(p['F46_CONDICOES[]'] || p.F46_CONDICOES || []);
               const aMarcado = decls.concat(conds).some(t => /4\.6\.1\s*\(?.*a\)?/i.test(String(t)));
@@ -837,8 +848,6 @@
               if (jp) jp.textContent = (p.F46_JUST_PLANOS || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
               if (cc) cc.textContent = (p.F46_COMP_CUMPR  || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             })();
-
-            liList('#f462f-criterios', p.F462F_CRITERIOS);
 
             (function(){
               const d = splitLines(p.F466_DOCS || '');
@@ -1078,6 +1087,8 @@
       window.addEventListener('message', onMsg, false);
     })();
   </script>
+
+  
 
 </body>
 </html>
