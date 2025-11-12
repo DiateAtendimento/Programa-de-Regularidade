@@ -2111,6 +2111,13 @@ function syncF46ToTemplate(){
     obj['F43_INCLUIR_B[]'] = toArr(obj.F43_INCLUIR_B);
     obj.F43_INCLUIR_TXT = obj.F43_INCLUIR;
 
+    // --- Garantia final de tipos exigidos pelo backend ---
+    if (Array.isArray(obj.F43_INCLUIR)) {
+      obj.F43_INCLUIR = obj.F43_INCLUIR.filter(Boolean).join('; ');
+    }
+    if (Array.isArray(obj.F43_INCLUIR_B)) {
+      obj.F43_INCLUIR_B = obj.F43_INCLUIR_B.filter(Boolean).join('; ');
+    }
 
 
     return obj;
