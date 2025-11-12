@@ -1,5 +1,4 @@
-<!-- debugador-solic-crp.js v2.2 -->
-<script>
+
 /* ===========================
    DEBUGADOR SOLIC-CRP v2.2
    =========================== */
@@ -588,4 +587,4 @@
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', install);
   else install();
 })();
-</script>
+
