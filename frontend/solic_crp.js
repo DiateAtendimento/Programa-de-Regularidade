@@ -2099,17 +2099,17 @@ function syncF46ToTemplate(){
     obj.F46_CRITERIOS_TXT   = (obj.F46_CRITERIOS && Array.isArray(obj.F46_CRITERIOS)) ? obj.F46_CRITERIOS.join('\n') : (obj.F46_CRITERIOS || '');
     obj.F46_FINALIDADES_TXT = (obj.F46_FINALIDADES && Array.isArray(obj.F46_FINALIDADES)) ? obj.F46_FINALIDADES.join('\n') : (obj.F46_FINALIDADES || '');
 
-    // HOTFIX compat: alguns backends exigem string para F43_INCLUIR
-    if (Array.isArray(payload.F43_INCLUIR)) {
-      payload.F43_INCLUIR = payload.F43_INCLUIR.filter(Boolean).join('; ');
-    }
-    if (Array.isArray(payload.F43_INCLUIR_B)) {
-      payload.F43_INCLUIR_B = payload.F43_INCLUIR_B.filter(Boolean).join('; ');
-    }
-    // (mantém, se existir) o campo de apoio para espelhos
-    if (!payload.F43_INCLUIR_TXT) {
-      payload.F43_INCLUIR_TXT = String(payload.F43_INCLUIR || '').trim();
-    }
+    // Padroniza F43_INCLUIR / F43_INCLUIR_B
+    const toStr = v => Array.isArray(v) ? v.filter(Boolean).join('; ') : String(v || '').trim();
+    const toArr = s => String(s || '').split(';').map(t => t.trim()).filter(Boolean);
+
+    obj.F43_INCLUIR    = toStr(obj.F43_INCLUIR);
+    obj.F43_INCLUIR_B  = toStr(obj.F43_INCLUIR_B);
+    obj['F43_INCLUIR[]']   = toArr(obj.F43_INCLUIR);
+    obj['F43_INCLUIR_B[]'] = toArr(obj.F43_INCLUIR_B);
+    obj.F43_INCLUIR_TXT = obj.F43_INCLUIR;
+
+
 
     return obj;
   }
