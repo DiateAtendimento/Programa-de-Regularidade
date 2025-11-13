@@ -2085,53 +2085,19 @@ function syncF46ToTemplate(){
       const form = document.querySelector('form#form_solic_crp') || document.querySelector('form');
       if (form) {
         const extra = serializeFormToPayload(form);
-
+        
         for (const [k, v] of Object.entries(extra)) {
-          // ——— Salvaguardas específicas para F43_INCLUIR ———
-
-          // 1) Se vier 'F43_INCLUIR[]' do serialize, só preencha o alias e NÃO mexa em F43_INCLUIR (string)
-          if (k === 'F43_INCLUIR[]') {
-            obj['F43_INCLUIR[]'] = Array.isArray(v) ? v.slice() : (v ? [String(v)] : []);
-            continue;
-          }
-
-          // 2) Se vier 'F43_INCLUIR' como array, converta para string e mantenha o alias
-          if (k === 'F43_INCLUIR' && Array.isArray(v)) {
-            const asStr = v.filter(Boolean).join('; ');
-            // Só sobrescreve se estiver vazio; preserva o que foi montado manualmente acima
-            if (!obj.F43_INCLUIR || String(obj.F43_INCLUIR).trim() === '') {
-              obj.F43_INCLUIR = asStr;
-            }
-            // Preenche o alias se ainda não existir
-            if (!Array.isArray(obj['F43_INCLUIR[]']) || obj['F43_INCLUIR[]'].length === 0) {
-              obj['F43_INCLUIR[]'] = v.slice();
-            }
-            continue;
-          }
-
-          // ——— Mescla padrão para os demais campos ———
           const curr = obj[k];
           const isEmpty =
             curr == null ||
             (typeof curr === 'string' && curr.trim() === '') ||
             (Array.isArray(curr) && curr.length === 0);
 
-          if (isEmpty) obj[k] = v;                 // só preenche o que estiver faltando
-          if (Array.isArray(v)) obj[`${k}[]`] = v;  // mantém compat com chaves terminadas em []
-        }
-
-        // Cinto e suspensório: garantir tipo final de F43_INCLUIR antes do return da buildPayload()
-        if (Array.isArray(obj.F43_INCLUIR)) {
-          obj.F43_INCLUIR = obj.F43_INCLUIR.filter(Boolean).join('; ');
-        }
-        if ((!obj.F43_INCLUIR || String(obj.F43_INCLUIR).trim() === '') && Array.isArray(obj['F43_INCLUIR[]'])) {
-          obj.F43_INCLUIR = obj['F43_INCLUIR[]'].filter(Boolean).join('; ');
+          if (isEmpty) obj[k] = v; // só preenche o que estiver faltando
+          if (Array.isArray(v)) obj[`${k}[]`] = v; // mantêm compat com chaves terminadas em []
         }
       }
-    } catch (e) {
-      /* não crítico */
-    }
-
+    } catch (e) { /* não crítico */ }
 
     // PATCH (TXT aliases) — versões em texto para o template
     obj.F42_LISTA_TXT       = (obj.F42_LISTA && Array.isArray(obj.F42_LISTA)) ? obj.F42_LISTA.join('; ') : (obj.F42_LISTA || '');
