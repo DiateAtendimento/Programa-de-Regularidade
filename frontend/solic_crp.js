@@ -2120,9 +2120,15 @@ function syncF46ToTemplate(){
     obj.F46_CRITERIOS_TXT   = (obj.F46_CRITERIOS && Array.isArray(obj.F46_CRITERIOS)) ? obj.F46_CRITERIOS.join('\n') : (obj.F46_CRITERIOS || '');
     obj.F46_FINALIDADES_TXT = (obj.F46_FINALIDADES && Array.isArray(obj.F46_FINALIDADES)) ? obj.F46_FINALIDADES.join('\n') : (obj.F46_FINALIDADES || '');
 
-    // Padroniza F43_INCLUIR / F43_INCLUIR_B
-    const toStr = v => Array.isArray(v) ? v.filter(Boolean).join('; ') : String(v || '').trim();
-    const toArr = s => String(s || '').split(';').map(t => t.trim()).filter(Boolean);
+    // Padroniza F43_INCLUIR / F43_INCLUIR_B como string SEMPRE!
+    const toStr = v =>
+      Array.isArray(v) ? v.filter(Boolean).join('; ') :
+      (typeof v === 'string' ? v.trim() : '');
+
+    const toArr = s =>
+      typeof s === 'string'
+        ? s.split(';').map(t => t.trim()).filter(Boolean)
+        : Array.isArray(s) ? s.filter(Boolean) : [];
 
     obj.F43_INCLUIR    = toStr(obj.F43_INCLUIR);
     obj.F43_INCLUIR_B  = toStr(obj.F43_INCLUIR_B);
@@ -2130,12 +2136,12 @@ function syncF46ToTemplate(){
     obj['F43_INCLUIR_B[]'] = toArr(obj.F43_INCLUIR_B);
     obj.F43_INCLUIR_TXT = obj.F43_INCLUIR;
 
-    // --- Garantia final de tipos exigidos pelo backend ---
-    if (Array.isArray(obj.F43_INCLUIR)) {
-      obj.F43_INCLUIR = obj.F43_INCLUIR.filter(Boolean).join('; ');
+    // --- Garantia extra de tipos exigidos pelo backend ---
+    if (typeof obj.F43_INCLUIR !== 'string') {
+      obj.F43_INCLUIR = toStr(obj.F43_INCLUIR);
     }
-    if (Array.isArray(obj.F43_INCLUIR_B)) {
-      obj.F43_INCLUIR_B = obj.F43_INCLUIR_B.filter(Boolean).join('; ');
+    if (typeof obj.F43_INCLUIR_B !== 'string') {
+      obj.F43_INCLUIR_B = toStr(obj.F43_INCLUIR_B);
     }
 
 
