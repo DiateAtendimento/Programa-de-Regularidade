@@ -116,6 +116,15 @@
       if (Array.isArray(payload[k])) payload[`${k}[]`] = payload[k].slice();
     });
 
+    // === AJUSTE ESPECÍFICO PARA F43_INCLUIR / F43_INCLUIR_B ===
+    // O backend espera string, não array
+    if (Array.isArray(payload.F43_INCLUIR)) {
+      payload.F43_INCLUIR = payload.F43_INCLUIR.join('; ');
+    }
+    if (Array.isArray(payload.F43_INCLUIR_B)) {
+      payload.F43_INCLUIR_B = payload.F43_INCLUIR_B.join('; ');
+    }
+
     // espelha a fase também em __FASE_SEL__ (o template usa isso para resolver 4.x)
     if (!payload.__FASE_SEL__) {
       payload.__FASE_SEL__ = payload.FASE_PROGRAMA || '';
