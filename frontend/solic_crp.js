@@ -2121,19 +2121,27 @@ function syncF46ToTemplate(){
     obj.F46_FINALIDADES_TXT = (obj.F46_FINALIDADES && Array.isArray(obj.F46_FINALIDADES)) ? obj.F46_FINALIDADES.join('\n') : (obj.F46_FINALIDADES || '');
 
     // Padroniza F43_INCLUIR / F43_INCLUIR_B como string SEMPRE!
-    const toStr = v =>
-      Array.isArray(v) ? v.filter(Boolean).join('; ') :
-      (typeof v === 'string' ? v.trim() : '');
+    const toStr = v => {
+      if (Array.isArray(v)) return v.filter(Boolean).join('; ');
+      if (v === null || v === undefined) return "";
+      if (typeof v === 'string') return v.trim();
+      return String(v).trim();
+    };
 
-    const toArr = s =>
-      typeof s === 'string'
-        ? s.split(';').map(t => t.trim()).filter(Boolean)
-        : Array.isArray(s) ? s.filter(Boolean) : [];
+    const toArr = s => {
+      if (typeof s === 'string') {
+        return s.split(';').map(t => t.trim()).filter(Boolean);
+      }
+      if (Array.isArray(s)) {
+        return s.filter(Boolean);
+      }
+      return [];
+    };
 
-    obj.F43_INCLUIR    = toStr(obj.F43_INCLUIR);
-    obj.F43_INCLUIR_B  = toStr(obj.F43_INCLUIR_B);
-    obj['F43_INCLUIR[]']   = toArr(obj.F43_INCLUIR);
-    obj['F43_INCLUIR_B[]'] = toArr(obj.F43_INCLUIR_B);
+    obj.F43_INCLUIR    = toStr(obj.F43_INCLUIR);       // SEMPRE string
+    obj.F43_INCLUIR_B  = toStr(obj.F43_INCLUIR_B);     // SEMPRE string
+    obj['F43_INCLUIR[]']   = toArr(obj.F43_INCLUIR);   // array sempre
+    obj['F43_INCLUIR_B[]'] = toArr(obj.F43_INCLUIR_B); // array sempre
     obj.F43_INCLUIR_TXT = obj.F43_INCLUIR;
 
     // --- Garantia extra de tipos exigidos pelo backend ---
