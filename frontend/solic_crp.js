@@ -2805,6 +2805,14 @@ function syncF46ToTemplate(){
     const payload = buildPayload(); // já inclui IDEMP_KEY (se existir)
     collectFase4IntoPayload(payload); 
 
+    // ===== GARANTIA FINAL DE TIPO PARA A API =====
+    if (Array.isArray(payload.F43_INCLUIR)) {
+      payload.F43_INCLUIR = payload.F43_INCLUIR.join('; ');
+    }
+    if (Array.isArray(payload.F43_INCLUIR_B)) {
+      payload.F43_INCLUIR_B = payload.F43_INCLUIR_B.join('; ');
+    }
+
     if (window.__DEBUG_SOLIC_CRP__) {
       try {
         console.log('[SUBMIT] payload →', JSON.stringify(payload, null, 2));
