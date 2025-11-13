@@ -571,8 +571,11 @@
 
     const _inclArr   = collectCheckedValues('#F43_INCLUIR input[type="checkbox"]');
     const _inclArr_B = collectCheckedValues('#F43_INCLUIR_B input[type="checkbox"]');
-    obj.F43_INCLUIR    = _inclArr.length ? _inclArr.join('; ') : '';   // ← string
-    obj.F43_INCLUIR_B  = _inclArr_B.length ? _inclArr_B.join('; ') : ''; // ← string
+
+    // versão em string para reaproveitar no payload/preview
+    data.values['F43_INCLUIR']   = _inclArr.length   ? _inclArr.join('; ')   : '';
+    data.values['F43_INCLUIR_B'] = _inclArr_B.length ? _inclArr_B.join('; ') : '';
+
 
     data.values['F43_DESC_PLANOS'] = $('#F43_DESC_PLANOS')?.value || '';
 
