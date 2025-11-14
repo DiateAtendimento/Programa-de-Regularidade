@@ -6,357 +6,555 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Termo de Solicitação de CRP Emergencial</title>
 
+  <!-- Fonte apenas para PREVIEW em tela (o PDF usa Rawline do CSS local) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
 
+  <!-- Estilos oficiais do termo (usa Rawline no PDF) -->
   <link rel="stylesheet" href="./termo_solic_crp.css">
 </head>
 <body>
+  <!-- Cabeçalho FIXO (anti-sobreposição em 2+ páginas) -->
   <header class="prp-header" aria-hidden="true">
     <div class="logos-wrap">
       <img src="./imagens/logo-secretaria-complementar.svg" alt="Secretaria" loading="eager" />
       <img src="./imagens/logo-termo-drpps.svg" alt="Departamento de RPPS" loading="eager" />
     </div>
   </header>
-  
-  <main class="termo-wrap">
-    <h1>Termo de Solicitação de CRP Emergencial</h1>
-    
-    <div class="secao">
-      <h3>1. Informações do Ente e da Unidade Gestora</h3>
-      
-      <div class="campo-linha">
-        <span class="label">Ente:</span>
-        <span class="valor" data-k="ente"></span> / <span class="valor" data-k="uf"></span>
-      </div>
-      <div class="campo-linha">
-        <span class="label">Esfera de Governo:</span>
-        <span class="valor" data-esfera></span>
-      </div>
-      <div class="campo-linha">
-        <span class="label">CNPJ do Ente:</span>
-        <span class="valor" data-k="cnpj_ente"></span>
-      </div>
-      <div class="campo-linha">
-        <span class="label">E-mail do Ente:</span>
-        <span class="valor" data-k="email_ente"></span>
-      </div>
-      
-      <div class="campo-linha">
-        <span class="label">Unidade Gestora (UG):</span>
-        <span class="valor" data-k="ug"></span>
-      </div>
-      <div class="campo-linha">
-        <span class="label">CNPJ da UG:</span>
-        <span class="valor" data-k="cnpj_ug"></span>
-      </div>
-      <div class="campo-linha">
-        <span class="label">E-mail da UG:</span>
-        <span class="valor" data-k="email_ug"></span>
-      </div>
-      <div class="campo-linha">
-        <span class="label">Órgão de Vinculação da UG:</span>
-        <span class="valor" data-k="ORGAO_VINCULACAO_UG"></span>
-      </div>
-      
-      <div class="campo-linha">
-        <span class="label">Nº GESCON:</span>
-        <span class="valor" data-k="N_GESCON"></span>
-      </div>
-      <div class="campo-linha">
-        <span class="label">Data de Encaminhamento via GESCON:</span>
-        <span class="valor" data-k="DATA_ENC_VIA_GESCON"></span>
-      </div>
-      <div class="campo-linha">
-        <span class="label">Processo SEI:</span>
-        <span class="valor" data-k="SEI_PROCESSO"></span>
-      </div>
-      <div class="campo-linha">
-        <span class="label">Portaria SRPC:</span>
-        <span class="valor" data-k="PORTARIA_SRPC"></span>
-      </div>
-    </div>
 
-    <div class="secao">
-      <h3>2. Representantes Legais</h3>
-      
-      <h4>Representante do Ente</h4>
-      <div class="campo-linha"><span class="label">Nome:</span> <span class="valor" data-k="nome_rep_ente"></span></div>
-      <div class="campo-linha"><span class="label">CPF:</span> <span class="valor" data-k="cpf_rep_ente"></span></div>
-      <div class="campo-linha"><span class="label">Cargo:</span> <span class="valor" data-k="cargo_rep_ente"></span></div>
-      <div class="campo-linha"><span class="label">E-mail:</span> <span class="valor" data-k="email_rep_ente"></span></div>
-      <div class="campo-linha"><span class="label">Telefone:</span> <span class="valor" data-k="tel_rep_ente"></span></div>
-      
-      <h4>Representante da Unidade Gestora</h4>
-      <div class="campo-linha"><span class="label">Nome:</span> <span class="valor" data-k="nome_rep_ug"></span></div>
-      <div class="campo-linha"><span class="label">CPF:</span> <span class="valor" data-k="cpf_rep_ug"></span></div>
-      <div class="campo-linha"><span class="label">Cargo:</span> <span class="valor" data-k="cargo_rep_ug"></span></div>
-      <div class="campo-linha"><span class="label">E-mail:</span> <span class="valor" data-k="email_rep_ug"></span></div>
-      <div class="campo-linha"><span class="label">Telefone:</span> <span class="valor" data-k="tel_rep_ug"></span></div>
-    </div>
+  <div id="pdf-root">
+    <main class="term-wrap prp-content">
+      <h1 class="term-title">
+        <br>TERMO DE SOLICITAÇÃO DE CRP EMERGENCIAL<br>
+        PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA<br>
+      </h1>
 
-    <div class="secao">
-      <h3>3. Informações sobre o CRP</h3>
-      <div class="campo-linha">
-        <span class="label">Vencimento do último CRP:</span>
-        <span class="valor" data-k="venc_ult_crp"></span>
-      </div>
-      <div class="campo-linha">
-        <span class="label">Tipo de Emissão do último CRP:</span>
-        <span class="valor" data-k="tipo_emissao_ult_crp"></span>
-      </div>
-
-      <h4>3.1 Solicitação de Prazo Adicional (se aplicável)</h4>
-      <p data-3_4="A" style="display: none;">
-        **Alternativa A:** Justificativa da não aplicação dos arts. 16, 17 e 18 da Portaria MTP nº 1.467/2022 (necessidade de medidas adicionais para obter a regularidade).
+      <p class="term-meta">
+        Ente: <strong data-k="ente"></strong> / UF: <strong data-k="uf"></strong> • UG: <strong data-k="ug"></strong>
       </p>
-      <p data-3_4="B" style="display: none;">
-        **Alternativa B:** Não atendimento das exigências da Portaria MTP nº 1.467/2022 no prazo estipulado (necessidade de maior prazo para implementar as medidas).
-      </p>
-      <div class="campo-linha" data-k="PRAZO_ADICIONAL_TEXTO"></div>
-      
-      <h4>3.2 Critérios Estruturantes Atendidos (se aplicável)</h4>
-      <ul id="criterios-list">
+      <!-- 1. IDENTIFICAÇÃO -->
+      <section class="term-section avoid-break" id="sec-1">
+        <h2><br>1. IDENTIFICAÇÃO DO ENTE FEDERATIVO E DA UNIDADE GESTORA</h2>
+
+        <h3><span class="label">1.1 Esfera de Governo</span></h3>
+        <div class="linha">
+          <div class="titulo"></div>
+          <div class="valor" data-esfera></div>
+        </div>
+
+        <h3><strong>1.2 Ente Federativo</strong></h3>
+        <div class="grid grid-num">
+          <div class="field"><span class="label"><strong>1.2.1 Ente</strong></span><span class="value" data-k="ente"></span></div>
+          <div class="field"><span class="label"><strong>1.2.2 CNPJ</strong></span><span class="value" data-k="cnpj_ente"></span></div>
+          <div class="field"><span class="label"><strong>1.2.3 E-mail oficial</strong></span><span class="value" data-k="email_ente"></span></div>
+        </div>
+
+        <h3 id="sec-1-3"><strong>1.3 Regime Próprio de Previdência Social (RPPS)</strong></h3>
+        <div class="grid grid-num">
+          <div class="field"><span class="label"><strong>1.3.1 Unidade Gestora</strong></span><span class="value" data-k="ug"></span></div>
+          <div class="field"><span class="label"><strong>1.3.2 CNPJ</strong></span><span class="value" data-k="cnpj_ug"></span></div>
+          <div class="field"><span class="label"><strong>1.3.3 E-mail oficial</strong></span><span class="value" data-k="email_ug"></span></div>
+          <div class="field"><span class="label"><strong>1.3.4 Órgão de vinculação da UG</strong></span><span class="value" data-k="ORGAO_VINCULACAO_UG"></span></div>
+        </div>
+      </section>
+
+      <!-- 2. IDENTIFICAÇÃO DOS RESPONSÁVEIS -->
+      <section class="term-section avoid-break">
+        <h2>2. IDENTIFICAÇÃO DOS RESPONSÁVEIS</h2>
+
+        <h3><strong>2.1 Representante legal do ente federativo</strong></h3>
+        <div class="grid grid-num">
+          <div class="field"><span class="label"><strong>2.1.1 Nome</strong></span><span class="value" data-k="nome_rep_ente"></span></div>
+          <div class="field"><span class="label"><strong>2.1.2 Cargo/Função</strong></span><span class="value" data-k="cargo_rep_ente"></span></div>
+          <div class="field"><span class="label"><strong>2.1.3 CPF</strong></span><span class="value" data-k="cpf_rep_ente"></span></div>
+          <div class="field"><span class="label"><strong>2.1.4 E-mail</strong></span><span class="value" data-k="email_rep_ente"></span></div>
+          <div class="field"><span class="label"><strong>2.1.5 Telefone</strong></span><span class="value" data-k="tel_rep_ente"></span></div>
+        </div>
+
+        <h3>2.2 Representante legal do RPPS</h3>
+        <div class="grid grid-num">
+          <div class="field"><span class="label"><strong>2.2.1 Nome</strong></span><span class="value" data-k="nome_rep_ug"></span></div>
+          <div class="field"><span class="label"><strong>2.2.2 Cargo/Função</strong></span><span class="value" data-k="cargo_rep_ug"></span></div>
+          <div class="field"><span class="label"><strong>2.2.3 CPF</strong></span><span class="value" data-k="cpf_rep_ug"></span></div>
+          <div class="field"><span class="label"><strong>2.2.4 E-mail</strong></span><span class="value" data-k="email_rep_ug"></span></div>
+          <div class="field"><span class="label"><strong>2.2.5 Telefone</strong></span><span class="value" data-k="tel_rep_ug"></span></div>
+        </div>
+      </section>
+      <!-- 3. SITUAÇÃO RELATIVA AO CRP -->
+      <section class="term-section avoid-break page-break" id="sec-3">
+        <h2>3. SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
+
+        <!-- 3.1 Data de vencimento do último CRP -->
+        <div class="linha">
+          <div class="rotulo">3.1 Data de vencimento do último CRP</div>
+          <div class="valor">
+            <span data-k="data_vencimento_ultimo_crp" data-fallback="DATA_VENC_ULTIMO_CRP" data-na="—"></span>
+          </div>
+        </div>
+
+        <!-- 3.2 Tipo de emissão do último CRP -->
+        <div class="linha">
+          <div class="rotulo">3.2 Tipo de emissão do último CRP</div>
+          <div class="valor">
+            <span data-k="tipo_emissao_ult_crp" data-fallback="TIPO_EMISSAO_ULTIMO_CRP" data-na="—"></span>
+          </div>
+        </div>
+
+        <h3>3.3 Critério(s) atualmente irregular(es) no extrato previdenciário</h3>
+        <p class="small">Selecione todos os itens apontados como irregulares no extrato.</p>
+        <ul id="criterios-list"
+            data-empty="Sem irregularidades informadas.">
         </ul>
-    </div>
-    
-    <div class="secao">
-      <h3>4. Fase do Programa de Regularidade RPPS</h3>
-      <div class="campo-linha">
-        <span class="label">Fase Selecionada:</span>
-        <span class="valor" data-k="FASE_PROGRAMA"></span>
-      </div>
 
-      <div id="fase-41" hidden>
-        <h4>4.1 Fase I – Apresentação de Informações e Documentos</h4>
-        <p>Opção escolhida:</p>
-        <ul id="f41-itens"></ul>
-      </div>
+        <!-- 3.4 -->
+        <div class="linha">
+          <h2>3.4 Solicitação de Prazo Adicional</h2>
+          <div class="valor">
+            <div data-3_4="3.4.1">3.4.1 Manutenção da conformidade</div>
+            <div data-3_4="3.4.2">3.4.2 Equacionamento do déficit atuarial (ou necessidade de prazo adicional para implementar)</div>
+            <div data-3_4="3.4.3">3.4.3 Organização do RPPS conforme critérios estruturantes (inclui art. 40, § 20, CF)</div>
+            <div data-3_4="3.4.4">3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade</div>
+            <div data-k="PRAZO_ADICIONAL_TEXTO" class="d-none"></div>
+          </div>
+        </div>
+      </section>
+      <!-- 4. FASE DO PROGRAMA -->
+      <section class="term-section avoid-break" id="sec-fase">
+        <h2>4. IDENTIFICAÇÃO DA FASE DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
+        <p class="small">
+          Fase selecionada:
+          <strong id="fase-escolhida" data-k="FASE_PROGRAMA"></strong>
+        </p>
 
-      <div id="fase-42" hidden>
-        <h4>4.2 Fase II – Regularização de Pendências Administrativas</h4>
-        <p>Pendências a serem regularizadas:</p>
-        <ul id="f42-itens"></ul>
-      </div>
+        <!-- 4.1 -->
+        <div class="avoid-break" id="fase-41" hidden>
+          <h3>4.1 Fase Geral/Introdutória – 1º CRP Emergencial</h3>
+          <ul id="f41-itens"></ul>
+        </div>
 
-      <div id="fase-43" hidden>
-        <h4>4.3 Fase III – Equilíbrio Financeiro e Atuarial</h4>
-        
-        <h5>4.3.1 Déficit Atuarial</h5>
-        <p>Item(ns) em situação irregular ou que requer(em) atenção:</p>
-        <ul id="f43-itens"></ul>
-        
-        <div class="campo-linha">
-          <span class="label">Justificativa da Situação Atual (4.3.1):</span>
-          <span class="valor" id="f43-just"></span>
-        </div>
-        
-        <h5>4.3.2 Plano de Equacionamento do Déficit Atuarial (se aplicável)</h5>
-        <div class="campo-linha">
-          <span class="label">Descrição do Plano A:</span>
-          <span class="valor" id="f43-plano"></span>
-        </div>
-        <div class="campo-linha">
-          <span class="label">Descrição do Plano B:</span>
-          <span class="valor" id="f43-plano-b"></span>
-        </div>
-        
-        <h5>4.3.10 Regras de Elegibilidade, Cálculo e Reajustamento</h5>
-        <ul id="f4310"></ul>
-        
-        <h5>4.3.12 Planos de Ação (Itens Adicionais)</h5>
-        <p>Critérios a incluir no Plano de Ação:</p>
-        <ul id="f43-incluir"></ul>
-        <p>Descrição dos Planos de Ação incluídos:</p>
-        <div id="f43-desc-planos"></div>
-      </div>
+        <p class="small mt"><strong>Campos adicionais desta fase:</strong></p>
+        <div id="fase-extra-campos"></div>
 
-      <div id="fase-44" hidden>
-        <h4>4.4 Fase IV – Estrutura Administrativa e Governança</h4>
-        
-        <h5>4.4.1 Critérios Estruturantes</h5>
-        <p>Critérios Estruturantes a serem estabelecidos:</p>
-        <ul id="f44-criterios"></ul>
-        <div class="campo-linha">
-          <span class="label">Legislação sobre Critérios Estruturantes (4.4.1):</span>
-          <span class="valor" id="f441-legislacao"></span>
+        <!-- 4.2 -->
+        <div class="avoid-break" id="fase-42" hidden>
+          <h3>4.2 Fase Geral/Introdutória – 2º CRP Emergencial</h3>
+          <p class="small">Condições declaradas:</p>
+          <ul id="f42-itens"></ul>
         </div>
-        
-        <h5>4.4.2 a 4.4.4 Declarações</h5>
-        <p>Declarações prestadas:</p>
-        <ul id="f44-decls"></ul>
-        
-        <h5>4.4.5 Planos de Ação</h5>
-        <p>Descrição dos Planos de Ação:</p>
-        <div id="f445-desc-planos"></div>
-        
-        <h5>4.4.6 Finalidades (Anexos e Execução)</h5>
-        <p>Finalidades selecionadas:</p>
-        <ul id="f44-finalidades"></ul>
-        <div class="campo-linha">
-          <span class="label">Anexos Comprobatórios (4.4):</span>
+
+        <!-- 4.3 -->
+        <div class="avoid-break" id="fase-43" hidden>
+          <h3>4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</h3>
+          <ul id="f43-itens"></ul>
+
+          <p class="small mt"><strong>4.3.10 Justificativas/Informações adicionais:</strong></p>
+          <p id="f43-just"></p>
+          <ul id="f4310"></ul>
+
+          <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
+          <p id="f43-plano"></p>
+
+          <p class="small mt"><strong>4.3.11 (B) Outras proposições de plano(s):</strong></p>
+          <p id="f43-plano-b"></p>
+
+          <p class="small mt"><strong>4.3.11 (Descrição dos Plano(s)):</strong></p>
+          <div id="f43-desc-planos"></div>
+
+          <p class="small mt"><strong>4.3.12 Critérios do extrato a incluir em Plano de Ação:</strong></p>
+          <ul id="f43-incluir"></ul>
+        </div>
+        <!-- 4.4 -->
+        <div class="avoid-break" id="fase-44" hidden>
+          <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
+
+          <p class="small"><strong>4.4.1 Declaro ter cumprido as seguintes condições:</strong></p>
+          <ul id="f44-decls"></ul>
+
+          <p class="small mt"><strong>4.4.2 Finalidade do(s) Plano(s) de Ação apresentado(s):</strong></p>
+          <ul id="f44-finalidades"></ul>
+
+          <p class="small mt"><strong>4.4.3 Critério(s) do extrato previdenciário objeto do(s) Plano(s) de Ação:</strong></p>
+          <ul id="f44-criterios"></ul>
+
+          <p class="small mt"><strong>4.4.1(d) Legislação:</strong> <span id="f441-legislacao"></span></p>
+
+          <p class="small mt"><strong>4.4.4 Anexos (obrigatório o encaminhamento de Planos de Ação e documentação comprobatória):</strong></p>
           <div id="f44-anexos"></div>
-        </div>
-        <div class="campo-linha">
-          <span class="label">Documentos para Finalidades (4.4.6):</span>
+
+          <p class="small mt"><strong>4.4.5 Descrever sucintamente o(s) Plano(s) de Ação apresentado(s):</strong></p>
+          <div id="f445-desc-planos"></div>
+
+          <p class="small mt"><strong>4.4.6 (a) Comprovação do cumprimento do(s) Plano(s) de Ação:</strong></p>
           <div id="f446-docs"></div>
-        </div>
-        <div class="campo-linha">
-          <span class="label">Execução de Recursos para Finalidades (4.4.6):</span>
+
+          <p class="small mt"><strong>4.4.6 (b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados:</strong></p>
           <div id="f446-exec"></div>
         </div>
-      </div>
 
-      <div id="fase-45" hidden>
-        <h4>4.5 Fase V – Investimentos e Aplicações Financeiras</h4>
-        
-        <h5>4.5.1 a 4.5.2 Declarações</h5>
-        <p>Declarações prestadas:</p>
-        <ul id="f45-decls"></ul>
-        
-        <h5>4.5.3 Justificativas e Documentos</h5>
-        <div class="campo-linha">
-          <span class="label">Documentos/Anexos (4.5):</span>
+        <!-- 4.5 -->
+        <div class="avoid-break" id="fase-45" hidden>
+          <h3>4.5 Fase Específica/Focalizada – 5º CRP Emergencial</h3>
+
+          <!-- 4.5.1 -->
+          <ul id="f45-decls"></ul>
+
+          <!-- 4.5.2 -->
+          <p class="small mt"><strong>4.5.2 Comprovação do cumprimento do(s) Plano(s) de Ação:</strong></p>
           <div id="f45-docs"></div>
-        </div>
-        <div class="campo-linha">
-          <span class="label">Justificativas (4.5):</span>
+
+          <!-- 4.5.3 -->
+          <p class="small mt"><strong>4.5.3 Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados:</strong></p>
+          <div id="f45-exec"></div>
+
+          <!-- 4.5.4 -->
+          <p class="small mt"><strong>4.5.4 Justificativas:</strong></p>
           <div id="f45-just"></div>
         </div>
-        <div class="campo-linha">
-          <span class="label">Execução de Recursos (4.5.3):</span>
-          <div id="f45-exec"></div>
-        </div>
-      </div>
 
-      <div id="fase-46" hidden>
-        <h4>4.6 Fase VI – Manutenção da Conformidade</h4>
-        
-        <h5>4.6.1 a 4.6.4 Declarações e Critérios</h5>
-        <p>Critérios Declarados Regulares (4.6.1, item a):</p>
-        <ul id="f46-criterios"></ul>
-        
-        <p>Informações e Declarações Adicionais:</p>
-        <ul id="f46-decls"></ul>
-        
-        <h5>4.6.5 Finalidades</h5>
-        <p>Finalidades selecionadas:</p>
-        <ul id="f46-finalidades"></ul>
-        
-        <div class="campo-linha">
-          <span class="label">Justificativa sobre Planos de Ação (4.6.5):</span>
-          <span class="valor" id="f46-just-planos"></span>
-        </div>
-        
-        <h5>4.6.6 Critérios de Maior Complexidade (Finalidade 'f')</h5>
-        <p>Critérios selecionados:</p>
-        <ul id="f462f-criterios"></ul>
-        <div class="campo-linha">
-          <span class="label">Documentos para Finalidade 'f' (4.6.6):</span>
+        <!-- 4.6 -->
+        <div class="avoid-break" id="fase-46" hidden>
+          <h3>4.6 Fase de Manutenção da Conformidade</h3>
+
+          <p class="small"><strong>4.6.1 Demais critérios que não são objeto do(s) Plano(s) de Ação (regulares):</strong></p>
+          <ul id="f46-criterios"></ul>
+
+          <p class="small mt"><strong>4.6.2 Declarações e informações:</strong></p>
+          <ul id="f46-decls"></ul>
+
+          <p class="small mt"><strong>4.6.2(f) Critérios:</strong></p>
+          <ul id="f462f-criterios"></ul>
+
+          <p class="small mt"><strong>4.6.3 Finalidade do(s) Plano(s) de Ação:</strong></p>
+          <ul id="f46-finalidades"></ul>
+
+          <p class="small mt"><strong>4.6.4 Anexos:</strong></p>
+          <div id="f46-anexos"></div>
+
+          <p class="small mt"><strong>4.6.5 Justificativas quanto ao(s) Plano(s) de Ação:</strong></p>
+          <div id="f46-just-planos"></div>
+
+          <p class="small mt"><strong>4.6.6 (a) Comprovação do cumprimento do(s) Plano(s) de Ação:</strong></p>
           <div id="f466-docs"></div>
-        </div>
-        <div class="campo-linha">
-          <span class="label">Execução de Recursos para Finalidade 'f' (4.6.6):</span>
+
+          <p class="small mt"><strong>4.6.6 (b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados:</strong></p>
           <div id="f466-exec"></div>
         </div>
-        <div class="campo-linha">
-          <span class="label">Anexos Comprobatórios (Geral):</span>
-          <div id="f46-anexos"></div>
-        </div>
-      </div>
+      </section>
+      <!-- 5. JUSTIFICATIVAS GERAIS -->
+      <section class="term-section avoid-break">
+        <h2>5. JUSTIFICATIVAS / INFORMAÇÕES ADICIONAIS</h2>
+        <p data-k="justificativas_gerais"></p>
+      </section>
 
-      <div class="secao fase-extras">
-        <h4>Campos Extras da Fase <span data-k="FASE_PROGRAMA"></span></h4>
-        <div id="fase-extra-campos">
-          </div>
+      <!-- Força página nova antes das assinaturas -->
+      <div class="break-before"></div>
+
+      <!-- Assinaturas -->
+      <footer class="term-footer">
+        <p class="place-date"><span data-k="ente"></span>/<span data-k="uf"></span>, <span data-k="data_termo"></span>.</p>
+
+        <div class="signature-block">
+          <div class="signature-line" aria-hidden="true"></div>
+          <p class="signature-caption">
+            <strong><span data-k="nome_rep_ente"></span></strong><br>
+            <span id="sig-cap-ente">Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span></span>
+          </p>
+        </div>
+
+        <div class="signature-block">
+          <div class="signature-line" aria-hidden="true"></div>
+          <p class="signature-caption">
+            <strong><span data-k="nome_rep_ug"></span></strong><br>
+            Representante legal do <span data-k="ug"></span>
+          </p>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Modal "Gerando PDF…" -->
+  <div id="pdf-modal" class="pdf-modal" aria-hidden="true">
+    <div class="pdf-modal__backdrop"></div>
+    <div class="pdf-modal__box" role="dialog" aria-modal="true" aria-label="Gerando PDF">
+      <div class="pdf-modal__header">Gerando PDF…</div>
+      <div class="pdf-modal__body">
+        <p>Aguarde, preparando o arquivo.</p>
+        <div class="spinner" aria-hidden="true"></div>
       </div>
     </div>
-    
-    <div class="secao">
-      <h3>5. Justificativas Gerais</h3>
-      <p class="conteudo-justificativa" data-k="justificativas_gerais"></p>
-    </div>
-
-    <div class="secao">
-      <p>O presente Termo é emitido na data de **<span data-k="data_termo"></span>**.</p>
-      
-      <div class="assinaturas-wrap">
-        <div class="assinatura">
-          <div class="sig-placeholder"></div>
-          <span class="nome" data-k="NOME_REP_UG"></span>
-          <span class="cargo" data-k="CARGO_REP_UG"></span>
-          <span class="legenda">Representante da Unidade Gestora (<span data-k="UG"></span>)</span>
-        </div>
-        <div class="assinatura">
-          <div class="sig-placeholder"></div>
-          <span class="nome" data-k="NOME_REP_ENTE"></span>
-          <span class="cargo" data-k="CARGO_REP_ENTE"></span>
-          <span class="legenda" id="sig-cap-ente">
-            Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>
-          </span>
-        </div>
-      </div>
-      <p class="alerta-assinatura">Este documento dispensa assinatura física. Sua validade é atestada pela plataforma de geração.</p>
-    </div>
-  </main>
-
+  </div>
+  <!-- Script embutido -->
   <script>
-    // Flag de debug
-    window.__DEBUG_SOLIC_CRP__ = true;
-    
-    // VARIÁVEIS GLOBAIS (Mock de Fallback caso não sejam injetadas)
-    if (typeof __NA_ALL__ !== 'function') {
-      window.__NA_ALL__ = () => window.__TERMO_DATA__?.__NA_ALL__ || false;
-    }
-    if (typeof __NA_LABEL__ !== 'function') {
-      window.__NA_LABEL__ = () => window.__TERMO_DATA__?.__NA_LABEL__ || 'Não informado';
-    }
+    (function () {
+      const $  = (s, r=document) => r.querySelector(s);
+      const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-    // UTILS INFERIDOS (Necessários para as funções liList/run)
-    function asArr(v) {
-      if (Array.isArray(v)) return v.filter(x => x != null && String(x).trim() !== '').map(String);
-      if (v == null) return [];
-      const s = String(v).trim();
-      if (!s) return [];
-      return s.split(/[;,]\s*|\r?\n/).map(x => x.trim()).filter(Boolean);
-    }
-    function splitLines(s) { return asArr(s); }
-    function escapeHtml(s) {
-      if (s == null) return '';
-      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-    }
-    function fillText(id, v) {
-      const vStr = String(v || '').trim() || (window.__NA_ALL__() ? window.__NA_LABEL__() : '—');
-      document.querySelectorAll(`[data-k="${id}"], #${id}`).forEach(el => {
-        el.textContent = vStr;
-      });
-    }
-    function liList(selector, arr) {
-      const ul = document.querySelector(selector);
-      if (!ul) return;
-      const list = asArr(arr);
-      ul.innerHTML = list.length
-        ? list.map(a => `<li>${escapeHtml(a)}</li>`).join('')
-        : `<li><span class="muted">${window.__NA_ALL__() ? escapeHtml(window.__NA_LABEL__()) : '—'}</span></li>`;
-    }
+      /* ===== Fallbacks “Não informado” ===== */
+      const __NA_LABEL__ = () =>
+        String((window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_LABEL) || 'Não informado');
+      const __NA_ALL__ = () => {
+        const d = window.__TERMO_DATA__;
+        return (d && Object.prototype.hasOwnProperty.call(d, '__NA_ALL'))
+          ? !!d.__NA_ALL : true;
+      };
+      function fillText(key, val){
+        const raw = (val == null) ? '' : String(val);
+        const trimmed = raw.trim();
+        const s = trimmed || (__NA_ALL__() ? __NA_LABEL__() : '');
+        $$('[data-k="'+key+'"]').forEach(el => { el.textContent = s; });
+      }
 
-    // FUNÇÕES DO CÓDIGO FORNECIDO (PARTE 1 E 2 COMBINADAS)
-    (function(){
-      
-      // ========= Funções auxiliares =========
+      /* ===== Utilitários ===== */
+      function escapeHtml(s){ return String(s||'').replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
 
-      function normalizePayload(payload) {
-        const p = payload || {};
+      function asArr(v){
+        if (Array.isArray(v)) return v;
+        if (v == null || v === '') return [];
+        if (typeof v === 'string') {
+          const s = v.trim();
+          if (!s) return [];
+          if ((s.startsWith('[') && s.endsWith(']')) || (s.startsWith('{') && s.endsWith('}'))) {
+            try {
+              const j = JSON.parse(s);
+              if (Array.isArray(j)) return j.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
+            } catch(_) {}
+          }
+          return s.split(/,\s*|\n+/).map(s=>s.trim()).filter(Boolean);
+        }
+        return [String(v)].filter(Boolean);
+      }
+
+      function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
+
+      function liList(sel, arr){
+        const ul = document.querySelector(sel);
+        if (!ul) return;
+        const a = asArr(arr);
+        const emptyMsg = ul.getAttribute('data-empty') || 'Não informado';
+        if (a.length) {
+          ul.innerHTML = a.map(x=>`<li>${escapeHtml(x)}</li>`).join('');
+        } else {
+          const useNA = (typeof __NA_ALL__ === 'function') ? __NA_ALL__() : true;
+          ul.innerHTML = useNA ? `<li>${escapeHtml(emptyMsg)}</li>` : '';
+        }
+      }
+
+      function asYes(v){ return ['sim','s','true','1','yes','y'].includes(String(v ?? '').trim().toLowerCase()); }
+      function asNo(v){  return ['nao','não','n','false','0','no'].includes(String(v ?? '').trim().toLowerCase()); }
+
+      /* ===== Normalização do payload ===== */
+      function normalizePayload(p0){
+        const p = Object.assign({}, p0);
+
+        // Básicos/aliases
+        p.ENTE = p.ENTE ?? p.ente; p.UF = p.UF ?? p.uf; p.UG = p.UG ?? p.ug;
+        p.CNPJ_ENTE = p.CNPJ_ENTE ?? p.cnpj_ente; p.CNPJ_UG = p.CNPJ_UG ?? p.cnpj_ug;
+        p.EMAIL_ENTE = p.EMAIL_ENTE ?? p.email_ente; p.EMAIL_UG = p.EMAIL_UG ?? p.email_ug;
+        p.SEI_PROCESSO = p.SEI_PROCESSO ?? p.sei_processo ?? p.PROC_SEI ?? p.proc_sei ?? '';
+        p.PORTARIA_SRPC = p.PORTARIA_SRPC ?? p.portaria_srpc ?? p.PORTARIA_SRPC_MPS ?? '2.024/2025';
+
+        p.ORGAO_VINCULACAO_UG = p.ORGAO_VINCULACAO_UG
+          || p.orgao_vinculacao_ug 
+          || p.orgao_vinc_ug 
+          || p.ug_orgao_vinc 
+          || '';
+        // Recupera 1.3.4 de fontes auxiliares (adesão/session/parent)
+        if (!p.ORGAO_VINCULACAO_UG) {
+          try {
+            const ss = (k) => {
+              try { return (sessionStorage.getItem(k) || '').trim(); } catch(_) { return ''; }
+            };
+            const cand = ss('ORGAO_VINCULACAO_UG') || ss('ORGAO_VINCULACAO_UG__ADESAO');
+            if (cand) p.ORGAO_VINCULACAO_UG = cand;
+          } catch(_) {}
+        }
+        if (!p.ORGAO_VINCULACAO_UG) {
+          try {
+            const fromParent = (window.parent && window.parent.__TERMO_ADESAO__ && window.parent.__TERMO_ADESAO__.ORGAO_VINCULACAO_UG) || '';
+            if (fromParent) p.ORGAO_VINCULACAO_UG = String(fromParent).trim();
+          } catch(_) {}
+        }
+
+        p.NOME_REP_ENTE = p.NOME_REP_ENTE ?? p.nome_rep_ente;
+        p.CARGO_REP_ENTE = p.CARGO_REP_ENTE ?? p.cargo_rep_ente;
+        p.CPF_REP_ENTE   = p.CPF_REP_ENTE   ?? p.cpf_rep_ente;
+        p.EMAIL_REP_ENTE = p.EMAIL_REP_ENTE ?? p.email_rep_ente;
+        p.TEL_REP_ENTE   = p.TEL_REP_ENTE   ?? p.tel_rep_ente;
+
+        p.NOME_REP_UG = p.NOME_REP_UG ?? p.nome_rep_ug;
+        p.CARGO_REP_UG = p.CARGO_REP_UG ?? p.cargo_rep_ug;
+        p.CPF_REP_UG   = p.CPF_REP_UG   ?? p.cpf_rep_ug;
+        p.EMAIL_REP_UG = p.EMAIL_REP_UG ?? p.email_rep_ug;
+        p.TEL_REP_UG   = p.TEL_REP_UG   ?? p.tel_rep_ug;
+
+        // (3.1) Data vencimento CRP
+        const crp = p.crp || p.CRP || {};
+        p.DATA_VENC_ULTIMO_CRP = p.DATA_VENC_ULTIMO_CRP
+          ?? p.data_vencimento_ultimo_crp
+          ?? p.data_venc_ult_crp
+          ?? crp.data_venc
+          ?? crp.data_validade
+          ?? crp.DATA_VALIDADE_DMY
+          ?? crp.DATA_VALIDADE_ISO
+          ?? crp.DATA_VALIDADE
+          ?? crp.validade
+          ?? crp.vencimento
+          ?? '';
+
+        // (3.2) Tipo de emissão
+        p.TIPO_EMISSAO_ULTIMO_CRP = (p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ultimo_crp || p.tipo_emissao_ult_crp || p.tipo_emissao || '').trim();
+        if (!p.TIPO_EMISSAO_ULTIMO_CRP) {
+          const flag = crp.e_judicial ?? crp.tipo_simnao ?? p.CRP_E_JUDICIAL ?? p.CRP_TIPO_SIMNAO ?? crp.emissao ?? crp.tipo_emissao ?? '';
+          if (asYes(flag))      p.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
+          else if (asNo(flag))  p.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
+          else {
+            const txt = String(crp.tipo || crp.emissao || p.tipo || '').trim();
+            if (txt) p.TIPO_EMISSAO_ULTIMO_CRP = txt;
+          }
+        }
+
+        // Espelhos compat
+        p.venc_ult_crp = p.venc_ult_crp
+          ?? p.DATA_VENC_ULTIMO_CRP
+          ?? p.DATA_VENCIMENTO_ULTIMO_CRP
+          ?? '';
+
+        // (3.2) Opção textual antiga → code
+        p.OPT_3_2 = (p.OPT_3_2 || p.opt_3_2 || '').trim();
+        if (!p.OPT_3_2){
+          const yes = v => String(v||'').toUpperCase() === 'SIM';
+          if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE))   p.OPT_3_2 = '3.2.1';
+          else if (yes(p.FIN_3_2_DEFICIT_ATUARIAL))     p.OPT_3_2 = '3.2.2';
+          else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) p.OPT_32 = '3.2.3';
+          else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) p.OPT_3_2 = '3.2.4';
+        }
+
+        // (3.4) Resolve code e texto
+        const _rawPrazo = String(
+          p.PRAZO_ADICIONAL_COD
+          || p.prazo_adicional_cod
+          || p.prazo_adicional
+          || p.prazo
+          || p.OPT_3_4
+          || p.opt_3_4
+          || p.OPT_3_2
+          || ''
+        ).trim();
+        let _prazo = _rawPrazo || '';
+        if (_prazo && !/3\.4\.\d/.test(_prazo)) {
+          const m = _prazo.match(/3\.(?:2|4)\.(\d)/);
+          if (m) _prazo = `3.4.${m[1]}`;
+          else if (/^\d$/.test(_prazo)) _prazo = `3.4.${_prazo}`;
+        }
+        if (!_prazo) {
+          for (const k of Object.keys(p0 || p)) {
+            const v = String((p0[k] ?? p[k] ?? '')).trim();
+            const mv = v.match(/(3\.[24]\.\d)/);
+            if (mv) { _prazo = mv[1]; break; }
+            const mk = k.match(/(3[._-]?(?:2|4)[._-]?\d|3_4_\d|3_2_\d)/i);
+            if (mk) {
+              const codeFromKey = mk[0].replace(/_/g, '.').replace(/([^\d.])/g,'').replace(/\.\{2,}/g,'.');
+              _prazo = codeFromKey.replace(/^3\.2\.(\d)$/, '3.4.$1');
+              break;
+            }
+            if (/^[1-9]$/.test(v)) { _prazo = '3.4.' + v; break; }
+          }
+        }
+        p.PRAZO_ADICIONAL_COD = (_prazo || '').replace(/^3\.2\.(\d)$/, '3.4.$1');
+        p.PRAZO_ADICIONAL_TEXTO = p.PRAZO_ADICIONAL_TEXTO || p.prazo_adicional_texto || p.prazo_adicional_desc || '';
+
+        // 3.3 – critérios irregulares
+        const candCriterios = (p.CRITERIOS_IRREGULARES || p.CRITERIOS_LIST || p.CRIT_IRREGULARES || p.CRITERIOS || p.CODIGOS_CRITERIOS || p.codigos_criterios || '');
+        p.__CRITERIOS_ARR__ = asArr(candCriterios);
+
+        // Fase
+        p.__FASE_SEL__ = String(
+          p.FASE_PROGRAMA || p.fase_programa || p.FASE || p.fase || p.fase_selecionada || p.fase_codigo || p.fase_sel || ''
+        ).trim();
+
+        // Normaliza F41_OPCAO
+        const f41opt = String(p.F41_OPCAO || p.f41_opcao || '').trim();
+        const m41 = f41opt.match(/^(4\.1\.\d)/);
+        p.F41_OPCAO_CODE = m41 ? m41[1] : '';
+        p.F41_OPCAO_TEXT = f41opt;
+        if (!p.F41_OPCAO_CODE && /até 60/.test(f41opt)) p.F41_OPCAO_CODE = '4.1.1';
+        if (!p.F41_OPCAO_CODE && /não possui débitos/.test(f41opt)) p.F41_OPCAO_CODE = '4.1.2';
+        
+        // Normaliza F4310_OPCAO
+        const f4310opt = String(p.F4310_OPCAO || '').trim();
+        if (f4310opt.startsWith('a)')) p.F4310_OPCAO = 'a';
+        if (f4310opt.startsWith('b)')) p.F4310_OPCAO = 'b';
+        
+        p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || p['F42_ITENS[]'] || '');
+        p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || p['F43_ITENS[]'] || '');
+        p.F43_INCLUIR_B = asArr(p.F43_INCLUIR_B || p['F43_INCLUIR_B[]'] || ''); // Novo campo 4.3.12
+        p.F43_INCLUIR = Array.from(new Set([...asArr(p.F43_INCLUIR || p['F43_INCLUIR[]']), ...p.F43_INCLUIR_B])); // Unifica 4.3.11 e 4.3.12
+
+        p.F44_CRITERIOS = asArr(p.F44_CRITERIOS || p.f44_criterios || p.fase44_criterios || p['F44_CRITERIOS[]'] || '');
+        p.F44_DECLS = asArr(p.F44_DECLS || p['F44_DECLS[]'] || p['F44_CONDICOES[]'] || p.f44_decls || '');
+        p.F44_FINALIDADES = asArr(p.F44_FINALIDADES || p.f44_finalidades || p.fase44_finalidades || p['F44_FINALIDADES[]'] || '');
+        p.F44_ANEXOS = p.F44_ANEXOS || p.f44_anexos || p.fase44_anexos || '';
+
+        p.F45_DECLS = asArr(p.F45_DECLS || p['F45_CONDICOES[]'] || p.f45_decls || '');
+        p.F45_DOCS  = p.F45_DOCS || p.f45_docs || '';
+        p.F45_JUST  = p.F45_JUST || p.f45_just || '';
+        p.F453_EXEC_RES = p.F453_EXEC_RES || ''; // Novo campo 4.5.3
+        
+        // Garante que a declaração 4.5.1 seja adicionada se o checkbox for marcado
+        if (asYes(p.F45_OK451) || p.F45_DECLS.some(d => /4\.5\.1/.test(d))) {
+          if (!p.F45_DECLS.some(d => d.startsWith('4.5.1'))) {
+            p.F45_DECLS.push('4.5.1 Mantida a regularidade dos critérios exigidos nas fases anteriores.');
+          }
+        } else if (p.F45_DECLS.some(d => /4\.5\.1/.test(d))) {
+            p.F45_OK451 = true;
+        }
+
+        p.F46_CRITERIOS = asArr(p.F46_CRITERIOS || p['F46_CRITERIOS[]'] || p.f46_criterios || '');
+        p.F46_DECLS = asArr(p.F46_DECLS || p['F46_CONDICOES[]'] || p.f46_decls || '');
+        
+        p.F46_FINALIDADES = asArr(
+          p.F46_FINALIDADES
+          || p['F462_FINALIDADES[]']  // <— nome do form
+          || p['F46_FINALIDADES[]']
+          || p.f46_finalidades
+          || ''
+        );
+
+        p.F462F_CRITERIOS = asArr(
+          p.F462F_CRITERIOS
+          || p['F462F_CRITERIOS[]'] // <— nome do form
+          || p.f462f_criterios
+          || ''
+        );
+
+        /* Unifica critérios da fase 4.6 */
+        p.F46_CRITERIOS = Array.from(new Set([
+          ...asArr(p.F46_CRITERIOS),
+          ...asArr(p.F462F_CRITERIOS)
+        ]));
+
+        p.F46_ANEXOS      = p.F46_ANEXOS      || p.f46_anexos      || p.F466_DOCS || '';
+        p.F46_JUST_PLANOS = p.F46_JUST_PLANOS || p.f46_just_planos || p.F46_JUST_D || p.F46_JUST_E || '';
+        p.F46_PROGESTAO   = p.F46_PROGESTAO   || p.f46_progestao;
+        p.F46_PORTE       = p.F46_PORTE       || p.f46_porte;
+        p.F46_JUST_D      = p.F46_JUST_D      || p.f46_just_d;
+        p.F46_DOCS_D      = p.F46_DOCS_D      || p.f46_docs_d;
+        p.F46_JUST_E      = p.F46_JUST_E      || p.f46_just_e;
+        p.F46_DOCS_E      = p.F46_DOCS_E      || p.f46_docs_e;
+
+        p.F466_DOCS     = p.F466_DOCS     || p.F46_DOCS     || p.f46_docs     || p.f466_docs     || '';
+        p.F466_EXEC_RES = p.F466_EXEC_RES || p.F46_EXEC_RES || p.f46_exec_res || p.f466_exec_res || '';
+        p.F46_COMP_CUMPR = p.F466_EXEC_RES; // Alias
+
+        p.DATA_TERMO_GERADO = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
+
         // Aliases mínimos
         const _split = v => Array.isArray(v) ? v : String(v||'').split(/[;\n\r]+/).map(s => s.trim()).filter(Boolean);
         if (!p.F42_LISTA?.length) p.F42_LISTA = _split(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA || p.reg_penden_admin || '');
         if (!p.F43_LISTA?.length) p.F43_LISTA = _split(p.DEFICIT_ATUARIAL || p.deficit_atuarial || '');
         if (!p.F44_CRITERIOS?.length) p.F44_CRITERIOS = _split(p.CRITERIOS_ESTRUT_ESTABELECIDOS || p.criterios_estrut || '');
         if (!p.F46_CRITERIOS?.length) p.F46_CRITERIOS = _split(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || p.man_conformidade || '');
-
-        // ATUALIZAÇÃO REQUERIDA: Mesclagem da Fase 4.3 (ponto 1 do diagnóstico)
-        p.F43_INCLUIR = [...(p.F43_INCLUIR || []), ...(p.F43_INCLUIR_B || [])]; 
 
         return p;
       }
@@ -409,17 +607,17 @@
         fillText('ORGAO_VINCULACAO_UG', p.ORGAO_VINCULACAO_UG || '');
 
         // 2) Responsáveis
-        fillText('nome_rep_ente',  p.NOME_REP_ENTE);
+        fillText('nome_rep_ente',  p.NOME_REP_ENTE);
         fillText('cargo_rep_ente', p.CARGO_REP_ENTE);
-        fillText('cpf_rep_ente',   p.CPF_REP_ENTE);
+        fillText('cpf_rep_ente',   p.CPF_REP_ENTE);
         fillText('email_rep_ente', p.EMAIL_REP_ENTE);
-        fillText('tel_rep_ente',   p.TEL_REP_ENTE);
+        fillText('tel_rep_ente',   p.TEL_REP_ENTE);
 
-        fillText('nome_rep_ug',  p.NOME_REP_UG);
+        fillText('nome_rep_ug',  p.NOME_REP_UG);
         fillText('cargo_rep_ug', p.CARGO_REP_UG);
-        fillText('cpf_rep_ug',   p.CPF_REP_UG);
+        fillText('cpf_rep_ug',   p.CPF_REP_UG);
         fillText('email_rep_ug', p.EMAIL_REP_UG);
-        fillText('tel_rep_ug',   p.TEL_REP_UG);
+        fillText('tel_rep_ug',   p.TEL_REP_UG);
 
         // 3) CRP
         const __venc = p.DATA_VENC_ULTIMO_CRP || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '';
@@ -427,10 +625,10 @@
         fillText('data_vencimento_ultimo_crp', __venc);
 
         const __tipo = p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '';
-        fillText('tipo_emissao_ult_crp',    __tipo);
+        fillText('tipo_emissao_ult_crp',    __tipo);
         fillText('tipo_emissao_ultimo_crp', __tipo);
 
-        fillText('DATA_VENC_ULTIMO_CRP',  p.DATA_VENC_ULTIMO_CRP  || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
+        fillText('DATA_VENC_ULTIMO_CRP',  p.DATA_VENC_ULTIMO_CRP  || p.DATA_VENCIMENTO_ULTIMO_CRP || p.venc_ult_crp || '');
         fillText('TIPO_EMISSAO_ULTIMO_CRP', p.TIPO_EMISSAO_ULTIMO_CRP || p.tipo_emissao_ult_crp || '');
 
         // 3.4 — mostra somente a alternativa selecionada
@@ -440,7 +638,7 @@
           let mostrou = false;
           itens.forEach(el => {
             const tag = (el.getAttribute('data-3_4') || '').trim();
-            const ok  = code && tag === code;
+            const ok  = code && tag === code;
             if (ok) { el.style.display = ''; mostrou = true; }
             else { el.remove(); }
           });
@@ -463,7 +661,7 @@
         // fallback: tentar deduzir a fase pelos campos presentes no payload
         if (!faseSel) {
           const has = pref => Object.keys(p||{}).some(k => k.startsWith(pref));
-          if      (has('F41_')) faseSel = '4.1';
+          if      (has('F41_')) faseSel = '4.1';
           else if (has('F42_')) faseSel = '4.2';
           else if (has('F43_')) faseSel = '4.3';
           else if (has('F44_')) faseSel = '4.4';
@@ -522,8 +720,8 @@
             break;
           }
           case '4.4': {
-            liList('#f44-criterios',   p.F44_CRITERIOS);
-            liList('#f44-decls',       p.F44_DECLS);
+            liList('#f44-criterios',   p.F44_CRITERIOS);
+            liList('#f44-decls',       p.F44_DECLS);
             liList('#f44-finalidades', p.F44_FINALIDADES);
             (function(){
               const el = document.getElementById('f441-legislacao');
@@ -591,11 +789,11 @@
 
             const decls = asArr(p.F46_DECLS);
             if (p.F46_PROGESTAO) decls.push('Nível Pró-Gestão RPPS: ' + p.F46_PROGESTAO);
-            if (p.F46_PORTE)     decls.push('Grupo de Porte (ISP-RPPS): ' + p.F46_PORTE);
-            if (p.F46_JUST_D)    decls.push('(d) Justificativas: ' + p.F46_JUST_D);
-            if (p.F46_DOCS_D)    decls.push('(d) Documentos: ' + p.F46_DOCS_D);
-            if (p.F46_JUST_E)    decls.push('(e) Justificativas: ' + p.F46_JUST_E);
-            if (p.F46_DOCS_E)    decls.push('(e) Documentos: ' + p.F46_DOCS_E);
+            if (p.F46_PORTE)     decls.push('Grupo de Porte (ISP-RPPS): ' + p.F46_PORTE);
+            if (p.F46_JUST_D)    decls.push('(d) Justificativas: ' + p.F46_JUST_D);
+            if (p.F46_DOCS_D)    decls.push('(d) Documentos: ' + p.F46_DOCS_D);
+            if (p.F46_JUST_E)    decls.push('(e) Justificativas: ' + p.F46_JUST_E);
+            if (p.F46_DOCS_E)    decls.push('(e) Documentos: ' + p.F46_DOCS_E);
             liList('#f46-decls', decls);
 
             liList('#f46-finalidades', p.F46_FINALIDADES);
@@ -757,7 +955,7 @@
 
       if (window.__TERMO_DATA__) { try { run(window.__TERMO_DATA__); } catch {} }
       document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
-      document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
+      document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
       window.addEventListener('message', (ev) => {
         const d = ev && ev.data;
         if (!d) return;
