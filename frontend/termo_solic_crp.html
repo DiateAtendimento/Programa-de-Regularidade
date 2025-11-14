@@ -426,7 +426,7 @@
           const yes = v => String(v||'').toUpperCase() === 'SIM';
           if (yes(p.FIN_3_2_MANUTENCAO_CONFORMIDADE))   p.OPT_3_2 = '3.2.1';
           else if (yes(p.FIN_3_2_DEFICIT_ATUARIAL))     p.OPT_3_2 = '3.2.2';
-          else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) p.OPT_3_2 = '3.2.3';
+          else if (yes(p.FIN_3_2_CRITERIOS_ESTRUTURANTES)) p.OPT_32 = '3.2.3';
           else if (yes(p.FIN_3_2_OUTRO_CRITERIO_COMPLEXO)) p.OPT_3_2 = '3.2.4';
         }
 
@@ -473,72 +473,69 @@
           p.FASE_PROGRAMA || p.fase_programa || p.FASE || p.fase || p.fase_selecionada || p.fase_codigo || p.fase_sel || ''
         ).trim();
 
-        p.F41_OPCAO = String(p.F41_OPCAO || p.F41_OPCAO_CODE || p.f41_opcao || '').trim();
-
-        p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || '');
-        p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || '');
-        p.F43_INCLUIR = asArr(p.F43_INCLUIR || p['F43_INCLUIR[]'] || '');
-
-        p.F44_CRITERIOS   = asArr(p.F44_CRITERIOS   || p.f44_criterios   || p.fase44_criterios   || '');
-        if (!p.F42_LISTA?.length) {
-          p.F42_LISTA = asArr(p['F42_LISTA[]'] || p['F42_ITENS[]'] || p.F42_ITENS || p.f42_itens || p.fase42_itens || '');
-        }
-        if (!p.F43_LISTA?.length) {
-          p.F43_LISTA = asArr(p['F43_LISTA[]'] || p['F43_ITENS[]'] || p.F43_ITENS || p.f43_itens || p.fase43_itens || '');
-        }
+        // Normaliza F41_OPCAO
+        const f41opt = String(p.F41_OPCAO || p.f41_opcao || '').trim();
+        const m41 = f41opt.match(/^(4\.1\.\d)/);
+        p.F41_OPCAO_CODE = m41 ? m41[1] : '';
+        p.F41_OPCAO_TEXT = f41opt;
+        if (!p.F41_OPCAO_CODE && /até 60/.test(f41opt)) p.F41_OPCAO_CODE = '4.1.1';
+        if (!p.F41_OPCAO_CODE && /não possui débitos/.test(f41opt)) p.F41_OPCAO_CODE = '4.1.2';
         
-        if (!p.F44_CRITERIOS?.length) {
-          p.F44_CRITERIOS = asArr(p['F44_CRITERIOS[]'] || p.F44_CRITERIOS || p.f44_criterios || p.fase44_criterios || '');
+        // Normaliza F4310_OPCAO
+        const f4310opt = String(p.F4310_OPCAO || '').trim();
+        if (f4310opt.startsWith('a)')) p.F4310_OPCAO = 'a';
+        if (f4310opt.startsWith('b)')) p.F4310_OPCAO = 'b';
+        
+        p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || p['F42_ITENS[]'] || '');
+        p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || p['F43_ITENS[]'] || '');
+        p.F43_INCLUIR_B = asArr(p.F43_INCLUIR_B || p['F43_INCLUIR_B[]'] || ''); // Novo campo 4.3.12
+        p.F43_INCLUIR = Array.from(new Set([...asArr(p.F43_INCLUIR || p['F43_INCLUIR[]']), ...p.F43_INCLUIR_B])); // Unifica 4.3.11 e 4.3.12
+
+        p.F44_CRITERIOS = asArr(p.F44_CRITERIOS || p.f44_criterios || p.fase44_criterios || p['F44_CRITERIOS[]'] || '');
+        p.F44_DECLS = asArr(p.F44_DECLS || p['F44_DECLS[]'] || p['F44_CONDICOES[]'] || p.f44_decls || '');
+        p.F44_FINALIDADES = asArr(p.F44_FINALIDADES || p.f44_finalidades || p.fase44_finalidades || p['F44_FINALIDADES[]'] || '');
+        p.F44_ANEXOS = p.F44_ANEXOS || p.f44_anexos || p.fase44_anexos || '';
+
+        p.F45_DECLS = asArr(p.F45_DECLS || p['F45_CONDICOES[]'] || p.f45_decls || '');
+        p.F45_DOCS  = p.F45_DOCS || p.f45_docs || '';
+        p.F45_JUST  = p.F45_JUST || p.f45_just || '';
+        p.F453_EXEC_RES = p.F453_EXEC_RES || ''; // Novo campo 4.5.3
+        
+        // Garante que a declaração 4.5.1 seja adicionada se o checkbox for marcado
+        if (asYes(p.F45_OK451) || p.F45_DECLS.some(d => /4\.5\.1/.test(d))) {
+          if (!p.F45_DECLS.some(d => d.startsWith('4.5.1'))) {
+            p.F45_DECLS.push('4.5.1 Mantida a regularidade dos critérios exigidos nas fases anteriores.');
+          }
+        } else if (p.F45_DECLS.some(d => /4\.5\.1/.test(d))) {
+            p.F45_OK451 = true;
         }
 
-        p.F44_DECLS       = asArr(
-          p.F44_DECLS
-          || p['F44_DECLS[]']
-          || p['F44_CONDICOES[]']   // <— vem do formulário (4.4.1)
-          || p.F44_CONDICOES
-          || p.f44_decls
-          || p.fase44_decls
-          || ''
-        );
-        p.F44_FINALIDADES = asArr(p.F44_FINALIDADES || p.f44_finalidades || p.fase44_finalidades || '');
-        p.F44_ANEXOS      = p.F44_ANEXOS || p.f44_anexos || p.fase44_anexos || '';
-
-        p.F45_DECLS = asArr(p.F45_DECLS || p.f45_decls || '');
-        p.F45_DOCS  = p.F45_DOCS  || p.f45_docs  || '';
-        p.F45_JUST  = p.F45_JUST  || p.f45_just  || '';
-        const _ok451 = p.F45_OK451 ?? p.f45_ok451;
-        p.F45_OK451 = !!(['1','true','sim','s','yes','y'].includes(String(_ok451 ?? '').trim().toLowerCase()) || _ok451 === true);
-        // Deriva F45_OK451 quando vier como checkbox (F45_CONDICOES[])
-        if (p.F45_OK451 !== true && p.F45_OK451 !== false) {
-          const _f451 = asArr(p['F45_CONDICOES[]'] || p.F45_CONDICOES || '');
-          if (_f451.length) p.F45_OK451 = _f451.some(x => /4\.5\.1/.test(String(x)));
-        }
-
-        p.F46_CRITERIOS = asArr(
-          p.F46_CRITERIOS
-          || p['F46_CRITERIOS[]']     // <— cobre o name do form
-          || p.f46_criterios
-          || ''
-        );
-
+        p.F46_CRITERIOS = asArr(p.F46_CRITERIOS || p['F46_CRITERIOS[]'] || p.f46_criterios || '');
+        p.F46_DECLS = asArr(p.F46_DECLS || p['F46_CONDICOES[]'] || p.f46_decls || '');
+        
         p.F46_FINALIDADES = asArr(
           p.F46_FINALIDADES
-          || p['F46_FINALIDADES[]']   // <— cobre o name mais comum
-          || p['F462_FINALIDADES[]']  // <— mantém compat do patch antigo
-          || p.F462_FINALIDADES
+          || p['F462_FINALIDADES[]']  // <— nome do form
+          || p['F46_FINALIDADES[]']
           || p.f46_finalidades
           || ''
         );
 
-        /* merge 4.6.2(f) em F46_CRITERIOS (lista canônica) */
+        p.F462F_CRITERIOS = asArr(
+          p.F462F_CRITERIOS
+          || p['F462F_CRITERIOS[]'] // <— nome do form
+          || p.f462f_criterios
+          || ''
+        );
+
+        /* Unifica critérios da fase 4.6 */
         p.F46_CRITERIOS = Array.from(new Set([
           ...asArr(p.F46_CRITERIOS),
           ...asArr(p.F462F_CRITERIOS)
         ]));
 
-        p.F46_ANEXOS      = p.F46_ANEXOS      || p.f46_anexos      || '';
-        p.F46_COMP_CUMPR  = p.F46_COMP_CUMPR  || p.f46_comp_cumpr  || '';
-        p.F46_JUST_PLANOS = p.F46_JUST_PLANOS || p.f46_just_planos || '';
+        p.F46_ANEXOS      = p.F46_ANEXOS      || p.f46_anexos      || p.F466_DOCS || '';
+        p.F46_JUST_PLANOS = p.F46_JUST_PLANOS || p.f46_just_planos || p.F46_JUST_D || p.F46_JUST_E || '';
         p.F46_PROGESTAO   = p.F46_PROGESTAO   || p.f46_progestao;
         p.F46_PORTE       = p.F46_PORTE       || p.f46_porte;
         p.F46_JUST_D      = p.F46_JUST_D      || p.f46_just_d;
@@ -546,23 +543,11 @@
         p.F46_JUST_E      = p.F46_JUST_E      || p.f46_just_e;
         p.F46_DOCS_E      = p.F46_DOCS_E      || p.f46_docs_e;
 
-        // 4.6.6 (a) e (b) — aliases robustos
         p.F466_DOCS     = p.F466_DOCS     || p.F46_DOCS     || p.f46_docs     || p.f466_docs     || '';
         p.F466_EXEC_RES = p.F466_EXEC_RES || p.F46_EXEC_RES || p.f46_exec_res || p.f466_exec_res || '';
+        p.F46_COMP_CUMPR = p.F466_EXEC_RES; // Alias
 
         p.DATA_TERMO_GERADO = p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '';
-
-        // Fallbacks 4.1
-        if (!p.F41_OPCAO) {
-          const c = String(p.CELEBRACAO_TERMO_PARCELA_DEBITOS || '').trim();
-          if (/4\.1\.1/.test(c) || /60\s*parcelas/i.test(c)) p.F41_OPCAO = '4.1.1';
-          else if (/4\.1\.2/.test(c) || /(300\s*parcelas|nao possui|não possui)/i.test(c)) p.F41_OPCAO = '4.1.2';
-        }
-        if (!p.F41_OPCAO) {
-          const s = String(p.CELEBRACAO_TERMO_PARCELA_DEBITOS || p.celebracao_termo_parcela_debitos || '').toLowerCase();
-          if (s.includes('4.1.1') || s.includes('até 60'))  p.F41_OPCAO = '4.1.1';
-          if (s.includes('4.1.2') || s.includes('até 300')) p.F41_OPCAO = '4.1.2';
-        }
 
         // Aliases mínimos
         const _split = v => Array.isArray(v) ? v : String(v||'').split(/[;\n\r]+/).map(s => s.trim()).filter(Boolean);
@@ -570,18 +555,6 @@
         if (!p.F43_LISTA?.length) p.F43_LISTA = _split(p.DEFICIT_ATUARIAL || p.deficit_atuarial || '');
         if (!p.F44_CRITERIOS?.length) p.F44_CRITERIOS = _split(p.CRITERIOS_ESTRUT_ESTABELECIDOS || p.criterios_estrut || '');
         if (!p.F46_CRITERIOS?.length) p.F46_CRITERIOS = _split(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || p.man_conformidade || '');
-
-        // 4.6.2(f) - critérios (quando 'f' ativo)
-        p.F462F_CRITERIOS = asArr(
-          p.F462F_CRITERIOS
-          || p['F462F_CRITERIOS[]']   // suporte ao name do form
-          || p.f462f_criterios
-          || ''
-        );
-
-        ['F42_LISTA','F43_LISTA','F44_CRITERIOS','F44_DECLS','F44_FINALIDADES',
-         'F45_DECLS','F46_CRITERIOS','F46_DECLS','F46_FINALIDADES','F462F_CRITERIOS']
-          .forEach(k => { p[k] = asArr(p[k] || p[k.toLowerCase()] || ''); });
 
         return p;
       }
@@ -619,6 +592,9 @@
 
         const p = normalizePayload(payload || {});
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
+        if (window.__DEBUG_SOLIC_CRP__) {
+          try { console.log('[E3] template/run → payload (normalized)', p); } catch {}
+        }
         try { document.dispatchEvent(new Event('TERMO_DATA')); } catch {}
 
         // 1) Cabeçalho/meta
@@ -681,7 +657,7 @@
         liList('#criterios-list', p.__CRITERIOS_ARR__);
 
         // 4) Fase
-        let faseSel = String(p.__FASE_SEL__ || p.FASE_PROGRAMA || '').trim(); // <<< CORREÇÃO: declarar antes de usar
+        let faseSel = String(p.__FASE_SEL__ || p.FASE_PROGRAMA || '').trim();
         // fallback: tentar deduzir a fase pelos campos presentes no payload
         if (!faseSel) {
           const has = pref => Object.keys(p||{}).some(k => k.startsWith(pref));
@@ -699,12 +675,7 @@
           case '4.1': {
             const ul = document.getElementById('f41-itens');
             if (ul) {
-              const code = String((p.F41_OPCAO || p.F41_OPCAO_CODE || '')).trim();
-              const MAP = {
-                '4.1.1': '4.1.1 Foram incluídos em termos de acordo de parcelamento ou reparcelamento cadastrados no Cadprev todos os débitos do ente federativo junto ao RPPS (até a data da adesão).',
-                '4.1.2': '4.1.2 O ente federativo não possui débitos de contribuições ou de quaisquer outros valores devidos ao RPPS ou que já não tenham sido parcelados/regularizados até a adesão.'
-              };
-              const texto = MAP[code] || (p.F41_OPCAO && !/^\s*4\.1\.\d\s*$/.test(p.F41_OPCAO) ? String(p.F41_OPCAO) : '');
+              const texto = p.F41_OPCAO_TEXT;
               ul.innerHTML = texto
                 ? `<li>${escapeHtml(texto)}</li>`
                 : '<li>Não informado</li>';
@@ -729,9 +700,13 @@
               const box = document.getElementById('f4310');
               if(!box) return;
               const items = [];
-              if (p.F4310_OPCAO)      items.push('Opção: ' + p.F4310_OPCAO);
-              if (p.F4310_LEGISLACAO) items.push('Legislação: ' + p.F4310_LEGISLACAO);
-              if (p.F4310_DOCS)       items.push('Docs: ' + p.F4310_DOCS);
+              if (p.F4310_OPCAO === 'a') {
+                items.push('Opção: a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS...');
+                if (p.F4310_LEGISLACAO) items.push('Legislação: ' + p.F4310_LEGISLACAO);
+              } else if (p.F4310_OPCAO === 'b') {
+                items.push('Opção: b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...');
+                if (p.F4310_DOCS) items.push('Documentos: ' + p.F4310_DOCS);
+              }
               liList('#f4310', items);
             })();
             (function(){
@@ -783,8 +758,7 @@
             break;
           }
           case '4.5': {
-            const decls = p.F45_OK451 ? ['4.5.1 Mantida a regularidade das fases anteriores.'] : [];
-            liList('#f45-decls', decls);
+            liList('#f45-decls', p.F45_DECLS);
             const d = splitLines(p.F45_DOCS || '');
             const j = splitLines(p.F45_JUST || '');
             const e = splitLines(p.F453_EXEC_RES || '');
@@ -804,18 +778,16 @@
           }
           case '4.6': {
             (function(){
-              let arr = asArr(p.F46_CRITERIOS); // já vem mesclado no normalize
+              let arr = asArr(p.F46_CRITERIOS);
               const decls = asArr(p.F46_DECLS);
-              const conds = asArr(p['F46_CONDICOES[]'] || p.F46_CONDICOES || []);
-              const aMarcado = decls.concat(conds).some(t => /4\.6\.1\s*\(?.*a\)?/i.test(String(t)));
+              const aMarcado = decls.some(t => /a\)/i.test(String(t)));
               if (!arr.length && aMarcado) {
                 arr = ['Demais critérios não abrangidos por Plano(s) de Ação foram declarados regulares (4.6.1, item a).'];
               }
               liList('#f46-criterios', arr);
             })();
 
-            const decls = [];
-            if (Array.isArray(p.F46_DECLS)) decls.push(...p.F46_DECLS);
+            const decls = asArr(p.F46_DECLS);
             if (p.F46_PROGESTAO) decls.push('Nível Pró-Gestão RPPS: ' + p.F46_PROGESTAO);
             if (p.F46_PORTE)     decls.push('Grupo de Porte (ISP-RPPS): ' + p.F46_PORTE);
             if (p.F46_JUST_D)    decls.push('(d) Justificativas: ' + p.F46_JUST_D);
@@ -825,9 +797,10 @@
             liList('#f46-decls', decls);
 
             liList('#f46-finalidades', p.F46_FINALIDADES);
+            liList('#f462f-criterios', p.F462F_CRITERIOS);
 
             (function(){
-              const ax = splitLines(p.F46_ANEXOS || '');
+              const ax = splitLines(p.F46_ANEXOS || p.F466_DOCS || '');
               const axBox = document.getElementById('f46-anexos');
               if (axBox) axBox.innerHTML = ax.length
                 ? '<ul>' + ax.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
@@ -836,9 +809,7 @@
 
             (function(){
               const jp = document.getElementById('f46-just-planos');
-              const cc = document.getElementById('f46-comp-cumpr');
               if (jp) jp.textContent = (p.F46_JUST_PLANOS || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-              if (cc) cc.textContent = (p.F46_COMP_CUMPR  || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
             })();
 
             (function(){
@@ -898,7 +869,7 @@
         })();
 
         // 5) Justificativas gerais
-        fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
+        fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || p.justificativas_gerais || '');
 
         // 6) Data/assinaturas
         const preferida = (p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '').trim();
@@ -933,7 +904,7 @@
             '4.3': ['#f43-itens', '#f4310', '#f43-incluir'],
             '4.4': ['#f44-criterios', '#f44-decls', '#f44-finalidades'],
             '4.5': ['#f45-decls'],
-            '4.6': ['#f46-decls','#f462f-criterios','#f466-docs','#f466-exec']
+            '4.6': ['#f46-decls','#f46-criterios','#f46-finalidades']
           };
           const mustHaveLis = mustByPhase[fase] || [];
           const ok = mustHaveLis.every(sel => {
@@ -1004,82 +975,19 @@
           }
         }, step);
       })();
-    })();
-  </script>
 
-  <script>
-    /* PATCH A: não forçar NA global no preview; deixe o gerador decidir */
-    window.__TERMO_DATA__ = Object.assign({ __NA_ALL: false, __NA_LABEL: 'Não informado' }, window.__TERMO_DATA__ || {});
-  </script>
-
-  <script>
-    /* Preenchimento baseado em data-k com data-fallback e data-na */
-    (function(){
-      function resolveK(node, data){
-        const already = (node.textContent || '').trim();
-        if (already && already !== 'Não informado' && already !== '—') return;
-        const k = node.getAttribute('data-k');
-        let v = (data && data[k]) || '';
-        if(!v){
-          const fb = node.getAttribute('data-fallback');
-          if (fb && data && data[fb]) v = data[fb];
-        }
-        if(!v){
-          v = node.getAttribute('data-na') || 'Não informado';
-        }
-        node.textContent = (v==null || v==='') ? (node.getAttribute('data-na')||'Não informado') : v;
-      }
-      function fillAll(){
-        const data = window.__TERMO_DATA__ || {};
-        document.querySelectorAll('[data-k]').forEach(n => resolveK(n, data));
-      }
-      document.addEventListener('TERMO_DATA', fillAll);
-      document.addEventListener('TERMO_DATA_READY', fillAll);
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fillAll);
-      else fillAll();
-    })();
-  </script>
-
-  <script>
-    (function(){
-      function boot(){
-        var p = window.__TERMO_INJECT__ || null;
-        if (!p) {
-          try { p = JSON.parse(sessionStorage.getItem('TERMO_SOLIC_CRP_PAYLOAD') || 'null'); } catch(_) {}
-        }
-        const fn = window.__TERMO_RUN__ || window.run;
-        if (p && typeof fn === 'function') {
-          try {
-            window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
-            fn(p);
-            document.dispatchEvent(new Event('TERMO_DATA'));
-          } catch(e) { try { console.error('run bootstrap fail', e); } catch(_){} }
-        }
-      }
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-      else boot();
-    })();
-  </script>
-
-  <script>
-    // Recebe payload via postMessage e renderiza
-    (function(){
-      function onMsg(ev){
-        try {
-          if (ev.origin !== window.location.origin) return;
-          const m = ev.data || {};
-          if (m && m.type === 'TERMO_PAYLOAD' && m.data) {
-            window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, m.data);
-            if (typeof window.run === 'function') {
-              window.run(m.data);
-              document.dispatchEvent(new Event('TERMO_DATA'));
+      document.addEventListener('DOMContentLoaded', () => {
+        // Fallback caso não haja injeção externa
+        if (!window.__TERMO_DATA__) {
+          if (window.__DEBUG_SOLIC_CRP__) console.warn('termo_solic_crp: NO __TERMO_DATA__, using fallback');
+          setTimeout(() => {
+            if (!window.__TERMO_DATA__) {
+              run({ __NA_ALL: true, __NA_LABEL: 'Não preenchido' });
             }
-          }
-        } catch(_) {}
-      }
-      window.addEventListener('message', onMsg, false);
+          }, 600);
+        }
+      });
     })();
   </script>
-
 </body>
 </html>
