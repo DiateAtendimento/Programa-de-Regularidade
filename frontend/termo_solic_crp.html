@@ -149,20 +149,29 @@
           <ul id="f43-itens"></ul>
 
           <p class="small mt"><strong>4.3.10 Justificativas/Informações adicionais:</strong></p>
-          <p id="f43-just"></p>
-          <ul id="f4310"></ul>
+          <div class="field-group">
+            <p><strong class="label">Opção (A ou B):</strong> <span class="value" data-k="F4310_OPCAO"></span></p>
+            <p><strong class="label">Legislação citada:</strong> <span class="value" data-k="F4310_LEGISLACAO"></span></p>
+            <p><strong class="label">Documentos citados:</strong> <span class="value" data-k="F4310_DOCS"></span></p>
+            <p><strong class="label">Justificativas (texto livre - F43_JUST):</strong> <span class="value" id="f43-just-texto"></span></p>
+          </div>
+          <ul id="f4310" hidden></ul>
 
-          <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica:</strong></p>
+          <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica (A):</strong></p>
           <p id="f43-plano"></p>
 
           <p class="small mt"><strong>4.3.11 (B) Outras proposições de plano(s):</strong></p>
           <p id="f43-plano-b"></p>
 
-          <p class="small mt"><strong>4.3.11 (Descrição dos Plano(s)):</strong></p>
-          <div id="f43-desc-planos"></div>
+          <p class="small mt"><strong>4.3.11 (Descrição dos Plano(s) - F43_DESC_PLANOS):</strong></p>
+          <div id="f43-desc-planos-area"></div>
 
-          <p class="small mt"><strong>4.3.12 Critérios do extrato a incluir em Plano de Ação:</strong></p>
-          <ul id="f43-incluir"></ul>
+          <p class="small mt"><strong>4.3.12 Critérios a incluir em Plano de Ação:</strong></p>
+          <ul id="f43-incluir"></ul> <p class="small mt"><strong>4.3.12 (b) Justificativas para o Plano de Ação (detalhado - F4312_JUST):</strong></p>
+          <div id="f4312-just-area"></div>
+
+          <p class="small mt"><strong>4.3.12 (c) Descrição dos Planos de Ação (detalhado - F4312_DESC_PLANOS):</strong></p>
+          <div id="f4312-desc-planos-area"></div>
         </div>
         <!-- 4.4 -->
         <div class="avoid-break" id="fase-44" hidden>
@@ -216,30 +225,45 @@
         <div class="avoid-break" id="fase-46" hidden>
           <h3>4.6 Fase de Manutenção da Conformidade</h3>
 
-          <p class="small"><strong>4.6.1 Demais critérios que não são objeto do(s) Plano(s) de Ação (regulares):</strong></p>
-          <ul id="f46-criterios"></ul>
+          <div class="field-group">
+            <p class="small mt"><strong>4.6.1 (a) Demais critérios que não são objeto do(s) Plano(s) de Ação (regulares):</strong></p>
+            <ul id="f46-criterios"></ul>
 
+            <p class="small mt"><strong>4.6.1 (b) Nível Pró-Gestão (F46_PROGESTAO):</strong> <span class="value" data-k="F46_PROGESTAO"></span></p>
+            <p class="small mt"><strong>4.6.1 (c) Porte ISP-RPPS (F46_PORTE):</strong> <span class="value" data-k="F46_PORTE"></span></p>
+
+            <p class="small mt"><strong>4.6.1 (d) Justificativas (se a não submissão a PAP levar à melhoria da situação - F46_JUST_D):</strong></p>
+            <div id="f46-just-d-area"></div>
+            <p class="small mt"><strong>4.6.1 (d) Documentos (comprobatórios da melhoria - F46_DOCS_D):</strong></p>
+            <div id="f46-docs-d-area"></div>
+            
+            <p class="small mt"><strong>4.6.1 (e) Justificativas (caso o ente não tenha se submetido a PAP - F46_JUST_E):</strong></p>
+            <div id="f46-just-e-area"></div>
+            <p class="small mt"><strong>4.6.1 (e) Documentos (comprobatórios da regularidade - F46_DOCS_E):</strong></p>
+            <div id="f46-docs-e-area"></div>
+          </div>
           <p class="small mt"><strong>4.6.2 Declarações e informações:</strong></p>
           <ul id="f46-decls"></ul>
 
-          <p class="small mt"><strong>4.6.2(f) Critérios:</strong></p>
+          <p class="small mt"><strong>4.6.2(f) Critérios (F462F_CRITERIOS):</strong></p>
           <ul id="f462f-criterios"></ul>
 
-          <p class="small mt"><strong>4.6.3 Finalidade do(s) Plano(s) de Ação:</strong></p>
+          <p class="small mt"><strong>4.6.3 Finalidade do(s) Plano(s) de Ação (F46_FINALIDADES):</strong></p>
           <ul id="f46-finalidades"></ul>
 
-          <p class="small mt"><strong>4.6.4 Anexos:</strong></p>
-          <div id="f46-anexos"></div>
+          <p class="small mt"><strong>4.6.4 Anexos (F46_ANEXOS):</strong></p>
+          <div id="f46-anexos-area"></div>
 
-          <p class="small mt"><strong>4.6.5 Justificativas quanto ao(s) Plano(s) de Ação:</strong></p>
-          <div id="f46-just-planos"></div>
+          <p class="small mt"><strong>4.6.5 Justificativas quanto ao(s) Plano(s) de Ação (F46_JUST_PLANOS):</strong></p>
+          <div id="f46-just-planos-area"></div>
 
-          <p class="small mt"><strong>4.6.6 (a) Comprovação do cumprimento do(s) Plano(s) de Ação:</strong></p>
-          <div id="f466-docs"></div>
+          <p class="small mt"><strong>4.6.6 (a) Comprovação do cumprimento do(s) Plano(s) de Ação (F466_DOCS):</strong></p>
+          <div id="f466-docs-area"></div>
 
-          <p class="small mt"><strong>4.6.6 (b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados:</strong></p>
-          <div id="f466-exec"></div>
+          <p class="small mt"><strong>4.6.6 (b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados (F466_EXEC_RES):</strong></p>
+          <div id="f466-exec-area"></div>
         </div>
+
       </section>
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section avoid-break">
@@ -340,7 +364,39 @@
         }
       }
 
+      /* ... código omitido de liList ... */
+
+      // Nova função para renderizar textos longos, preservando quebras de linha
+      function renderParagraphs(sel, s){
+        const el = document.querySelector(sel);
+        if (!el) return;
+        const lines = splitLines(s);
+        const useNA = (typeof __NA_ALL__ === 'function') ? __NA_ALL__() : true;
+        
+        if (lines.length) {
+          // Renderiza cada linha como um parágrafo HTML
+          el.innerHTML = lines.map(x=>`<p>${escapeHtml(x)}</p>`).join('');
+        } else {
+          el.innerHTML = useNA ? `<span class="muted">${escapeHtml(__NA_LABEL__())}</span>` : '—';
+        }
+      }
+
+      // Função para renderizar documentos/listas em div/ul/li (similar ao original)
+      function renderListDiv(sel, arr){
+        const box = document.querySelector(sel);
+        if (!box) return;
+        const a = asArr(arr);
+        const useNA = (typeof __NA_ALL__ === 'function') ? __NA_ALL__() : true;
+
+        if (a.length) {
+          box.innerHTML = '<ul>' + a.map(x=>'<li>' + escapeHtml(x) + '</li>').join('') + '</ul>';
+        } else {
+          box.innerHTML = useNA ? `<span class="muted">${escapeHtml(__NA_LABEL__())}</span>` : '—';
+        }
+      }
+
       function asYes(v){ return ['sim','s','true','1','yes','y'].includes(String(v ?? '').trim().toLowerCase()); }
+
       function asNo(v){  return ['nao','não','n','false','0','no'].includes(String(v ?? '').trim().toLowerCase()); }
 
       /* ===== Normalização do payload ===== */
@@ -688,74 +744,60 @@
           }
           case '4.3': {
             liList('#f43-itens', p.F43_LISTA);
-            (function(){
-              const j = document.getElementById('f43-just');
-              if (j) j.textContent = (p.F43_JUST || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-              const pl = document.getElementById('f43-plano');
-              if (pl) pl.textContent = (p.F43_PLANO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-              const plb = document.getElementById('f43-plano-b');
-              if (plb) plb.textContent = (p.F43_PLANO_B || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-            })();
-            (function(){
-              const box = document.getElementById('f4310');
-              if(!box) return;
-              const items = [];
-              if (p.F4310_OPCAO === 'a') {
-                items.push('Opção: a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS...');
-                if (p.F4310_LEGISLACAO) items.push('Legislação: ' + p.F4310_LEGISLACAO);
-              } else if (p.F4310_OPCAO === 'b') {
-                items.push('Opção: b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...');
-                if (p.F4310_DOCS) items.push('Documentos: ' + p.F4310_DOCS);
-              }
-              liList('#f4310', items);
-            })();
-            (function(){
-              const desc = splitLines(p.F43_DESC_PLANOS || '');
-              const dBox = document.getElementById('f43-desc-planos');
-              if (dBox) dBox.innerHTML = desc.length
-                ? '<ul>' + desc.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            })();
+
+            // 4.3.10 detalhado
+            fillText('F4310_OPCAO', p.F4310_OPCAO);
+            fillText('F4310_LEGISLACAO', p.F4310_LEGISLACAO);
+            fillText('F4310_DOCS', p.F4310_DOCS);
+
+            // F43_JUST (texto livre original)
+            const f43JustEl = document.getElementById('f43-just-texto');
+            if (f43JustEl) f43JustEl.textContent = (p.F43_JUST || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+            
+            // 4.3.11 (A)
+            const f43PlanoEl = document.getElementById('f43-plano');
+            if (f43PlanoEl) f43PlanoEl.textContent = (p.F43_PLANO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+
+            // 4.3.11 (B)
+            const f43PlanoBEl = document.getElementById('f43-plano-b');
+            if (f43PlanoBEl) f43PlanoBEl.textContent = (p.F43_PLANO_B || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+            
+            // 4.3.11 (Descrição dos Plano(s)) - F43_DESC_PLANOS (texto longo)
+            renderParagraphs('#f43-desc-planos-area', p.F43_DESC_PLANOS);
+
+            // 4.3.12 (a) Critérios
             liList('#f43-incluir', p.F43_INCLUIR);
+            
+            // 4.3.12 (b) Justificativas detalhadas - F4312_JUST (texto longo)
+            renderParagraphs('#f4312-just-area', p.F4312_JUST);
+
+            // 4.3.12 (c) Descrição Planos detalhada - F4312_DESC_PLANOS (texto longo)
+            renderParagraphs('#f4312-desc-planos-area', p.F4312_DESC_PLANOS);
+
             break;
           }
           case '4.4': {
-            liList('#f44-criterios',   p.F44_CRITERIOS);
-            liList('#f44-decls',       p.F44_DECLS);
-            liList('#f44-finalidades', p.F44_FINALIDADES);
-            (function(){
-              const el = document.getElementById('f441-legislacao');
-              if (el) el.textContent = (p.F441_LEGISLACAO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-            })();
-            (function(){
-              const desc = splitLines(p.F445_DESC_PLANOS || '');
-              const dBox = document.getElementById('f445-desc-planos');
-              if (dBox) dBox.innerHTML = desc.length
-                ? '<ul>' + desc.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            })();
-            (function(){
-              const ax = splitLines(p.F44_ANEXOS || '');
-              const box = document.getElementById('f44-anexos');
-              if (box) {
-                box.innerHTML = ax.length
-                  ? '<ul>' + ax.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-                  : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-              }
-            })();
-            (function(){
-              const d = splitLines(p.F446_DOCS || '');
-              const e = splitLines(p.F446_EXEC_RES || '');
-              const dBox = document.getElementById('f446-docs');
-              const eBox = document.getElementById('f446-exec');
-              if (dBox) dBox.innerHTML = d.length
-                ? '<ul>' + d.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-              if (eBox) eBox.innerHTML = e.length
-                ? '<ul>' + e.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            })();
-            break;
+          liList('#f44-decls', p.F44_DECLS);
+          liList('#f44-finalidades', p.F44_FINALIDADES);
+          liList('#f44-criterios', p.F44_CRITERIOS);
+
+          // 4.4.1(d) Legislação
+          const f441Leg = document.getElementById('f441-legislacao');
+          if (f441Leg) f441Leg.textContent = (p.F441_LEGISLACAO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
+
+          // 4.4.4 Anexos (documentos, renderiza como lista)
+          renderListDiv('#f44-anexos', p.F44_ANEXOS);
+
+          // 4.4.5 Descrever sucintamente (texto longo)
+          renderParagraphs('#f445-desc-planos-area', p.F445_DESC_PLANOS);
+
+          // 4.4.6 (a) Documentos (documentos, renderiza como lista)
+          renderListDiv('#f446-docs', p.F446_DOCS);
+
+          // 4.4.6 (b) Execução e resultados (texto longo)
+          renderParagraphs('#f446-exec-area', p.F446_EXEC_RES);
+
+          break;
           }
           case '4.5': {
             liList('#f45-decls', p.F45_DECLS);
@@ -777,53 +819,33 @@
             break;
           }
           case '4.6': {
-            (function(){
-              let arr = asArr(p.F46_CRITERIOS);
-              const decls = asArr(p.F46_DECLS);
-              const aMarcado = decls.some(t => /a\)/i.test(String(t)));
-              if (!arr.length && aMarcado) {
-                arr = ['Demais critérios não abrangidos por Plano(s) de Ação foram declarados regulares (4.6.1, item a).'];
-              }
-              liList('#f46-criterios', arr);
-            })();
+            // 4.6.1 (a), (b) e (c)
+            liList('#f46-criterios', p.F46_CRITERIOS);
+            fillText('F46_PROGESTAO', p.F46_PROGESTAO);
+            fillText('F46_PORTE', p.F46_PORTE);
+            
+            // 4.6.1 (d) e (e) (textos longos)
+            renderParagraphs('#f46-just-d-area', p.F46_JUST_D);
+            renderListDiv('#f46-docs-d-area', p.F46_DOCS_D); // Documentos: lista
+            renderParagraphs('#f46-just-e-area', p.F46_JUST_E);
+            renderListDiv('#f46-docs-e-area', p.F46_DOCS_E); // Documentos: lista
 
-            const decls = asArr(p.F46_DECLS);
-            if (p.F46_PROGESTAO) decls.push('Nível Pró-Gestão RPPS: ' + p.F46_PROGESTAO);
-            if (p.F46_PORTE)     decls.push('Grupo de Porte (ISP-RPPS): ' + p.F46_PORTE);
-            if (p.F46_JUST_D)    decls.push('(d) Justificativas: ' + p.F46_JUST_D);
-            if (p.F46_DOCS_D)    decls.push('(d) Documentos: ' + p.F46_DOCS_D);
-            if (p.F46_JUST_E)    decls.push('(e) Justificativas: ' + p.F46_JUST_E);
-            if (p.F46_DOCS_E)    decls.push('(e) Documentos: ' + p.F46_DOCS_E);
-            liList('#f46-decls', decls);
-
-            liList('#f46-finalidades', p.F46_FINALIDADES);
+            // 4.6.2 e 4.6.3 (listas)
+            liList('#f46-decls', p.F46_DECLS);
             liList('#f462f-criterios', p.F462F_CRITERIOS);
+            liList('#f46-finalidades', p.F46_FINALIDADES);
 
-            (function(){
-              const ax = splitLines(p.F46_ANEXOS || p.F466_DOCS || '');
-              const axBox = document.getElementById('f46-anexos');
-              if (axBox) axBox.innerHTML = ax.length
-                ? '<ul>' + ax.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            })();
+            // 4.6.4 Anexos (documentos, renderiza como lista)
+            renderListDiv('#f46-anexos-area', p.F46_ANEXOS);
 
-            (function(){
-              const jp = document.getElementById('f46-just-planos');
-              if (jp) jp.textContent = (p.F46_JUST_PLANOS || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-            })();
+            // 4.6.5 Justificativas (texto longo)
+            renderParagraphs('#f46-just-planos-area', p.F46_JUST_PLANOS);
 
-            (function(){
-              const d = splitLines(p.F466_DOCS || '');
-              const e = splitLines(p.F466_EXEC_RES || '');
-              const dBox = document.getElementById('f466-docs');
-              const eBox = document.getElementById('f466-exec');
-              if (dBox) dBox.innerHTML = d.length
-                ? '<ul>' + d.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-              if (eBox) eBox.innerHTML = e.length
-                ? '<ul>' + e.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-                : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            })();
+            // 4.6.6 (a) Documentos (documentos, renderiza como lista)
+            renderListDiv('#f466-docs-area', p.F466_DOCS);
+
+            // 4.6.6 (b) Execução e resultados (texto longo)
+            renderParagraphs('#f466-exec-area', p.F466_EXEC_RES);
 
             break;
           }
