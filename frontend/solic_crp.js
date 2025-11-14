@@ -1601,6 +1601,7 @@ function syncF46ToTemplate(){
     inject('#F46_CRITERIOS', 'F46_CRITERIOS[]');
     inject('#F462F_CRITERIOS', 'F462F_CRITERIOS[]');
     inject('#F46_DECLS', 'F46_DECLS[]');
+    inject('#F43_INCLUIR_B', 'F43_INCLUIR_B[]');
 
     if (el.f43Lista && !document.querySelector('#F43_INCLUIR input')) {
       const f43Incl = document.getElementById('F43_INCLUIR');
