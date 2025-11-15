@@ -122,146 +122,174 @@
       <!-- 4. FASE DO PROGRAMA -->
       <section class="term-section avoid-break" id="sec-fase">
         <h2>4. IDENTIFICAÇÃO DA FASE DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
+        
         <p class="small">
           Fase selecionada:
           <strong id="fase-escolhida" data-k="FASE_PROGRAMA"></strong>
         </p>
-
-        <!-- 4.1 -->
-        <div class="avoid-break" id="fase-41" hidden>
-          <h3>4.1 Fase Geral/Introdutória – 1º CRP Emergencial</h3>
-          <ul id="f41-itens"></ul>
-        </div>
-
         <p class="small mt"><strong>Campos adicionais desta fase:</strong></p>
         <div id="fase-extra-campos"></div>
 
-        <!-- 4.2 -->
-        <div class="avoid-break" id="fase-42" hidden>
+        <div class="avoid-break phase-block" id="fase-41" hidden>
+          <h3>4.1 Fase Geral/Introdutória – 1º CRP Emergencial</h3>
+          <ul id="f41-itens" class="clean-list" data-empty="Não preenchido"></ul>
+        </div>
+
+        <div class="avoid-break phase-block" id="fase-42" hidden>
           <h3>4.2 Fase Geral/Introdutória – 2º CRP Emergencial</h3>
-          <p class="small">Condições declaradas:</p>
-          <ul id="f42-itens"></ul>
+          <p class="small"><strong>4.2.1</strong> Regularidade nos seguintes critérios do extrato previdenciário:</p>
+          <ul id="f42-itens" class="styled-list" data-empty="Não preenchido"></ul>
         </div>
 
-        <!-- 4.3 -->
-        <div class="avoid-break" id="fase-43" hidden>
+        <div class="avoid-break phase-block" id="fase-43" hidden>
           <h3>4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</h3>
-          <ul id="f43-itens"></ul>
-
-          <p class="small mt"><strong>4.3.10 Justificativas/Informações adicionais:</strong></p>
-          <div class="field-group">
-            <p><strong class="label">Opção (A ou B):</strong> <span class="value" data-k="F4310_OPCAO"></span></p>
-            <p><strong class="label">Legislação citada:</strong> <span class="value" data-k="F4310_LEGISLACAO"></span></p>
-            <p><strong class="label">Documentos citados:</strong> <span class="value" data-k="F4310_DOCS"></span></p>
-            <p><strong class="label">Justificativas (texto livre - F43_JUST):</strong> <span class="value" id="f43-just-texto"></span></p>
+          
+          <div class="sub-section" id="f43-sub-1">
+            <p class="small"><strong>4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento:</strong></p>
+            <ul id="f43-itens-1" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
-          <ul id="f4310" hidden></ul>
-
-          <p class="small mt"><strong>4.3.11 Inclusões sugeridas nos Planos de Ação da Fase Específica (A):</strong></p>
-          <p id="f43-plano"></p>
-
-          <p class="small mt"><strong>4.3.11 (B) Outras proposições de plano(s):</strong></p>
-          <p id="f43-plano-b"></p>
-
-          <p class="small mt"><strong>4.3.11 (Descrição dos Plano(s) - F43_DESC_PLANOS):</strong></p>
-          <div id="f43-desc-planos-area"></div>
-
-          <p class="small mt"><strong>4.3.12 Critérios a incluir em Plano de Ação:</strong></p>
-          <ul id="f43-incluir"></ul> <p class="small mt"><strong>4.3.12 (b) Justificativas para o Plano de Ação (detalhado - F4312_JUST):</strong></p>
-          <div id="f4312-just-area"></div>
-
-          <p class="small mt"><strong>4.3.12 (c) Descrição dos Planos de Ação (detalhado - F4312_DESC_PLANOS):</strong></p>
-          <div id="f4312-desc-planos-area"></div>
+          
+          <div class="sub-section" id="f43-sub-2">
+            <p class="small"><strong>4.3.2 Regularidade quanto à utilização de recursos previdenciários:</strong></p>
+            <ul id="f43-itens-2" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-10">
+            <p class="small"><strong>4.3.10 – Em relação à adequação das regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</strong></p>
+            <div id="f43-opcao-a" class="field-group" hidden>
+              <p>a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS (reforma das regras de benefícios)...</p>
+              <p class="label-like">Relacionar a legislação que adequou as regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</p>
+              <div class="value-block" data-k="F4310_LEGISLACAO"></div>
+            </div>
+            <div id="f43-opcao-b" class="field-group" hidden>
+              <p>b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...</p>
+              <p class="label-like">Lista de documentos anexados, que comprovam o encaminhamento dos projetos de alteração das regras de benefícios:</p>
+              <div class="value-block" data-k="F4310_DOCS"></div>
+            </div>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-11">
+            <p class="small"><strong>4.3.11 - Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
+            <p class="label-like">a) Critérios do extrato que o ente deseja incluir no Plano de Ação da Fase Específica:</p>
+            <ul id="f43-incluir-list" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="label-like">b) Justificativas/Informações apresentadas relativas a essa inclusão (anexos podem ser citados abaixo):</p>
+            <div class="value-block" data-k="F43_PLANO"></div>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-12">
+            <p class="small"><strong>4.3.12 Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
+            <p class="label-like">a) Critérios do extrato que o ente, comprovadamente, precisará incluir em Plano de Ação:</p>
+            <ul id="f43-incluir-b-list" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="label-like">b) Justificativas/informações apresentadas relativas à solicitação de inclusão (anexos podem ser citados abaixo):</p>
+            <div class="value-block" data-k="F43_PLANO_B"></div>
+            <p class="label-like">c) Descrever sucintamente o(s) Plano(s) de Ação apresentado(s)</p>
+            <div class="value-block" data-k="F43_DESC_PLANOS"></div>
+          </div>
         </div>
-        <!-- 4.4 -->
-        <div class="avoid-break" id="fase-44" hidden>
+
+        <div class="avoid-break phase-block" id="fase-44" hidden>
           <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
 
-          <p class="small"><strong>4.4.1 Declaro ter cumprido as seguintes condições:</strong></p>
-          <ul id="f44-decls"></ul>
-
-          <p class="small mt"><strong>4.4.2 Finalidade do(s) Plano(s) de Ação apresentado(s):</strong></p>
-          <ul id="f44-finalidades"></ul>
-
-          <p class="small mt"><strong>4.4.3 Critério(s) do extrato previdenciário objeto do(s) Plano(s) de Ação:</strong></p>
-          <ul id="f44-criterios"></ul>
-
-          <p class="small mt"><strong>4.4.1(d) Legislação:</strong> <span id="f441-legislacao"></span></p>
-
-          <p class="small mt"><strong>4.4.4 Anexos (obrigatório o encaminhamento de Planos de Ação e documentação comprobatória):</strong></p>
-          <div id="f44-anexos"></div>
-
-          <p class="small mt"><strong>4.4.5 Descrever sucintamente o(s) Plano(s) de Ação apresentado(s):</strong></p>
-          <div id="f445-desc-planos"></div>
-
-          <p class="small mt"><strong>4.4.6 (a) Comprovação do cumprimento do(s) Plano(s) de Ação:</strong></p>
-          <div id="f446-docs"></div>
-
-          <p class="small mt"><strong>4.4.6 (b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados:</strong></p>
-          <div id="f446-exec"></div>
+          <div class="sub-section" id="f44-sub-1">
+            <p class="small"><strong>4.4.1 Declaro ter cumprido as seguintes condições:</strong></p>
+            <ul id="f44-decls" class="styled-list" data-empty="Não preenchido"></ul>
+            <div id="f44-leg-wrap" class="field-group" hidden>
+              <p class="label-like">Relacionar a legislação que adequou as regras de benefícios do RPPS à EC 103/2019:</p>
+              <div class="value-block" data-k="F441_LEGISLACAO"></div>
+            </div>
+          </div>
+          
+          <div class="sub-section" id="f44-sub-2">
+            <p class="small"><strong>4.4.2 Finalidade do(s) Plano(s) de Ação apresentado(s)</strong></p>
+            <ul id="f44-finalidades" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f44-sub-3">
+            <p class="small"><strong>4.4.3 Critério(s) do extrato previdenciário objeto do(s) Plano(s) de Ação</strong></p>
+            <ul id="f44-criterios" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f44-sub-4">
+            <p class="small"><strong>4.4.4 Anexos (obrigatório o encaminhamento de Planos de Ação e documentação comprobatória)</strong></p>
+            <div class="value-block" data-k="F44_ANEXOS"></div>
+          </div>
+          
+          <div class="sub-section" id="f44-sub-5">
+            <p class="small"><strong>4.4.5 Descrever sucintamente o(s) Plano(s) de Ação apresentado(s):</strong></p>
+            <div class="value-block" data-k="F445_DESC_PLANOS"></div>
+          </div>
+          
+          <div class="sub-section" id="f44-sub-6">
+            <p class="small"><strong>4.4.6 Em caso de Plano(s) de Ação apresentado(s) na Fase Intermediária:</strong></p>
+            <p class="label-like">a) Comprovação do cumprimento do(s) Plano(s) de Ação (relacione os documentos, um por linha)</p>
+            <div class="value-block" data-k="F446_DOCS"></div>
+            <p class="label-like">b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados</p>
+            <div class="value-block" data-k="F446_EXEC_RES"></div>
+          </div>
         </div>
 
-        <!-- 4.5 -->
-        <div class="avoid-break" id="fase-45" hidden>
+        <div class="avoid-break phase-block" id="fase-45" hidden>
           <h3>4.5 Fase Específica/Focalizada – 5º CRP Emergencial</h3>
-
-          <!-- 4.5.1 -->
-          <ul id="f45-decls"></ul>
-
-          <!-- 4.5.2 -->
-          <p class="small mt"><strong>4.5.2 Comprovação do cumprimento do(s) Plano(s) de Ação:</strong></p>
-          <div id="f45-docs"></div>
-
-          <!-- 4.5.3 -->
-          <p class="small mt"><strong>4.5.3 Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados:</strong></p>
-          <div id="f45-exec"></div>
-
-          <!-- 4.5.4 -->
-          <p class="small mt"><strong>4.5.4 Justificativas:</strong></p>
-          <div id="f45-just"></div>
+          <ul id="f45-decls" class="styled-list" data-empty="Não preenchido">
+            </ul>
+          
+          <div class="sub-section" id="f45-sub-2">
+            <p class="small"><strong>4.5.2 Comprovação do cumprimento do(s) Plano(s) de Ação</strong></p>
+            <div class="value-block" data-k="F45_DOCS"></div>
+          </div>
+          
+          <div class="sub-section" id="f45-sub-4">
+            <p class="small"><strong>4.5.4 Justificativas</strong></p>
+            <div class="value-block" data-k="F45_JUST"></div>
+          </div>
+          
+          <div class="sub-section" id="f45-sub-3">
+            <p class="small"><strong>4.5.3 Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados</strong></p>
+            <div class="value-block" data-k="F453_EXEC_RES"></div>
+          </div>
         </div>
 
-        <!-- 4.6 -->
-        <div class="avoid-break" id="fase-46" hidden>
+        <div class="avoid-break phase-block" id="fase-46" hidden>
           <h3>4.6 Fase de Manutenção da Conformidade</h3>
 
-          <div class="field-group">
-            <p class="small mt"><strong>4.6.1 (a) Demais critérios que não são objeto do(s) Plano(s) de Ação (regulares):</strong></p>
-            <ul id="f46-criterios"></ul>
-
-            <p class="small mt"><strong>4.6.1 (b) Nível Pró-Gestão:</strong> <span class="value" data-k="F46_PROGESTAO"></span></p>
-            <p class="small mt"><strong>4.6.1 (c) Porte ISP-RPPS</strong> <span class="value" data-k="F46_PORTE"></span></p>
-
-            <p class="small mt"><strong>4.6.1 (d) Justificativas (se a não submissão a PAP levar à melhoria da situação):</strong></p>
-            <div id="f46-just-d-area"></div>
-            <p class="small mt"><strong>4.6.1 (d) Documentos (comprobatórios da melhoria):</strong></p>
-            <div id="f46-docs-d-area"></div>
+          <div class="sub-section" id="f46-sub-1">
+            <p class="small"><strong>4.6.1 Declaro ter cumprido as seguintes condições:</strong></p>
+            <p class="label-like">a) Demais critérios que não são objeto do Plano(s) de Ação estão regulares.</p>
+            <ul id="f46-criterios" class="styled-list" data-empty="Não preenchido"></ul>
             
-            <p class="small mt"><strong>4.6.1 (e) Justificativas (caso o ente não tenha se submetido a PAP ):</strong></p>
-            <div id="f46-just-e-area"></div>
-            <p class="small mt"><strong>4.6.1 (e) Documentos (comprobatórios da regularidade):</strong></p>
-            <div id="f46-docs-e-area"></div>
+            <p class="label-like">b) Nível de certificação no Pró-Gestão RPPS</p>
+            <div class="value-block" data-k="F46_PROGESTAO"></div>
+            
+            <p class="label-like">c) Grupo de Porte (ISP-RPPS)</p>
+            <div class="value-block" data-k="F46_PORTE"></div>
+            
+            <p class="label-like">d) Houve melhora na situação financeira e atuarial do RPPS...</p>
+            <p class="label-like nested">Justificativas (item d)</p>
+            <div class="value-block" data-k="F46_JUST_D"></div>
+            <p class="label-like nested">Documentos (item d)</p>
+            <div class="value-block" data-k="F46_DOCS_D"></div>
+            
+            <p class="label-like">e) Medidas de acompanhamento atuarial...</p>
+            <p class="label-like nested">Justificativas (item e)</p>
+            <div class="value-block" data-k="F46_JUST_E"></div>
+            <p class="label-like nested">Documentos (item e)</p>
+            <div class="value-block" data-k="F46_DOCS_E"></div>
           </div>
-          <p class="small mt"><strong>4.6.2 Declarações e informações:</strong></p>
-          <ul id="f46-decls"></ul>
 
-          <p class="small mt"><strong>4.6.2(f) Critérios:</strong></p>
-          <ul id="f462f-criterios"></ul>
-
-          <p class="small mt"><strong>4.6.3 Finalidade do(s) Plano(s) de Ação:</strong></p>
-          <ul id="f46-finalidades"></ul>
-
-          <p class="small mt"><strong>4.6.4 Anexos:</strong></p>
-          <div id="f46-anexos-area"></div>
-
-          <p class="small mt"><strong>4.6.5 Justificativas quanto ao(s) Plano(s) de Ação:</strong></p>
-          <div id="f46-just-planos-area"></div>
-
-          <p class="small mt"><strong>4.6.6 (a) Comprovação do cumprimento do(s) Plano(s) de Ação:</strong></p>
-          <div id="f466-docs-area"></div>
-
-          <p class="small mt"><strong>4.6.6 (b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados:</strong></p>
-          <div id="f466-exec-area"></div>
+          <div class="sub-section" id="f46-sub-2">
+            <p class="small"><strong>4.6.2 Finalidade do(s) Plano(s) de Ação apresentado(s)</strong></p>
+            <ul id="f46-finalidades" class="styled-list" data-empty="Não preenchido"></ul>
+            <ul id="f46-crit-f" class="styled-list nested-list" data-empty="Não preenchido">
+              </ul>
+          </div>
+          
+          <div class="sub-section" id="f46-sub-6">
+            <p class="small"><strong>4.6.6 Em caso de Plano(s) de Ação em execução ou concluído(s):</strong></p>
+            <p class="label-like">a) Comprovação do cumprimento do(s) Plano(s) de Ação (relacione os documentos, um por linha)</p>
+            <div class="value-block" data-k="F466_DOCS"></div>
+            <p class="label-like">b) Descrever sucintamente a execução do(s) Plano(s) de Ação e os resultados alcançados</p>
+            <div class="value-block" data-k="F466_EXEC_RES"></div>
+          </div>
         </div>
 
       </section>
@@ -633,13 +661,6 @@
         return (typeof __NA_ALL__==='function' && __NA_ALL__()) ? __NA_LABEL__() : '—';
       }
 
-      function show(id, v){ const el=document.getElementById(id); if(el) el.hidden=!v; }
-      function showOnlyPhase(code){
-        const ids = { '4.1':'fase-41','4.2':'fase-42','4.3':'fase-43','4.4':'fase-44','4.5':'fase-45','4.6':'fase-46' };
-        Object.values(ids).forEach(id => show(id,false));
-        if (ids[code]) show(ids[code], true);
-      }
-
       // ========= Função principal =========
       function run(payload){
         if (window.__DEBUG_SOLIC_CRP__) {
@@ -714,7 +735,7 @@
 
         // 4) Fase
         let faseSel = String(p.__FASE_SEL__ || p.FASE_PROGRAMA || '').trim();
-        // fallback: tentar deduzir a fase pelos campos presentes no payload
+        // fallback
         if (!faseSel) {
           const has = pref => Object.keys(p||{}).some(k => k.startsWith(pref));
           if      (has('F41_')) faseSel = '4.1';
@@ -724,149 +745,188 @@
           else if (has('F45_')) faseSel = '4.5';
           else if (has('F46_') || has('F462F_')) faseSel = '4.6';
         }
-        showOnlyPhase(faseSel);
-        fillText('FASE_PROGRAMA', faseSel || '—');
-
-        switch (faseSel) {
-          case '4.1': {
-            const ul = document.getElementById('f41-itens');
-            if (ul) {
-              const texto = p.F41_OPCAO_TEXT;
-              ul.innerHTML = texto
-                ? `<li>${escapeHtml(texto)}</li>`
-                : '<li>Não informado</li>';
-            }
-            break;
+        
+        // Oculta APENAS "Fase selecionada:"
+        (function hidePhaseLabel(){
+          const faseTxtEl = document.getElementById('fase-escolhida');
+          if (faseTxtEl && faseTxtEl.parentElement) faseTxtEl.parentElement.hidden = true;
+        })();
+        
+        // Helper para preencher blocos de texto
+        function fillBlock(sel, val) {
+          const el = $(sel);
+          if (!el) return false;
+          const lines = splitLines(val);
+          if (lines.length) {
+            el.innerHTML = lines.map(x => `<p>${escapeHtml(x)}</p>`).join('');
+            return true;
           }
-          case '4.2': {
-            liList('#f42-itens', p.F42_LISTA);
-            break;
-          }
-          case '4.3': {
-            liList('#f43-itens', p.F43_LISTA);
-
-            // 4.3.10 detalhado
-            fillText('F4310_OPCAO', p.F4310_OPCAO);
-            fillText('F4310_LEGISLACAO', p.F4310_LEGISLACAO);
-            fillText('F4310_DOCS', p.F4310_DOCS);
-
-            // F43_JUST (texto livre original)
-            const f43JustEl = document.getElementById('f43-just-texto');
-            if (f43JustEl) f43JustEl.textContent = (p.F43_JUST || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-            
-            // 4.3.11 (A)
-            const f43PlanoEl = document.getElementById('f43-plano');
-            if (f43PlanoEl) f43PlanoEl.textContent = (p.F43_PLANO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-
-            // 4.3.11 (B)
-            const f43PlanoBEl = document.getElementById('f43-plano-b');
-            if (f43PlanoBEl) f43PlanoBEl.textContent = (p.F43_PLANO_B || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-            
-            // 4.3.11 (Descrição dos Plano(s)) - F43_DESC_PLANOS (texto longo)
-            renderParagraphs('#f43-desc-planos-area', p.F43_DESC_PLANOS);
-
-            // 4.3.12 (a) Critérios
-            liList('#f43-incluir', p.F43_INCLUIR);
-            
-            // 4.3.12 (b) Justificativas detalhadas - F4312_JUST (texto longo)
-            renderParagraphs('#f4312-just-area', p.F4312_JUST);
-
-            // 4.3.12 (c) Descrição Planos detalhada - F4312_DESC_PLANOS (texto longo)
-            renderParagraphs('#f4312-desc-planos-area', p.F4312_DESC_PLANOS);
-
-            break;
-          }
-          case '4.4': {
-          liList('#f44-decls', p.F44_DECLS);
-          liList('#f44-finalidades', p.F44_FINALIDADES);
-          liList('#f44-criterios', p.F44_CRITERIOS);
-
-          // 4.4.1(d) Legislação
-          const f441Leg = document.getElementById('f441-legislacao');
-          if (f441Leg) f441Leg.textContent = (p.F441_LEGISLACAO || '') || (__NA_ALL__() ? __NA_LABEL__() : '—');
-
-          // 4.4.4 Anexos (documentos, renderiza como lista)
-          renderListDiv('#f44-anexos', p.F44_ANEXOS);
-
-          // 4.4.5 Descrever sucintamente (texto longo)
-          renderParagraphs('#f445-desc-planos-area', p.F445_DESC_PLANOS);
-
-          // 4.4.6 (a) Documentos (documentos, renderiza como lista)
-          renderListDiv('#f446-docs', p.F446_DOCS);
-
-          // 4.4.6 (b) Execução e resultados (texto longo)
-          renderParagraphs('#f446-exec-area', p.F446_EXEC_RES);
-
-          break;
-          }
-          case '4.5': {
-            liList('#f45-decls', p.F45_DECLS);
-            const d = splitLines(p.F45_DOCS || '');
-            const j = splitLines(p.F45_JUST || '');
-            const e = splitLines(p.F453_EXEC_RES || '');
-            const docsBox = document.getElementById('f45-docs');
-            const justBox = document.getElementById('f45-just');
-            const execBox = document.getElementById('f45-exec');
-            if (docsBox) docsBox.innerHTML = d.length
-              ? '<ul>' + d.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-              : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            if (execBox) execBox.innerHTML = e.length
-              ? '<ul>' + e.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-              : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            if (justBox) justBox.innerHTML = j.length
-              ? '<ul>' + j.map(a => '<li>' + escapeHtml(a) + '</li>').join('') + '</ul>'
-              : `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
-            break;
-          }
-          case '4.6': {
-            // 4.6.1 (a), (b) e (c)
-            liList('#f46-criterios', p.F46_CRITERIOS);
-            fillText('F46_PROGESTAO', p.F46_PROGESTAO);
-            fillText('F46_PORTE', p.F46_PORTE);
-            
-            // 4.6.1 (d) e (e) (textos longos)
-            renderParagraphs('#f46-just-d-area', p.F46_JUST_D);
-            renderListDiv('#f46-docs-d-area', p.F46_DOCS_D); // Documentos: lista
-            renderParagraphs('#f46-just-e-area', p.F46_JUST_E);
-            renderListDiv('#f46-docs-e-area', p.F46_DOCS_E); // Documentos: lista
-
-            // 4.6.2 e 4.6.3 (listas)
-            liList('#f46-decls', p.F46_DECLS);
-            liList('#f462f-criterios', p.F462F_CRITERIOS);
-            liList('#f46-finalidades', p.F46_FINALIDADES);
-
-            // 4.6.4 Anexos (documentos, renderiza como lista)
-            renderListDiv('#f46-anexos-area', p.F46_ANEXOS);
-
-            // 4.6.5 Justificativas (texto longo)
-            renderParagraphs('#f46-just-planos-area', p.F46_JUST_PLANOS);
-
-            // 4.6.6 (a) Documentos (documentos, renderiza como lista)
-            renderListDiv('#f466-docs-area', p.F466_DOCS);
-
-            // 4.6.6 (b) Execução e resultados (texto longo)
-            renderParagraphs('#f466-exec-area', p.F466_EXEC_RES);
-
-            break;
-          }
+          el.innerHTML = `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+          return false;
         }
 
-        // Render genérico de extras da fase ativa
+        // Helper para preencher ULs
+        function fillList(sel, arr) {
+          const el = $(sel);
+          if (!el) return false;
+          const items = asArr(arr);
+          if (items.length) {
+            el.innerHTML = items.map(x=>`<li>${escapeHtml(x)}</li>`).join('');
+            return true;
+          }
+          el.innerHTML = `<li>${escapeHtml(el.getAttribute('data-empty') || (__NA_ALL__() ? __NA_LABEL__() : '—'))}</li>`;
+          return false;
+        }
+
+        // Helper para mostrar/esconder a seção inteira da fase
+        function togglePhaseBlock(id, hasContent) {
+          const el = $(id);
+          if (el) {
+            el.hidden = !hasContent;
+            el.setAttribute('data-empty', hasContent ? 'false' : 'true');
+          }
+        }
+        
+        // --- Processa 4.1 ---
+        (function run41(){
+          const el = $('#f41-itens');
+          if (el) {
+            const texto = (p.F41_OPCAO_CODE || p.F41_OPCAO_TEXT || '').trim();
+            el.innerHTML = texto ? `<li>${escapeHtml(texto)}</li>` : `<li>${escapeHtml(el.getAttribute('data-empty') || '—')}</li>`;
+            togglePhaseBlock('#fase-41', !!texto);
+          }
+        })();
+        
+        // --- Processa 4.2 ---
+        (function run42(){
+          const has = fillList('#f42-itens', p.F42_LISTA);
+          togglePhaseBlock('#fase-42', has);
+        })();
+
+        // --- Processa 4.3 ---
+        (function run43(){
+          let hasContent = false;
+          
+          // 4.3.10
+          const opt4310 = (p.F4310_OPCAO || '').trim().toLowerCase();
+          if (opt4310.startsWith('a')) {
+            show('#f43-opcao-a', true);
+            fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO);
+            hasContent = true;
+          } else if (opt4310.startsWith('b')) {
+            show('#f43-opcao-b', true);
+            fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS);
+            hasContent = true;
+          }
+
+          // 4.3.11
+          const h11_1 = fillList('#f43-incluir-list', p.F43_INCLUIR); // Usa a lista unificada
+          const h11_2 = fillBlock('[data-k="F43_PLANO"]', p.F43_PLANO);
+          if (h11_1 || h11_2) {
+            show('#f43-sub-11', true);
+            hasContent = true;
+          } else {
+            show('#f43-sub-11', false);
+          }
+
+          // 4.3.12
+          const h12_1 = fillList('#f43-incluir-b-list', p.F43_INCLUIR_B);
+          const h12_2 = fillBlock('[data-k="F43_PLANO_B"]', p.F43_PLANO_B);
+          const h12_3 = fillBlock('[data-k="F43_DESC_PLANOS"]', p.F43_DESC_PLANOS);
+          if (h12_1 || h12_2 || h12_3) {
+            show('#f43-sub-12', true);
+            hasContent = true;
+          } else {
+            show('#f43-sub-12', false);
+          }
+
+          togglePhaseBlock('#fase-43', hasContent);
+        })();
+
+        // --- Processa 4.4 ---
+        (function run44(){
+          let hasContent = false;
+          if (fillList('#f44-decls', p.F44_DECLS)) hasContent = true;
+          
+          const hasLeg = (p.F441_LEGISLACAO || '').trim();
+          if (hasLeg) {
+            show('#f44-leg-wrap', true);
+            fillBlock('[data-k="F441_LEGISLACAO"]', p.F441_LEGISLACAO);
+            hasContent = true;
+          }
+
+          if (fillList('#f44-finalidades', p.F44_FINALIDADES)) hasContent = true;
+          if (fillList('#f44-criterios', p.F44_CRITERIOS)) hasContent = true;
+          if (fillBlock('[data-k="F44_ANEXOS"]', p.F44_ANEXOS)) hasContent = true;
+          if (fillBlock('[data-k="F445_DESC_PLANOS"]', p.F445_DESC_PLANOS)) hasContent = true;
+          if (fillBlock('[data-k="F446_DOCS"]', p.F446_DOCS)) hasContent = true;
+          if (fillBlock('[data-k="F446_EXEC_RES"]', p.F446_EXEC_RES)) hasContent = true;
+          
+          togglePhaseBlock('#fase-44', hasContent);
+        })();
+
+        // --- Processa 4.5 ---
+        (function run45(){
+          let hasContent = false;
+          // 4.5.1 é especial
+          const f451 = asArr(p.F45_DECLS).filter(s => s.startsWith('4.5.1'));
+          if (p.F45_OK451 && f451.length === 0) {
+            f451.push('4.5.1 Mantida a regularidade dos critérios exigidos nas fases anteriores.');
+          }
+          if (fillList('#f45-decls', f451)) hasContent = true;
+          
+          if (fillBlock('[data-k="F45_DOCS"]', p.F45_DOCS)) hasContent = true;
+          if (fillBlock('[data-k="F45_JUST"]', p.F45_JUST)) hasContent = true;
+          if (fillBlock('[data-k="F453_EXEC_RES"]', p.F453_EXEC_RES)) hasContent = true;
+          
+          togglePhaseBlock('#fase-45', hasContent);
+        })();
+
+        // --- Processa 4.6 ---
+        (function run46(){
+          let hasContent = false;
+          if (fillList('#f46-criterios', p.F46_CRITERIOS)) hasContent = true;
+          if (fillBlock('[data-k="F46_PROGESTAO"]', p.F46_PROGESTAO)) hasContent = true;
+          if (fillBlock('[data-k="F46_PORTE"]', p.F46_PORTE)) hasContent = true;
+          if (fillBlock('[data-k="F46_JUST_D"]', p.F46_JUST_D)) hasContent = true;
+          if (fillBlock('[data-k="F46_DOCS_D"]', p.F46_DOCS_D)) hasContent = true;
+          if (fillBlock('[data-k="F46_JUST_E"]', p.F46_JUST_E)) hasContent = true;
+          if (fillBlock('[data-k="F46_DOCS_E"]', p.F46_DOCS_E)) hasContent = true;
+
+          // 4.6.2 (f)
+          const f46f = asArr(p.F462F_CRITERIOS);
+          if (fillList('#f46-finalidades', p.F46_FINALIDADES)) hasContent = true;
+          if (fillList('#f46-crit-f', f46f)) hasContent = true;
+          
+          if (fillBlock('[data-k="F466_DOCS"]', p.F466_DOCS)) hasContent = true;
+          if (fillBlock('[data-k="F466_EXEC_RES"]', p.F466_EXEC_RES)) hasContent = true;
+          
+          togglePhaseBlock('#fase-46', hasContent);
+        })();
+        
+        // --- CORREÇÃO: Restaurar renderFaseExtras ---
+        // (Esta função restaura a lógica dos "Campos adicionais" e os esconde se estiverem vazios)
         (function renderFaseExtras(){
           const box = document.getElementById('fase-extra-campos');
-          if (!box) return;
+          const boxLabel = box ? box.previousElementSibling : null; // O <p> "Campos adicionais..."
+          if (!box || !boxLabel) return;
 
           const p = window.__TERMO_DATA__ || {};
           const fase = String(p.__FASE_SEL__ || p.FASE_PROGRAMA || '').trim();
-          if (!fase) { box.innerHTML = '<span class="muted">—</span>'; return; }
+          if (!fase) {
+            boxLabel.hidden = true;
+            box.hidden = true;
+            return;
+          }
 
+          // Lógica original para encontrar campos "fase4_*"
           const prefList = [
             {p:`fase${fase.replace('.','_')}_`},
             {p:`fase${fase.replace('.','-')}-`},
             {p:`fase${fase}_`},
             {p:`f${fase.replace('.','')}_`}
           ];
-          function hasPref(k){ return prefList.some(({p:pre}) => k.startsWith(pre)); }
+          function hasPref(k){ return prefList.some(({p:pre}) => String(k).startsWith(pre)); }
 
           const useNA = (typeof __NA_ALL__ === 'function') ? __NA_ALL__() : true;
           const entries = Object.entries(p)
@@ -880,13 +940,15 @@
               return `<div class="linha"><div class="titulo">${escapeHtml(label)}</div><div class="valor">${htmlVal}</div></div>`;
             });
 
-          box.innerHTML = entries.length ? entries.join('') : (useNA ? `<span class="muted">${escapeHtml(__NA_LABEL__())}</span>` : '');
-        })();
-
-        (function freezeAfterRender(){
-          const prazos = document.querySelectorAll('[data-3_4]');
-          if (prazos.length > 1) {
-            for (let i = 1; i < prazos.length; i++) prazos[i].remove();
+          // Decide se mostra ou esconde o bloco e o rótulo
+          if (entries.length) {
+            box.innerHTML = entries.join('');
+            boxLabel.hidden = false; // Mostra o rótulo
+            box.hidden = false;      // Mostra o bloco
+          } else {
+            box.innerHTML = '';
+            boxLabel.hidden = true; // Esconde o rótulo
+            box.hidden = true;      // Esconde o bloco
           }
         })();
 
@@ -919,14 +981,15 @@
 
         // Garante listas críticas antes do print + FLAG DE PRONTO
         (function ensureListsThenPrint(){
+          // ... (esta função permanece como está, linhas 789-817 originais)
           const fase = String((window.__TERMO_DATA__ && (window.__TERMO_DATA__.__FASE_SEL__ || window.__TERMO_DATA__.FASE_PROGRAMA)) || '').trim();
           const mustByPhase = {
             '4.1': ['#f41-itens'],
             '4.2': ['#f42-itens'],
-            '4.3': ['#f43-itens', '#f4310', '#f43-incluir'],
+            '4.3': ['#f43-incluir-list', '#f43-incluir-b-list'],
             '4.4': ['#f44-criterios', '#f44-decls', '#f44-finalidades'],
             '4.5': ['#f45-decls'],
-            '4.6': ['#f46-decls','#f46-criterios','#f46-finalidades']
+            '4.6': ['#f46-criterios','#f46-finalidades']
           };
           const mustHaveLis = mustByPhase[fase] || [];
           const ok = mustHaveLis.every(sel => {

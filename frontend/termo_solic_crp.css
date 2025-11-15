@@ -270,3 +270,31 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
 
 /* Utilitário para esconder elementos via JS */
 .d-none { display: none !important; }
+
+/* ======================================================================
+   Correção para ocultar elementos desnecessários no PDF (VERSÃO CORRETA)
+   ====================================================================== */
+@media print {
+  /* Oculta "Fase selecionada:" (parágrafo logo após o <h2>) */
+  #sec-fase > p.small:first-of-type {
+    display: none !important;
+  }
+
+  /* Oculta "Campos adicionais desta fase:" (o <p> antes do div) 
+     NOTA: O JS vai decidir se o bloco de campos em si aparece ou não. */
+  #sec-fase > p.small.mt {
+    display: none !important;
+  }
+
+  /* Oculta blocos de fase que permanecerem vazios (após a lógica do JS) */
+  .phase-block[data-empty="true"] {
+    display: none !important;
+  }
+
+  /* Garante que os títulos das subseções não fiquem órfãos */
+  .phase-block h3,
+  .phase-block .sub-title {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+}
