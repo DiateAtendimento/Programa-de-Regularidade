@@ -272,7 +272,7 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
 .d-none { display: none !important; }
 
 /* ======================================================================
-   Correção para ocultar elementos desnecessários no PDF (VERSÃO CORRETA)
+   Correção para ocultar elementos desnecessários no PDF (VERSÃO FINAL)
    ====================================================================== */
 @media print {
   /* Oculta "Fase selecionada:" (parágrafo logo após o <h2>) */
@@ -280,12 +280,11 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
     display: none !important;
   }
 
-  /* Oculta "Campos adicionais desta fase:" (o <p> antes do div) 
-     NOTA: O JS vai decidir se o bloco de campos em si aparece ou não. */
+  /* Oculta "Campos adicionais desta fase:" (o <p> antes do div) */
   #sec-fase > p.small.mt {
     display: none !important;
   }
-
+  
   /* Oculta blocos de fase que permanecerem vazios (após a lógica do JS) */
   .phase-block[data-empty="true"] {
     display: none !important;
@@ -296,5 +295,28 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
   .phase-block .sub-title {
     break-after: avoid-page;
     page-break-after: avoid;
+  }
+
+  /* NOVO: Ajustes para controlar espaçamento e quebras de página (Problema 3) */
+  .term-title,
+  .term-section h2,
+  .term-section h3 {
+    break-after: avoid-page !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Força que o bloco interno da fase tente se manter intacto */
+  .phase-block {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Garante que listas e blocos de valor grandes tentem se manter inteiros */
+  .term-section ul,
+  .term-section ol,
+  .term-section .value-block {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+    margin-top: 0.5em; /* Margem de segurança */
   }
 }

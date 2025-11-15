@@ -761,7 +761,8 @@
             el.innerHTML = lines.map(x => `<p>${escapeHtml(x)}</p>`).join('');
             return true;
           }
-          el.innerHTML = `<span class="muted">${__NA_ALL__() ? escapeHtml(__NA_LABEL__()) : '—'}</span>`;
+          // CORREÇÃO: Preenche com string vazia em vez de "—" para evitar o fallback CSS "Não informado"
+          el.innerHTML = ''; 
           return false;
         }
 
@@ -803,24 +804,41 @@
           togglePhaseBlock('#fase-42', has);
         })();
 
-        // --- Processa 4.3 ---
+        // --- Processa 4.3 (CORRIGIDO: 4.3.1 e 4.3.2) ---
         (function run43(){
           let hasContent = false;
           
+          // NOVO: 4.3.1 (Manutenção de regularidade) - Problema 2
+          const is431Declared = (p.F431_OPCAO === 'SIM' || p.F431_OPCAO === 'Sim' || p.F431_OK);
+          if (is431Declared) {
+             fillBlock('[data-k="F431_OPCAO"]', 'SIM'); 
+             hasContent = true;
+          } else {
+             // Garante que o campo não ative o fallback se não for declarado
+             fillBlock('[data-k="F431_OPCAO"]', ''); 
+          }
+          
+          // NOVO: 4.3.2 (Utilização de recursos) - Problema 2
+          const is432Declared = (p.F432_OPCAO === 'SIM' || p.F432_OPCAO === 'Sim' || p.F432_OK);
+          if (is432Declared) {
+             fillBlock('[data-k="F432_OPCAO"]', 'SIM');
+             hasContent = true;
+          } else {
+             fillBlock('[data-k="F432_OPCAO"]', '');
+          }
+
           // 4.3.10
           const opt4310 = (p.F4310_OPCAO || '').trim().toLowerCase();
           if (opt4310.startsWith('a')) {
             show('#f43-opcao-a', true);
-            fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO);
-            hasContent = true;
+            if (fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO)) hasContent = true;
           } else if (opt4310.startsWith('b')) {
             show('#f43-opcao-b', true);
-            fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS);
-            hasContent = true;
+            if (fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS)) hasContent = true;
           }
-
+          
           // 4.3.11
-          const h11_1 = fillList('#f43-incluir-list', p.F43_INCLUIR); // Usa a lista unificada
+          const h11_1 = fillList('#f43-incluir-list', p.F43_INCLUIR);
           const h11_2 = fillBlock('[data-k="F43_PLANO"]', p.F43_PLANO);
           if (h11_1 || h11_2) {
             show('#f43-sub-11', true);
@@ -840,7 +858,8 @@
             show('#f43-sub-12', false);
           }
 
-          togglePhaseBlock('#fase-43', hasContent);
+          // Se 4.3.1 ou 4.3.2 foram marcados, hasContent deve ser true.
+          togglePhaseBlock('#fase-43', hasContent || is431Declared || is432Declared);
         })();
 
         // --- Processa 4.4 ---
@@ -851,8 +870,7 @@
           const hasLeg = (p.F441_LEGISLACAO || '').trim();
           if (hasLeg) {
             show('#f44-leg-wrap', true);
-            fillBlock('[data-k="F441_LEGISLACAO"]', p.F441_LEGISLACAO);
-            hasContent = true;
+            if (fillBlock('[data-k="F441_LEGISLACAO"]', p.F441_LEGISLACAO)) hasContent = true;
           }
 
           if (fillList('#f44-finalidades', p.F44_FINALIDADES)) hasContent = true;
@@ -885,6 +903,7 @@
         // --- Processa 4.6 ---
         (function run46(){
           let hasContent = false;
+          // O ajuste no fillBlock garante que o "Não informado" não apareça em declarações vazias (Problema 1)
           if (fillList('#f46-criterios', p.F46_CRITERIOS)) hasContent = true;
           if (fillBlock('[data-k="F46_PROGESTAO"]', p.F46_PROGESTAO)) hasContent = true;
           if (fillBlock('[data-k="F46_PORTE"]', p.F46_PORTE)) hasContent = true;
@@ -904,8 +923,7 @@
           togglePhaseBlock('#fase-46', hasContent);
         })();
         
-        // --- CORREÇÃO: Restaurar renderFaseExtras ---
-        // (Esta função restaura a lógica dos "Campos adicionais" e os esconde se estiverem vazios)
+        // --- CORREÇÃO: Restaurar renderFaseExtras (Campos Adicionais) ---
         (function renderFaseExtras(){
           const box = document.getElementById('fase-extra-campos');
           const boxLabel = box ? box.previousElementSibling : null; // O <p> "Campos adicionais..."
@@ -951,10 +969,9 @@
             box.hidden = true;      // Esconde o bloco
           }
         })();
-
+        
         // 5) Justificativas gerais
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || p.justificativas_gerais || '');
-
         // 6) Data/assinaturas
         const preferida = (p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '').trim();
         const resolvida = preferida || hojeBR_robusto();
