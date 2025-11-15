@@ -320,3 +320,51 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
     margin-top: 0.5em; /* Margem de segurança */
   }
 }
+
+/* ======================================================================
+   Ajustes para impressão em PDF (Problemas 2 e 3)
+   ====================================================================== */
+@media print {
+  /* Oculta blocos de fase que permanecerem vazios (após a lógica do JS) */
+  .phase-block[data-empty="true"] {
+    display: none !important;
+  }
+
+  /* Garante que os títulos das subseções não fiquem órfãos (Problema 3) */
+  .phase-block h3,
+  .phase-block .sub-title {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  /* NOVO: Ajustes para controlar espaçamento e quebras de página (Problema 3) */
+  .term-title,
+  .term-section h2,
+  .term-section h3 {
+    break-after: avoid-page !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Força que o bloco interno da fase tente se manter intacto (Problema 3) */
+  .phase-block {
+    /* Prioriza evitar quebras dentro da fase */
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Garante que listas e blocos de valor grandes tentem se manter inteiros (Problema 3) */
+  .term-section ul,
+  .term-section ol,
+  .term-section .value-block {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+    margin-top: 0.5em; /* Margem de segurança */
+  }
+
+  /* --- Correção para o "Não informado" em 4.6.1a e listas (Problema 2) --- */
+  /* Remove o fallback de "Não informado" de elementos de lista vazios que não deveriam ter texto. */
+  .term-section ul:empty::before,
+  .term-section ol:empty::before {
+    content: none !important; /* Desabilita o fallback para UL/OL vazios */
+  }
+}

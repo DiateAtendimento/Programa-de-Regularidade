@@ -761,7 +761,7 @@
             el.innerHTML = lines.map(x => `<p>${escapeHtml(x)}</p>`).join('');
             return true;
           }
-          // CORREÇÃO: Preenche com string vazia em vez de "—" para evitar o fallback CSS "Não informado"
+          // CORREÇÃO (Problema 1 e 2): Garante que o elemento fique vazio em vez de ter "—"
           el.innerHTML = ''; 
           return false;
         }
@@ -775,7 +775,8 @@
             el.innerHTML = items.map(x=>`<li>${escapeHtml(x)}</li>`).join('');
             return true;
           }
-          el.innerHTML = `<li>${escapeHtml(el.getAttribute('data-empty') || (__NA_ALL__() ? __NA_LABEL__() : '—'))}</li>`;
+          // CORREÇÃO (Problema 2): Garante que o UL fique vazio para não acionar o CSS de fallback
+          el.innerHTML = ''; 
           return false;
         }
 
@@ -791,11 +792,12 @@
         // --- Processa 4.1 ---
         (function run41(){
           const el = $('#f41-itens');
+          const texto = (p.F41_OPCAO_CODE || p.F41_OPCAO_TEXT || '').trim();
+          let has = !!texto;
           if (el) {
-            const texto = (p.F41_OPCAO_CODE || p.F41_OPCAO_TEXT || '').trim();
-            el.innerHTML = texto ? `<li>${escapeHtml(texto)}</li>` : `<li>${escapeHtml(el.getAttribute('data-empty') || '—')}</li>`;
-            togglePhaseBlock('#fase-41', !!texto);
+            el.innerHTML = texto ? `<li>${escapeHtml(texto)}</li>` : '';
           }
+          togglePhaseBlock('#fase-41', has);
         })();
         
         // --- Processa 4.2 ---
@@ -804,21 +806,22 @@
           togglePhaseBlock('#fase-42', has);
         })();
 
-        // --- Processa 4.3 (CORRIGIDO: 4.3.1 e 4.3.2) ---
+        // --- Processa 4.3 (CORRIGIDO: 4.3.1, 4.3.2, e a lista de 4.3.3 a 4.3.9) ---
         (function run43(){
           let hasContent = false;
+          const faseEl = $('#fase-43');
+          if (!faseEl) return;
           
-          // NOVO: 4.3.1 (Manutenção de regularidade) - Problema 2
+          // 4.3.1 (Manutenção de regularidade)
           const is431Declared = (p.F431_OPCAO === 'SIM' || p.F431_OPCAO === 'Sim' || p.F431_OK);
           if (is431Declared) {
              fillBlock('[data-k="F431_OPCAO"]', 'SIM'); 
              hasContent = true;
           } else {
-             // Garante que o campo não ative o fallback se não for declarado
              fillBlock('[data-k="F431_OPCAO"]', ''); 
           }
           
-          // NOVO: 4.3.2 (Utilização de recursos) - Problema 2
+          // 4.3.2 (Utilização de recursos)
           const is432Declared = (p.F432_OPCAO === 'SIM' || p.F432_OPCAO === 'Sim' || p.F432_OK);
           if (is432Declared) {
              fillBlock('[data-k="F432_OPCAO"]', 'SIM');
@@ -827,8 +830,40 @@
              fillBlock('[data-k="F432_OPCAO"]', '');
           }
 
+          // NOVO: 4.3.3 a 4.3.9 - Critérios de Regularidade (lista F43_CRITERIOS)
+          const f43Crit = asArr(p.F43_CRITERIOS);
+          if (f43Crit.length > 0) {
+            // Tenta encontrar o wrapper ou injeta-o antes da 4.3.10
+            let critWrap = $('#f43-criterios-wrap');
+            if (!critWrap) {
+               const beforeEl = faseEl.querySelector('.sub-item'); // 4.3.10 é o primeiro .sub-item
+               if (beforeEl) {
+                 const html = `
+                   <div id="f43-criterios-wrap" class="field sub-item">
+                     <h4>4.3.3 a 4.3.9 Critérios declarados regulares ou em análise de regularidade:</h4>
+                     <ul id="f43-criterios-list" class="value-block"></ul>
+                   </div>
+                 `;
+                 beforeEl.insertAdjacentHTML('beforebegin', html);
+                 critWrap = $('#f43-criterios-wrap');
+               }
+            }
+            
+            if (critWrap) {
+              fillList('#f43-criterios-list', f43Crit);
+              critWrap.hidden = false;
+              hasContent = true;
+            }
+          } else {
+            const critWrap = $('#f43-criterios-wrap');
+            if (critWrap) critWrap.hidden = true;
+          }
+
           // 4.3.10
           const opt4310 = (p.F4310_OPCAO || '').trim().toLowerCase();
+          show('#f43-opcao-a', false); // Limpa
+          show('#f43-opcao-b', false); // Limpa
+          
           if (opt4310.startsWith('a')) {
             show('#f43-opcao-a', true);
             if (fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO)) hasContent = true;
@@ -836,7 +871,7 @@
             show('#f43-opcao-b', true);
             if (fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS)) hasContent = true;
           }
-          
+
           // 4.3.11
           const h11_1 = fillList('#f43-incluir-list', p.F43_INCLUIR);
           const h11_2 = fillBlock('[data-k="F43_PLANO"]', p.F43_PLANO);
@@ -857,9 +892,9 @@
           } else {
             show('#f43-sub-12', false);
           }
-
-          // Se 4.3.1 ou 4.3.2 foram marcados, hasContent deve ser true.
-          togglePhaseBlock('#fase-43', hasContent || is431Declared || is432Declared);
+          
+          // Se qualquer sub-item (4.3.1, 4.3.2, a nova lista, 4.3.10, 4.3.11 ou 4.3.12) tiver conteúdo, a fase é mostrada
+          togglePhaseBlock('#fase-43', hasContent || is431Declared || is432Declared || f43Crit.length > 0);
         })();
 
         // --- Processa 4.4 ---
@@ -871,6 +906,9 @@
           if (hasLeg) {
             show('#f44-leg-wrap', true);
             if (fillBlock('[data-k="F441_LEGISLACAO"]', p.F441_LEGISLACAO)) hasContent = true;
+          } else {
+            show('#f44-leg-wrap', false);
+            fillBlock('[data-k="F441_LEGISLACAO"]', ''); // Limpa o campo
           }
 
           if (fillList('#f44-finalidades', p.F44_FINALIDADES)) hasContent = true;
@@ -903,16 +941,24 @@
         // --- Processa 4.6 ---
         (function run46(){
           let hasContent = false;
-          // O ajuste no fillBlock garante que o "Não informado" não apareça em declarações vazias (Problema 1)
+          // 4.6.1 a) Demais critérios... (O ajuste no fillBlock e fillList evita o "Não informado")
           if (fillList('#f46-criterios', p.F46_CRITERIOS)) hasContent = true;
+          
+          // 4.6.1 b) Nível de certificação
           if (fillBlock('[data-k="F46_PROGESTAO"]', p.F46_PROGESTAO)) hasContent = true;
+
+          // 4.6.1 c) Grupo de Porte
           if (fillBlock('[data-k="F46_PORTE"]', p.F46_PORTE)) hasContent = true;
+
+          // 4.6.1 d) Justificativas e Documentos
           if (fillBlock('[data-k="F46_JUST_D"]', p.F46_JUST_D)) hasContent = true;
           if (fillBlock('[data-k="F46_DOCS_D"]', p.F46_DOCS_D)) hasContent = true;
+          
+          // 4.6.1 e) Justificativas e Documentos
           if (fillBlock('[data-k="F46_JUST_E"]', p.F46_JUST_E)) hasContent = true;
           if (fillBlock('[data-k="F46_DOCS_E"]', p.F46_DOCS_E)) hasContent = true;
 
-          // 4.6.2 (f)
+          // 4.6.2 (finais)
           const f46f = asArr(p.F462F_CRITERIOS);
           if (fillList('#f46-finalidades', p.F46_FINALIDADES)) hasContent = true;
           if (fillList('#f46-crit-f', f46f)) hasContent = true;
@@ -972,6 +1018,7 @@
         
         // 5) Justificativas gerais
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || p.justificativas_gerais || '');
+        
         // 6) Data/assinaturas
         const preferida = (p.DATA_TERMO_GERADO || p.DATA || p.DATA_SOLIC_GERADA || '').trim();
         const resolvida = preferida || hojeBR_robusto();
