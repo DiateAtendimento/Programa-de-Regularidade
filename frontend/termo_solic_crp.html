@@ -153,6 +153,43 @@
             <p class="small"><strong>4.3.2 Regularidade quanto à utilização de recursos previdenciários:</strong></p>
             <ul id="f43-itens-2" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
+
+          <div class="sub-section" id="f43-sub-3">
+            <p class="small"><strong>4.3.3 Regularidade quanto à aplicação dos recursos previdenciários no mercado financeiro:</strong></p>
+            <ul id="f43-itens-3" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-4">
+            <p class="small"><strong>4.3.4 Regularidade quanto aos limites de contribuição (EC 103/2019 e Lei 9.717/1998):</strong></p>
+            <ul id="f43-itens-4" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-5">
+            <p class="small"><strong>4.3.5 Regularidade quanto à limitação do rol de benefícios (EC 103/2019):</strong></p>
+            <ul id="f43-itens-5" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-6">
+            <p class="small"><strong>4.3.6 Regularidade quanto à instituição por lei do Regime de Previdência Complementar – RPC:</strong></p>
+            <ul id="f43-itens-6" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-7">
+            <p class="small"><strong>4.3.7 Regularidade quanto ao envio de dados e informações do RPPS:</strong></p>
+            <ul id="f43-itens-7" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-8">
+            <p class="small"><strong>4.3.8 Regularidade quanto à operacionalização da compensação previdenciária:</strong></p>
+            <ul id="f43-itens-8" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-9">
+            <p class="small"><strong>4.3.9 Regularidade quanto aos requisitos dos dirigentes e colegiados (art. 8º-B da Lei 9.717/1998):</strong></p>
+            <ul id="f43-itens-9" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+
+
           
           <div class="sub-section" id="f43-sub-10">
             <p class="small"><strong>4.3.10 – Em relação à adequação das regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</strong></p>
@@ -820,6 +857,27 @@
           } else {
              fillBlock('[data-k="F431_OPCAO"]', ''); 
           }
+
+          // 4.3.3 (Aplicações Financeiras)
+          if (fillList('#f43-itens-3', p.F43_LISTA_3)) hasContent = true;
+
+          // 4.3.4 (Limites de Contribuição)
+          if (fillList('#f43-itens-4', p.F43_LISTA_4)) hasContent = true;
+
+          // 4.3.5 (Rol de Benefícios)
+          if (fillList('#f43-itens-5', p.F43_LISTA_5)) hasContent = true;
+
+          // 4.3.6 (RPC)
+          if (fillList('#f43-itens-6', p.F43_LISTA_6)) hasContent = true;
+
+          // 4.3.7 (Envio de Dados/Informações)
+          if (fillList('#f43-itens-7', p.F43_LISTA_7)) hasContent = true;
+
+          // 4.3.8 (Compensação Previdenciária)
+          if (fillList('#f43-itens-8', p.F43_LISTA_8)) hasContent = true;
+
+          // 4.3.9 (Requisitos Dirigentes/Colegiados)
+          if (fillList('#f43-itens-9', p.F43_LISTA_9)) hasContent = true;
           
           // 4.3.2 (Utilização de recursos)
           const is432Declared = (p.F432_OPCAO === 'SIM' || p.F432_OPCAO === 'Sim' || p.F432_OK);

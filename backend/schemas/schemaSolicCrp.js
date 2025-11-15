@@ -125,12 +125,21 @@ export const schemaSolicCrp = z
     // 4.2
     F42_LISTA: zArrStr, // lista a–i (labels livres)
 
+    F43_LISTA_3: zArrStr, // 4.3.3 Aplicações Financeiras
+    F43_LISTA_4: zArrStr, // 4.3.4 Limites de Contribuição
+    F43_LISTA_5: zArrStr, // 4.3.5 Rol de Benefícios
+    F43_LISTA_6: zArrStr, // 4.3.6 RPC
+    F43_LISTA_7: zArrStr, // 4.3.7 Envio de Dados/Informações
+    F43_LISTA_8: zArrStr, // 4.3.8 Compensação Previdenciária
+    F43_LISTA_9: zArrStr, // 4.3.9 Requisitos Dirigentes/Colegiados
+
     // 4.3 — blocos padrão
     F43_LISTA: zArrStr,
     F43_JUST: zStr,
     F43_PLANO: zStr, // 4.3.11 — Inclusões sugeridas
     F43_PLANO_B: zStr, // compat
     F43_DESC_PLANOS: zStr, // compat
+    
     F4310_OPCAO: z.enum(["A", "B"]).optional().or(z.literal("")).default(""),
     F4310_LEGISLACAO: zStr,
     F4310_DOCS: zStr,
