@@ -2760,6 +2760,20 @@ function syncF46ToTemplate(){
       payload = buildPayload(); 
       collectFase4IntoPayload(payload);
 
+      // Lista dos campos críticos da Fase 4.6 que podem vir faltando (undefined)
+      // F46_SITUACAO e F46_DATA_SITUACAO são deduzidos como obrigatórios pelo schema
+      const F46_CONDICIONAIS = ['F46_SITUACAO', 'F46_DATA_SITUACAO', 'F46_PORTE'];
+
+      // Se a FASE_PROGRAMA for 4.6 (o foco da validação condicional)
+      if (payload?.FASE_PROGRAMA === '4.6') {
+          F46_CONDICIONAIS.forEach(field => {
+              // Se o campo estiver faltando (undefined) ou for nulo, forçar string vazia
+              if (payload[field] === undefined || payload[field] === null) {
+                  payload[field] = '';
+              }
+          });
+      }
+
       if (window.__DEBUG_SOLIC_CRP__) {
         try {
           console.log('[solic_crp] buildPayload() (PDF) →', JSON.stringify(payload, null, 2));
