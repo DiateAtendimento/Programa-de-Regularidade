@@ -2740,22 +2740,25 @@ function syncF46ToTemplate(){
   }
 
   /* ========= Ações: Gerar & Submit ========= */
-  let gerarBusy=false;
+  let gerarBusy = false;
   el.btnGerar?.addEventListener('click', async () => {
     if (gerarBusy) return;
     if (!validarCamposBasicos()) return;
     const vf = validarFaseSelecionada();
     if (!vf.ok) { showAtencao([vf.motivo]); return; }
 
-    gerarBusy = true; 
+    gerarBusy = true;
     el.btnGerar.disabled = true;
+
+    // 1. DECLARAÇÃO: Mover 'payload' para fora do bloco try
+    let payload = null; 
 
     try {
       fillNowHiddenFields();
-      const payload = buildPayload();
+      
+      // 2. ATRIBUIÇÃO: Agora apenas atribui o valor (sem 'const')
+      payload = buildPayload(); 
       collectFase4IntoPayload(payload);
-
-
 
       if (window.__DEBUG_SOLIC_CRP__) {
         try {
@@ -2782,8 +2785,11 @@ function syncF46ToTemplate(){
     } catch (e) {
       bootstrap.Modal.getOrCreateInstance($('#modalGerandoPdf')).hide();
       showErro(friendlyErrorMessages(e, 'Não foi possível gerar o PDF.'));
-      // fallback: abre o preview em nova aba com os dados já preenchidos
-      openPreviewWindow(payload);
+      
+      // ✅ CORRIGIDO: Agora 'payload' está acessível no catch
+      if (payload) {
+        openPreviewWindow(payload);
+      }
     } finally {
       el.btnGerar.disabled = false;
       gerarBusy = false;
