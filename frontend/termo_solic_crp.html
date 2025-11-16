@@ -456,9 +456,32 @@
         }
       }
 
+      // Helper simples para preencher valor em um seletor (usado em 4.3.11, 4.3.12)
+      function fillValue(sel, val) {
+        const el = $(sel);
+        if (!el) return false;
+        const s = String(val || '').trim();
+        if (s) {
+          // Renderiza preservando quebras de linha
+          el.innerHTML = s.replace(/\r?\n/g, '<br>');
+          return true;
+        }
+        // Garante que o elemento fique vazio se não houver valor
+        el.innerHTML = ''; 
+        return false;
+      }
+
       function asYes(v){ return ['sim','s','true','1','yes','y'].includes(String(v ?? '').trim().toLowerCase()); }
 
       function asNo(v){  return ['nao','não','n','false','0','no'].includes(String(v ?? '').trim().toLowerCase()); }
+
+      function show(sel, visible) {
+        const el = $(sel);
+        if (el) {
+          el.hidden = !visible;
+          el.style.display = visible ? '' : 'none';
+        }
+      }
 
       /* ===== Normalização do payload ===== */
       function normalizePayload(p0){
@@ -840,104 +863,70 @@
         })();
 
         (function run43(){
-            let hasContent = false;
-            const faseEl = $('#fase-43');
-            if (!faseEl) return;
-            
-            // As opções SIM/NÃO (F431_OPCAO, F432_OPCAO) são legadas e raramente usadas
-            // no termo final. Mantemos a flag hasContent, mas removemos o fillBlock
-            // que tentava preencher um elemento de forma incorreta.
-            const is431Declared = (p.F431_OPCAO === 'SIM' || p.F431_OPCAO === 'Sim' || p.F431_OK);
-            if (is431Declared) {
-                // fillBlock('[data-k="F431_OPCAO"]', 'SIM'); // Removido: Usamos apenas as listas
-                hasContent = true;
-            }
+          let hasContent = false;
+          const faseEl = $('#fase-43');
+          if (!faseEl) return;
+          
+          // 4.3.1 a 4.3.9 (O JS do form envia tudo em 'F43_LISTA')
+          // Vamos dividir a lista por seção, com base no texto
+          const allItens = asArr(p.F43_LISTA);
+          
+          const filterList = (keys) => allItens.filter(item => {
+            const lowItem = (item || '').toLowerCase();
+            return keys.some(k => lowItem.includes(k));
+          });
 
-            const is432Declared = (p.F432_OPCAO === 'SIM' || p.F432_OPCAO === 'Sim' || p.F432_OK);
-            if (is432Declared) {
-                // fillBlock('[data-k="F432_OPCAO"]', 'SIM'); // Removido: Usamos apenas as listas
-                hasContent = true;
-            }
-            
-            // 4.3.1 (Manutenção de regularidade) - Lista
-            if (fillList('#f43-itens-1', p.F43_LISTA_1)) hasContent = true;
-            
-            // 4.3.2 (Utilização de recursos) - Lista
-            if (fillList('#f43-itens-2', p.F43_LISTA_2)) hasContent = true;
+          // Distribui a lista única nos 9 ULs corretos
+          if (fillList('#f43-itens-1', filterList(['dipr', 'caráter contributivo', 'repasse', 'aportes', 'parcelamento']))) hasContent = true;
+          if (fillList('#f43-itens-2', filterList(['utilização dos recursos']))) hasContent = true;
+          if (fillList('#f43-itens-3', filterList(['aplicações financeiras', 'dair', 'dpin']))) hasContent = true;
+          if (fillList('#f43-itens-4', filterList(['limites de contribuição']))) hasContent = true;
+          if (fillList('#f43-itens-5', filterList(['rol de benefícios', 'plano de benefícios']))) hasContent = true;
+          if (fillList('#f43-itens-6', filterList(['previdência complementar', 'rpc']))) hasContent = true;
+          if (fillList('#f43-itens-7', filterList(['envio de dados', 'solicitação de legislação', 'atendimento à fiscalização', 'nta', 'draa', 'msc', 'esocial']))) hasContent = true;
+          if (fillList('#f43-itens-8', filterList(['compensação previdenciária']))) hasContent = true;
+          if (fillList('#f43-itens-9', filterList(['requisitos dos dirigentes', 'colegiados', 'art. 8º-b']))) hasContent = true;
 
-            // 4.3.3 (Aplicações Financeiras)
-            if (fillList('#f43-itens-3', p.F43_LISTA_3)) hasContent = true;
+          // 4.3.10
+          const opt4310 = (p.F4310_OPCAO || '').trim().toLowerCase();
+          // O form envia "a) Foram adotadas..." ou "b) Comprovamos..."
+          const optA = opt4310.startsWith('a');
+          const optB = opt4310.startsWith('b');
+          
+          show('#f43-opcao-a', optA);
+          show('#f43-opcao-b', optB);
+          
+          if (optA && fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO)) hasContent = true;
+          if (optB && fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS)) hasContent = true;
+          // Mostra a seção se 'a' ou 'b' foi selecionado, mesmo que o texto esteja vazio
+          if (optA || optB) hasContent = true; 
 
-            // 4.3.4 (Limites de Contribuição)
-            if (fillList('#f43-itens-4', p.F43_LISTA_4)) hasContent = true;
+          // 4.3.11 (Lê p.F43_INCLUIR e p.F43_PLANO)
+          const h11_1 = fillList('#f43-crit-incluir', p.F43_INCLUIR);
+          const h11_2 = fillValue('#f43-just-11', p.F43_PLANO); // CORRIGIDO: p.F43_PLANO
+          
+          if (h11_1 || h11_2) {
+              show('#f43-sub-11', true);
+              hasContent = true;
+          } else {
+              show('#f43-sub-11', false);
+          }
 
-            // 4.3.5 (Rol de Benefícios)
-            if (fillList('#f43-itens-5', p.F43_LISTA_5)) hasContent = true;
-
-            // 4.3.6 (RPC)
-            if (fillList('#f43-itens-6', p.F43_LISTA_6)) hasContent = true;
-
-            // 4.3.7 (Envio de Dados/Informações)
-            if (fillList('#f43-itens-7', p.F43_LISTA_7)) hasContent = true;
-
-            // 4.3.8 (Compensação Previdenciária)
-            if (fillList('#f43-itens-8', p.F43_LISTA_8)) hasContent = true;
-
-            // 4.3.9 (Requisitos Dirigentes/Colegiados)
-            if (fillList('#f43-itens-9', p.F43_LISTA_9)) hasContent = true;
-
-            // Legacy: 4.3.3 a 4.3.9 Critérios de Regularidade (lista consolidada de compatibilidade)
-            // O bloco de injeção dinâmica foi removido, mas usamos a variável f43Crit para 4.3.11.
-            const f43Crit = asArr(p.F43_LISTA_CRITERIOS || p.F43_CRITERIOS);
-
-            // 4.3.10
-            const opt4310 = (p.F4310_OPCAO || '').trim().toLowerCase();
-            show('#f43-opcao-a', false); // Limpa
-            show('#f43-opcao-b', false); // Limpa
-            
-            if (opt4310.startsWith('a')) {
-                show('#f43-opcao-a', true);
-                if (fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO)) hasContent = true;
-            } else if (opt4310.startsWith('b')) {
-                show('#f43-opcao-b', true);
-                if (fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS)) hasContent = true;
-            }
-
-            // 4.3.11
-            // a) Lista de Critérios a Incluir (usa o campo legado F43_INCLUIR ou F43_LISTA_CRITERIOS)
-            const h11_1 = fillList('#f43-crit-incluir', f43Crit);
-            
-            // b) Justificativas/Informações (usa F43_JUST)
-            const h11_2 = fillValue('#f43-just-11', p.F43_JUST); // CORRIGIDO
-            
-            if (h11_1 || h11_2) {
-                show('#f43-sub-11', true);
-                hasContent = true;
-            } else {
-                show('#f43-sub-11', false);
-            }
-
-            // 4.3.12
-            // a) Lista de Critérios a Incluir
-            const h12_1 = fillList('#f43-crit-incluir-12', p.F43_INCLUIR_B || p.F4312_INCLUIR); // CORRIGIDO ID
-
-            // b) Justificativas/informações
-            const h12_2 = fillValue('#f43-just-12', p.F4312_JUST); // CORRIGIDO
-            
-            // c) Descrever Plano(s) de Ação
-            const h12_3 = fillValue('#f43-desc-planos-12', p.F43_DESC_PLANOS); // CORRIGIDO
-            
-            if (h12_1 || h12_2 || h12_3) {
-                show('#f43-sub-12', true);
-                hasContent = true;
-            } else {
-                show('#f43-sub-12', false);
-            }
-            
-            // Se qualquer sub-item (4.3.1, 4.3.2, listas, 4.3.10, 4.3.11 ou 4.3.12) tiver conteúdo, a fase é mostrada
-            togglePhaseBlock('#fase-43', hasContent || is431Declared || is432Declared || f43Crit.length > 0);
+          // 4.3.12 (Lê p.F43_INCLUIR_B, p.F43_PLANO_B, p.F43_DESC_PLANOS)
+          const h12_1 = fillList('#f43-crit-incluir-12', p.F43_INCLUIR_B);
+          const h12_2 = fillValue('#f43-just-12', p.F43_PLANO_B); // CORRIGIDO: p.F43_PLANO_B
+          const h12_3 = fillValue('#f43-desc-planos-12', p.F43_DESC_PLANOS); // CORRIGIDO: p.F43_DESC_PLANOS
+          
+          if (h12_1 || h12_2 || h12_3) {
+              show('#f43-sub-12', true);
+              hasContent = true;
+          } else {
+              show('#f43-sub-12', false);
+          }
+          
+          // Se qualquer sub-item tiver conteúdo, a fase é mostrada
+          togglePhaseBlock('#fase-43', hasContent);
         })();
-
         // --- Processa 4.4 ---
         (function run44(){
           let hasContent = false;
