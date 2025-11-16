@@ -2576,13 +2576,23 @@ function syncF46ToTemplate(){
     //    4.2
     payload.F42_LISTA = payload['F42_ITENS[]'] || payload.F42_LISTA || [];
     payload.F42_LISTA_TXT = makeText(payload.F42_LISTA);
+
     //    4.3
     payload.F43_LISTA = payload['F43_ITENS[]'] || payload.F43_LISTA || [];
     payload.F43_LISTA_TXT = makeText(payload.F43_LISTA);
-    payload.F43_INCLUIR = payload['F43_INCLUIR[]'] || payload.F43_INCLUIR || [];
-    payload.F43_INCLUIR_TXT = makeText(payload.F43_INCLUIR);
+
+    // F43_INCLUIR → sempre STRING para casar com o Joi do backend
+    const f43InclArrRaw = payload['F43_INCLUIR[]'] || payload.F43_INCLUIR || [];
+    const f43InclArr = Array.isArray(f43InclArrRaw)
+      ? f43InclArrRaw.filter(Boolean)
+      : (f43InclArrRaw ? [String(f43InclArrRaw)] : []);
+
+    payload.F43_INCLUIR = f43InclArr.length ? f43InclArr.join('; ') : '';
+    payload.F43_INCLUIR_TXT = payload.F43_INCLUIR;
+
     //    4.4
     payload.F44_LISTA_CRITERIOS = payload['F44_CRITERIOS[]'] || payload.F44_LISTA_CRITERIOS || [];
+
     payload.F44_LISTA_CRITERIOS_TXT = makeText(payload.F44_LISTA_CRITERIOS);
 
     // Sublistas de finalidades 4.4.x / 4.5 / 4.6 (usadas nos espelhos)
