@@ -2674,6 +2674,15 @@ function syncF46ToTemplate(){
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
   async function gerarBaixarPDF(payload){
     stashPayloadForPreview(payload);
+
+    // Garantia extra para a 4.3.11 e 4.3.12 no PDF
+    if (Array.isArray(payload['F43_INCLUIR[]']) && !payload.F43_INCLUIR) {
+      payload.F43_INCLUIR = payload['F43_INCLUIR[]'].join('; ');
+    }
+    if (Array.isArray(payload['F43_INCLUIR_B[]']) && !payload.F43_INCLUIR_B) {
+      payload.F43_INCLUIR_B = payload['F43_INCLUIR_B[]'].join('; ');
+    }
+
     const payloadForPdf = {
       ...payload,
       ...makeSolicCrpCompatFields(payload),

@@ -694,6 +694,17 @@
         if (!p.F42_LISTA?.length) p.F42_LISTA = _split(p.REGULARIZACAO_PENDEN_ADMINISTRATIVA || p.reg_penden_admin || '');
         if (!p.F43_LISTA?.length) p.F43_LISTA = _split(p.DEFICIT_ATUARIAL || p.deficit_atuarial || '');
         if (!p.F44_CRITERIOS?.length) p.F44_CRITERIOS = _split(p.CRITERIOS_ESTRUT_ESTABELECIDOS || p.criterios_estrut || '');
+        
+        // Compat extra 4.3 – se vier só como F43_LISTA[] / F43_ITENS[]
+        if (!p.F43_LISTA || !p.F43_LISTA.length) {
+          let arr43 = [];
+          if (Array.isArray(p['F43_LISTA[]']))      arr43 = p['F43_LISTA[]'];
+          else if (Array.isArray(p['F43_ITENS[]'])) arr43 = p['F43_ITENS[]'];
+          else if (Array.isArray(p.F43_ITENS))      arr43 = p.F43_ITENS;
+          p.F43_LISTA = arr43;
+        }
+
+        
         if (!p.F46_CRITERIOS?.length) p.F46_CRITERIOS = _split(p.MANUTENCAO_CONFORMIDADE_NORMAS_GERAIS || p.man_conformidade || '');
 
         return p;
