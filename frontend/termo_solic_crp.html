@@ -405,7 +405,7 @@
               if (Array.isArray(j)) return j.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
             } catch(_) {}
           }
-          return s.split(/,\s*|\n+/).map(s=>s.trim()).filter(Boolean);
+          return s.split(/,\s*|\n+|;/).map(s=>s.trim()).filter(Boolean);
         }
         return [String(v)].filter(Boolean);
       }
@@ -424,8 +424,7 @@
           ul.innerHTML = useNA ? `<li>${escapeHtml(emptyMsg)}</li>` : '';
         }
       }
-
-      /* ... código omitido de liList ... */
+      fillList = liList;
 
       // Nova função para renderizar textos longos, preservando quebras de linha
       function renderParagraphs(sel, s){
@@ -441,6 +440,8 @@
           el.innerHTML = useNA ? `<span class="muted">${escapeHtml(__NA_LABEL__())}</span>` : '—';
         }
       }
+
+      fillBlock = renderParagraphs;
 
       // Função para renderizar documentos/listas em div/ul/li (similar ao original)
       function renderListDiv(sel, arr){
@@ -629,8 +630,7 @@
         p.F42_LISTA = asArr(p.F42_LISTA || p.f42_itens || p.fase42_itens || p['F42_ITENS[]'] || '');
         p.F43_LISTA = asArr(p.F43_LISTA || p.f43_itens || p.fase43_itens || p['F43_ITENS[]'] || '');
         p.F43_INCLUIR_B = asArr(p.F43_INCLUIR_B || p['F43_INCLUIR_B[]'] || ''); // Novo campo 4.3.12
-        p.F43_INCLUIR = Array.from(new Set([...asArr(p.F43_INCLUIR || p['F43_INCLUIR[]']), ...p.F43_INCLUIR_B])); // Unifica 4.3.11 e 4.3.12
-
+        p.F43_INCLUIR = asArr(p.F43_INCLUIR || p['F43_INCLUIR[]']); // NÃO unificar, manter separado
         p.F44_CRITERIOS = asArr(p.F44_CRITERIOS || p.f44_criterios || p.fase44_criterios || p['F44_CRITERIOS[]'] || '');
         p.F44_DECLS = asArr(p.F44_DECLS || p['F44_DECLS[]'] || p['F44_CONDICOES[]'] || p.f44_decls || '');
         p.F44_FINALIDADES = asArr(p.F44_FINALIDADES || p.f44_finalidades || p.fase44_finalidades || p['F44_FINALIDADES[]'] || '');

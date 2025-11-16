@@ -156,12 +156,8 @@ export const schemaSolicCrp = z
     F4310_OPCAO: z.enum(["A", "B"]).optional().or(z.literal("")).default(""),
     F4310_LEGISLACAO: zStr,
     F4310_DOCS: zStr,
-    F43_INCLUIR: zArrStr, // 4.3.12(a) — critérios a incluir (separado do bloco “sugeridas”)
-    // 4.3.12 — campos explícitos (pedido do usuário)
-    F4312_INCLUIR: zArrStr,        // (a) Critérios do extrato que precisará incluir em Plano de Ação
-    F4312_JUST: zStr,              // (b) Justificativas/informações relativas à solicitação de inclusão
-    F4312_DESC_PLANOS: zStr,       // (c) Descrever sucintamente o(s) Plano(s) de Ação apresentado(s)
-
+    F43_INCLUIR: zStr, // 4.3.11(a) — critérios a incluir (enviado como string)    // 4.3.12 — campos explícitos (pedido do usuário)
+    F43_INCLUIR_B: zStr,           
     // 4.4
     F44_CRITERIOS: zArrStr,        // lista 1..22 (labels livres)
     F44_DECLS: zArrStr,

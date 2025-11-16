@@ -1431,6 +1431,14 @@ const schemaTermoSolicPdf = Joi.object({
   F43_LISTA: Joi.array().items(Joi.string()).optional(),
   F43_JUST: Joi.string().allow(''),
   F43_PLANO: Joi.string().allow(''),
+  F43_INCLUIR: Joi.string().allow(''),
+  F43_PLANO_B: Joi.string().allow(''),
+  F43_INCLUIR_B: Joi.string().allow(''),
+  F43_DESC_PLANOS: Joi.string().allow(''),
+  F4310_OPCAO: Joi.string().allow(''),
+  F4310_LEGISLACAO: Joi.string().allow(''),
+  F4310_DOCS: Joi.string().allow(''),
+
   F44_CRITERIOS: Joi.array().items(Joi.string()).optional(),
   F44_DECLS: Joi.array().items(Joi.string()).optional(),
   F44_FINALIDADES: Joi.array().items(Joi.string()).optional(),
@@ -1512,6 +1520,9 @@ const schemaSolicCrp = Joi.object({
   F4310_DOCS: Joi.string().allow(''),
   F43_INCLUIR: Joi.string().allow(''),
   F43_DESC_PLANOS: Joi.string().allow(''),
+
+  F43_PLANO_B: Joi.string().allow(''),
+  F43_INCLUIR_B: Joi.string().allow(''),
 
   // 4.4 – Declarações/criterios/finalidades/anexos
   F44_CRITERIOS: Joi.array().items(Joi.string()).optional(),
