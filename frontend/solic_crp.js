@@ -2541,6 +2541,73 @@ function syncF46ToTemplate(){
       payload[k] = arr;
     }
 
+    /* ---------------------- Fase 4.3 – Critérios de Irregularidade (NOVO) ---------------------- */
+    const F43_CRITERIOS = []; // NOVO: Array para armazenar P/R da Fase 4.3 para o PDF
+
+    el.fase43?.querySelectorAll('input[type="checkbox"]:checked, input[type="radio"]:checked, textarea')
+      .forEach(input => {
+        const isRadioOrCheck = ['checkbox', 'radio'].includes(input.type);
+        const isTextarea = input.tagName === 'TEXTAREA';
+        const isSelect = input.tagName === 'SELECT';
+        const labelEl = isRadioOrCheck ? input.closest('.form-check')?.querySelector('label') : null;
+        const textLabelEl = isTextarea ? input.closest('.form-group')?.querySelector('label') : null;
+
+        let pergunta = '';
+        let resposta = '';
+
+        if (isRadioOrCheck) {
+          // Para checkboxes e radios, a pergunta é o texto da label.
+          pergunta = (labelEl?.textContent || input.name).trim().replace(/\s*[\(\[].*?[\)\]]\s*$/, '').trim();
+          resposta = input.value || pergunta; // O valor é a própria pergunta se não tiver um valor específico
+
+          // Tratamento especial para o subgrupo 4.3.12 (campos condicionais)
+          if (input.name === 'F4312_INCLUIR' && input.value === 'SIM') {
+            // Se F4312_INCLUIR é SIM, inclui as perguntas e respostas (b) e (c)
+            const justInput = el.fase43?.querySelector('[name="F4312_JUST"]');
+            const planosInput = el.fase43?.querySelector('[name="F4312_DESC_PLANOS"]');
+
+            if (justInput && justInput.value.trim()) {
+              F43_CRITERIOS.push({
+                pergunta: el.fase43.querySelector('label[for="F4312_JUST"]')?.textContent.trim() || 'Justificativa para inclusão de critérios',
+                resposta: justInput.value.trim()
+              });
+            }
+            if (planosInput && planosInput.value.trim()) {
+              F43_CRITERIOS.push({
+                pergunta: el.fase43.querySelector('label[for="F4312_DESC_PLANOS"]')?.textContent.trim() || 'Descrição sucinta do(s) Plano(s) de Ação apresentado(s)',
+                resposta: planosInput.value.trim()
+              });
+            }
+          }
+
+        } else if (isTextarea || isSelect) {
+          // Para textareas, a pergunta é o texto da label. A resposta é o valor.
+          pergunta = (textLabelEl?.textContent || input.id).trim().replace(/\s*[\(\[].*?[\)\]]\s*$/, '').trim();
+          resposta = input.value.trim();
+          if (!resposta) return; // Ignora campos de texto vazios
+        } else {
+          return; // Ignora outros tipos de input
+        }
+
+        // NOVO: Coleta a pergunta e resposta, mas antes remove duplicatas (se for checkbox/radio)
+        const existing = F43_CRITERIOS.findIndex(c => c.pergunta === pergunta);
+        if (existing !== -1) {
+          // Agrupa múltiplas respostas (ex: Teste | Teste)
+          F43_CRITERIOS[existing].resposta = `${F43_CRITERIOS[existing].resposta} | ${resposta}`;
+        } else {
+          F43_CRITERIOS.push({ pergunta, resposta });
+        }
+
+        // console.log(`Pergunta: ${pergunta}\nResposta(s): ${resposta}`); // Manter o log de debug, se quiser.
+      });
+
+  // NOVO: Adiciona a lista de critérios ao payload
+  payload.F43_CRITERIOS = F43_CRITERIOS;
+
+  // Garantir que os campos 4.3.12 (que são textarea/input text) sejam passados para o back-end/validação Joi se existirem
+  payload.F4312_JUST = el.fase43?.querySelector('[name="F4312_JUST"]')?.value.trim() || '';
+  payload.F4312_DESC_PLANOS = el.fase43?.querySelector('[name="F4312_DESC_PLANOS"]')?.value.trim() || '';
+
     // 2) Compatibilidades / variações usadas no HTML
     //    (garantir que os aliases existam, mesmo que sob nomes alternativos no form)
     const alias = (prim, ...alts) => {
