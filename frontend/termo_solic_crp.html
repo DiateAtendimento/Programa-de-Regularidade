@@ -1211,14 +1211,14 @@
         if (typeof v === 'string') {
           const s = v.trim();
           if (!s) return [];
-          // Tenta JSON primeiro
+          // Tenta JSON primeiro (caso venha stringified)
           if ((s.startsWith('[') && s.endsWith(']'))) {
             try {
               const j = JSON.parse(s);
               if (Array.isArray(j)) return j.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
             } catch(_) {}
           }
-          // Separa por ponto-e-vírgula (prioridade) ou quebra de linha. Evita separar por vírgula simples para não quebrar frases.
+          // CRÍTICO: Separa por ponto-e-vírgula (padrão do seu frontend) ou quebra de linha
           return s.split(/;|\r?\n/).map(t=>t.trim()).filter(Boolean);
         }
         return [String(v)].filter(Boolean);
@@ -1228,32 +1228,25 @@
 
       function liList(sel, arr){
         const ul = document.querySelector(sel);
-        if (!ul) return false; // Retorna false se elemento não existe
+        if (!ul) return false; 
         const a = asArr(arr);
         
-        // Se tiver itens, preenche
+        // Se tiver itens, preenche e retorna true
         if (a.length) {
           ul.innerHTML = a.map(x=>`<li>${escapeHtml(x)}</li>`).join('');
-          ul.removeAttribute('data-empty-hidden'); // Garante visibilidade
           return true;
         } 
         
-        // Se vazio
-        const useNA = (typeof __NA_ALL__ === 'function') ? __NA_ALL__() : true;
-        // Hack para PDF: Se vazio, remove conteúdo para não ocupar espaço, 
-        // a menos que seja estritamente necessário mostrar "Não informado".
-        // No caso das listas da 4.3, se estiver vazio, é melhor não renderizar o LI para o layout fluir.
+        // Se vazio, limpa o HTML para não ocupar espaço no PDF
         ul.innerHTML = ''; 
         return false;
       }
-      // Alias para compatibilidade
       const fillList = liList;
 
       function renderParagraphs(sel, s){
         const el = document.querySelector(sel);
         if (!el) return false;
         const lines = splitLines(s);
-        const useNA = (typeof __NA_ALL__ === 'function') ? __NA_ALL__() : true;
         
         if (lines.length) {
           el.innerHTML = lines.map(x=>`<p>${escapeHtml(x)}</p>`).join('');
@@ -1276,9 +1269,6 @@
         return false;
       }
 
-      function asYes(v){ return ['sim','s','true','1','yes','y'].includes(String(v ?? '').trim().toLowerCase()); }
-      function asNo(v){  return ['nao','não','n','false','0','no'].includes(String(v ?? '').trim().toLowerCase()); }
-
       function show(sel, visible) {
         const el = $(sel);
         if (el) {
@@ -1287,14 +1277,15 @@
         }
       }
 
-      /* ===== Normalização do payload ===== */
+      /* ===== Normalização do payload (AQUI ESTÁ A MÁGICA) ===== */
       function normalizePayload(p0){
         const p = Object.assign({}, p0);
 
-        // Helper para buscar chaves case-insensitive (ex: f43_incluir ou F43_INCLUIR)
+        // Helper para buscar chaves de forma insensível (minúsculo, maiúsculo, array)
         const getAny = (...keys) => {
             for (const k of keys) {
                 if (p[k] !== undefined && p[k] !== null && p[k] !== '') return p[k];
+                // Tenta versão lowercase (comum vindo do server.js flatten)
                 const lower = k.toLowerCase();
                 if (p[lower] !== undefined && p[lower] !== null && p[lower] !== '') return p[lower];
             }
@@ -1305,7 +1296,6 @@
         p.DATA_VENC_ULTIMO_CRP = getAny('DATA_VENC_ULTIMO_CRP', 'DATA_VENCIMENTO_ULTIMO_CRP', 'venc_ult_crp', 'data_vencimento_ultimo_crp') || '';
         p.TIPO_EMISSAO_ULTIMO_CRP = getAny('TIPO_EMISSAO_ULTIMO_CRP', 'tipo_emissao_ult_crp', 'tipo_emissao_ultimo_crp', 'tipo') || '';
         
-        // Normaliza tipo
         let tCrp = String(p.TIPO_EMISSAO_ULTIMO_CRP).trim().toLowerCase();
         if (tCrp.startsWith('adm') || tCrp === 'nao' || tCrp === 'n') p.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
         if (tCrp.startsWith('jud') || tCrp === 'sim' || tCrp === 's') p.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
@@ -1329,8 +1319,7 @@
         // 4. Fase Selecionada
         p.__FASE_SEL__ = String(getAny('__FASE_SEL__', 'FASE_PROGRAMA', 'fase_programa', 'FASE') || '').trim();
 
-        // === LISTAS DAS FASES (CORREÇÃO PRINCIPAL) ===
-        // Força busca em maiúsculo e minúsculo e converte para array
+        // === LISTAS DAS FASES ===
         
         // 4.1
         p.F41_OPCAO_TEXT = getAny('F41_OPCAO_TEXT', 'F41_OPCAO', 'f41_opcao', 'CELEBRACAO_TERMO_PARCELA_DEBITOS') || '';
@@ -1338,10 +1327,11 @@
         // 4.2
         p.F42_LISTA = asArr(getAny('F42_LISTA', 'F42_LISTA[]', 'F42_ITENS', 'F42_ITENS[]'));
 
-        // 4.3 - AQUI ESTAVA O ERRO
+        // 4.3 (Seus campos problemáticos)
         p.F43_LISTA = asArr(getAny('F43_LISTA', 'F43_LISTA[]', 'F43_ITENS', 'F43_ITENS[]'));
-        p.F43_INCLUIR = asArr(getAny('F43_INCLUIR', 'F43_INCLUIR[]', 'f43_incluir'));
+        p.F43_INCLUIR = asArr(getAny('F43_INCLUIR', 'F43_INCLUIR[]', 'f43_incluir', 'F43_INCLUIR_TXT'));
         p.F43_INCLUIR_B = asArr(getAny('F43_INCLUIR_B', 'F43_INCLUIR_B[]', 'f43_incluir_b'));
+        
         p.F43_PLANO = getAny('F43_PLANO', 'f43_plano') || '';
         p.F43_PLANO_B = getAny('F43_PLANO_B', 'f43_plano_b') || '';
         p.F43_DESC_PLANOS = getAny('F43_DESC_PLANOS', 'f43_desc_planos') || '';
@@ -1412,19 +1402,18 @@
         const p = normalizePayload(payload || {});
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
         
-        // 1) Cabeçalho/meta (Data attributes simples)
+        // 1) Cabeçalho/meta
         ['ente','uf','ug','cnpj_ente','cnpj_ug','email_ente','email_ug',
          'N_GESCON','DATA_ENC_VIA_GESCON','SEI_PROCESSO','PORTARIA_SRPC',
          'ORGAO_VINCULACAO_UG','nome_rep_ente','cargo_rep_ente','cpf_rep_ente',
          'email_rep_ente','tel_rep_ente','nome_rep_ug','cargo_rep_ug','cpf_rep_ug',
          'email_rep_ug','tel_rep_ug','data_vencimento_ultimo_crp','tipo_emissao_ult_crp'
         ].forEach(k => {
-             // Busca pelo nome exato ou minúsculo no payload
              let val = p[k] || p[k.toUpperCase()] || p[k.toLowerCase()];
              fillText(k, val);
         });
         
-        // Tratamento específico 3.4
+        // 3.4 Prazo Adicional
         (function applyPrazoAdicional(code){
           const itens = Array.from(document.querySelectorAll('[data-3_4]'));
           let mostrou = false;
@@ -1448,7 +1437,7 @@
         // 3.3 Listas
         fillList('#criterios-list', p.__CRITERIOS_ARR__);
 
-        // 4) Fase Selecionada - Lógica de visibilidade
+        // 4) Fase Selecionada
         let faseSel = p.__FASE_SEL__;
         if (!faseSel) {
            // Auto-detecção se vazio
@@ -1480,11 +1469,11 @@
         // --- FASE 4.2 ---
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
-        // --- FASE 4.3 (Complexa) ---
+        // --- FASE 4.3 (LISTA COMPLETA) ---
         (function run43(){
           let hasContent = false;
           
-          // 4.3.1 a 4.3.9 (filtragem por palavras-chave na lista geral F43_LISTA)
+          // 4.3.1 a 4.3.9 (filtra da lista geral F43_LISTA)
           const allItens = p.F43_LISTA;
           const filterList = (keys) => allItens.filter(item => {
             const lowItem = (item || '').toLowerCase();
@@ -1511,19 +1500,28 @@
           if (optB) { fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS); hasContent = true; }
 
           // 4.3.11 (Campos F43_INCLUIR e F43_PLANO)
+          // fillList retorna true se array tiver itens. fillValue retorna true se texto existir.
           const h11_1 = fillList('#f43-crit-incluir', p.F43_INCLUIR);
           const h11_2 = fillValue('#f43-just-11', p.F43_PLANO); 
-          if (h11_1 || h11_2 || (p.F43_INCLUIR.length > 0)) {
-              show('#f43-sub-11', true); hasContent = true;
-          } else { show('#f43-sub-11', false); }
+          
+          if (h11_1 || h11_2) {
+              show('#f43-sub-11', true); 
+              hasContent = true;
+          } else { 
+              show('#f43-sub-11', false); 
+          }
 
           // 4.3.12 (Campos F43_INCLUIR_B, F43_PLANO_B, F43_DESC_PLANOS)
           const h12_1 = fillList('#f43-crit-incluir-12', p.F43_INCLUIR_B);
           const h12_2 = fillValue('#f43-just-12', p.F43_PLANO_B);
           const h12_3 = fillValue('#f43-desc-planos-12', p.F43_DESC_PLANOS);
-          if (h12_1 || h12_2 || h12_3 || (p.F43_INCLUIR_B.length > 0)) {
-              show('#f43-sub-12', true); hasContent = true;
-          } else { show('#f43-sub-12', false); }
+          
+          if (h12_1 || h12_2 || h12_3) {
+              show('#f43-sub-12', true); 
+              hasContent = true;
+          } else { 
+              show('#f43-sub-12', false); 
+          }
           
           togglePhaseBlock('#fase-43', hasContent);
         })();
@@ -1620,7 +1618,6 @@
       // Fallback
       setTimeout(() => {
          if (!window.__TERMO_READY_FIRED__) {
-             // Tenta rodar mesmo se sem dados, para renderizar vazio
              run(window.__TERMO_DATA__ || {__NA_ALL:true});
          }
       }, 800);

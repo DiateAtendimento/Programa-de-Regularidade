@@ -368,3 +368,19 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
     content: none !important; /* Desabilita o fallback para UL/OL vazios */
   }
 }
+
+@media print {
+  /* Oculta listas vazias ou escondidas, mas garante que as preenchidas apareçam */
+  .term-section ul:empty, 
+  .term-section ul[hidden],
+  .styled-list:empty {
+    display: none !important;
+  }
+  
+  /* Remove "Não informado" padrão em listas durante a impressão, 
+     pois o JavaScript agora lida com a visibilidade dos blocos inteiros */
+  .term-section ul:empty::before,
+  .term-section ol:empty::before {
+    content: none !important;
+  }
+}
