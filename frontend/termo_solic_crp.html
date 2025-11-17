@@ -117,7 +117,7 @@
             <div data-3_4="3.4.4">3.4.4 Outro critério que apresente (ou possa apresentar) maior complexidade</div>
             <div data-k="PRAZO_ADICIONAL_TEXTO" class="d-none"></div>
           </div>
-        </div>s
+        </div>
       </section>
       <!-- 4. FASE DO PROGRAMA -->
       <section class="term-section avoid-break" id="sec-fase">
@@ -141,52 +141,83 @@
           <ul id="f42-itens" class="styled-list" data-empty="Não preenchido"></ul>
         </div>
 
-        <div class="avoid-break phase-block" id="fase-43" hidden data-empty="true">
+        <div class="avoid-break phase-block" id="fase-43" hidden>
           <h3>4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</h3>
-          <div id="f43-content-area"></div>
+          
+          <div class="sub-section" id="f43-sub-1">
+            <p class="small"><strong>4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento:</strong></p>
+            <ul id="f43-itens-1" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-2">
+            <p class="small"><strong>4.3.2 Regularidade quanto à utilização de recursos previdenciários:</strong></p>
+            <ul id="f43-itens-2" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
 
-          <script>
-            // SCRIPT PARA RENDERIZAR DINAMICAMENTE OS CRITÉRIOS DE IRREGULARIDADE (Fase 4.3)
-            (function() {
-              // Função que injeta o HTML
-              const renderFase43 = () => {
-                const el = document.getElementById('fase-43');
-                const contentArea = document.getElementById('f43-content-area');
-                // Pega os dados globais
-                const data = window.__TERMO_DATA__ || {};
-                
-                // Lê o array F43_CRITERIOS gerado no solic_crp.js (Patch 1)
-                const criterios = Array.isArray(data.F43_CRITERIOS) ? data.F43_CRITERIOS : [];
+          <div class="sub-section" id="f43-sub-3">
+            <p class="small"><strong>4.3.3 Regularidade quanto à aplicação dos recursos previdenciários no mercado financeiro:</strong></p>
+            <ul id="f43-itens-3" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-4">
+            <p class="small"><strong>4.3.4 Regularidade quanto aos limites de contribuição (EC 103/2019 e Lei 9.717/1998):</strong></p>
+            <ul id="f43-itens-4" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-5">
+            <p class="small"><strong>4.3.5 Regularidade quanto à limitação do rol de benefícios (EC 103/2019):</strong></p>
+            <ul id="f43-itens-5" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-6">
+            <p class="small"><strong>4.3.6 Regularidade quanto à instituição por lei do Regime de Previdência Complementar – RPC:</strong></p>
+            <ul id="f43-itens-6" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-7">
+            <p class="small"><strong>4.3.7 Regularidade quanto ao envio de dados e informações do RPPS:</strong></p>
+            <ul id="f43-itens-7" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-8">
+            <p class="small"><strong>4.3.8 Regularidade quanto à operacionalização da compensação previdenciária:</strong></p>
+            <ul id="f43-itens-8" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
+          
+          <div class="sub-section" id="f43-sub-9">
+            <p class="small"><strong>4.3.9 Regularidade quanto aos requisitos dos dirigentes e colegiados (art. 8º-B da Lei 9.717/1998):</strong></p>
+            <ul id="f43-itens-9" class="styled-list" data-empty="Não preenchido"></ul>
+          </div>
 
-                // Se não tiver dados, mantém escondido
-                if (!criterios.length) {
-                   el.setAttribute('data-empty', 'true');
-                   return;
-                }
+          <div class="sub-section" id="f43-sub-10">
+              <p class="small"><strong>4.3.10 – Em relação à adequação das regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</strong></p>
+              <div id="f43-opcao-a" class="field-group" hidden>
+                  <p>a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS (reforma das regras de benefícios)...</p>
+                  <p class="label-like">Relacionar a legislação que adequou as regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</p>
+                  <div class="value-block" data-k="F4310_LEGISLACAO"></div>
+              </div>
+              <div id="f43-opcao-b" class="field-group" hidden>
+                  <p>b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...</p>
+                  <p class="label-like">Lista de documentos anexados, que comprovam o encaminhamento dos projetos de alteração das regras de benefícios:</p>
+                  <div class="value-block" data-k="F4310_DOCS"></div>
+              </div>
+          </div>
 
-                // Se tiver dados, mostra e preenche
-                el.setAttribute('data-empty', 'false');
-                
-                let html = '<p class="intro-text">Os seguintes critérios/informações foram registrados para esta fase:</p><ul class="styled-list">';
+          <div class="sub-section" id="f43-sub-11">
+              <p class="small"><strong>4.3.11 - Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
+              <p class="label-like">a) Critérios do extrato que o ente deseja incluir no Plano de Ação da Fase Específica:</p>
+              <ul id="f43-crit-incluir" class="styled-list" data-empty="Não preenchido"></ul> <p class="label-like">b) Justificativas/Informações apresentadas relativas a essa inclusão (anexos podem ser citados abaixo):</p>
+              <div class="value-block" id="f43-just-11" data-field="F43_JUST" data-empty="Não informado"></div> <p class="small text-muted small">Obs.: A solicitação de inclusão no Plano de Ação não se aplica aos seguintes critérios: “DIPR - Consistência e Caráter Contributivo”; “Caráter contributivo - Repasse (objeto de PAP)” e “Utilização dos recursos previdenciários (objeto de PAP)”.</p>
+          </div>
 
-                criterios.forEach(item => {
-                  html += `
-                    <li style="margin-bottom: 12px;">
-                      <div style="font-weight:bold; color:#475569; font-size:12.2px;">${item.pergunta}</div>
-                      <div class="value-block" style="white-space: pre-line;">${item.resposta}</div>
-                    </li>
-                  `;
-                });
-
-                html += '</ul>';
-                contentArea.innerHTML = html;
-              };
-
-              // Tenta renderizar imediatamente e também ouve eventos de atualização
-              if (window.__TERMO_DATA__) renderFase43();
-              document.addEventListener('TERMO_DATA', renderFase43);
-            })();
-          </script>
+          <div class="sub-section" id="f43-sub-12">
+              <p class="small"><strong>4.3.12 Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
+              <p class="small text-muted small">Só aparecerão os critérios para assinalar se marcada a opção acima. Apresentar todos os critérios do Extrato.</p>
+              <p class="label-like">a) Critérios do extrato que o ente, comprovadamente, precisará incluir em Plano de Ação:</p>
+              <ul id="f43-crit-incluir-12" class="styled-list" data-empty="Não preenchido"></ul> <p class="label-like">b) Justificativas/informações apresentadas relativas à solicitação de inclusão (anexos podem ser citados abaixo):</p>
+              <div class="value-block" id="f43-just-12" data-field="F4312_JUST" data-empty="Não informado"></div> <p class="label-like">c) Descrever sucintamente o(s) Plano(s) de Ação apresentado(s)</p>
+              <div class="value-block" id="f43-desc-planos-12" data-field="F4312_DESC_PLANOS" data-empty="Não informado"></div> <p class="small text-muted small">Obs.: A solicitação de inclusão no Plano de Ação não se aplica aos seguintes critérios: “DIPR - Consistência e Caráter Contributivo”; “Caráter contributivo - Repasse (objeto de PAP)” e “Utilização dos recursos previdenciários (objeto de PAP)”.</p>
+          </div>
         </div>
 
         <div class="avoid-break phase-block" id="fase-44" hidden>
