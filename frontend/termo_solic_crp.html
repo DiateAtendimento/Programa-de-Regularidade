@@ -370,6 +370,8 @@
     </div>
   </div>
   <!-- Script embutido -->
+
+  <!--
   <script>
     (function () {
       const $  = (s, r=document) => r.querySelector(s);
@@ -1177,6 +1179,451 @@
           }, 600);
         }
       });
+    })();
+  </script>
+  -->
+  <script>
+    (function () {
+      const $  = (s, r=document) => r.querySelector(s);
+      const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+      /* ===== Fallbacks “Não informado” ===== */
+      const __NA_LABEL__ = () =>
+        String((window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_LABEL) || 'Não informado');
+      const __NA_ALL__ = () => {
+        const d = window.__TERMO_DATA__;
+        return (d && Object.prototype.hasOwnProperty.call(d, '__NA_ALL'))
+          ? !!d.__NA_ALL : true;
+      };
+      function fillText(key, val){
+        const raw = (val == null) ? '' : String(val);
+        const trimmed = raw.trim();
+        const s = trimmed || (__NA_ALL__() ? __NA_LABEL__() : '');
+        $$('[data-k="'+key+'"]').forEach(el => { el.textContent = s; });
+      }
+
+      /* ===== Utilitários ===== */
+      function escapeHtml(s){ return String(s||'').replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+
+      function asArr(v){
+        if (Array.isArray(v)) return v;
+        if (v == null || v === '') return [];
+        if (typeof v === 'string') {
+          const s = v.trim();
+          if (!s) return [];
+          // Tenta JSON primeiro
+          if ((s.startsWith('[') && s.endsWith(']'))) {
+            try {
+              const j = JSON.parse(s);
+              if (Array.isArray(j)) return j.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
+            } catch(_) {}
+          }
+          // Separa por ponto-e-vírgula (prioridade) ou quebra de linha. Evita separar por vírgula simples para não quebrar frases.
+          return s.split(/;|\r?\n/).map(t=>t.trim()).filter(Boolean);
+        }
+        return [String(v)].filter(Boolean);
+      }
+
+      function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
+
+      function liList(sel, arr){
+        const ul = document.querySelector(sel);
+        if (!ul) return false; // Retorna false se elemento não existe
+        const a = asArr(arr);
+        
+        // Se tiver itens, preenche
+        if (a.length) {
+          ul.innerHTML = a.map(x=>`<li>${escapeHtml(x)}</li>`).join('');
+          ul.removeAttribute('data-empty-hidden'); // Garante visibilidade
+          return true;
+        } 
+        
+        // Se vazio
+        const useNA = (typeof __NA_ALL__ === 'function') ? __NA_ALL__() : true;
+        // Hack para PDF: Se vazio, remove conteúdo para não ocupar espaço, 
+        // a menos que seja estritamente necessário mostrar "Não informado".
+        // No caso das listas da 4.3, se estiver vazio, é melhor não renderizar o LI para o layout fluir.
+        ul.innerHTML = ''; 
+        return false;
+      }
+      // Alias para compatibilidade
+      const fillList = liList;
+
+      function renderParagraphs(sel, s){
+        const el = document.querySelector(sel);
+        if (!el) return false;
+        const lines = splitLines(s);
+        const useNA = (typeof __NA_ALL__ === 'function') ? __NA_ALL__() : true;
+        
+        if (lines.length) {
+          el.innerHTML = lines.map(x=>`<p>${escapeHtml(x)}</p>`).join('');
+          return true;
+        }
+        el.innerHTML = ''; 
+        return false;
+      }
+      const fillBlock = renderParagraphs;
+
+      function fillValue(sel, val) {
+        const el = $(sel);
+        if (!el) return false;
+        const s = String(val || '').trim();
+        if (s) {
+          el.innerHTML = escapeHtml(s).replace(/\r?\n/g, '<br>');
+          return true;
+        }
+        el.innerHTML = ''; 
+        return false;
+      }
+
+      function asYes(v){ return ['sim','s','true','1','yes','y'].includes(String(v ?? '').trim().toLowerCase()); }
+      function asNo(v){  return ['nao','não','n','false','0','no'].includes(String(v ?? '').trim().toLowerCase()); }
+
+      function show(sel, visible) {
+        const el = $(sel);
+        if (el) {
+          el.hidden = !visible;
+          el.style.display = visible ? '' : 'none';
+        }
+      }
+
+      /* ===== Normalização do payload ===== */
+      function normalizePayload(p0){
+        const p = Object.assign({}, p0);
+
+        // Helper para buscar chaves case-insensitive (ex: f43_incluir ou F43_INCLUIR)
+        const getAny = (...keys) => {
+            for (const k of keys) {
+                if (p[k] !== undefined && p[k] !== null && p[k] !== '') return p[k];
+                const lower = k.toLowerCase();
+                if (p[lower] !== undefined && p[lower] !== null && p[lower] !== '') return p[lower];
+            }
+            return undefined;
+        };
+
+        // 3.1 e 3.2 CRP
+        p.DATA_VENC_ULTIMO_CRP = getAny('DATA_VENC_ULTIMO_CRP', 'DATA_VENCIMENTO_ULTIMO_CRP', 'venc_ult_crp', 'data_vencimento_ultimo_crp') || '';
+        p.TIPO_EMISSAO_ULTIMO_CRP = getAny('TIPO_EMISSAO_ULTIMO_CRP', 'tipo_emissao_ult_crp', 'tipo_emissao_ultimo_crp', 'tipo') || '';
+        
+        // Normaliza tipo
+        let tCrp = String(p.TIPO_EMISSAO_ULTIMO_CRP).trim().toLowerCase();
+        if (tCrp.startsWith('adm') || tCrp === 'nao' || tCrp === 'n') p.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
+        if (tCrp.startsWith('jud') || tCrp === 'sim' || tCrp === 's') p.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
+        
+        // Espelhos data-k
+        p.data_vencimento_ultimo_crp = p.DATA_VENC_ULTIMO_CRP;
+        p.tipo_emissao_ult_crp = p.TIPO_EMISSAO_ULTIMO_CRP;
+
+        // 3.3 Critérios
+        p.__CRITERIOS_ARR__ = asArr(getAny('CRITERIOS_IRREGULARES', 'CRITERIOS_LIST', 'criterios_irregulares'));
+
+        // 3.4 Prazo Adicional
+        p.PRAZO_ADICIONAL_TEXTO = getAny('PRAZO_ADICIONAL_TEXTO', 'prazo_adicional_texto') || '';
+        let prazoCod = getAny('PRAZO_ADICIONAL_COD', 'prazo_adicional_cod', 'prazo_adicional');
+        if (prazoCod) {
+             const m = String(prazoCod).match(/3\.[24]\.(\d)/);
+             if (m) prazoCod = `3.4.${m[1]}`;
+        }
+        p.PRAZO_ADICIONAL_COD = prazoCod || '';
+
+        // 4. Fase Selecionada
+        p.__FASE_SEL__ = String(getAny('__FASE_SEL__', 'FASE_PROGRAMA', 'fase_programa', 'FASE') || '').trim();
+
+        // === LISTAS DAS FASES (CORREÇÃO PRINCIPAL) ===
+        // Força busca em maiúsculo e minúsculo e converte para array
+        
+        // 4.1
+        p.F41_OPCAO_TEXT = getAny('F41_OPCAO_TEXT', 'F41_OPCAO', 'f41_opcao', 'CELEBRACAO_TERMO_PARCELA_DEBITOS') || '';
+
+        // 4.2
+        p.F42_LISTA = asArr(getAny('F42_LISTA', 'F42_LISTA[]', 'F42_ITENS', 'F42_ITENS[]'));
+
+        // 4.3 - AQUI ESTAVA O ERRO
+        p.F43_LISTA = asArr(getAny('F43_LISTA', 'F43_LISTA[]', 'F43_ITENS', 'F43_ITENS[]'));
+        p.F43_INCLUIR = asArr(getAny('F43_INCLUIR', 'F43_INCLUIR[]', 'f43_incluir'));
+        p.F43_INCLUIR_B = asArr(getAny('F43_INCLUIR_B', 'F43_INCLUIR_B[]', 'f43_incluir_b'));
+        p.F43_PLANO = getAny('F43_PLANO', 'f43_plano') || '';
+        p.F43_PLANO_B = getAny('F43_PLANO_B', 'f43_plano_b') || '';
+        p.F43_DESC_PLANOS = getAny('F43_DESC_PLANOS', 'f43_desc_planos') || '';
+        p.F43_JUST = getAny('F43_JUST', 'f43_just') || '';
+        
+        p.F4310_OPCAO = getAny('F4310_OPCAO', 'f4310_opcao') || '';
+        p.F4310_LEGISLACAO = getAny('F4310_LEGISLACAO', 'f4310_legislacao') || '';
+        p.F4310_DOCS = getAny('F4310_DOCS', 'f4310_docs') || '';
+
+        // 4.4
+        p.F44_CRITERIOS = asArr(getAny('F44_CRITERIOS', 'F44_CRITERIOS[]', 'f44_criterios'));
+        p.F44_DECLS = asArr(getAny('F44_DECLS', 'F44_DECLS[]', 'f44_decls'));
+        p.F44_FINALIDADES = asArr(getAny('F44_FINALIDADES', 'F44_FINALIDADES[]', 'f44_finalidades'));
+        p.F44_ANEXOS = getAny('F44_ANEXOS', 'f44_anexos') || '';
+        p.F441_LEGISLACAO = getAny('F441_LEGISLACAO', 'f441_legislacao') || '';
+        p.F445_DESC_PLANOS = getAny('F445_DESC_PLANOS', 'f445_desc_planos') || '';
+        p.F446_DOCS = getAny('F446_DOCS', 'f446_docs') || '';
+        p.F446_EXEC_RES = getAny('F446_EXEC_RES', 'f446_exec_res') || '';
+
+        // 4.5
+        p.F45_DECLS = asArr(getAny('F45_DECLS', 'F45_DECLS[]', 'f45_decls', 'F45_CONDICOES[]'));
+        p.F45_DOCS = getAny('F45_DOCS', 'f45_docs') || '';
+        p.F45_JUST = getAny('F45_JUST', 'f45_just') || '';
+        p.F453_EXEC_RES = getAny('F453_EXEC_RES', 'f453_exec_res') || '';
+
+        // 4.6
+        p.F46_CRITERIOS = asArr(getAny('F46_CRITERIOS', 'F46_CRITERIOS[]', 'f46_criterios'));
+        p.F46_FINALIDADES = asArr(getAny('F46_FINALIDADES', 'F46_FINALIDADES[]', 'f46_finalidades'));
+        p.F462F_CRITERIOS = asArr(getAny('F462F_CRITERIOS', 'F462F_CRITERIOS[]', 'f462f_criterios'));
+        // Unifica critérios estruturantes da 4.6
+        p.F46_CRITERIOS = [...p.F46_CRITERIOS, ...p.F462F_CRITERIOS];
+        
+        p.F46_PROGESTAO = getAny('F46_PROGESTAO', 'f46_progestao') || '';
+        p.F46_PORTE = getAny('F46_PORTE', 'f46_porte') || '';
+        p.F46_JUST_D = getAny('F46_JUST_D', 'f46_just_d') || '';
+        p.F46_DOCS_D = getAny('F46_DOCS_D', 'f46_docs_d') || '';
+        p.F46_JUST_E = getAny('F46_JUST_E', 'f46_just_e') || '';
+        p.F46_DOCS_E = getAny('F46_DOCS_E', 'f46_docs_e') || '';
+        p.F466_DOCS = getAny('F466_DOCS', 'f466_docs') || '';
+        p.F466_EXEC_RES = getAny('F466_EXEC_RES', 'f466_exec_res') || '';
+
+        // 5. Justificativas Gerais
+        p.JUSTIFICATIVAS_GERAIS = getAny('JUSTIFICATIVAS_GERAIS', 'justificativas_gerais') || '';
+
+        // 6. Data Termo
+        p.data_termo = getAny('DATA_TERMO_GERADO', 'DATA_SOLIC_GERADA', 'data_termo', 'data') || '';
+
+        return p;
+      }
+
+      function hojeBR_robusto(){
+        try{
+          const s = new Date().toLocaleDateString('pt-BR');
+          if (s && /\d{2}\/\d{2}\/\d{4}/.test(s)) return s;
+        }catch(_){}
+        return '';
+      }
+
+      function normalizarEsfera(txt){
+        const t = String(txt||'').toLowerCase();
+        if (t.includes('estadual') || t.includes('distrit')) return '1.1.2 RPPS Estadual/Distrital';
+        if (t.includes('municip')) return '1.1.1 RPPS Municipal';
+        return (typeof __NA_ALL__==='function' && __NA_ALL__()) ? __NA_LABEL__() : '—';
+      }
+
+      // ========= Função principal (Render) =========
+      function run(payload){
+        const p = normalizePayload(payload || {});
+        window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
+        
+        // 1) Cabeçalho/meta (Data attributes simples)
+        ['ente','uf','ug','cnpj_ente','cnpj_ug','email_ente','email_ug',
+         'N_GESCON','DATA_ENC_VIA_GESCON','SEI_PROCESSO','PORTARIA_SRPC',
+         'ORGAO_VINCULACAO_UG','nome_rep_ente','cargo_rep_ente','cpf_rep_ente',
+         'email_rep_ente','tel_rep_ente','nome_rep_ug','cargo_rep_ug','cpf_rep_ug',
+         'email_rep_ug','tel_rep_ug','data_vencimento_ultimo_crp','tipo_emissao_ult_crp'
+        ].forEach(k => {
+             // Busca pelo nome exato ou minúsculo no payload
+             let val = p[k] || p[k.toUpperCase()] || p[k.toLowerCase()];
+             fillText(k, val);
+        });
+        
+        // Tratamento específico 3.4
+        (function applyPrazoAdicional(code){
+          const itens = Array.from(document.querySelectorAll('[data-3_4]'));
+          let mostrou = false;
+          itens.forEach(el => {
+            const tag = (el.getAttribute('data-3_4') || '').trim();
+            const ok  = code && tag === code;
+            if (ok) { el.style.display = ''; mostrou = true; }
+            else { el.remove(); }
+          });
+          const holder = document.querySelector('[data-k="PRAZO_ADICIONAL_TEXTO"]');
+          if (holder) {
+            if (mostrou) holder.classList.add('d-none');
+            else {
+              const txt = p.PRAZO_ADICIONAL_TEXTO || 'Não informado';
+              holder.textContent = txt;
+              holder.classList.toggle('d-none', !txt.trim());
+            }
+          }
+        })(p.PRAZO_ADICIONAL_COD);
+
+        // 3.3 Listas
+        fillList('#criterios-list', p.__CRITERIOS_ARR__);
+
+        // 4) Fase Selecionada - Lógica de visibilidade
+        let faseSel = p.__FASE_SEL__;
+        if (!faseSel) {
+           // Auto-detecção se vazio
+           if (p.F41_OPCAO_TEXT) faseSel = '4.1';
+           else if (p.F42_LISTA.length) faseSel = '4.2';
+           else if (p.F43_LISTA.length || p.F43_INCLUIR.length || p.F43_PLANO) faseSel = '4.3';
+           else if (p.F44_DECLS.length) faseSel = '4.4';
+           else if (p.F45_DECLS.length) faseSel = '4.5';
+           else if (p.F46_DECLS.length || p.F46_CRITERIOS.length) faseSel = '4.6';
+        }
+
+        // Oculta label "Fase selecionada:"
+        const faseTxtEl = document.getElementById('fase-escolhida');
+        if (faseTxtEl && faseTxtEl.parentElement) faseTxtEl.parentElement.hidden = true;
+
+        function togglePhaseBlock(id, hasContent) {
+          const el = $(id);
+          if (el) {
+            el.hidden = !hasContent;
+            el.setAttribute('data-empty', hasContent ? 'false' : 'true');
+          }
+        }
+
+        // --- FASE 4.1 ---
+        togglePhaseBlock('#fase-41', !!p.F41_OPCAO_TEXT);
+        const ul41 = $('#f41-itens');
+        if(ul41) ul41.innerHTML = p.F41_OPCAO_TEXT ? `<li>${escapeHtml(p.F41_OPCAO_TEXT)}</li>` : '';
+
+        // --- FASE 4.2 ---
+        togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
+
+        // --- FASE 4.3 (Complexa) ---
+        (function run43(){
+          let hasContent = false;
+          
+          // 4.3.1 a 4.3.9 (filtragem por palavras-chave na lista geral F43_LISTA)
+          const allItens = p.F43_LISTA;
+          const filterList = (keys) => allItens.filter(item => {
+            const lowItem = (item || '').toLowerCase();
+            return keys.some(k => lowItem.includes(k));
+          });
+
+          if (fillList('#f43-itens-1', filterList(['dipr', 'caráter contributivo', 'repasse', 'aportes', 'parcelamento']))) hasContent = true;
+          if (fillList('#f43-itens-2', filterList(['utilização dos recursos']))) hasContent = true;
+          if (fillList('#f43-itens-3', filterList(['aplicações financeiras', 'dair', 'dpin']))) hasContent = true;
+          if (fillList('#f43-itens-4', filterList(['limites de contribuição']))) hasContent = true;
+          if (fillList('#f43-itens-5', filterList(['rol de benefícios', 'plano de benefícios']))) hasContent = true;
+          if (fillList('#f43-itens-6', filterList(['previdência complementar', 'rpc']))) hasContent = true;
+          if (fillList('#f43-itens-7', filterList(['envio de dados', 'solicitação de legislação', 'atendimento à fiscalização', 'nta', 'draa', 'msc', 'esocial']))) hasContent = true;
+          if (fillList('#f43-itens-8', filterList(['compensação previdenciária']))) hasContent = true;
+          if (fillList('#f43-itens-9', filterList(['requisitos dos dirigentes', 'colegiados', 'art. 8º-b']))) hasContent = true;
+
+          // 4.3.10
+          const opt4310 = String(p.F4310_OPCAO || '').trim().toLowerCase();
+          const optA = opt4310.startsWith('a');
+          const optB = opt4310.startsWith('b');
+          show('#f43-opcao-a', optA);
+          show('#f43-opcao-b', optB);
+          if (optA) { fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO); hasContent = true; }
+          if (optB) { fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS); hasContent = true; }
+
+          // 4.3.11 (Campos F43_INCLUIR e F43_PLANO)
+          const h11_1 = fillList('#f43-crit-incluir', p.F43_INCLUIR);
+          const h11_2 = fillValue('#f43-just-11', p.F43_PLANO); 
+          if (h11_1 || h11_2 || (p.F43_INCLUIR.length > 0)) {
+              show('#f43-sub-11', true); hasContent = true;
+          } else { show('#f43-sub-11', false); }
+
+          // 4.3.12 (Campos F43_INCLUIR_B, F43_PLANO_B, F43_DESC_PLANOS)
+          const h12_1 = fillList('#f43-crit-incluir-12', p.F43_INCLUIR_B);
+          const h12_2 = fillValue('#f43-just-12', p.F43_PLANO_B);
+          const h12_3 = fillValue('#f43-desc-planos-12', p.F43_DESC_PLANOS);
+          if (h12_1 || h12_2 || h12_3 || (p.F43_INCLUIR_B.length > 0)) {
+              show('#f43-sub-12', true); hasContent = true;
+          } else { show('#f43-sub-12', false); }
+          
+          togglePhaseBlock('#fase-43', hasContent);
+        })();
+
+        // --- FASE 4.4 ---
+        (function run44(){
+          let hasContent = false;
+          if (fillList('#f44-decls', p.F44_DECLS)) hasContent = true;
+          
+          const hasLeg = (p.F441_LEGISLACAO || '').trim();
+          show('#f44-leg-wrap', !!hasLeg);
+          if (hasLeg) { fillBlock('[data-k="F441_LEGISLACAO"]', p.F441_LEGISLACAO); hasContent = true; }
+
+          if (fillList('#f44-finalidades', p.F44_FINALIDADES)) hasContent = true;
+          if (fillList('#f44-criterios', p.F44_CRITERIOS)) hasContent = true;
+          if (fillBlock('[data-k="F44_ANEXOS"]', p.F44_ANEXOS)) hasContent = true;
+          if (fillBlock('[data-k="F445_DESC_PLANOS"]', p.F445_DESC_PLANOS)) hasContent = true;
+          if (fillBlock('[data-k="F446_DOCS"]', p.F446_DOCS)) hasContent = true;
+          if (fillBlock('[data-k="F446_EXEC_RES"]', p.F446_EXEC_RES)) hasContent = true;
+          
+          togglePhaseBlock('#fase-44', hasContent);
+        })();
+
+        // --- FASE 4.5 ---
+        (function run45(){
+          let hasContent = false;
+          if (fillList('#f45-decls', p.F45_DECLS)) hasContent = true;
+          if (fillBlock('[data-k="F45_DOCS"]', p.F45_DOCS)) hasContent = true;
+          if (fillBlock('[data-k="F45_JUST"]', p.F45_JUST)) hasContent = true;
+          if (fillBlock('[data-k="F453_EXEC_RES"]', p.F453_EXEC_RES)) hasContent = true;
+          togglePhaseBlock('#fase-45', hasContent);
+        })();
+
+        // --- FASE 4.6 ---
+        (function run46(){
+          let hasContent = false;
+          if (fillList('#f46-criterios', p.F46_CRITERIOS)) hasContent = true;
+          if (fillBlock('[data-k="F46_PROGESTAO"]', p.F46_PROGESTAO)) hasContent = true;
+          if (fillBlock('[data-k="F46_PORTE"]', p.F46_PORTE)) hasContent = true;
+          if (fillBlock('[data-k="F46_JUST_D"]', p.F46_JUST_D)) hasContent = true;
+          if (fillBlock('[data-k="F46_DOCS_D"]', p.F46_DOCS_D)) hasContent = true;
+          if (fillBlock('[data-k="F46_JUST_E"]', p.F46_JUST_E)) hasContent = true;
+          if (fillBlock('[data-k="F46_DOCS_E"]', p.F46_DOCS_E)) hasContent = true;
+          if (fillList('#f46-finalidades', p.F46_FINALIDADES)) hasContent = true;
+          if (fillBlock('[data-k="F466_DOCS"]', p.F466_DOCS)) hasContent = true;
+          if (fillBlock('[data-k="F466_EXEC_RES"]', p.F466_EXEC_RES)) hasContent = true;
+          togglePhaseBlock('#fase-46', hasContent);
+        })();
+
+        // 5) Justificativas Gerais
+        fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS);
+        
+        // 6) Data e Assinaturas
+        let dataTermo = p.data_termo || hojeBR_robusto();
+        fillText('data_termo', dataTermo);
+
+        // 7) Esfera
+        const esferaTxt = normalizarEsfera(p.ESFERA);
+        const esferaNode = document.querySelector('[data-esfera]');
+        if (esferaNode) esferaNode.textContent = esferaTxt;
+        (function(){
+          const sig = document.getElementById('sig-cap-ente');
+          if (sig) {
+            const isEstDistr = /Estadual\/Distrital/i.test(esferaTxt);
+            sig.innerHTML = isEstDistr
+              ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
+              : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
+            fillText('ente', p.ENTE); fillText('uf', p.UF);
+          }
+        })();
+
+        // Flag de pronto para Puppeteer
+        if (!window.__TERMO_READY_FIRED__) {
+            window.__TERMO_READY_FIRED__ = true;
+            requestAnimationFrame(() => {
+                document.documentElement.setAttribute('data-termo-ready','1');
+                window.__TERMO_PRINT_READY__ = true;
+                try { document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY')); } catch {}
+            });
+        }
+      }
+
+      // Exposição global
+      window.run = run;
+      window.__TERMO_RUN__ = run;
+
+      // Inicialização
+      if (window.__TERMO_DATA__) { 
+          try { run(window.__TERMO_DATA__); } catch {} 
+      }
+      document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
+      document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
+      
+      // Fallback
+      setTimeout(() => {
+         if (!window.__TERMO_READY_FIRED__) {
+             // Tenta rodar mesmo se sem dados, para renderizar vazio
+             run(window.__TERMO_DATA__ || {__NA_ALL:true});
+         }
+      }, 800);
     })();
   </script>
 </body>
