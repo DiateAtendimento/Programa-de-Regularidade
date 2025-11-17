@@ -1403,34 +1403,37 @@
         console.log('TERMO: RAW Payload recebido:', JSON.stringify(payload));
 
         // =======================================================
-        // 💡 CORREÇÃO FASE 4.3: Converte strings de critérios em arrays
-        // =======================================================
+        // 💡 CORREÇÃO FASE 4.3: Converte strings de critérios em arrays
+        // -------------------------------------------------------
+        // Esta correção DEVE ser aplicada ao 'payload' (a entrada)
+        // antes de chamar 'normalizePayload'.
 
-        // Lista de campos que devem ser arrays de strings
-        const arrFields = ['F43_INCLUIR', 'F43_INCLUIR_B'];
+        // Lista de campos que devem ser arrays de strings
+        const arrFields = ['F43_INCLUIR', 'F43_INCLUIR_B'];
 
-        // Função utilitária para garantir Array a partir de string delimitada
-        const ensureArray = (value) => {
-            // Se já for array, retorna filtrando valores falsy
-            if (Array.isArray(value)) return value.filter(Boolean);
-            // Se for nulo ou vazio, retorna array vazio
-            if (!value) return [];
-            
-            const s = String(value).trim();
-            if (!s) return [];
-            
-            // Separa por ponto e vírgula, vírgula ou quebra de linha (mesma lógica do zArrStr)
-            return s.split(/[;,]\s*|\r?\n/).map(x => x.trim()).filter(Boolean);
-        };
+        // Função utilitária para garantir Array a partir de string delimitada
+        const ensureArray = (value) => {
+            // Se já for array, retorna filtrando valores falsy
+            if (Array.isArray(value)) return value.filter(Boolean);
+            // Se for nulo ou vazio, retorna array vazio
+            if (!value) return [];
+            
+            const s = String(value).trim();
+            if (!s) return [];
+            
+            // Separa por ponto e vírgula, vírgula ou quebra de linha (mesma lógica do zArrStr)
+            return s.split(/[;,]\s*|\r?\n/).map(x => x.trim()).filter(Boolean);
+        };
 
-        // Aplica a conversão para os campos de seleção da Fase 4.3
-        arrFields.forEach(field => {
-            if (p[field]) {
-                p[field] = ensureArray(p[field]);
-            }
-        });
+        // Aplica a conversão usando 'payload', que é o objeto de entrada.
+        arrFields.forEach(field => {
+            // CORREÇÃO AQUI: Usa 'payload'
+            if (payload[field]) { 
+                payload[field] = ensureArray(payload[field]);
+            }
+        });
 
-        // =======================================================
+        // =======================================================
 
         const p = normalizePayload(payload || {});
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
