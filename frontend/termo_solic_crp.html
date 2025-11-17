@@ -1399,8 +1399,22 @@
 
       // ========= Função principal (Render) =========
       function run(payload){
+        // 🚨 TESTE 1: Payload Bruto (para checar a comunicação)
+        console.log('TERMO: RAW Payload recebido:', JSON.stringify(payload));
+
         const p = normalizePayload(payload || {});
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
+
+        // 🚨 TESTE 2: Chaves F43 após a normalização (o que o script está vendo)
+        console.log('TERMO: Normalized F43 keys:', {
+            F43_LISTA: p.F43_LISTA,
+            F43_INCLUIR: p.F43_INCLUIR,
+            F43_INCLUIR_B: p.F43_INCLUIR_B,
+            F43_PLANO: p.F43_PLANO,
+            F43_PLANO_B: p.F43_PLANO_B,
+            F43_DESC_PLANOS: p.F43_DESC_PLANOS,
+            F43_JUST: p.F43_JUST
+        });
         
         // 1) Cabeçalho/meta
         ['ente','uf','ug','cnpj_ente','cnpj_ug','email_ente','email_ug',

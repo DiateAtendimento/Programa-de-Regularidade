@@ -2642,6 +2642,15 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
 
     const payload = { __NA_ALL: true, __NA_LABEL: 'Não informado', ...p };
 
+    // =======================================================
+    // 💡 INSERIR ESTE LOG: Vendo o Payload Bruto do Servidor
+    // =======================================================
+    console.log('--- PAYLOAD RECEBIDO E VALIDADO ---');
+    // Stringify o payload para ver todas as chaves e valores
+    console.log(JSON.stringify(payload, null, 2)); 
+    console.log('-----------------------------------');
+    // =======================================================
+
     await withPdfLimiter(async () => {
       try {
         const { buffer, filename } = await gerarPdfDoTemplateSimples({
