@@ -2687,29 +2687,19 @@ function syncF46ToTemplate(){
     const payloadForPdf = {
       ...payload,
       ...makeSolicCrpCompatFields(payload),
-      __NA_ALL: true,                 // <- garante fallback "Não informado" no template
       __NA_LABEL: 'Não informado',
-      
       HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : '',
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',
-      // (opcional) Portaria forçada — padronizada
       PORTARIA_SRPC: '2.024/2025',
-      // Espelhos em minúsculas para o template (data-k)
       data_vencimento_ultimo_crp: (
         payload.DATA_VENCIMENTO_ULTIMO_CRP ||
         payload.DATA_VENC_ULTIMO_CRP ||
         payload.venc_ult_crp || ''
       ),
-        tipo_emissao_ult_crp: (
+      tipo_emissao_ult_crp: (
         payload.TIPO_EMISSAO_ULTIMO_CRP ||
         payload.tipo_emissao_ult_crp || ''
       ),
-        orgao_vinculacao_ug: (
-        payload.ORGAO_VINCULACAO_UG ||
-        payload.ug_orgao_vinc || ''
-      ),
-
-      // Texto exibível para 3.4 (o template mostra PRAZO_ADICIONAL_TEXTO)
       PRAZO_ADICIONAL_TEXTO: (payload.PRAZO_ADICIONAL_FLAG === 'SIM' ? 'SIM' : ''),
     };
 
