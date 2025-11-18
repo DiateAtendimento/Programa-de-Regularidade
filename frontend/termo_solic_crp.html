@@ -1399,6 +1399,11 @@
 
       // ========= Função principal (Render) =========
       function run(payload){
+
+        if (payload && payload.__NA_ALL) {
+          console.log('TERMO: payload vazio (__NA_ALL), não vou preencher nada ainda.');
+          return;
+        }
         // 🚨 TESTE 1: Payload Bruto (para checar a comunicação)
         console.log('TERMO: RAW Payload recebido:', JSON.stringify(payload));
 
@@ -1527,15 +1532,17 @@
             return keys.some(k => lowItem.includes(k));
           });
 
+            // Distribui a lista única nos 9 ULs corretos
           if (fillList('#f43-itens-1', filterList(['dipr', 'caráter contributivo', 'repasse', 'aportes', 'parcelamento']))) hasContent = true;
           if (fillList('#f43-itens-2', filterList(['utilização dos recursos']))) hasContent = true;
           if (fillList('#f43-itens-3', filterList(['aplicações financeiras', 'dair', 'dpin']))) hasContent = true;
           if (fillList('#f43-itens-4', filterList(['limites de contribuição']))) hasContent = true;
           if (fillList('#f43-itens-5', filterList(['rol de benefícios', 'plano de benefícios']))) hasContent = true;
           if (fillList('#f43-itens-6', filterList(['previdência complementar', 'rpc']))) hasContent = true;
-          if (fillList('#f43-itens-7', filterList(['envio de dados', 'solicitação de legislação', 'atendimento à fiscalização', 'nta', 'draa', 'msc', 'esocial']))) hasContent = true;
+          if (fillList('#f43-itens-7', filterList(['envio dos dados e informações', 'envio de dados', 'nta', 'draa', 'msc', 'esocial']))) hasContent = true;
           if (fillList('#f43-itens-8', filterList(['compensação previdenciária']))) hasContent = true;
-          if (fillList('#f43-itens-9', filterList(['requisitos dos dirigentes', 'colegiados', 'art. 8º-b']))) hasContent = true;
+          if (fillList('#f43-itens-9', filterList(['requisitos para os dirigentes', 'dirigentes, membros titulares', 'colegiados']))) hasContent = true;
+
 
           // 4.3.10
           const opt4310 = String(p.F4310_OPCAO || '').trim().toLowerCase();
