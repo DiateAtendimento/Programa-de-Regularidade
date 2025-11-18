@@ -2640,12 +2640,7 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
     const p = validateOr400(res, schemaTermoSolicPdf, req.body || {});
     if (!p) return;
 
-    //const payload = { __NA_ALL: true, __NA_LABEL: 'Não informado', ...p };
-    // NOTE: do NOT set __NA_ALL:true here — alguns scripts do template fazem
-    // early-return quando __NA_ALL é truthy e isso impede o run() do template.
-    // Enviamos apenas o rótulo __NA_LABEL (se necessário). O template
-    // já assume um comportamento seguro se __NA_ALL estiver ausente.
-    const payload = { __NA_LABEL: 'Não informado', ...p };
+    const payload = { __NA_ALL: true, __NA_LABEL: 'Não informado', ...p };
 
     // =======================================================
     // 💡 INSERIR ESTE LOG: Vendo o Payload Bruto do Servidor
@@ -2692,10 +2687,7 @@ app.post('/api/solic-crp-pdf', async (req, res) => {
     const p = validateOr400(res, schemaSolicCrpPdf, req.body || {});
     if (!p) return;
 
-   // Anchor: handler /api/solic-crp-pdf (antes de chamar gerarPdfDoTemplateSimples)
-    //const payload = { __NA_ALL: true, __NA_LABEL: 'Não informado', ...p };
-    // NOTE: Mesma razão do comentário acima — não forcing __NA_ALL:true.
-    const payload = { __NA_LABEL: 'Não informado', ...p };
+    const payload = { __NA_ALL: true, __NA_LABEL: 'Não informado', ...p };
 
     await withPdfLimiter(async () => {
       try {
