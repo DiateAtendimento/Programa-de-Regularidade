@@ -1522,28 +1522,39 @@
         // --- FASE 4.2 ---
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
-        // --- FASE 4.3 (CORREÇÃO: Esconde títulos vazios e corrige mapeamento de variáveis) ---
+        // --- FASE 4.3 (CORREÇÃO ROBUSTA) ---
         (function run43(){
           let hasContent = false;
           
-          // Função auxiliar interna para 4.3: Filtra itens e ESCONDE o título se vazio
-          const processSub = (ulId, containerId, keywords) => {
-             // 1. Filtra os itens da lista geral que contêm as palavras-chave
-             const itensFiltrados = (p.F43_LISTA || []).filter(item => {
-                const textoItem = String(item || '').toLowerCase();
-                return keywords.some(chave => textoItem.includes(chave));
-             });
+          // 1. TRATAMENTO ROBUSTO DA LISTA (Aceita vírgula E ponto-e-vírgula)
+          let rawList = p.F43_LISTA;
+          let allItens = [];
+          
+          if (Array.isArray(rawList)) {
+            allItens = rawList;
+          } else if (typeof rawList === 'string') {
+            // Divide por ponto-e-vírgula OU vírgula OU quebra de linha
+            allItens = rawList.split(/;|,|\r?\n/).map(s => s.trim()).filter(Boolean);
+          }
 
-             // 2. Tenta preencher a lista (ulId)
-             const preencheu = fillList(ulId, itensFiltrados); 
+          // Filtro de itens
+          const filterList = (keys) => allItens.filter(item => {
+            const lowItem = String(item || '').toLowerCase();
+            return keys.some(k => lowItem.includes(k));
+          });
+
+          // Função auxiliar: preenche a lista e controla a visibilidade do título
+          const processSub = (ulId, containerId, keywords) => {
+             const list = filterList(keywords);
+             const preencheu = fillList(ulId, list); 
              
-             // 3. O PULO DO GATO: Esconde o container inteiro (título + lista) se não preencheu nada
+             // Esconde o container inteiro se a lista estiver vazia
              show(containerId, preencheu);
              
              if(preencheu) hasContent = true;
           };
 
-          // Aplica a lógica para 4.3.1 a 4.3.9
+          // Aplica a lógica para cada subitem
           processSub('#f43-itens-1', '#f43-sub-1', ['dipr', 'caráter contributivo', 'repasse', 'aportes', 'parcelamento']);
           processSub('#f43-itens-2', '#f43-sub-2', ['utilização dos recursos']);
           processSub('#f43-itens-3', '#f43-sub-3', ['aplicações financeiras', 'dair', 'dpin']);
@@ -1554,41 +1565,41 @@
           processSub('#f43-itens-8', '#f43-sub-8', ['compensação previdenciária']);
           processSub('#f43-itens-9', '#f43-sub-9', ['requisitos para os dirigentes', 'colegiados', 'art. 8º-b']);
 
-          // 4.3.10
+          // 4.3.10 (Opções A/B)
           const opt4310 = String(p.F4310_OPCAO || '').trim().toLowerCase();
           const optA = opt4310.startsWith('a');
           const optB = opt4310.startsWith('b');
           
           show('#f43-opcao-a', optA);
           show('#f43-opcao-b', optB);
-          show('#f43-sub-10', optA || optB); // Só mostra título se tiver opção
+          show('#f43-sub-10', optA || optB);
 
           if (optA) { fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO); hasContent = true; }
           if (optB) { fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS); hasContent = true; }
 
-          // 4.3.11 - Solicitação de Inclusão
-          // Verifica se há lista de inclusão OU texto de plano
+          // 4.3.11 - CORRIGIDO: Usa 'p.F43_PLANO'
+          // Tenta pegar lista de inclusão OU texto justificativo
           const h11_1 = fillList('#f43-crit-incluir', p.F43_INCLUIR); 
-          // OBS: Usamos fillValue para garantir que quebras de linha apareçam
           const h11_2 = fillValue('#f43-just-11', p.F43_PLANO); 
           
           const show11 = (h11_1 || h11_2);
-          show('#f43-sub-11', show11); // Esconde bloco 4.3.11 se vazio
+          show('#f43-sub-11', show11);
           if (show11) hasContent = true;
 
-          // 4.3.12
+          // 4.3.12 - CORRIGIDO: Usa 'p.F43_PLANO_B' e 'p.F43_DESC_PLANOS'
           const h12_1 = fillList('#f43-crit-incluir-12', p.F43_INCLUIR_B);
           const h12_2 = fillValue('#f43-just-12', p.F43_PLANO_B);
           const h12_3 = fillValue('#f43-desc-planos-12', p.F43_DESC_PLANOS);
           
           const show12 = (h12_1 || h12_2 || h12_3);
-          show('#f43-sub-12', show12); // Esconde bloco 4.3.12 se vazio
+          show('#f43-sub-12', show12);
           if (show12) hasContent = true;
           
+          // Esconde bloco principal 4.3 se tudo estiver vazio
           togglePhaseBlock('#fase-43', hasContent);
         })();
 
-        // --- FASE 4.4 (Correção de visibilidade) ---
+        // --- FASE 4.4 ---
         (function run44(){
           let hasContent = false;
           
@@ -1596,33 +1607,28 @@
           const has441 = fillList('#f44-decls', p.F44_DECLS);
           const hasLeg = (p.F441_LEGISLACAO || '').trim();
           
-          show('#f44-sub-1', has441 || hasLeg); // Controla container 4.4.1
+          show('#f44-sub-1', has441 || hasLeg); 
           show('#f44-leg-wrap', !!hasLeg);
           
           if (hasLeg) fillBlock('[data-k="F441_LEGISLACAO"]', p.F441_LEGISLACAO);
           if (has441 || hasLeg) hasContent = true;
 
-          // 4.4.2 Finalidades
           const has442 = fillList('#f44-finalidades', p.F44_FINALIDADES);
           show('#f44-sub-2', has442);
           if (has442) hasContent = true;
 
-          // 4.4.3 Critérios
           const has443 = fillList('#f44-criterios', p.F44_CRITERIOS);
           show('#f44-sub-3', has443);
           if (has443) hasContent = true;
 
-          // 4.4.4 Anexos
           const has444 = fillBlock('[data-k="F44_ANEXOS"]', p.F44_ANEXOS);
           show('#f44-sub-4', has444);
           if (has444) hasContent = true;
 
-          // 4.4.5 Descrição
           const has445 = fillBlock('[data-k="F445_DESC_PLANOS"]', p.F445_DESC_PLANOS);
           show('#f44-sub-5', has445);
           if (has445) hasContent = true;
 
-          // 4.4.6 Execução/Docs
           const has446a = fillBlock('[data-k="F446_DOCS"]', p.F446_DOCS);
           const has446b = fillBlock('[data-k="F446_EXEC_RES"]', p.F446_EXEC_RES);
           const show446 = (has446a || has446b);
@@ -1637,7 +1643,7 @@
           let hasContent = false;
 
           const has451 = fillList('#f45-decls', p.F45_DECLS);
-          if (has451) hasContent = true;
+          if (has451) hasContent = true; // 4.5.1 não tem container separado com título, é direto
 
           const has452 = fillBlock('[data-k="F45_DOCS"]', p.F45_DOCS);
           show('#f45-sub-2', has452);
@@ -1658,15 +1664,12 @@
         (function run46(){
           let hasContent = false;
           
-          // 4.6.1
           const has461a = fillList('#f46-criterios', p.F46_CRITERIOS);
           const has461b = fillBlock('[data-k="F46_PROGESTAO"]', p.F46_PROGESTAO);
           const has461c = fillBlock('[data-k="F46_PORTE"]', p.F46_PORTE);
-          
           const has461d = (!!p.F46_JUST_D || !!p.F46_DOCS_D); 
           fillBlock('[data-k="F46_JUST_D"]', p.F46_JUST_D);
           fillBlock('[data-k="F46_DOCS_D"]', p.F46_DOCS_D);
-
           const has461e = (!!p.F46_JUST_E || !!p.F46_DOCS_E);
           fillBlock('[data-k="F46_JUST_E"]', p.F46_JUST_E);
           fillBlock('[data-k="F46_DOCS_E"]', p.F46_DOCS_E);
@@ -1675,14 +1678,12 @@
           show('#f46-sub-1', show461);
           if (show461) hasContent = true;
 
-          // 4.6.2
           const has462a = fillList('#f46-finalidades', p.F46_FINALIDADES);
           const has462f = fillList('#f46-crit-f', p.F462F_CRITERIOS);
           const show462 = (has462a || has462f);
           show('#f46-sub-2', show462);
           if (show462) hasContent = true;
           
-          // 4.6.6
           const has466a = fillBlock('[data-k="F466_DOCS"]', p.F466_DOCS);
           const has466b = fillBlock('[data-k="F466_EXEC_RES"]', p.F466_EXEC_RES);
           const show466 = (has466a || has466b);
@@ -1691,7 +1692,7 @@
           
           togglePhaseBlock('#fase-46', hasContent);
         })();
-        
+
         // 5) Justificativas Gerais
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS);
         
