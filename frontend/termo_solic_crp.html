@@ -1523,124 +1523,151 @@
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
         // --- FASE 4.3 (CORREÇÃO ROBUSTA) ---
-        // --- FASE 4.3 (COM LOGS DE DEPURAÇÃO) ---
+// --- FASE 4.3 (COM LOGS MÁXIMOS DE DEPURAÇÃO E LÓGICA ROBUSTA) ---
         (function run43(){
-          console.group('[DEBUG FASE 4.3] Iniciando processamento');
+          console.group('[DEBUG FASE 4.3 - INÍCIO]');
           
-          // 1. LOG DOS DADOS RECEBIDOS
-          console.log('DADOS BRUTOS (p):', p);
-          console.log('-> p.F43_LISTA:', p.F43_LISTA);
-          console.log('-> p.F43_PLANO:', p.F43_PLANO);
-          console.log('-> p.F43_JUST:', p.F43_JUST); // Caso venha com nome antigo
-          console.log('-> p.F43_INCLUIR:', p.F43_INCLUIR);
+          try {
+            let hasContent = false;
+            
+            // 1. RECUPERAÇÃO E TRATAMENTO DA LISTA DE CRITÉRIOS (F43_LISTA)
+            let rawList = p.F43_LISTA || p.f43_lista || [];
+            let allItens = [];
+            
+            if (Array.isArray(rawList)) {
+                allItens = rawList.filter(Boolean).map(String);
+            } else if (typeof rawList === 'string') {
+                // Trata string separada por ; , ou quebra de linha
+                allItens = rawList.split(/;|,|\r?\n/).map(s => s.trim()).filter(Boolean);
+            }
+            
+            console.log('-> DADOS BRUTOS RECEBIDOS (p):', p);
+            console.log('-> LISTA GERAL DE CRITÉRIOS (allItens, processada):', allItens);
+            console.log('-> Total de critérios para filtrar:', allItens.length);
 
-          let hasContent = false;
-          
-          // TRATAMENTO DA LISTA
-          let rawList = p.F43_LISTA || p.f43_lista || [];
-          let allItens = [];
-          
-          if (Array.isArray(rawList)) {
-            allItens = rawList;
-          } else if (typeof rawList === 'string') {
-            allItens = rawList.split(/;|,|\r?\n/).map(s => s.trim()).filter(Boolean);
+
+            // 2. FUNÇÃO DE FILTRO SEGURA
+            const filterList = (keywords) => {
+                return allItens.filter(item => {
+                    const lowItem = String(item || '').toLowerCase();
+                    return keywords.some(k => lowItem.includes(k));
+                });
+            };
+
+            // 3. PROCESSADOR DE SUB-SEÇÕES (4.3.1 a 4.3.9)
+            const processSub = (ulId, containerId, keywords) => {
+                const elContainer = document.querySelector(containerId);
+                const elUl = document.querySelector(ulId);
+                
+                if (!elContainer) {
+                    console.error(`[ERRO DE ID] Container ${containerId} não encontrado!`);
+                    return false;
+                }
+                if (!elUl) {
+                    console.error(`[ERRO DE ID] UL de preenchimento ${ulId} não encontrada!`);
+                    // Não quebra, mas não preenche
+                }
+                
+                const list = filterList(keywords);
+                const preencheu = fillList(ulId, list); // fillList só retorna true se preencheu
+                
+                console.log(`[SUBITEM ${containerId}] Keywords: ${keywords[0]}... | Itens encontrados: ${list.length} | Preencheu (fillList)? ${preencheu}`);
+
+                show(containerId, preencheu); // Esconde o bloco se não preencheu nada
+                
+                if (preencheu) hasContent = true;
+                return preencheu;
+            };
+
+            // --- EXECUÇÃO DOS SUBITENS 4.3.1 a 4.3.9 ---
+            processSub('#f43-itens-1', '#f43-sub-1', ['dipr', 'caráter contributivo', 'repasse', 'aportes', 'parcelamento']);
+            processSub('#f43-itens-2', '#f43-sub-2', ['utilização dos recursos']);
+            processSub('#f43-itens-3', '#f43-sub-3', ['aplicações financeiras', 'dair', 'dpin']);
+            processSub('#f43-itens-4', '#f43-sub-4', ['limites de contribuição']);
+            processSub('#f43-itens-5', '#f43-sub-5', ['rol de benefícios', 'plano de benefícios']);
+            processSub('#f43-itens-6', '#f43-sub-6', ['previdência complementar', 'rpc']);
+            processSub('#f43-itens-7', '#f43-sub-7', ['envio dos dados', 'solicitação de legislação', 'atendimento à fiscalização', 'nta', 'draa', 'msc', 'esocial']);
+            processSub('#f43-itens-8', '#f43-sub-8', ['compensação previdenciária']);
+            processSub('#f43-itens-9', '#f43-sub-9', ['requisitos para os dirigentes', 'colegiados', 'art. 8º-b']);
+
+
+            // --- 4.3.10 (OPÇÃO DE LEGISLAÇÃO/DOCUMENTOS) ---
+            const opt4310 = String(p.F4310_OPCAO || p.f4310_opcao || '').trim().toLowerCase();
+            const optA = opt4310.startsWith('a');
+            const optB = opt4310.startsWith('b');
+            
+            console.log(`[SUBITEM #f43-sub-10] Opção F4310_OPCAO (lida): ${opt4310}`);
+
+            show('#f43-opcao-a', optA);
+            show('#f43-opcao-b', optB);
+            show('#f43-sub-10', optA || optB);
+
+            if (optA) { 
+                const preencheuLeg = fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO);
+                console.log(`[SUBITEM #f43-sub-10] Opção A - Preencheu Legislação? ${preencheuLeg} (Dado: ${p.F4310_LEGISLACAO || 'vazio'})`);
+                if(preencheuLeg) hasContent = true; 
+            }
+            if (optB) { 
+                const preencheuDocs = fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS);
+                console.log(`[SUBITEM #f43-sub-10] Opção B - Preencheu Docs? ${preencheuDocs} (Dado: ${p.F4310_DOCS || 'vazio'})`);
+                if(preencheuDocs) hasContent = true; 
+            }
+
+
+            // --- 4.3.11 (INCLUSÃO DE CRITÉRIOS A) ---
+            const f43_plano_txt = p.F43_PLANO || p.f43_plano || p.F43_JUST || ''; // Pega o campo de justificativa
+            const f43_incluir_str = p.F43_INCLUIR || p.f43_incluir || '';
+            const f43_incluir_list = Array.isArray(f43_incluir_str) 
+                ? f43_incluir_str.filter(Boolean).map(String) 
+                : String(f43_incluir_str).split(/;|\r?\n/).map(s => s.trim()).filter(Boolean); // Tratamento de string para lista
+
+            console.log(`[SUBITEM #f43-sub-11] Justificativa (txt): ${f43_plano_txt.substring(0, 30)}... | Itens a incluir (lista): ${f43_incluir_list.length}`);
+
+            const h11_1 = fillList('#f43-crit-incluir', f43_incluir_list); // Preenche lista
+            const h11_2 = fillValue('#f43-just-11', f43_plano_txt); // Preenche justificativa
+            
+            const show11 = (h11_1 || h11_2);
+            show('#f43-sub-11', show11);
+            if (show11) hasContent = true;
+            console.log(`[SUBITEM #f43-sub-11] Resultado: Lista(${h11_1}) + Texto(${h11_2}) = VISÍVEL(${show11})`);
+
+
+            // --- 4.3.12 (INCLUSÃO DE CRITÉRIOS B) ---
+            // Nota: Os campos F4312_* parecem não estar sendo usados no front (solic_crp.js). 
+            // Usamos F43_PLANO_B, F43_DESC_PLANOS e F43_INCLUIR_B.
+            const f43_plano_b_txt = p.F43_PLANO_B || p.f43_plano_b || '';
+            const f43_desc_txt = p.F43_DESC_PLANOS || p.f43_desc_planos || '';
+            const f43_incluir_b_str = p.F43_INCLUIR_B || p.f43_incluir_b || '';
+            const f43_incluir_b_list = Array.isArray(f43_incluir_b_str) 
+                ? f43_incluir_b_str.filter(Boolean).map(String)
+                : String(f43_incluir_b_str).split(/;|\r?\n/).map(s => s.trim()).filter(Boolean);
+
+            console.log(`[SUBITEM #f43-sub-12] Justificativa B: ${f43_plano_b_txt.substring(0, 30)}... | Desc Planos: ${f43_desc_txt.substring(0, 30)}... | Itens a incluir B: ${f43_incluir_b_list.length}`);
+
+            const h12_1 = fillList('#f43-crit-incluir-12', f43_incluir_b_list); // a) Critérios que precisará incluir
+            const h12_2 = fillValue('#f43-just-12', f43_plano_b_txt); // b) Justificativas
+            const h12_3 = fillValue('#f43-desc-planos-12', f43_desc_txt); // c) Descrever Plano(s) de Ação
+            
+            const show12 = (h12_1 || h12_2 || h12_3);
+            show('#f43-sub-12', show12);
+            if (show12) hasContent = true;
+            console.log(`[SUBITEM #f43-sub-12] Resultado: Lista(${h12_1}) + Plano B(${h12_2}) + Desc(${h12_3}) = VISÍVEL(${show12})`);
+
+
+            // --- CONTROLE FINAL DO BLOCO 4.3 ---
+            console.log(`[DEBUG FASE 4.3 - FINAL] Bloco principal #fase-43 visível? ${hasContent}`);
+            togglePhaseBlock('#fase-43', hasContent);
+
+          } catch (e) {
+            console.error('ERRO FATAL DURANTE A EXECUÇÃO DA FASE 4.3! VERIFIQUE O CONSOLE PARA DETALHES.', e);
+            const errEl = document.getElementById('fase-43');
+            if (errEl) {
+                errEl.hidden = false;
+                errEl.style.display = 'block';
+                errEl.innerHTML = `<div style="color:red; border:1px solid red; padding:10px;">ERRO GRAVE NA FASE 4.3: ${e.message}. Verifique o Console.</div>`;
+            }
           }
-          
-          console.log('-> Lista processada (allItens):', allItens);
-
-          // Função de filtro
-          const filterList = (keys) => allItens.filter(item => {
-            const lowItem = String(item || '').toLowerCase();
-            return keys.some(k => lowItem.includes(k));
-          });
-
-          // Processamento das sub-seções
-          const processSub = (ulId, containerId, keywords) => {
-             const list = filterList(keywords);
-             const elUl = document.querySelector(ulId);
-             
-             // Log específico se a lista tiver itens mas não achar o elemento HTML
-             if (list.length > 0 && !elUl) {
-                 console.warn(`[ALERTA] Dados encontrados para ${ulId}, mas elemento HTML não existe!`, list);
-             }
-
-             const preencheu = fillList(ulId, list); 
-             show(containerId, preencheu);
-             
-             if(preencheu) {
-                 console.log(`-> Preencheu ${ulId} (Container: ${containerId})`);
-                 hasContent = true;
-             }
-          };
-
-          // Executa subitens
-          processSub('#f43-itens-1', '#f43-sub-1', ['dipr', 'caráter contributivo', 'repasse', 'aportes', 'parcelamento']);
-          // ... (outros processSub omitidos para brevidade, a lógica é a mesma) ...
-          processSub('#f43-itens-2', '#f43-sub-2', ['utilização dos recursos']);
-          processSub('#f43-itens-3', '#f43-sub-3', ['aplicações financeiras', 'dair', 'dpin']);
-          processSub('#f43-itens-4', '#f43-sub-4', ['limites de contribuição']);
-          processSub('#f43-itens-5', '#f43-sub-5', ['rol de benefícios', 'plano de benefícios']);
-          processSub('#f43-itens-6', '#f43-sub-6', ['previdência complementar', 'rpc']);
-          processSub('#f43-itens-7', '#f43-sub-7', ['envio dos dados', 'solicitação de legislação', 'atendimento à fiscalização', 'nta', 'draa', 'msc', 'esocial']);
-          processSub('#f43-itens-8', '#f43-sub-8', ['compensação previdenciária']);
-          processSub('#f43-itens-9', '#f43-sub-9', ['requisitos para os dirigentes', 'colegiados', 'art. 8º-b']);
-
-
-          // 4.3.10
-          const opt4310 = String(p.F4310_OPCAO || p.f4310_opcao || '').trim().toLowerCase();
-          const optA = opt4310.startsWith('a');
-          const optB = opt4310.startsWith('b');
-          console.log('-> 4.3.10 Opção:', opt4310);
-          
-          show('#f43-opcao-a', optA);
-          show('#f43-opcao-b', optB);
-          show('#f43-sub-10', optA || optB);
-
-          if (optA) { fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO); hasContent = true; }
-          if (optB) { fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS); hasContent = true; }
-
-          // --- DEBUG 4.3.11 ---
-          const f43_plano_txt = p.F43_PLANO || p.f43_plano || p.F43_JUST || '';
-          const f43_incluir_list = p.F43_INCLUIR || p.f43_incluir || [];
-          
-          console.log('-> 4.3.11 Tentando preencher com:', { 
-              plano_txt: f43_plano_txt, 
-              incluir_list: f43_incluir_list 
-          });
-
-          const elJust11 = document.querySelector('#f43-just-11');
-          console.log('-> Elemento HTML #f43-just-11 existe?', !!elJust11);
-
-          const h11_1 = fillList('#f43-crit-incluir', f43_incluir_list); 
-          const h11_2 = fillValue('#f43-just-11', f43_plano_txt); 
-          
-          console.log('-> 4.3.11 Resultado:', { lista_preenchida: h11_1, texto_preenchido: h11_2 });
-
-          const show11 = (h11_1 || h11_2);
-          show('#f43-sub-11', show11);
-          if (show11) hasContent = true;
-
-          // --- DEBUG 4.3.12 ---
-          const f43_plano_b_txt = p.F43_PLANO_B || p.f43_plano_b || '';
-          const f43_desc_txt = p.F43_DESC_PLANOS || p.f43_desc_planos || '';
-          
-          console.log('-> 4.3.12 Tentando preencher com:', { 
-              plano_b: f43_plano_b_txt, 
-              desc: f43_desc_txt 
-          });
-
-          const h12_1 = fillList('#f43-crit-incluir-12', p.F43_INCLUIR_B);
-          const h12_2 = fillValue('#f43-just-12', f43_plano_b_txt);
-          const h12_3 = fillValue('#f43-desc-planos-12', f43_desc_txt);
-          
-          const show12 = (h12_1 || h12_2 || h12_3);
-          show('#f43-sub-12', show12);
-          if (show12) hasContent = true;
-          
-          console.log('-> FASE 4.3 TEM CONTEÚDO FINAL?', hasContent);
           console.groupEnd();
-
-          togglePhaseBlock('#fase-43', hasContent);
         })();
 
         // 5) Justificativas Gerais
