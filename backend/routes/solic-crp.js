@@ -2,17 +2,8 @@
 import { Router } from "express";
 import { schemaSolicCrp } from "../schemas/schemaSolicCrp.js";
 import { buscarGescon, buscarTermosRegistrados, salvarSolicCrp } from "../services/solicCrp.js";
-// import { pdfFromSolicCrp } from "../services/pdf/solicCrp.js"; // Substituído pela lógica direta abaixo
+import { pdfFromSolicCrp } from "../services/pdf/solicCrp.js";
 import { schemaTermoSolicPdf } from "../schemas/schemaTermoSolicPdf.js";
-
-// NOVOS IMPORTS para Puppeteer e Path
-import puppeteer from "puppeteer";
-import path from "path";
-import { fileURLToPath } from "url";
-
-// Definição de __dirname para ambiente ES Module (necessário para path.join)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const r = Router();
 
@@ -85,41 +76,12 @@ r.post("/gerar-solic-crp", requireKey, async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------
-// === PDF do Termo de Solicitação (CRP) – Lógica ATUALIZADA ===
-// ---------------------------------------------------------------------
+// === PDF do Termo de Solicitação (CRP) ===
 r.post("/termo-solic-crp-pdf", requireKey, async (req, res, next) => {
   try {
     const payload = schemaTermoSolicPdf.parse(req.body);
-    
-    // Início do NOVO TRECHO com Puppeteer garantido
-    const browser = await puppeteer.launch({
-      headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    });
-    const page = await browser.newPage();
-
-    // 1. Abre o modelo HTML correto
-    // Ajuste o caminho 'termo_solic_crp.html' se a sua estrutura de pastas for diferente.
-    // O caminho abaixo assume que 'solic-crp.js' está em 'backend/routes' e o HTML em 'frontend'.
-    const template = path.join(__dirname, "../../frontend/termo_solic_crp.html");
-    await page.goto("file://" + template, { waitUntil: "networkidle0" });
-
-    // 2. Injeta o payload completo e executa o script do template (window.run)
-    await page.evaluate((data) => {
-      if (window.run) {
-        window.run(data);               // usa a função do próprio HTML para preencher (incluindo F43_*)
-      } else if (window.postMessage) {
-        window.postMessage({ type: "TERMO_DATA", payload: data }, "*");
-      }
-    }, payload);
-
-    // 3. Gera o PDF com o HTML já preenchido
-    const pdf = await page.pdf({ format: "A4", printBackground: true });
-
-    await browser.close();
-    // Fim do NOVO TRECHO
-
+    // passa o req para o serviço resolver o origin corretamente
+    const pdf = await pdfFromSolicCrp(payload, req);
     res.setHeader("Content-Type","application/pdf");
     res.setHeader("Content-Disposition",'attachment; filename="solic-crp.pdf"');
     return res.send(pdf);

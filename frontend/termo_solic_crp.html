@@ -1522,80 +1522,109 @@
         // --- FASE 4.2 ---
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
-        // --- FASE 4.3 (LISTA COMPLETA) ---
+        // --- FASE 4.3 ---
         (function run43(){
           let hasContent = false;
           
-          // 4.3.1 a 4.3.9 (filtra da lista geral F43_LISTA)
+          // Filtragem inteligente para as listas 4.3.1 a 4.3.9
           const allItens = p.F43_LISTA;
           const filterList = (keys) => allItens.filter(item => {
             const lowItem = (item || '').toLowerCase();
             return keys.some(k => lowItem.includes(k));
           });
 
-            // Distribui a lista única nos 9 ULs corretos
-          if (fillList('#f43-itens-1', filterList(['dipr', 'caráter contributivo', 'repasse', 'aportes', 'parcelamento']))) hasContent = true;
-          if (fillList('#f43-itens-2', filterList(['utilização dos recursos']))) hasContent = true;
-          if (fillList('#f43-itens-3', filterList(['aplicações financeiras', 'dair', 'dpin']))) hasContent = true;
-          if (fillList('#f43-itens-4', filterList(['limites de contribuição']))) hasContent = true;
-          if (fillList('#f43-itens-5', filterList(['rol de benefícios', 'plano de benefícios']))) hasContent = true;
-          if (fillList('#f43-itens-6', filterList(['previdência complementar', 'rpc']))) hasContent = true;
-          if (fillList('#f43-itens-7', filterList(['envio dos dados e informações', 'envio de dados', 'nta', 'draa', 'msc', 'esocial']))) hasContent = true;
-          if (fillList('#f43-itens-8', filterList(['compensação previdenciária']))) hasContent = true;
-          if (fillList('#f43-itens-9', filterList(['requisitos para os dirigentes', 'dirigentes, membros titulares', 'colegiados']))) hasContent = true;
+          // Função auxiliar: preenche a lista E controla a visibilidade do título pai
+          const processSub = (ulId, containerId, keywords) => {
+             const list = filterList(keywords);
+             const filled = fillList(ulId, list); 
+             show(containerId, filled); // Esconde o bloco se a lista estiver vazia
+             if(filled) hasContent = true;
+          };
 
+          // Aplica a lógica para cada subitem
+          processSub('#f43-itens-1', '#f43-sub-1', ['dipr', 'caráter contributivo', 'repasse', 'aportes', 'parcelamento']);
+          processSub('#f43-itens-2', '#f43-sub-2', ['utilização dos recursos']);
+          processSub('#f43-itens-3', '#f43-sub-3', ['aplicações financeiras', 'dair', 'dpin']);
+          processSub('#f43-itens-4', '#f43-sub-4', ['limites de contribuição']);
+          processSub('#f43-itens-5', '#f43-sub-5', ['rol de benefícios', 'plano de benefícios']);
+          processSub('#f43-itens-6', '#f43-sub-6', ['previdência complementar', 'rpc']);
+          processSub('#f43-itens-7', '#f43-sub-7', ['envio dos dados', 'solicitação de legislação', 'atendimento à fiscalização', 'nta', 'draa', 'msc', 'esocial']);
+          processSub('#f43-itens-8', '#f43-sub-8', ['compensação previdenciária']);
+          processSub('#f43-itens-9', '#f43-sub-9', ['requisitos para os dirigentes', 'colegiados', 'art. 8º-b']);
 
-          // 4.3.10
+          // 4.3.10 (Opções A/B)
           const opt4310 = String(p.F4310_OPCAO || '').trim().toLowerCase();
           const optA = opt4310.startsWith('a');
           const optB = opt4310.startsWith('b');
+          
           show('#f43-opcao-a', optA);
           show('#f43-opcao-b', optB);
+          show('#f43-sub-10', optA || optB); // Só mostra título se tiver opção
+
           if (optA) { fillBlock('[data-k="F4310_LEGISLACAO"]', p.F4310_LEGISLACAO); hasContent = true; }
           if (optB) { fillBlock('[data-k="F4310_DOCS"]', p.F4310_DOCS); hasContent = true; }
 
-          // 4.3.11 (Campos F43_INCLUIR e F43_PLANO)
-          // fillList retorna true se array tiver itens. fillValue retorna true se texto existir.
+          // 4.3.11 (CORREÇÃO DE VARIÁVEL: p.F43_PLANO em vez de p.F43_JUST)
           const h11_1 = fillList('#f43-crit-incluir', p.F43_INCLUIR);
           const h11_2 = fillValue('#f43-just-11', p.F43_PLANO); 
           
-          if (h11_1 || h11_2) {
-              show('#f43-sub-11', true); 
-              hasContent = true;
-          } else { 
-              show('#f43-sub-11', false); 
-          }
+          const show11 = (h11_1 || h11_2);
+          show('#f43-sub-11', show11);
+          if (show11) hasContent = true;
 
-          // 4.3.12 (Campos F43_INCLUIR_B, F43_PLANO_B, F43_DESC_PLANOS)
+          // 4.3.12 (CORREÇÃO DE VARIÁVEIS: p.F43_PLANO_B e p.F43_DESC_PLANOS)
           const h12_1 = fillList('#f43-crit-incluir-12', p.F43_INCLUIR_B);
           const h12_2 = fillValue('#f43-just-12', p.F43_PLANO_B);
           const h12_3 = fillValue('#f43-desc-planos-12', p.F43_DESC_PLANOS);
           
-          if (h12_1 || h12_2 || h12_3) {
-              show('#f43-sub-12', true); 
-              hasContent = true;
-          } else { 
-              show('#f43-sub-12', false); 
-          }
+          const show12 = (h12_1 || h12_2 || h12_3);
+          show('#f43-sub-12', show12);
+          if (show12) hasContent = true;
           
+          // Se nada na fase 4.3 foi preenchido, esconde o bloco principal
           togglePhaseBlock('#fase-43', hasContent);
         })();
 
         // --- FASE 4.4 ---
         (function run44(){
           let hasContent = false;
-          if (fillList('#f44-decls', p.F44_DECLS)) hasContent = true;
           
+          // 4.4.1 e Legislação
+          const has441 = fillList('#f44-decls', p.F44_DECLS);
           const hasLeg = (p.F441_LEGISLACAO || '').trim();
+          
+          // Mostra o bloco 4.4.1 se tiver declarações OU legislação
+          show('#f44-sub-1', has441 || hasLeg);
           show('#f44-leg-wrap', !!hasLeg);
-          if (hasLeg) { fillBlock('[data-k="F441_LEGISLACAO"]', p.F441_LEGISLACAO); hasContent = true; }
+          if (hasLeg) fillBlock('[data-k="F441_LEGISLACAO"]', p.F441_LEGISLACAO);
+          if (has441 || hasLeg) hasContent = true;
 
-          if (fillList('#f44-finalidades', p.F44_FINALIDADES)) hasContent = true;
-          if (fillList('#f44-criterios', p.F44_CRITERIOS)) hasContent = true;
-          if (fillBlock('[data-k="F44_ANEXOS"]', p.F44_ANEXOS)) hasContent = true;
-          if (fillBlock('[data-k="F445_DESC_PLANOS"]', p.F445_DESC_PLANOS)) hasContent = true;
-          if (fillBlock('[data-k="F446_DOCS"]', p.F446_DOCS)) hasContent = true;
-          if (fillBlock('[data-k="F446_EXEC_RES"]', p.F446_EXEC_RES)) hasContent = true;
+          // 4.4.2 Finalidades
+          const has442 = fillList('#f44-finalidades', p.F44_FINALIDADES);
+          show('#f44-sub-2', has442);
+          if (has442) hasContent = true;
+
+          // 4.4.3 Critérios
+          const has443 = fillList('#f44-criterios', p.F44_CRITERIOS);
+          show('#f44-sub-3', has443);
+          if (has443) hasContent = true;
+
+          // 4.4.4 Anexos
+          const has444 = fillBlock('[data-k="F44_ANEXOS"]', p.F44_ANEXOS);
+          show('#f44-sub-4', has444);
+          if (has444) hasContent = true;
+
+          // 4.4.5 Descrição
+          const has445 = fillBlock('[data-k="F445_DESC_PLANOS"]', p.F445_DESC_PLANOS);
+          show('#f44-sub-5', has445);
+          if (has445) hasContent = true;
+
+          // 4.4.6 Execução/Docs
+          const has446a = fillBlock('[data-k="F446_DOCS"]', p.F446_DOCS);
+          const has446b = fillBlock('[data-k="F446_EXEC_RES"]', p.F446_EXEC_RES);
+          const show446 = (has446a || has446b);
+          show('#f44-sub-6', show446);
+          if (show446) hasContent = true;
           
           togglePhaseBlock('#fase-44', hasContent);
         })();
@@ -1603,26 +1632,67 @@
         // --- FASE 4.5 ---
         (function run45(){
           let hasContent = false;
-          if (fillList('#f45-decls', p.F45_DECLS)) hasContent = true;
-          if (fillBlock('[data-k="F45_DOCS"]', p.F45_DOCS)) hasContent = true;
-          if (fillBlock('[data-k="F45_JUST"]', p.F45_JUST)) hasContent = true;
-          if (fillBlock('[data-k="F453_EXEC_RES"]', p.F453_EXEC_RES)) hasContent = true;
+
+          // 4.5.1 (Declarações/Checkbox)
+          // Nota: Verifica se a lista F45_DECLS tem itens (incluindo o checkbox "Mantida a regularidade...")
+          const has451 = fillList('#f45-decls', p.F45_DECLS);
+          // O container do 4.5.1 é o próprio topo da div, mas podemos controlar se a lista está visível
+          if (has451) hasContent = true;
+
+          // 4.5.2 Docs
+          const has452 = fillBlock('[data-k="F45_DOCS"]', p.F45_DOCS);
+          show('#f45-sub-2', has452);
+          if (has452) hasContent = true;
+
+          // 4.5.4 Justificativas
+          const has454 = fillBlock('[data-k="F45_JUST"]', p.F45_JUST);
+          show('#f45-sub-4', has454);
+          if (has454) hasContent = true;
+
+          // 4.5.3 Execução
+          const has453 = fillBlock('[data-k="F453_EXEC_RES"]', p.F453_EXEC_RES);
+          show('#f45-sub-3', has453);
+          if (has453) hasContent = true;
+
           togglePhaseBlock('#fase-45', hasContent);
         })();
 
         // --- FASE 4.6 ---
         (function run46(){
           let hasContent = false;
-          if (fillList('#f46-criterios', p.F46_CRITERIOS)) hasContent = true;
-          if (fillBlock('[data-k="F46_PROGESTAO"]', p.F46_PROGESTAO)) hasContent = true;
-          if (fillBlock('[data-k="F46_PORTE"]', p.F46_PORTE)) hasContent = true;
-          if (fillBlock('[data-k="F46_JUST_D"]', p.F46_JUST_D)) hasContent = true;
-          if (fillBlock('[data-k="F46_DOCS_D"]', p.F46_DOCS_D)) hasContent = true;
-          if (fillBlock('[data-k="F46_JUST_E"]', p.F46_JUST_E)) hasContent = true;
-          if (fillBlock('[data-k="F46_DOCS_E"]', p.F46_DOCS_E)) hasContent = true;
-          if (fillList('#f46-finalidades', p.F46_FINALIDADES)) hasContent = true;
-          if (fillBlock('[data-k="F466_DOCS"]', p.F466_DOCS)) hasContent = true;
-          if (fillBlock('[data-k="F466_EXEC_RES"]', p.F466_EXEC_RES)) hasContent = true;
+          
+          // 4.6.1 Bloco Geral
+          const has461a = fillList('#f46-criterios', p.F46_CRITERIOS);
+          const has461b = fillBlock('[data-k="F46_PROGESTAO"]', p.F46_PROGESTAO);
+          const has461c = fillBlock('[data-k="F46_PORTE"]', p.F46_PORTE);
+          
+          // Itens (d) e (e)
+          const has461d = (!!p.F46_JUST_D || !!p.F46_DOCS_D); 
+          fillBlock('[data-k="F46_JUST_D"]', p.F46_JUST_D);
+          fillBlock('[data-k="F46_DOCS_D"]', p.F46_DOCS_D);
+
+          const has461e = (!!p.F46_JUST_E || !!p.F46_DOCS_E);
+          fillBlock('[data-k="F46_JUST_E"]', p.F46_JUST_E);
+          fillBlock('[data-k="F46_DOCS_E"]', p.F46_DOCS_E);
+
+          const show461 = (has461a || has461b || has461c || has461d || has461e);
+          show('#f46-sub-1', show461);
+          if (show461) hasContent = true;
+
+          // 4.6.2 Finalidade
+          const has462a = fillList('#f46-finalidades', p.F46_FINALIDADES);
+          const has462f = fillList('#f46-crit-f', p.F462F_CRITERIOS);
+          const show462 = (has462a || has462f);
+          show('#f46-sub-2', show462);
+          if (show462) hasContent = true;
+          
+          // 4.6.6 Execução
+          const has466a = fillBlock('[data-k="F466_DOCS"]', p.F466_DOCS);
+          const has466b = fillBlock('[data-k="F466_EXEC_RES"]', p.F466_EXEC_RES);
+          const show466 = (has466a || has466b);
+          show('#f46-sub-6', show466);
+          if (show466) hasContent = true;
+          
           togglePhaseBlock('#fase-46', hasContent);
         })();
 
