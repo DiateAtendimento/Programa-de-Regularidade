@@ -2619,21 +2619,32 @@ function syncF46ToTemplate(){
 
     // 6.5) Normalizações de nome (aceita nomes antigos do HTML)
     if (!payload.F42_LISTA && Array.isArray(payload['F42_ITENS[]'])) {
-      payload.F42_LISTA = payload['F42_ITENS[]'];
+      payload.F42_LISTA    = payload['F42_ITENS[]'];
       payload['F42_LISTA[]'] = payload['F42_ITENS[]'];
     }
-    if (!payload.F43_LISTA && Array.isArray(payload['F43_ITENS[]'])) {
-      payload.F43_LISTA = payload['F43_ITENS[]'];
-      payload['F43_LISTA[]'] = payload['F43_ITENS[]'];
+
+    // 🔧 PATCH FASE 4.3 – garantir sempre F43_LISTA preenchido
+    if (!payload.F43_LISTA) {
+      if (Array.isArray(payload['F43_LISTA[]'])) {
+        // caso novo: estamos usando F43_LISTA[] no form
+        payload.F43_LISTA     = payload['F43_LISTA[]'];
+      } else if (Array.isArray(payload['F43_ITENS[]'])) {
+        // caso legado: apenas F43_ITENS[]
+        payload.F43_LISTA     = payload['F43_ITENS[]'];
+        payload['F43_LISTA[]'] = payload['F43_ITENS[]'];
+      }
     }
+
+    // mantém o bloco da 4.4 como já estava
     if (!payload.F44_CRITERIOS) {
       if (Array.isArray(payload['F44_CRITERIOS[]'])) {
         payload.F44_CRITERIOS = payload['F44_CRITERIOS[]'];
       } else if (Array.isArray(payload['F44_CONDICOES[]'])) {
-        payload.F44_CRITERIOS = payload['F44_CONDICOES[]'];
+        payload.F44_CRITERIOS   = payload['F44_CONDICOES[]'];
         payload['F44_CRITERIOS[]'] = payload['F44_CONDICOES[]'];
       }
     }
+
 
     // === PATCH: Fase 4.5 (template espera F45_DECLS; form usa F45_CONDICOES[])
     if (!payload.F45_DECLS) {

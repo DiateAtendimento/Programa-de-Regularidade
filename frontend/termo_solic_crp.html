@@ -1541,7 +1541,14 @@
             });
 
             // 2. TRATAMENTO DA LISTA DE CRITÉRIOS (F43_LISTA) para 4.3.1 a 4.3.9
-            let rawList = p.F43_LISTA || p.f43_lista || [];
+            let rawList =
+              p.F43_LISTA                   // caminho principal (patch do JS)
+              || p.f43_lista                // fallback minúsculo
+              || p['F43_LISTA[]']           // caso venha só a versão com colchetes
+              || p['F43_ITENS[]']           // super-fallback legado
+              || p.F43_ITENS                // última tentativa
+              || [];
+
             let allItens = [];
             
             if (Array.isArray(rawList)) {
