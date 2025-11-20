@@ -2682,6 +2682,12 @@ function syncF46ToTemplate(){
        }
     }
 
+   // 3. Mapeia F44_FINALIDADES[] (HTML) para F44_FINALIDADES (PDF)
+    if (!payload.F44_FINALIDADES || payload.F44_FINALIDADES.length === 0) {
+      if (Array.isArray(payload['F44_FINALIDADES[]']) && payload['F44_FINALIDADES[]'].length > 0) {
+        payload.F44_FINALIDADES = payload['F44_FINALIDADES[]'];
+      }
+    }
 
     // --- FASE 4.5 ---
     // Mapeia F45_CONDICOES[] (HTML) para F45_DECLS (PDF)
@@ -2713,16 +2719,28 @@ function syncF46ToTemplate(){
         payload['F46_CRITERIOS[]'] = payload['F46_CONDICOES[]'];
       }
     }
+    
+    // 4. Mapeia F462_FINALIDADES[] (HTML) para F46_FINALIDADES (PDF)
+    if (!payload.F46_FINALIDADES || payload.F46_FINALIDADES.length === 0) {
+      if (Array.isArray(payload['F46_FINALIDADES[]']) && payload['F46_FINALIDADES[]'].length > 0) {
+        payload.F46_FINALIDADES = payload['F46_FINALIDADES[]'];
+      } else if (Array.isArray(payload['F462_FINALIDADES[]']) && payload['F462_FINALIDADES[]'].length > 0) {
+        payload.F46_FINALIDADES = payload['F462_FINALIDADES[]'];
+        payload['F46_FINALIDADES[]'] = payload['F462_FINALIDADES[]'];
+      }
+    }
 
     // Garantias finais (arrays nunca nulos para Joi/Schema)
     if (!Array.isArray(payload['F42_LISTA[]'])) payload['F42_LISTA[]'] = payload['F42_LISTA[]'] || [];
     if (!Array.isArray(payload['F43_LISTA[]'])) payload['F43_LISTA[]'] = payload['F43_LISTA[]'] || [];
     if (!Array.isArray(payload['F44_DECLS[]'])) payload['F44_DECLS[]'] = payload['F44_DECLS[]'] || [];
     if (!Array.isArray(payload['F44_CRITERIOS[]'])) payload['F44_CRITERIOS[]'] = payload['F44_CRITERIOS[]'] || [];
+    if (!Array.isArray(payload['F44_FINALIDADES[]'])) payload['F44_FINALIDADES[]'] = payload['F44_FINALIDADES[]'] || [];
     if (!Array.isArray(payload['F45_DECLS[]'])) payload['F45_DECLS[]'] = payload['F45_DECLS[]'] || [];
     if (!Array.isArray(payload['F46_DECLS[]'])) payload['F46_DECLS[]'] = payload['F46_DECLS[]'] || [];
     if (!Array.isArray(payload['F46_CRITERIOS[]'])) payload['F46_CRITERIOS[]'] = payload['F46_CRITERIOS[]'] || [];
-
+    if (!Array.isArray(payload['F46_FINALIDADES[]'])) payload['F46_FINALIDADES[]'] = payload['F46_FINALIDADES[]'] || [];
+    
     // Recalcula derivadas/texto da Fase 4 usando os arrays já normalizados.
     const arr = (v) => (Array.isArray(v) ? v : (v ? [v] : []));
 
