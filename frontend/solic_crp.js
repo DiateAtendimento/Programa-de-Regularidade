@@ -2492,9 +2492,9 @@ function syncF46ToTemplate(){
       (Array.isArray(arr) && arr.length ? arr.filter(Boolean).join(sep) : '');
 
     // 1) Captura genérica de TODOS os inputs name^="F4"
-    //    - checkbox/[] → arrays
-    //    - radio → valor único
-    //    - text/select → valor único
+    //    - checkbox/[] → arrays
+    //    - radio → valor único
+    //    - text/select → valor único
     const allF4Inputs = qsa('input[name^="F4"], select[name^="F4"], textarea[name^="F4"]');
 
     // Normalizar por name
@@ -2543,7 +2543,7 @@ function syncF46ToTemplate(){
     
 
     // 2) Compatibilidades / variações usadas no HTML
-    //    (garantir que os aliases existam, mesmo que sob nomes alternativos no form)
+    //    (garantir que os aliases existam, mesmo que sob nomes alternativos no form)
     const alias = (prim, ...alts) => {
       if (Array.isArray(payload[prim]) ? payload[prim].length : payload[prim]) return;
       for (const a of alts) {
@@ -2574,11 +2574,11 @@ function syncF46ToTemplate(){
     });
 
     // 4) Derivações “*_LISTA / *_TXT” esperadas no template/espelhos
-    //    4.2
+    //    4.2
     payload.F42_LISTA = payload['F42_ITENS[]'] || payload.F42_LISTA || [];
     payload.F42_LISTA_TXT = makeText(payload.F42_LISTA);
 
-    //    4.3
+    //    4.3
     payload.F43_LISTA = payload['F43_ITENS[]'] || payload.F43_LISTA || [];
     payload.F43_LISTA_TXT = makeText(payload.F43_LISTA);
 
@@ -2591,7 +2591,7 @@ function syncF46ToTemplate(){
     payload.F43_INCLUIR = f43InclArr.length ? f43InclArr.join('; ') : '';
     payload.F43_INCLUIR_TXT = payload.F43_INCLUIR;
 
-    //    4.4
+    //    4.4
     payload.F44_LISTA_CRITERIOS = payload['F44_CRITERIOS[]'] || payload.F44_LISTA_CRITERIOS || [];
 
     payload.F44_LISTA_CRITERIOS_TXT = makeText(payload.F44_LISTA_CRITERIOS);
@@ -2607,79 +2607,104 @@ function syncF46ToTemplate(){
     payload.F442_FINALIDADES_TXT = makeText(payload['F442_FINALIDADES[]']);
     payload.F443_FINALIDADES_TXT = makeText(payload['F443_FINALIDADES[]']);
     payload.F444_FINALIDADES_TXT = makeText(payload['F444_FINALIDADES[]']);
-    payload.F45_FINALIDADES_TXT  = makeText(payload['F45_FINALIDADES[]']);
+    payload.F45_FINALIDADES_TXT  = makeText(payload['F45_FINALIDADES[]']);
     payload.F462_FINALIDADES_TXT = makeText(payload['F462_FINALIDADES[]']);
 
     // 5) Radios simples (garantia de string vazia se não marcado)
-    payload.F41_OPCAO      = payload.F41_OPCAO      || (document.querySelector('input[name="F41_OPCAO"]:checked')?.value || '');
-    payload.F4310_OPCAO    = payload.F4310_OPCAO    || (document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || '');
+    payload.F41_OPCAO      = payload.F41_OPCAO      || (document.querySelector('input[name="F41_OPCAO"]:checked')?.value || '');
+    payload.F4310_OPCAO    = payload.F4310_OPCAO    || (document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || '');
 
     // 6) Checkbox simples (SIM/nada)
     payload.F43_SOLICITA_INCLUSAO = document.getElementById('F43_SOLICITA_INCLUSAO')?.checked ? 'SIM' : (payload.F43_SOLICITA_INCLUSAO || '');
 
-    // 6.5) Normalizações de nome (aceita nomes antigos do HTML)
-    if (!payload.F42_LISTA && Array.isArray(payload['F42_ITENS[]'])) {
-      payload.F42_LISTA    = payload['F42_ITENS[]'];
-      payload['F42_LISTA[]'] = payload['F42_ITENS[]'];
+    // ==========================================================================
+    // 6.5) Normalizações de nome (CORREÇÃO CRÍTICA)
+    // Garante a cópia dos arrays do HTML (ITENS/CONDICOES) para o Payload (LISTA/DECLS/CRITERIOS),
+    // corrigindo a falha onde a verificação `!payload.XXX` era falsa se `payload.XXX` fosse `[]`.
+    // ==========================================================================
+
+    // --- FASE 4.2 ---
+    // Mapeia F42_ITENS[] (HTML) para F42_LISTA (PDF)
+    if (!payload.F42_LISTA || payload.F42_LISTA.length === 0) {
+      if (Array.isArray(payload['F42_ITENS[]']) && payload['F42_ITENS[]'].length > 0) {
+        payload.F42_LISTA = payload['F42_ITENS[]'];
+        payload['F42_LISTA[]'] = payload['F42_ITENS[]'];
+      }
     }
 
-    // 🔧 PATCH FASE 4.3 – garantir sempre F43_LISTA preenchido
-    if (!payload.F43_LISTA) {
-      if (Array.isArray(payload['F43_LISTA[]'])) {
-        // caso novo: estamos usando F43_LISTA[] no form
-        payload.F43_LISTA     = payload['F43_LISTA[]'];
-      } else if (Array.isArray(payload['F43_ITENS[]'])) {
-        // caso legado: apenas F43_ITENS[]
-        payload.F43_LISTA     = payload['F43_ITENS[]'];
+    // --- FASE 4.3 (Correção principal) ---
+    // Mapeia F43_ITENS[] (HTML) para F43_LISTA (PDF)
+    if (!payload.F43_LISTA || payload.F43_LISTA.length === 0) {
+      // Prioriza 'F43_LISTA[]' se existir (nome mais novo)
+      if (Array.isArray(payload['F43_LISTA[]']) && payload['F43_LISTA[]'].length > 0) {
+        payload.F43_LISTA = payload['F43_LISTA[]'];
+      }
+      // Fallback para 'F43_ITENS[]' (nome legado)
+      else if (Array.isArray(payload['F43_ITENS[]']) && payload['F43_ITENS[]'].length > 0) {
+        payload.F43_LISTA = payload['F43_ITENS[]'];
         payload['F43_LISTA[]'] = payload['F43_ITENS[]'];
       }
     }
 
-    // mantém o bloco da 4.4 como já estava
-    if (!payload.F44_CRITERIOS) {
-      if (Array.isArray(payload['F44_CRITERIOS[]'])) {
-        payload.F44_CRITERIOS = payload['F44_CRITERIOS[]'];
-      } else if (Array.isArray(payload['F44_CONDICOES[]'])) {
-        payload.F44_CRITERIOS   = payload['F44_CONDICOES[]'];
-        payload['F44_CRITERIOS[]'] = payload['F44_CONDICOES[]'];
-      }
+    // --- FASE 4.4 ---
+    // 1. Mapeia F44_CONDICOES[] (HTML) para F44_DECLS (PDF - Declarações)
+    if (!payload.F44_DECLS || payload.F44_DECLS.length === 0) {
+       if (Array.isArray(payload['F44_CONDICOES[]']) && payload['F44_CONDICOES[]'].length > 0) {
+         payload.F44_DECLS = payload['F44_CONDICOES[]'];
+         payload['F44_DECLS[]'] = payload['F44_CONDICOES[]'];
+       }
+    }
+    // 2. Mapeia F44_CONDICOES[] ou F44_CRITERIOS[] para F44_CRITERIOS (PDF)
+    if (!payload.F44_CRITERIOS || payload.F44_CRITERIOS.length === 0) {
+       if (Array.isArray(payload['F44_CRITERIOS[]']) && payload['F44_CRITERIOS[]'].length > 0) {
+         payload.F44_CRITERIOS = payload['F44_CRITERIOS[]'];
+       } else if (Array.isArray(payload['F44_CONDICOES[]']) && payload['F44_CONDICOES[]'].length > 0) {
+         // Fallback se F44_CRITERIOS[] não foi usado, mas CONDICOES[] sim
+         payload.F44_CRITERIOS = payload['F44_CONDICOES[]'];
+         payload['F44_CRITERIOS[]'] = payload['F44_CONDICOES[]'];
+       }
     }
 
 
-    // === PATCH: Fase 4.5 (template espera F45_DECLS; form usa F45_CONDICOES[])
-    if (!payload.F45_DECLS) {
-      if (Array.isArray(payload['F45_DECLS[]'])) {
+    // --- FASE 4.5 ---
+    // Mapeia F45_CONDICOES[] (HTML) para F45_DECLS (PDF)
+    if (!payload.F45_DECLS || payload.F45_DECLS.length === 0) {
+      if (Array.isArray(payload['F45_DECLS[]']) && payload['F45_DECLS[]'].length > 0) {
         payload.F45_DECLS = payload['F45_DECLS[]'];
-      } else if (Array.isArray(payload['F45_CONDICOES[]'])) {
+      } else if (Array.isArray(payload['F45_CONDICOES[]']) && payload['F45_CONDICOES[]'].length > 0) {
         payload.F45_DECLS = payload['F45_CONDICOES[]'];
         payload['F45_DECLS[]'] = payload['F45_CONDICOES[]'];
       }
     }
 
-    // === PATCH: Fase 4.6 (template espera F46_CRITERIOS/F46_DECLS; form usa F46_CONDICOES[])
-    if (!payload.F46_CRITERIOS) {
-      if (Array.isArray(payload['F46_CRITERIOS[]'])) {
-        payload.F46_CRITERIOS = payload['F46_CRITERIOS[]'];
-      } else if (Array.isArray(payload['F46_CONDICOES[]'])) {
-        payload.F46_CRITERIOS = payload['F46_CONDICOES[]'];
-        payload['F46_CRITERIOS[]'] = payload['F46_CONDICOES[]'];
-      }
-    }
-    if (!payload.F46_DECLS) {
-      if (Array.isArray(payload['F46_DECLS[]'])) {
+    // --- FASE 4.6 ---
+    // Mapeia F46_CONDICOES[] (HTML) para F46_DECLS/F46_CRITERIOS (PDF)
+    if (!payload.F46_DECLS || payload.F46_DECLS.length === 0) {
+      if (Array.isArray(payload['F46_DECLS[]']) && payload['F46_DECLS[]'].length > 0) {
         payload.F46_DECLS = payload['F46_DECLS[]'];
-      } else if (Array.isArray(payload['F46_CONDICOES[]'])) {
+      } else if (Array.isArray(payload['F46_CONDICOES[]']) && payload['F46_CONDICOES[]'].length > 0) {
         payload.F46_DECLS = payload['F46_CONDICOES[]'];
         payload['F46_DECLS[]'] = payload['F46_CONDICOES[]'];
       }
     }
+    if (!payload.F46_CRITERIOS || payload.F46_CRITERIOS.length === 0) {
+      if (Array.isArray(payload['F46_CRITERIOS[]']) && payload['F46_CRITERIOS[]'].length > 0) {
+        payload.F46_CRITERIOS = payload['F46_CRITERIOS[]'];
+      } else if (Array.isArray(payload['F46_CONDICOES[]']) && payload['F46_CONDICOES[]'].length > 0) {
+        // Fallback: Se F46_CRITERIOS estiver vazio, usa as condições
+        payload.F46_CRITERIOS = payload['F46_CONDICOES[]'];
+        payload['F46_CRITERIOS[]'] = payload['F46_CONDICOES[]'];
+      }
+    }
 
-    // Garantias finais (arrays)
+    // Garantias finais (arrays nunca nulos para Joi/Schema)
+    if (!Array.isArray(payload['F42_LISTA[]'])) payload['F42_LISTA[]'] = payload['F42_LISTA[]'] || [];
+    if (!Array.isArray(payload['F43_LISTA[]'])) payload['F43_LISTA[]'] = payload['F43_LISTA[]'] || [];
+    if (!Array.isArray(payload['F44_DECLS[]'])) payload['F44_DECLS[]'] = payload['F44_DECLS[]'] || [];
     if (!Array.isArray(payload['F44_CRITERIOS[]'])) payload['F44_CRITERIOS[]'] = payload['F44_CRITERIOS[]'] || [];
     if (!Array.isArray(payload['F45_DECLS[]'])) payload['F45_DECLS[]'] = payload['F45_DECLS[]'] || [];
     if (!Array.isArray(payload['F46_DECLS[]'])) payload['F46_DECLS[]'] = payload['F46_DECLS[]'] || [];
     if (!Array.isArray(payload['F46_CRITERIOS[]'])) payload['F46_CRITERIOS[]'] = payload['F46_CRITERIOS[]'] || [];
-
   }
 
 
