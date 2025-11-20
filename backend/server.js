@@ -2292,6 +2292,67 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
   }
   if (!ok) { try { await page.close(); } catch {} throw lastErr || new Error(`Falha ao carregar ${templateFile}`); }
   
+  // Colocar este trecho dentro do page.evaluate((raw)=>{ ... }) após as outras chamadas de fillList / setText
+  (function () {
+    // segurança: se não há dados de 4.3, sai rápido
+    const f43 = flat['f43_lista'] || flat['f43_lista[]'] || flat['f43_itens'] || flat['f43_itens[]'] || [];
+    const ensureArr = (v) => Array.isArray(v) ? v : (v == null || v === '' ? [] : String(v).split(/[,;]\s*|\r?\n/).map(s=>s.trim()).filter(Boolean));
+    const items = ensureArr(f43);
+
+    // Se não há sub-lists no template, nada a fazer
+    if (items.length === 0) {
+      // Ainda tentamos popular possíveis campos de inclusão/justificativa
+      setText('#f43-just-11', flat['f43_just'] || flat['f43_jus'] || flat['f43_just_11'] || '');
+      setText('#f43-just-12', flat['f4312_just'] || flat['f4312_just'] || '');
+      setText('#f43-desc-planos-12', flat['f4312_desc_planos'] || flat['f43_desc_planos'] || '');
+    } else {
+      // heurística de bucket por tópicos de 4.3 (1..9 conforme o layout do termo_solic_crp.html)
+      const buckets = { '1':[], '2':[], '3':[], '4':[], '5':[], '6':[], '7':[], '8':[], '9':[] };
+      const norm = s => String(s || '').toLowerCase();
+
+      items.forEach(it => {
+        const t = norm(it);
+        if (t.includes('repass') || t.includes('aporte') || t.includes('parcel')) buckets['1'].push(it);
+        else if (t.includes('utiliza') || t.includes('recurs') || t.includes('uso')) buckets['2'].push(it);
+        else if (t.includes('aplica') || t.includes('dair') || t.includes('aplicaç')) buckets['3'].push(it);
+        else if (t.includes('limite') || t.includes('contribu')) buckets['4'].push(it);
+        else if (t.includes('plano de benefícios') || t.includes('benefício') || t.includes('rol de benefícios')) buckets['5'].push(it);
+        else if (t.includes('previdência complementar') || t.includes('rpc')) buckets['6'].push(it);
+        else if (t.includes('envio') || t.includes('dados') || t.includes('informação')) buckets['7'].push(it);
+        else if (t.includes('compens') || t.includes('compensação')) buckets['8'].push(it);
+        else buckets['9'].push(it); // fallback → último bucket
+      });
+
+      const fillUL = (id, arr) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!Array.isArray(arr) || arr.length === 0) {
+          // mantém o comportamento de "Não informado" do template: limpa (o CSS pode exibir fallback)
+          el.innerHTML = '';
+          return;
+        }
+        el.innerHTML = arr.map(x => `<li>${String(x).trim()}</li>`).join('');
+      };
+
+      // preenche as 9 sub-listas (se existirem)
+      for (let i = 1; i <= 9; i++) {
+        fillUL('f43-itens-' + i, buckets[String(i)]);
+      }
+
+      // também preenche um container genérico se existir (compat)
+      fillUL('f43-itens', items);
+    }
+
+    // popula as listas de inclusão/justificativa do 4.3 se existirem
+    fillList('f43-crit-incluir', flat['f43_incluir'] || flat['f43_incluir[]'] || flat['f43_incluir_b'] || flat['f43_incluir_b[]'] || '');
+    fillList('f43-crit-incluir-12', flat['f43_incluir_b'] || flat['f43_incluir_b[]'] || flat['f43_incluir'] || '');
+    setText('#f43-just-11', flat['f43_just'] || flat['f43_jus'] || flat['f43_just_11'] || flat['F43_JUST'] || '');
+    setText('#f43-just-12', flat['f4312_just'] || flat['f4312_just'] || flat['F4312_JUST'] || '');
+    setText('#f43-desc-planos-12', flat['f4312_desc_planos'] || flat['f43_desc_planos'] || flat['F43_DESC_PLANOS'] || '');
+  })();
+
+
+
   // 2.1) Preenche o DOM com o payload (sem depender de JS externo)
   await page.evaluate((raw) => {
     // Normaliza chaves em snake_case minúsculo

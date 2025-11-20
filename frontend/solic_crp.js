@@ -2578,9 +2578,16 @@ function syncF46ToTemplate(){
     payload.F42_LISTA = payload['F42_ITENS[]'] || payload.F42_LISTA || [];
     payload.F42_LISTA_TXT = makeText(payload.F42_LISTA);
 
-    //    4.3
-    payload.F43_LISTA = payload['F43_ITENS[]'] || payload.F43_LISTA || [];
+    //    4.3  (AJUSTE CRÍTICO)
+    //    Garante que o array principal F43_LISTA sempre seja preenchido
+    //    a partir dos nomes usados no formulário (F43_LISTA[] ou F43_ITENS[]).
+    const f43FromArray =
+      (Array.isArray(payload['F43_LISTA[]'])  && payload['F43_LISTA[]'].length  ? payload['F43_LISTA[]']  : null) ||
+      (Array.isArray(payload['F43_ITENS[]'])  && payload['F43_ITENS[]'].length  ? payload['F43_ITENS[]']  : null);
+
+    payload.F43_LISTA = f43FromArray || payload.F43_LISTA || [];
     payload.F43_LISTA_TXT = makeText(payload.F43_LISTA);
+
 
     // F43_INCLUIR → sempre STRING para casar com o Joi do backend
     const f43InclArrRaw = payload['F43_INCLUIR[]'] || payload.F43_INCLUIR || [];
@@ -2590,6 +2597,16 @@ function syncF46ToTemplate(){
 
     payload.F43_INCLUIR = f43InclArr.length ? f43InclArr.join('; ') : '';
     payload.F43_INCLUIR_TXT = payload.F43_INCLUIR;
+
+        // F43_INCLUIR_B → mesma lógica, sempre STRING + TXT para o template
+    const f43InclBArrRaw = payload['F43_INCLUIR_B[]'] || payload.F43_INCLUIR_B || [];
+    const f43InclBArr = Array.isArray(f43InclBArrRaw)
+      ? f43InclBArrRaw.filter(Boolean)
+      : (f43InclBArrRaw ? [String(f43InclBArrRaw)] : []);
+
+    payload.F43_INCLUIR_B = f43InclBArr.length ? f43InclBArr.join('; ') : '';
+    payload.F43_INCLUIR_B_TXT = payload.F43_INCLUIR_B;
+
 
     //    4.4
     payload.F44_LISTA_CRITERIOS = payload['F44_CRITERIOS[]'] || payload.F44_LISTA_CRITERIOS || [];
@@ -2719,6 +2736,21 @@ function syncF46ToTemplate(){
     if (Array.isArray(payload['F43_INCLUIR_B[]']) && !payload.F43_INCLUIR_B) {
       payload.F43_INCLUIR_B = payload['F43_INCLUIR_B[]'].join('; ');
     }
+
+        // Compat F43_LISTA → garante que o backend/template sempre enxerguem o array correto
+    if (!payload.F43_LISTA || !Array.isArray(payload.F43_LISTA) || payload.F43_LISTA.length === 0) {
+      if (Array.isArray(payload['F43_LISTA[]']) && payload['F43_LISTA[]'].length > 0) {
+        payload.F43_LISTA = payload['F43_LISTA[]'];
+      } else if (Array.isArray(payload['F43_ITENS[]']) && payload['F43_ITENS[]'].length > 0) {
+        payload.F43_LISTA = payload['F43_ITENS[]'];
+      }
+    }
+
+    // Espelha o array principal em F43_LISTA[] (caso o backend/Joi/flatten use o sufixo [])
+    if (Array.isArray(payload.F43_LISTA) && (!Array.isArray(payload['F43_LISTA[]']) || !payload['F43_LISTA[]'].length)) {
+      payload['F43_LISTA[]'] = payload.F43_LISTA;
+    }
+
 
     const payloadForPdf = {
       ...payload,
