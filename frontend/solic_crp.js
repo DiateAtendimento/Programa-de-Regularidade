@@ -2722,6 +2722,28 @@ function syncF46ToTemplate(){
     if (!Array.isArray(payload['F45_DECLS[]'])) payload['F45_DECLS[]'] = payload['F45_DECLS[]'] || [];
     if (!Array.isArray(payload['F46_DECLS[]'])) payload['F46_DECLS[]'] = payload['F46_DECLS[]'] || [];
     if (!Array.isArray(payload['F46_CRITERIOS[]'])) payload['F46_CRITERIOS[]'] = payload['F46_CRITERIOS[]'] || [];
+
+    // Recalcula derivadas/texto da Fase 4 usando os arrays já normalizados.
+    const arr = (v) => (Array.isArray(v) ? v : (v ? [v] : []));
+
+    payload.F42_LISTA = arr(payload.F42_LISTA || payload['F42_LISTA[]']);
+    payload.F42_LISTA_TXT = makeText(payload.F42_LISTA);
+
+    payload.F43_LISTA = arr(payload.F43_LISTA || payload['F43_LISTA[]']);
+    payload.F43_LISTA_TXT = makeText(payload.F43_LISTA);
+
+    payload.F44_DECLS = arr(payload.F44_DECLS || payload['F44_DECLS[]']);
+    payload.F44_CRITERIOS = arr(payload.F44_CRITERIOS || payload['F44_CRITERIOS[]']);
+    payload.F44_LISTA_CRITERIOS = payload.F44_CRITERIOS;
+    payload.F44_LISTA_CRITERIOS_TXT = makeText(payload.F44_LISTA_CRITERIOS);
+
+    payload.F45_DECLS = arr(payload.F45_DECLS || payload['F45_DECLS[]']);
+    payload.F45_DECLS_TXT = makeText(payload.F45_DECLS);
+
+    payload.F46_DECLS = arr(payload.F46_DECLS || payload['F46_DECLS[]']);
+    payload.F46_CRITERIOS = arr(payload.F46_CRITERIOS || payload['F46_CRITERIOS[]']);
+    payload.F46_DECLS_TXT = makeText(payload.F46_DECLS);
+    payload.F46_CRITERIOS_TXT = makeText(payload.F46_CRITERIOS);
   }
 
 
