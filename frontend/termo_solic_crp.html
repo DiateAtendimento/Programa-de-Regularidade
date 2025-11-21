@@ -739,68 +739,120 @@
 
         (function run43() {
           console.group('[DEBUG FASE 4.3 - INÍCIO]');
-          
+
           try {
             let hasContent = false;
 
             // ================================================================
-            // 1. LISTA BASE DE CRITÉRIOS (F43_LISTA) - POR ÍNDICE
+            // 1. LOG DOS DADOS RECEBIDOS
             // ================================================================
-            const base = asArr(
-              p.F43_LISTA ||
-              p.F43_ITENS ||
-              p.F43_LISTA_TXT ||
-              []
-            );
-
-            console.log('[Fase 4.3] Lista base (por índice):', base);
-
-            // Helper: pega itens pelos índices, ignorando vazios
-            const pick = (...idx) => {
-              return idx
-                .map(i => base[i])
-                .filter(x => x != null && String(x).trim() !== '');
-            };
-
-            // ================================================================
-            // 2. PREENCHIMENTO DOS SUBITENS 4.3.1 A 4.3.9 (POR POSIÇÃO)
-            //    MAPEAMENTO (conforme ordem enviada no payload):
-            //
-            //    0  -> DIPR / Caráter contributivo / Repasse
-            //    1  -> Caráter contributivo - Repasse (PAP)
-            //    2  -> Utilização dos recursos previdenciários
-            //    3  -> Aplicações financeiras (PAP)
-            //    4  -> DAIR – Consistência
-            //    5  -> DPIN – Consistência
-            //    6  -> Limites de contribuição do ente
-            //    7  -> Limites de contribuição dos segurados
-            //    8  -> Plano de benefícios integrado apenas por aposentadorias...
-            //    9  -> Instituição do RPC
-            //   10-17 -> Envio de dados / NTA / DRAA / MSC / DAIR / DIPR / eSocial
-            //   18 -> Compensação previdenciária
-            //   19 -> Requisitos de dirigentes/colegiados
-            // ================================================================
-            const segmentos = [
-              { ul: '#f43-1', cont: '#f43-sub-1', itens: pick(0, 1) },               // 4.3.1
-              { ul: '#f43-2', cont: '#f43-sub-2', itens: pick(2) },                  // 4.3.2
-              { ul: '#f43-3', cont: '#f43-sub-3', itens: pick(3, 4, 5) },            // 4.3.3
-              { ul: '#f43-4', cont: '#f43-sub-4', itens: pick(6, 7) },               // 4.3.4
-              { ul: '#f43-5', cont: '#f43-sub-5', itens: pick(8) },                  // 4.3.5
-              { ul: '#f43-6', cont: '#f43-sub-6', itens: pick(9) },                  // 4.3.6
-              { ul: '#f43-7', cont: '#f43-sub-7', itens: pick(10,11,12,13,14,15,16,17) }, // 4.3.7
-              { ul: '#f43-8', cont: '#f43-sub-8', itens: pick(18) },                 // 4.3.8
-              { ul: '#f43-9', cont: '#f43-sub-9', itens: pick(19) }                  // 4.3.9
-            ];
-
-            segmentos.forEach(seg => {
-              const filled = fillList(seg.ul, seg.itens);
-              console.log(`[4.3.x] ${seg.ul} ← ${seg.itens.length} itens | filled? ${filled}`);
-              show(seg.cont, filled);
-              if (filled) hasContent = true;
+            console.log('DADOS BRUTOS (p - Parcial):', {
+              F43_LISTA: p.F43_LISTA,
+              F43_PLANO: p.F43_PLANO,
+              F43_JUST: p.F43_JUST,
+              F43_INCLUIR: p.F43_INCLUIR,
+              F43_PLANO_B: p.F43_PLANO_B,
+              F43_DESC_PLANOS: p.F43_DESC_PLANOS,
+              F43_INCLUIR_B: p.F43_INCLUIR_B
             });
 
             // ================================================================
-            // 3. SUBITEM 4.3.10 (OPÇÃO A/B – LEGISLAÇÃO / DOCS)
+            // 2. TRATAMENTO DA LISTA DE CRITÉRIOS
+            // ================================================================
+            const candidatosF43 = [
+              p.F43_LISTA,           // principal (array já normalizado)
+              p.f43_lista,           // minúsculo
+              p['F43_LISTA[]'],      // variação com colchetes
+              p['F43_ITENS[]'],      // legado do form
+              p.F43_ITENS,           // outro legado
+              p.F43_LISTA_TXT,       // string linearizada (com ";")
+              p['F43_LISTA_TXT[]']   // se vier por algum binding diferente
+            ];
+
+            let rawList = [];
+            for (const cand of candidatosF43) {
+              const arr = asArr(cand);
+              if (arr && arr.length) {
+                rawList = arr;
+                break;
+              }
+            }
+
+            console.log('[Fase 4.3] Base bruta de critérios (rawList):', rawList);
+
+            // ================================================================
+            // 3. Função de filtro segura
+            // ================================================================
+            const filterList = (keywords) => {
+              return rawList.filter(item => {
+                const lowItem = String(item || '').toLowerCase();
+                return keywords.some(k => lowItem.includes(k));
+              });
+            };
+
+            // ================================================================
+            // 4. Processador de sub-seções
+            //    (USANDO OS IDs NOVOS: #f43-1 ... #f43-9)
+            // ================================================================
+            const processSub = (ulId, containerId, keywords) => {
+              const list = filterList(keywords);
+              const preencheu = fillList(ulId, list);
+
+              console.log(
+                `[SUBITEM ${containerId}] Palavras chave: ${JSON.stringify(keywords)} | Encontrados: ${list.length}`
+              );
+
+              if (!document.querySelector(containerId)) {
+                console.error(`[ERRO] Container ${containerId} não encontrado no DOM.`);
+              }
+
+              show(containerId, preencheu);
+
+              if (preencheu) {
+                hasContent = true;
+              }
+              return preencheu;
+            };
+
+            // ================================================================
+            // 5. EXECUÇÃO DOS SUBITENS 4.3.1 a 4.3.9
+            //    (IDs DO HTML: #f43-1 ... #f43-9)
+            // ================================================================
+            processSub('#f43-1', '#f43-sub-1',
+              ['dipr', 'caráter contributivo', 'carater contributivo', 'repasse', 'aportes', 'parcelamento']
+            );
+            processSub('#f43-2', '#f43-sub-2',
+              ['utilização dos recursos', 'utilizacao dos recursos']
+            );
+            processSub('#f43-3', '#f43-sub-3',
+              ['aplicações financeiras', 'aplicacoes financeiras', 'dair', 'dpin']
+            );
+            processSub('#f43-4', '#f43-sub-4',
+              ['limites de contribuição', 'limites de contribuicao']
+            );
+            processSub('#f43-5', '#f43-sub-5',
+              ['rol de benefícios', 'rol de beneficios', 'plano de benefícios', 'plano de beneficios']
+            );
+            processSub('#f43-6', '#f43-sub-6',
+              ['previdência complementar', 'previdencia complementar', 'rpc']
+            );
+            processSub('#f43-7', '#f43-sub-7',
+              [
+                'envio dos dados',
+                'solicitação de legislação', 'solicitacao de legislacao',
+                'atendimento à fiscalização', 'atendimento a fiscalizacao',
+                'nta', 'draa', 'msc', 'esocial'
+              ]
+            );
+            processSub('#f43-8', '#f43-sub-8',
+              ['compensação previdenciária', 'compensacao previdenciaria']
+            );
+            processSub('#f43-9', '#f43-sub-9',
+              ['requisitos para os dirigentes', 'colegiados', 'art. 8º-b', 'art. 8º b', '8º-b']
+            );
+
+            // ================================================================
+            // 6. SUBITEM 4.3.10
             // ================================================================
             const opt4310 = String(p.F4310_OPCAO || p.f4310_opcao || '').trim().toLowerCase();
             const optA = opt4310.startsWith('a');
@@ -820,22 +872,15 @@
             }
 
             // ================================================================
-            // 4. SUBITEM 4.3.11 (INCLUSÃO DE CRITÉRIOS – A)
+            // 7. SUBITEM 4.3.11
             // ================================================================
             const f43_plano_txt = p.F43_PLANO || p.F43_JUST || '';
 
-            let f43_incluir_raw =
-              p['F43_INCLUIR[]'] ||
-              p.F43_INCLUIR ||
-              p.f43_incluir ||
-              [];
+            let f43_incluir_raw = p['F43_INCLUIR[]'] || p.F43_INCLUIR || [];
 
             const f43_incluir_list = Array.isArray(f43_incluir_raw)
-              ? f43_incluir_raw.filter(Boolean).map(String)
-              : String(f43_incluir_raw)
-                  .split(/;|\r?\n/)
-                  .map(x => x.trim())
-                  .filter(Boolean);
+              ? f43_incluir_raw.filter(Boolean)
+              : String(f43_incluir_raw).split(/;|\n/).map(x => x.trim()).filter(Boolean);
 
             const h11_1 = fillList('#f43-crit-incluir', f43_incluir_list);
             const h11_2 = fillValue('#f43-just-11', f43_plano_txt);
@@ -845,23 +890,16 @@
             if (show11) hasContent = true;
 
             // ================================================================
-            // 5. SUBITEM 4.3.12 (INCLUSÃO DE CRITÉRIOS – B)
+            // 8. SUBITEM 4.3.12
             // ================================================================
-            const f43_plano_b_txt = p.F43_PLANO_B || p.f43_plano_b || '';
-            const f43_desc_txt    = p.F43_DESC_PLANOS || p.f43_desc_planos || '';
+            const f43_plano_b_txt = p.F43_PLANO_B || '';
+            const f43_desc_txt = p.F43_DESC_PLANOS || '';
 
-            let f43_incluir_b_raw =
-              p['F43_INCLUIR_B[]'] ||
-              p.F43_INCLUIR_B ||
-              p.f43_incluir_b ||
-              [];
+            let f43_incluir_b_raw = p['F43_INCLUIR_B[]'] || p.F43_INCLUIR_B || [];
 
             const f43_incluir_b_list = Array.isArray(f43_incluir_b_raw)
-              ? f43_incluir_b_raw.filter(Boolean).map(String)
-              : String(f43_incluir_b_raw)
-                  .split(/;|\r?\n/)
-                  .map(x => x.trim())
-                  .filter(Boolean);
+              ? f43_incluir_b_raw.filter(Boolean)
+              : String(f43_incluir_b_raw).split(/;|\n/).map(x => x.trim()).filter(Boolean);
 
             const h12_1 = fillList('#f43-crit-incluir-12', f43_incluir_b_list);
             const h12_2 = fillValue('#f43-just-12', f43_plano_b_txt);
@@ -872,7 +910,7 @@
             if (show12) hasContent = true;
 
             // ================================================================
-            // 6. CONTROLE FINAL DO BLOCO 4.3
+            // 9. CONTROLE FINAL DO BLOCO
             // ================================================================
             console.log('-> FASE 4.3 TEM CONTEÚDO FINAL?', hasContent);
             togglePhaseBlock('#fase-43', hasContent);
@@ -893,6 +931,7 @@
 
           console.groupEnd();
         })();
+
 
 
         // 5) Justificativas Gerais
