@@ -737,14 +737,16 @@
         // --- FASE 4.2 ---
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
-// --- FASE 4.3 (COM LOGS MÁXIMOS DE DEPURAÇÃO E LÓGICA ROBUSTA) ---
-        (function run43(){
+        (function run43() {
           console.group('[DEBUG FASE 4.3 - INÍCIO]');
           
           try {
+
             let hasContent = false;
-            
+
+            // ================================================================
             // 1. LOG DOS DADOS RECEBIDOS
+            // ================================================================
             console.log('DADOS BRUTOS (p - Parcial):', {
                 F43_LISTA: p.F43_LISTA,
                 F43_PLANO: p.F43_PLANO,
@@ -755,15 +757,17 @@
                 F43_INCLUIR_B: p.F43_INCLUIR_B
             });
 
-            // 2. TRATAMENTO DA LISTA DE CRITÉRIOS (F43_LISTA) para 4.3.1 a 4.3.9
+            // ================================================================
+            // 2. TRATAMENTO DA LISTA DE CRITÉRIOS
+            // ================================================================
             const candidatosF43 = [
-              p.F43_LISTA,           // principal (array já normalizado)
-              p.f43_lista,           // minúsculo
-              p['F43_LISTA[]'],      // variação com colchetes
-              p['F43_ITENS[]'],      // legado do form
-              p.F43_ITENS,           // outro legado
-              p.F43_LISTA_TXT,       // string linearizada (com ";")
-              p['F43_LISTA_TXT[]']   // se vier por algum binding diferente
+              p.F43_LISTA,           
+              p.f43_lista,           
+              p['F43_LISTA[]'],      
+              p['F43_ITENS[]'],      
+              p.F43_ITENS,           
+              p.F43_LISTA_TXT,       
+              p['F43_LISTA_TXT[]']   
             ];
 
             let rawList = [];
@@ -777,111 +781,114 @@
 
             console.log('[Fase 4.3] Base bruta de critérios (rawList):', rawList);
 
+            const allItens = rawList.map(x => x.toLowerCase().trim());
+
+            // ================================================================
             // 3. Função de filtro segura
+            // ================================================================
             const filterList = (keywords) => {
-                return allItens.filter(item => {
-                    const lowItem = String(item || '').toLowerCase();
-                    return keywords.some(k => lowItem.includes(k));
-                });
+              return rawList.filter(item => {
+                const lowItem = String(item || '').toLowerCase();
+                return keywords.some(k => lowItem.includes(k));
+              });
             };
 
-            // 4. Processador de sub-seções (Preenche e Esconde Título/Bloco)
+            // ================================================================
+            // 4. Processador de sub-seções
+            // ================================================================
             const processSub = (ulId, containerId, keywords) => {
-                const elContainer = document.querySelector(containerId);
-                const list = filterList(keywords);
-                const preencheu = fillList(ulId, list);
-                
-                // Logs de verificação
-                console.log(`[SUBITEM ${containerId}] Keywords: ${keywords[0]}... | Itens encontrados: ${list.length} | Preencheu (fillList)? ${preencheu}`);
-                if (!elContainer) {
-                    console.error(`[ERRO DE ID] Container ${containerId} NÃO encontrado!`);
-                }
 
-                show(containerId, preencheu);
-                
-                if (preencheu) {
-                    console.log(`-> VISÍVEL: ${containerId} preenchido com ${list.length} itens.`);
-                    hasContent = true;
-                }
-                return preencheu;
+              const list = filterList(keywords);
+              const preencheu = fillList(ulId, list);
+
+              console.log(`[SUBITEM ${containerId}] Palavras chave: ${keywords} | Encontrados: ${list.length}`);
+
+              if (!document.querySelector(containerId)) {
+                console.error(`[ERRO] Container ${containerId} não encontrado no DOM.`);
+              }
+
+              show(containerId, preencheu);
+
+              if (preencheu) {
+                hasContent = true;
+              }
+              return preencheu;
             };
 
-            // --- EXECUÇÃO DOS SUBITENS 4.3.1 a 4.3.9 ---
+            // ================================================================
+            // 5. EXECUÇÃO DOS SUBITENS 4.3.1 a 4.3.9 (IDS CORRETOS!)
+            // ================================================================
             processSub('#f43-itens-1', '#f43-sub-1', ['dipr', 'caráter contributivo', 'repasse', 'aportes', 'parcelamento']);
             processSub('#f43-itens-2', '#f43-sub-2', ['utilização dos recursos']);
             processSub('#f43-itens-3', '#f43-sub-3', ['aplicações financeiras', 'dair', 'dpin']);
             processSub('#f43-itens-4', '#f43-sub-4', ['limites de contribuição']);
             processSub('#f43-itens-5', '#f43-sub-5', ['rol de benefícios', 'plano de benefícios']);
             processSub('#f43-itens-6', '#f43-sub-6', ['previdência complementar', 'rpc']);
-            processSub('#f43-itens-7', '#f43-sub-7', ['envio dos dados', 'solicitação de legislação', 'atendimento à fiscalização', 'nta', 'draa', 'msc', 'esocial']);
+            processSub('#f43-itens-7', '#f43-sub-7', ['envio dos dados', 'solicitação de legislação', 'fiscalização', 'nta', 'draa', 'msc', 'esocial']);
             processSub('#f43-itens-8', '#f43-sub-8', ['compensação previdenciária']);
             processSub('#f43-itens-9', '#f43-sub-9', ['requisitos para os dirigentes', 'colegiados', 'art. 8º-b']);
 
-
-// --- 4.3.10 (OPÇÃO DE LEGISLAÇÃO/DOCUMENTOS) ---
+            // ================================================================
+            // 6. SUBITEM 4.3.10
+            // ================================================================
             const opt4310 = String(p.F4310_OPCAO || p.f4310_opcao || '').trim().toLowerCase();
             const optA = opt4310.startsWith('a');
             const optB = opt4310.startsWith('b');
-            
+
             show('#f43-opcao-a', optA);
             show('#f43-opcao-b', optB);
             show('#f43-sub-10', optA || optB);
 
-            if (optA) { 
-                // Usa ID direto, sem data-k
-                const preencheuLeg = fillBlock('#val-f4310-leg', p.F4310_LEGISLACAO);
-                if(preencheuLeg) hasContent = true; 
+            if (optA) {
+              const okA = fillBlock('#val-f4310-leg', p.F4310_LEGISLACAO);
+              if (okA) hasContent = true;
             }
-            if (optB) { 
-                // Usa ID direto, sem data-k
-                const preencheuDocs = fillBlock('#val-f4310-docs', p.F4310_DOCS);
-                if(preencheuDocs) hasContent = true; 
+            if (optB) {
+              const okB = fillBlock('#val-f4310-docs', p.F4310_DOCS);
+              if (okB) hasContent = true;
             }
 
-            // --- 4.3.11 (INCLUSÃO DE CRITÉRIOS A) ---
-            const f43_plano_txt = p.F43_PLANO || p.f43_plano || p.F43_JUST || '';
-            
-            // Pega preferencialmente o array vindo do backend
-            let f43_incluir_raw = p['F43_INCLUIR[]'] || p.F43_INCLUIR || p.f43_incluir || [];
-            
-            const f43_incluir_list = Array.isArray(f43_incluir_raw) 
-                ? f43_incluir_raw.filter(Boolean).map(String) 
-                : String(f43_incluir_raw).split(/;|\r?\n/).map(s => s.trim()).filter(Boolean);
+            // ================================================================
+            // 7. SUBITEM 4.3.11
+            // ================================================================
+            const f43_plano_txt = p.F43_PLANO || p.F43_JUST || '';
+
+            let f43_incluir_raw = p['F43_INCLUIR[]'] || p.F43_INCLUIR || [];
+
+            const f43_incluir_list = Array.isArray(f43_incluir_raw)
+              ? f43_incluir_raw.filter(Boolean)
+              : String(f43_incluir_raw).split(/;|\n/).map(x => x.trim()).filter(Boolean);
 
             const h11_1 = fillList('#f43-crit-incluir', f43_incluir_list);
             const h11_2 = fillValue('#f43-just-11', f43_plano_txt);
-            
-            console.log(`-> 4.3.11 Tentativa: Lista(${f43_incluir_list.length} itens) | Texto: ${f43_plano_txt.length > 0}`);
-            console.log(`-> 4.3.11 Resultado: Lista preenchida: ${h11_1}, Texto preenchido: ${h11_2}`);
 
             const show11 = (h11_1 || h11_2);
             show('#f43-sub-11', show11);
             if (show11) hasContent = true;
 
+            // ================================================================
+            // 8. SUBITEM 4.3.12
+            // ================================================================
+            const f43_plano_b_txt = p.F43_PLANO_B || '';
+            const f43_desc_txt = p.F43_DESC_PLANOS || '';
 
-            // --- 4.3.12 (INCLUSÃO DE CRITÉRIOS B) ---
-            const f43_plano_b_txt = p.F43_PLANO_B || p.f43_plano_b || '';
-            const f43_desc_txt = p.F43_DESC_PLANOS || p.f43_desc_planos || '';
-            
-            // Pega preferencialmente o array vindo do backend
-            let f43_incluir_b_raw = p['F43_INCLUIR_B[]'] || p.F43_INCLUIR_B || p.f43_incluir_b || [];
+            let f43_incluir_b_raw = p['F43_INCLUIR_B[]'] || p.F43_INCLUIR_B || [];
 
-            const f43_incluir_b_list = Array.isArray(f43_incluir_b_raw) 
-                ? f43_incluir_b_raw.filter(Boolean).map(String)
-                : String(f43_incluir_b_raw).split(/;|\r?\n/).map(s => s.trim()).filter(Boolean);
+            const f43_incluir_b_list = Array.isArray(f43_incluir_b_raw)
+              ? f43_incluir_b_raw.filter(Boolean)
+              : String(f43_incluir_b_raw).split(/;|\n/).map(x => x.trim()).filter(Boolean);
 
-            const h12_1 = fillList('#f43-crit-incluir-12', f43_incluir_b_list); // a) Critérios que precisará incluir
-            const h12_2 = fillValue('#f43-just-12', f43_plano_b_txt); // b) Justificativas
-            const h12_3 = fillValue('#f43-desc-planos-12', f43_desc_txt); // c) Descrever Plano(s) de Ação
+            const h12_1 = fillList('#f43-crit-incluir-12', f43_incluir_b_list);
+            const h12_2 = fillValue('#f43-just-12', f43_plano_b_txt);
+            const h12_3 = fillValue('#f43-desc-planos-12', f43_desc_txt);
 
-            console.log(`-> 4.3.12 Tentativa: Lista(${f43_incluir_b_list.length} itens) | Just. B: ${f43_plano_b_txt.length > 0} | Desc. Planos: ${f43_desc_txt.length > 0}`);
-            
             const show12 = (h12_1 || h12_2 || h12_3);
             show('#f43-sub-12', show12);
             if (show12) hasContent = true;
 
-
-            // --- CONTROLE FINAL DO BLOCO 4.3 ---
+            // ================================================================
+            // 9. CONTROLE FINAL DO BLOCO
+            // ================================================================
             console.log('-> FASE 4.3 TEM CONTEÚDO FINAL?', hasContent);
             togglePhaseBlock('#fase-43', hasContent);
 
@@ -889,13 +896,19 @@
             console.error('ERRO FATAL NA FASE 4.3:', e);
             const errEl = document.getElementById('fase-43');
             if (errEl) {
-                errEl.hidden = false;
-                errEl.style.display = 'block';
-                errEl.innerHTML = `<div style="color:red; border:1px solid red; padding:10px;">ERRO GRAVE NA FASE 4.3: ${e.message}. Verifique o Console para detalhes.</div>`;
+              errEl.hidden = false;
+              errEl.style.display = 'block';
+              errEl.innerHTML = `
+                <div style="color:red; border:1px solid red; padding:10px;">
+                  ERRO GRAVE NA FASE 4.3: ${e.message}.  
+                  Veja o console para detalhes.
+                </div>`;
             }
           }
+
           console.groupEnd();
         })();
+
 
         // 5) Justificativas Gerais
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS);
