@@ -967,9 +967,49 @@
         }
       }
 
+            // ================================================================
+      // DEBUG LOCAL: permitir testar o termo direto no browser usando ?p=
+      // Ex.: file:///.../termo_solic_crp.html?p=%7B%22FASE_PROGRAMA%22%3A%224.3%22,...%7D
+      // ================================================================
+      try {
+        const search = window.location && window.location.search;
+        if (search && !window.__TERMO_DATA__) {
+          const usp = new URLSearchParams(search);
+          const pParam = usp.get('p');
+          
+          if (pParam) {
+            console.group('[TERMO DEBUG] Carregando payload via ?p=');
+            let decoded = pParam;
+            try {
+              decoded = decodeURIComponent(pParam);
+            } catch (e) {
+              console.warn('decodeURIComponent falhou, usando valor bruto de p:', e);
+            }
+
+            let json = null;
+            try {
+              json = JSON.parse(decoded);
+            } catch (e) {
+              console.error('[TERMO DEBUG] Erro ao fazer JSON.parse do parâmetro p:', e, 'valor=', decoded);
+            }
+
+            if (json && typeof json === 'object') {
+              console.log('[TERMO DEBUG] Payload parseado com sucesso:', json);
+              window.__TERMO_DATA__ = json;
+            } else {
+              console.warn('[TERMO DEBUG] Parâmetro ?p= não pôde ser interpretado como JSON.');
+            }
+            console.groupEnd();
+          }
+        }
+      } catch (e) {
+        console.warn('[TERMO DEBUG] Falha ao processar parâmetro ?p=', e);
+      }
+
       // Exposição global
       window.run = run;
       window.__TERMO_RUN__ = run;
+
 
       // Inicialização
       if (window.__TERMO_DATA__) { 
