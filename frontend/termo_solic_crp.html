@@ -611,29 +611,41 @@
         // antes de chamar 'normalizePayload'.
 
         // Lista de campos que devem ser arrays de strings
-        const arrFields = ['F43_LISTA', 'F43_INCLUIR', 'F43_INCLUIR_B'];
+        const arrFields = [
+          'F43_LISTA',
+          'F43_LISTA[]',
+          'F43_LISTA_TXT',
+          'F43_LISTA_TXT[]',
+          'F43_ITENS',
+          'F43_ITENS[]',
+          'F43_INCLUIR',
+          'F43_INCLUIR_B'
+        ];
 
         // Função utilitária para garantir Array a partir de string delimitada
         const ensureArray = (value) => {
-          // Se já for array, retorna filtrando valores falsy
-          if (Array.isArray(value)) return value.filter(Boolean);
-          // Se for nulo ou vazio, retorna array vazio
-          if (!value) return [];
-          
-          const s = String(value).trim();
-          if (!s) return [];
-          
-          // Separa por ponto e vírgula, vírgula ou quebra de linha (mesma lógica do zArrStr)
-          return s.split(/[;,]\s*|\r?\n/).map(x => x.trim()).filter(Boolean);
-          };
+        // Se já for array, retorna filtrando valores falsy
+        if (Array.isArray(value)) return value.filter(Boolean);
+        // Se for nulo ou vazio, retorna array vazio
+        if (!value) return [];
 
-        // Aplica a conversão usando 'payload', que é o objeto de entrada.
-        arrFields.forEach(field => {
-        // CORREÇÃO AQUI: Usa 'payload'
-        if (payload[field]) { 
-        payload[field] = ensureArray(payload[field]);
+        const s = String(value).trim();
+        if (!s) return [];
+
+        // Separa por ponto e vírgula, vírgula ou quebra de linha
+        return s
+          .split(/[;,]\s*|\r?\n/)
+          .map(x => x.trim())
+          .filter(Boolean);
+      };
+
+      // Aplica a conversão usando 'payload', que é o objeto de entrada.
+      arrFields.forEach((field) => {
+        // Se o campo existir, normaliza como array de strings
+        if (field in payload && payload[field] != null) {
+          payload[field] = ensureArray(payload[field]);
         }
-        });
+      });
 
         // =======================================================
 
@@ -737,25 +749,26 @@
             });
 
             // 2. TRATAMENTO DA LISTA DE CRITÉRIOS (F43_LISTA) para 4.3.1 a 4.3.9
-            let rawList =
-              p.F43_LISTA                   // caminho principal (patch do JS)
-              || p.f43_lista                // fallback minúsculo
-              || p['F43_LISTA[]']           // caso venha só a versão com colchetes
-              || p['F43_ITENS[]']           // super-fallback legado
-              || p.F43_ITENS                // última tentativa
-              || [];
+            const candidatosF43 = [
+              p.F43_LISTA,           // principal (array já normalizado)
+              p.f43_lista,           // minúsculo
+              p['F43_LISTA[]'],      // variação com colchetes
+              p['F43_ITENS[]'],      // legado do form
+              p.F43_ITENS,           // outro legado
+              p.F43_LISTA_TXT,       // string linearizada (com ";")
+              p['F43_LISTA_TXT[]']   // se vier por algum binding diferente
+            ];
 
-            let allItens = [];
-            
-            if (Array.isArray(rawList)) {
-                // Remove nulos/vazios e garante que sejam strings
-                allItens = rawList.filter(Boolean).map(String);
-            } else if (typeof rawList === 'string') {
-                // Trata string separada por ; , ou quebra de linha
-                allItens = rawList.split(/;|,|\r?\n/).map(s => s.trim()).filter(Boolean);
+            let rawList = [];
+            for (const cand of candidatosF43) {
+              const arr = asArr(cand);
+              if (arr && arr.length) {
+                rawList = arr;
+                break;
+              }
             }
-            
-            console.log('-> Lista F43_LISTA processada (allItens):', allItens);
+
+            console.log('[Fase 4.3] Base bruta de critérios (rawList):', rawList);
 
             // 3. Função de filtro segura
             const filterList = (keywords) => {
