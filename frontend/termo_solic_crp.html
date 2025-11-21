@@ -518,9 +518,12 @@
         p.F42_LISTA = asArr(getAny('F42_LISTA', 'F42_LISTA[]', 'F42_ITENS', 'F42_ITENS[]'));
 
         // 4.3 (Seus campos problemáticos)
-        p.F43_LISTA = asArr(getAny('F43_LISTA', 'F43_LISTA[]', 'F43_ITENS', 'F43_ITENS[]'));
-        p.F43_INCLUIR = asArr(getAny('F43_INCLUIR', 'F43_INCLUIR[]', 'f43_incluir', 'F43_INCLUIR_TXT'));
-        p.F43_INCLUIR_B = asArr(getAny('F43_INCLUIR_B', 'F43_INCLUIR_B[]', 'f43_incluir_b'));
+        p.F43_LISTA = asArr(getAny(
+          'F43_LISTA', 'F43_LISTA[]', 'F43_LISTA_TXT', 'F43_LISTA_TXT[]',
+          'F43_ITENS', 'F43_ITENS[]'
+        ));
+        p.F43_INCLUIR = asArr(getAny('F43_INCLUIR', 'F43_INCLUIR[]', 'F43_INCLUIR_TXT', 'f43_incluir'));
+        p.F43_INCLUIR_B = asArr(getAny('F43_INCLUIR_B', 'F43_INCLUIR_B[]', 'F43_INCLUIR_B_TXT', 'f43_incluir_b'));
         
         p.F43_PLANO = getAny('F43_PLANO', 'f43_plano') || '';
         p.F43_PLANO_B = getAny('F43_PLANO_B', 'f43_plano_b') || '';
@@ -604,7 +607,7 @@
         // antes de chamar 'normalizePayload'.
 
         // Lista de campos que devem ser arrays de strings
-        const arrFields = ['F43_INCLUIR', 'F43_INCLUIR_B'];
+        const arrFields = ['F43_LISTA', 'F43_INCLUIR', 'F43_INCLUIR_B'];
 
         // Função utilitária para garantir Array a partir de string delimitada
         const ensureArray = (value) => {
