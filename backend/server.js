@@ -2316,15 +2316,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     };
     walk(raw);
 
-    // === NORMALIZAÇÃO FASE 4.3 (Campos de lista vêm como string e precisam virar array) ===
-    ["F43_ITENS", "F43_INCLUIR", "F43_INCLUIR_B"].forEach(k => {
-        if (typeof flat[k] === "string") {
-            flat[k] = flat[k]
-              .split(/[;\n]+/)
-              .map(x => x.trim())
-              .filter(Boolean);
-        }
-    });
+    
 
     const NA_LABEL = String(raw.__NA_LABEL || '').trim() || '';
     const useNA = !!raw.__NA_ALL;

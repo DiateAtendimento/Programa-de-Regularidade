@@ -571,7 +571,7 @@
     // 4.2
     data.values['F42_LISTA[]'] = $$(`#F42_LISTA input[type="checkbox"]:checked`).map(i=>i.value);
 
-    /* === FASE 4.3 === */
+    /* === FASE 4.3 === — CORREÇÃO DEFINITIVA */
     const fase43 = {
         itens: getArr("F43_ITENS[]"),
         incluir: getArr("F43_INCLUIR[]"),
