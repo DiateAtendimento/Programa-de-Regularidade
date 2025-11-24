@@ -795,16 +795,17 @@
             };
 
             const mapaPosicoes = {
-              '4.3.1': [0, 1],
-              '4.3.2': [2, 2],
-              '4.3.3': [3, 5],
-              '4.3.4': [6, 7],
-              '4.3.5': [8, 8],
-              '4.3.6': [9, 9],
-              '4.3.7': [10, 17],
-              '4.3.8': [18, 18],
-              '4.3.9': [19, 19]
+              '4.3.1': [0, 1],     // DIPR / Caráter contributivo - Repasse
+              '4.3.2': [2, 2],     // Utilização dos recursos (PAP)
+              '4.3.3': [3, 5],     // Aplicações financeiras + DAIR + DPIN
+              '4.3.4': [6, 7],     // Limites de contribuição (ente / segurados)
+              '4.3.5': [8, 8],     // Rol de benefícios
+              '4.3.6': [9, 9],     // RPC (lei)
+              '4.3.7': [10, 17],   // Envio de dados + NTA/DRAA + MSC + DPIN/DAIR/DIPR + eSocial
+              '4.3.8': [18, 18],   // COMPREV
+              '4.3.9': [19, 19]    // Dirigentes e colegiados
             };
+
 
             Object.keys(mapaPosicoes).forEach(key => {
               const [ini, fim] = mapaPosicoes[key];
@@ -836,21 +837,31 @@
               console.log(`→ Preenchendo ${key} em ${sel} ::`, arr);
 
               const ok = fillList(sel, arr);
-              const subId = '#f43-sub-' + key.split('.')[1];
-              const container = document.querySelector(subId);
 
-              if (!container) {
-                console.warn(`[WARN] Container não encontrado: ${subId}`);
-              } else {
-                container.style.display = ok ? '' : 'none';
+              // PATCH DEFINITIVO — FORÇA VISIBILIDADE DA UL
+              const ulEl = document.querySelector(sel);
+              if (ulEl) {
+                ulEl.style.display = ok ? 'block' : 'none';
+                ulEl.hidden = !ok;
               }
 
+              // CONTÊINER DO SUB-ITEM (ex.: #f43-sub-1)
+              const subId = '#f43-sub-' + key.split('.')[1];
+              const container = document.querySelector(subId);
+              if (container) {
+                container.style.display = ok ? '' : 'none';
+              } else {
+                console.warn(`[WARN] Container não encontrado: ${subId}`);
+              }
+
+              // Log e controle de exibição
               if (ok) {
                 console.log(`✔ ${key} exibido`);
                 hasContent = true;
               } else {
                 console.warn(`✖ ${key} está vazio (arr.length=${arr.length})`);
               }
+
             });
 
 
@@ -1045,59 +1056,6 @@
     })();
   </script>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      if (!window.payload) return;
-
-      const F43 = window.payload.F43_LISTA || [];
-
-      function fillList(selector, arr) {
-        const ul = document.querySelector(selector);
-        if (!ul) return;
-        ul.innerHTML = "";
-        if (!arr || arr.length === 0) {
-          ul.innerHTML = "<li><i>Não preenchido</i></li>";
-          return;
-        }
-        arr.forEach(item => {
-          const li = document.createElement("li");
-          li.textContent = item;
-          ul.appendChild(li);
-        });
-      }
-
-      // Mapear as faixas de índices: cada bloco 4.3.x tem grupos específicos
-      fillList("#f43-1", F43.slice(0, 2));
-      fillList("#f43-2", F43.slice(2, 3));
-      fillList("#f43-3", F43.slice(3, 6));
-      fillList("#f43-4", F43.slice(6, 8));
-      fillList("#f43-5", F43.slice(8, 9));
-      fillList("#f43-6", F43.slice(9, 10));
-      fillList("#f43-7", F43.slice(10, 18));
-      fillList("#f43-8", F43.slice(18, 19));
-      fillList("#f43-9", F43.slice(19, 20));
-
-      // ======== Campos dinâmicos do item 4.3.10 ========
-      const op = window.payload.F4310_OPCAO || "";
-      if (op.startsWith("a)")) {
-        document.querySelector("#f43-opcao-a").hidden = false;
-        document.querySelector("#val-f4310-leg").textContent = window.payload.F4310_LEGISLACAO || "—";
-      }
-      if (op.startsWith("b)")) {
-        document.querySelector("#f43-opcao-b").hidden = false;
-        document.querySelector("#val-f4310-docs").textContent = window.payload.F4310_DOCS || "—";
-      }
-
-      // ======== Sub-seção 4.3.11 ========
-      fillList("#f43-crit-incluir", (window.payload.F43_INCLUIR || "").split(";"));
-      document.querySelector("#f43-just-11").textContent = window.payload.F43_DESC_PLANOS || "—";
-
-      // ======== Sub-seção 4.3.12 ========
-      fillList("#f43-crit-incluir-12", (window.payload.F43_INCLUIR_B || "").split(";"));
-      document.querySelector("#f43-just-12").textContent = window.payload.F4312_JUST || "—";
-      document.querySelector("#f43-desc-planos-12").textContent = window.payload.F4312_DESC_PLANOS || "—";
-    });
-  </script>
 
 
 </body>
