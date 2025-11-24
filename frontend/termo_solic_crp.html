@@ -33,6 +33,7 @@
       <p class="term-meta">
         Ente: <strong data-k="ente"></strong> / UF: <strong data-k="uf"></strong> • UG: <strong data-k="ug"></strong>
       </p>
+
       <!-- 1. IDENTIFICAÇÃO -->
       <section class="term-section avoid-break" id="sec-1">
         <h2><br>1. IDENTIFICAÇÃO DO ENTE FEDERATIVO E DA UNIDADE GESTORA</h2>
@@ -81,6 +82,7 @@
           <div class="field"><span class="label"><strong>2.2.5 Telefone</strong></span><span class="value" data-k="tel_rep_ug"></span></div>
         </div>
       </section>
+
       <!-- 3. SITUAÇÃO RELATIVA AO CRP -->
       <section class="term-section avoid-break page-break" id="sec-3">
         <h2>3. SITUAÇÃO RELATIVA AO CERTIFICADO DE REGULARIDADE PREVIDENCIÁRIA (CRP)</h2>
@@ -103,9 +105,7 @@
 
         <h3>3.3 Critério(s) atualmente irregular(es) no extrato previdenciário</h3>
         <p class="small">Selecione todos os itens apontados como irregulares no extrato.</p>
-        <ul id="criterios-list"
-            data-empty="Sem irregularidades informadas.">
-        </ul>
+        <ul id="criterios-list" data-empty="Sem irregularidades informadas."></ul>
 
         <!-- 3.4 -->
         <div class="linha">
@@ -119,6 +119,7 @@
           </div>
         </div>
       </section>
+
       <!-- 4. FASE DO PROGRAMA -->
       <section class="term-section avoid-break" id="sec-fase">
         <h2>4. IDENTIFICAÇÃO DA FASE DO PROGRAMA DE REGULARIDADE PREVIDENCIÁRIA</h2>
@@ -141,11 +142,9 @@
           <ul id="f42-itens" class="styled-list" data-empty="Não preenchido"></ul>
         </div>
 
-        <div class="avoid-break phase-block" id="fase-43">
+        <div class="avoid-break phase-block" id="fase-43" hidden>
           <h3>4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</h3>
 
-
-          
           <div class="sub-section" id="f43-sub-1">
             <p class="small"><strong>4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento:</strong></p>
             <ul id="f43-1" class="styled-list" data-empty="Não preenchido"></ul>
@@ -192,46 +191,50 @@
           </div>
 
           <div class="sub-section" id="f43-sub-10">
-              <p class="small"><strong>4.3.10 – Em relação à adequação das regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</strong></p>
-              <div id="f43-opcao-a" class="field-group" hidden>
-                  <p>a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS (reforma das regras de benefícios)...</p>
-                  <p class="label-like">Relacionar a legislação que adequou as regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</p>
-                  <div class="value-block" id="val-f4310-leg"></div>
-              </div>
-              <div id="f43-opcao-b" class="field-group" hidden>
-                  <p>b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...</p>
-                  <p class="label-like">Lista de documentos anexados, que comprovam o encaminhamento dos projetos de alteração das regras de benefícios:</p>
-                  <div class="value-block" id="val-f4310-docs"></div>
-              </div>
+            <p class="small"><strong>4.3.10 – Em relação à adequação das regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</strong></p>
+
+            <div id="f43-opcao-a" class="field-group" hidden>
+              <p>a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS (reforma das regras de benefícios)...</p>
+              <p class="label-like">Relacionar a legislação que adequou as regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</p>
+              <div class="value-block" id="val-f4310-leg"></div>
+            </div>
+
+            <div id="f43-opcao-b" class="field-group" hidden>
+              <p>b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...</p>
+              <p class="label-like">Lista de documentos anexados, que comprovam o encaminhamento dos projetos de alteração das regras de benefícios:</p>
+              <div class="value-block" id="val-f4310-docs"></div>
+            </div>
           </div>
 
           <div class="sub-section" id="f43-sub-11">
-              <p class="small"><strong>4.3.11 - Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
-              <p class="label-like">a) Critérios do extrato que o ente deseja incluir no Plano de Ação da Fase Específica:</p>
-              <ul id="f43-crit-incluir" class="styled-list" style="display:block; list-style:none; padding-left:0;"></ul>
-              
-              <p class="label-like">b) Justificativas/Informações apresentadas relativas a essa inclusão (anexos podem ser citados abaixo):</p>
-              <div class="value-block" id="f43-just-11"></div>
-              
-              <p class="small text-muted small">Obs.: A solicitação de inclusão no Plano de Ação não se aplica aos seguintes critérios: “DIPR - Consistência e Caráter Contributivo”; “Caráter contributivo - Repasse (objeto de PAP)” e “Utilização dos recursos previdenciários (objeto de PAP)”.</p>
+            <p class="small"><strong>4.3.11 - Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
+
+            <p class="label-like">a) Critérios do extrato que o ente deseja incluir no Plano de Ação da Fase Específica:</p>
+            <ul id="f43-crit-incluir" class="styled-list" style="display:block; list-style:none; padding-left:0;"></ul>
+            
+            <p class="label-like">b) Justificativas/Informações apresentadas relativas a essa inclusão (anexos podem ser citados abaixo):</p>
+            <div class="value-block" id="f43-just-11"></div>
+            
+            <p class="small text-muted small">Obs.: A solicitação de inclusão no Plano de Ação não se aplica aos seguintes critérios: “DIPR - Consistência e Caráter Contributivo”; “Caráter contributivo - Repasse (objeto de PAP)” e “Utilização dos recursos previdenciários (objeto de PAP)”.</p>
           </div>
 
           <div class="sub-section" id="f43-sub-12">
-              <p class="small"><strong>4.3.12 Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
-              <p class="small text-muted small">Só aparecerão os critérios para assinalar se marcada a opção acima. Apresentar todos os critérios do Extrato.</p>
-              <p class="label-like">a) Critérios do extrato que o ente, comprovadamente, precisará incluir em Plano de Ação:</p>
-              <ul id="f43-crit-incluir-12" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="small"><strong>4.3.12 Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
 
-              <p class="label-like">b) Justificativas/informações apresentadas relativas à solicitação de inclusão (anexos podem ser citados abaixo):</p>
-              <div class="value-block" id="f43-just-12" data-field="F4312_JUST" data-empty="Não informado"></div>
+            <p class="small text-muted small">Só aparecerão os critérios para assinalar se marcada a opção acima. Apresentar todos os critérios do Extrato.</p>
 
-              <p class="label-like">c) Descrever sucintamente o(s) Plano(s) de Ação apresentado(s)</p>
-              <div class="value-block" id="f43-desc-planos-12" data-field="F4312_DESC_PLANOS" data-empty="Não informado"></div>
+            <p class="label-like">a) Critérios do extrato que o ente, comprovadamente, precisará incluir em Plano de Ação:</p>
+            <ul id="f43-crit-incluir-12" class="styled-list" data-empty="Não preenchido"></ul>
 
-              <p class="small text-muted small">Obs.: A solicitação de inclusão no Plano de Ação não se aplica aos seguintes critérios: “DIPR - Consistência e Caráter Contributivo”; “Caráter contributivo - Repasse (objeto de PAP)” e “Utilização dos recursos previdenciários (objeto de PAP)”.</p>
+            <p class="label-like">b) Justificativas/informações apresentadas relativas à solicitação de inclusão (anexos podem ser citados abaixo):</p>
+            <div class="value-block" id="f43-just-12" data-field="F4312_JUST" data-empty="Não informado"></div>
+
+            <p class="label-like">c) Descrever sucintamente o(s) Plano(s) de Ação apresentado(s)</p>
+            <div class="value-block" id="f43-desc-planos-12" data-field="F4312_DESC_PLANOS" data-empty="Não informado"></div>
+
+            <p class="small text-muted small">Obs.: A solicitação de inclusão no Plano de Ação não se aplica aos seguintes critérios: “DIPR - Consistência e Caráter Contributivo”; “Caráter contributivo - Repasse (objeto de PAP)” e “Utilização dos recursos previdenciários (objeto de PAP)”.</p>
           </div>
         </div>
-
 
         <div class="avoid-break phase-block" id="fase-44" hidden>
           <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
@@ -276,8 +279,7 @@
 
         <div class="avoid-break phase-block" id="fase-45" hidden>
           <h3>4.5 Fase Específica/Focalizada – 5º CRP Emergencial</h3>
-          <ul id="f45-decls" class="styled-list" data-empty="Não preenchido">
-            </ul>
+          <ul id="f45-decls" class="styled-list" data-empty="Não preenchido"></ul>
           
           <div class="sub-section" id="f45-sub-2">
             <p class="small"><strong>4.5.2 Comprovação do cumprimento do(s) Plano(s) de Ação</strong></p>
@@ -325,8 +327,7 @@
           <div class="sub-section" id="f46-sub-2">
             <p class="small"><strong>4.6.2 Finalidade do(s) Plano(s) de Ação apresentado(s)</strong></p>
             <ul id="f46-finalidades" class="styled-list" data-empty="Não preenchido"></ul>
-            <ul id="f46-crit-f" class="styled-list nested-list" data-empty="Não preenchido">
-              </ul>
+            <ul id="f46-crit-f" class="styled-list nested-list" data-empty="Não preenchido"></ul>
           </div>
           
           <div class="sub-section" id="f46-sub-6">
@@ -339,6 +340,7 @@
         </div>
 
       </section>
+
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section avoid-break">
         <h2>5. JUSTIFICATIVAS / INFORMAÇÕES ADICIONAIS</h2>
@@ -382,8 +384,8 @@
       </div>
     </div>
   </div>
-  <!-- Script embutido -->
 
+  <!-- SCRIPT ÚNICO, COMPLETO -->
   <script>
     (function () {
       const $  = (s, r=document) => r.querySelector(s);
@@ -392,11 +394,13 @@
       /* ===== Fallbacks “Não informado” ===== */
       const __NA_LABEL__ = () =>
         String((window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_LABEL) || 'Não informado');
+
       const __NA_ALL__ = () => {
         const d = window.__TERMO_DATA__;
         return (d && Object.prototype.hasOwnProperty.call(d, '__NA_ALL'))
           ? !!d.__NA_ALL : true;
       };
+
       function fillText(key, val){
         const raw = (val == null) ? '' : String(val);
         const trimmed = raw.trim();
@@ -405,7 +409,15 @@
       }
 
       /* ===== Utilitários ===== */
-      function escapeHtml(s){ return String(s||'').replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+      function escapeHtml(s){
+        return String(s||'').replace(/[&<>\"']/g, m => ({
+          '&':'&amp;',
+          '<':'&lt;',
+          '>':'&gt;',
+          '"':'&quot;',
+          "'":'&#39;'
+        })[m]);
+      }
 
       function asArr(v){
         if (Array.isArray(v)) return v;
@@ -417,30 +429,33 @@
           if ((s.startsWith('[') && s.endsWith(']'))) {
             try {
               const j = JSON.parse(s);
-              if (Array.isArray(j)) return j.filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
+              if (Array.isArray(j)) {
+                return j
+                  .filter(Boolean)
+                  .map(x=>String(x).trim())
+                  .filter(Boolean);
+              }
             } catch(_) {}
           }
-          // CRÍTICO: Separa por ponto-e-vírgula (padrão do seu frontend) ou quebra de linha
+          // padrão: separa por ; ou quebra de linha
           return s.split(/;|\r?\n/).map(t=>t.trim()).filter(Boolean);
         }
         return [String(v)].filter(Boolean);
       }
 
-      function splitLines(s){ return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean); }
+      function splitLines(s){
+        return String(s||'').split(/\r?\n/).map(t=>t.trim()).filter(Boolean);
+      }
 
       function liList(sel, arr){
         const ul = document.querySelector(sel);
         if (!ul) return false; 
         const a = asArr(arr);
-        
-        // Se tiver itens, preenche e retorna true
         if (a.length) {
           ul.innerHTML = a.map(x=>`<li>${escapeHtml(x)}</li>`).join('');
           return true;
         } 
-        
-        // Se vazio, limpa o HTML para não ocupar espaço no PDF
-        ul.innerHTML = ''; 
+        ul.innerHTML = '';
         return false;
       }
       const fillList = liList;
@@ -449,12 +464,11 @@
         const el = document.querySelector(sel);
         if (!el) return false;
         const lines = splitLines(s);
-        
         if (lines.length) {
           el.innerHTML = lines.map(x=>`<p>${escapeHtml(x)}</p>`).join('');
           return true;
         }
-        el.innerHTML = ''; 
+        el.innerHTML = '';
         return false;
       }
       const fillBlock = renderParagraphs;
@@ -467,7 +481,7 @@
           el.innerHTML = escapeHtml(s).replace(/\r?\n/g, '<br>');
           return true;
         }
-        el.innerHTML = ''; 
+        el.innerHTML = '';
         return false;
       }
 
@@ -479,19 +493,17 @@
         }
       }
 
-      /* ===== Normalização do payload (AQUI ESTÁ A MÁGICA) ===== */
+      /* ===== Normalização do payload ===== */
       function normalizePayload(p0){
         const p = Object.assign({}, p0);
 
-        // Helper para buscar chaves de forma insensível (minúsculo, maiúsculo, array)
         const getAny = (...keys) => {
-            for (const k of keys) {
-                if (p[k] !== undefined && p[k] !== null && p[k] !== '') return p[k];
-                // Tenta versão lowercase (comum vindo do server.js flatten)
-                const lower = k.toLowerCase();
-                if (p[lower] !== undefined && p[lower] !== null && p[lower] !== '') return p[lower];
-            }
-            return undefined;
+          for (const k of keys) {
+            if (p[k] !== undefined && p[k] !== null && p[k] !== '') return p[k];
+            const lower = k.toLowerCase();
+            if (p[lower] !== undefined && p[lower] !== null && p[lower] !== '') return p[lower];
+          }
+          return undefined;
         };
 
         // 3.1 e 3.2 CRP
@@ -502,7 +514,6 @@
         if (tCrp.startsWith('adm') || tCrp === 'nao' || tCrp === 'n') p.TIPO_EMISSAO_ULTIMO_CRP = 'Administrativa';
         if (tCrp.startsWith('jud') || tCrp === 'sim' || tCrp === 's') p.TIPO_EMISSAO_ULTIMO_CRP = 'Judicial';
         
-        // Espelhos data-k
         p.data_vencimento_ultimo_crp = p.DATA_VENC_ULTIMO_CRP;
         p.tipo_emissao_ult_crp = p.TIPO_EMISSAO_ULTIMO_CRP;
 
@@ -513,70 +524,68 @@
         p.PRAZO_ADICIONAL_TEXTO = getAny('PRAZO_ADICIONAL_TEXTO', 'prazo_adicional_texto') || '';
         let prazoCod = getAny('PRAZO_ADICIONAL_COD', 'prazo_adicional_cod', 'prazo_adicional');
         if (prazoCod) {
-             const m = String(prazoCod).match(/3\.[24]\.(\d)/);
-             if (m) prazoCod = `3.4.${m[1]}`;
+          const m = String(prazoCod).match(/3\.[24]\.(\d)/);
+          if (m) prazoCod = `3.4.${m[1]}`;
         }
         p.PRAZO_ADICIONAL_COD = prazoCod || '';
 
         // 4. Fase Selecionada
         p.__FASE_SEL__ = String(getAny('__FASE_SEL__', 'FASE_PROGRAMA', 'fase_programa', 'FASE') || '').trim();
 
-        // === LISTAS DAS FASES ===
-        
         // 4.1
         p.F41_OPCAO_TEXT = getAny('F41_OPCAO_TEXT', 'F41_OPCAO', 'f41_opcao', 'CELEBRACAO_TERMO_PARCELA_DEBITOS') || '';
 
         // 4.2
         p.F42_LISTA = asArr(getAny('F42_LISTA', 'F42_LISTA[]', 'F42_ITENS', 'F42_ITENS[]'));
 
-        // 4.3 (Seus campos problemáticos)
+        // 4.3
         p.F43_LISTA = asArr(getAny(
           'F43_LISTA', 'F43_LISTA[]', 'F43_LISTA_TXT', 'F43_LISTA_TXT[]',
           'F43_ITENS', 'F43_ITENS[]'
         ));
-        p.F43_INCLUIR = asArr(getAny('F43_INCLUIR', 'F43_INCLUIR[]', 'F43_INCLUIR_TXT', 'f43_incluir'));
+        p.F43_INCLUIR   = asArr(getAny('F43_INCLUIR', 'F43_INCLUIR[]', 'F43_INCLUIR_TXT', 'f43_incluir'));
         p.F43_INCLUIR_B = asArr(getAny('F43_INCLUIR_B', 'F43_INCLUIR_B[]', 'F43_INCLUIR_B_TXT', 'f43_incluir_b'));
         
-        p.F43_PLANO = getAny('F43_PLANO', 'f43_plano') || '';
-        p.F43_PLANO_B = getAny('F43_PLANO_B', 'f43_plano_b') || '';
-        p.F43_DESC_PLANOS = getAny('F43_DESC_PLANOS', 'f43_desc_planos') || '';
-        p.F43_JUST = getAny('F43_JUST', 'f43_just') || '';
+        p.F43_PLANO        = getAny('F43_PLANO', 'f43_plano') || '';
+        p.F43_PLANO_B      = getAny('F43_PLANO_B', 'f43_plano_b') || '';
+        p.F43_DESC_PLANOS  = getAny('F43_DESC_PLANOS', 'f43_desc_planos') || '';
+        p.F43_JUST         = getAny('F43_JUST', 'f43_just') || '';
         
-        p.F4310_OPCAO = getAny('F4310_OPCAO', 'f4310_opcao') || '';
+        p.F4310_OPCAO      = getAny('F4310_OPCAO', 'f4310_opcao') || '';
         p.F4310_LEGISLACAO = getAny('F4310_LEGISLACAO', 'f4310_legislacao') || '';
-        p.F4310_DOCS = getAny('F4310_DOCS', 'f4310_docs') || '';
+        p.F4310_DOCS       = getAny('F4310_DOCS', 'f4310_docs') || '';
 
         // 4.4
-        p.F44_CRITERIOS = asArr(getAny('F44_CRITERIOS', 'F44_CRITERIOS[]', 'f44_criterios'));
-        p.F44_DECLS = asArr(getAny('F44_DECLS', 'F44_DECLS[]', 'f44_decls'));
+        p.F44_CRITERIOS   = asArr(getAny('F44_CRITERIOS', 'F44_CRITERIOS[]', 'f44_criterios'));
+        p.F44_DECLS       = asArr(getAny('F44_DECLS', 'F44_DECLS[]', 'f44_decls'));
         p.F44_FINALIDADES = asArr(getAny('F44_FINALIDADES', 'F44_FINALIDADES[]', 'f44_finalidades'));
-        p.F44_ANEXOS = getAny('F44_ANEXOS', 'f44_anexos') || '';
+        p.F44_ANEXOS      = getAny('F44_ANEXOS', 'f44_anexos') || '';
         p.F441_LEGISLACAO = getAny('F441_LEGISLACAO', 'f441_legislacao') || '';
         p.F445_DESC_PLANOS = getAny('F445_DESC_PLANOS', 'f445_desc_planos') || '';
-        p.F446_DOCS = getAny('F446_DOCS', 'f446_docs') || '';
-        p.F446_EXEC_RES = getAny('F446_EXEC_RES', 'f446_exec_res') || '';
+        p.F446_DOCS       = getAny('F446_DOCS', 'f446_docs') || '';
+        p.F446_EXEC_RES   = getAny('F446_EXEC_RES', 'f446_exec_res') || '';
 
         // 4.5
-        p.F45_DECLS = asArr(getAny('F45_DECLS', 'F45_DECLS[]', 'f45_decls', 'F45_CONDICOES[]'));
-        p.F45_DOCS = getAny('F45_DOCS', 'f45_docs') || '';
-        p.F45_JUST = getAny('F45_JUST', 'f45_just') || '';
-        p.F453_EXEC_RES = getAny('F453_EXEC_RES', 'f453_exec_res') || '';
+        p.F45_DECLS       = asArr(getAny('F45_DECLS', 'F45_DECLS[]', 'f45_decls', 'F45_CONDICOES[]'));
+        p.F45_DOCS        = getAny('F45_DOCS', 'f45_docs') || '';
+        p.F45_JUST        = getAny('F45_JUST', 'f45_just') || '';
+        p.F453_EXEC_RES   = getAny('F453_EXEC_RES', 'f453_exec_res') || '';
 
         // 4.6
-        p.F46_CRITERIOS = asArr(getAny('F46_CRITERIOS', 'F46_CRITERIOS[]', 'f46_criterios'));
+        p.F46_DECLS       = asArr(getAny('F46_DECLS', 'F46_DECLS[]', 'f46_decls'));
+        p.F46_CRITERIOS   = asArr(getAny('F46_CRITERIOS', 'F46_CRITERIOS[]', 'f46_criterios'));
         p.F46_FINALIDADES = asArr(getAny('F46_FINALIDADES', 'F46_FINALIDADES[]', 'f46_finalidades'));
         p.F462F_CRITERIOS = asArr(getAny('F462F_CRITERIOS', 'F462F_CRITERIOS[]', 'f462f_criterios'));
-        // Unifica critérios estruturantes da 4.6
-        p.F46_CRITERIOS = [...p.F46_CRITERIOS, ...p.F462F_CRITERIOS];
+        p.F46_CRITERIOS   = [...p.F46_CRITERIOS, ...p.F462F_CRITERIOS];
         
-        p.F46_PROGESTAO = getAny('F46_PROGESTAO', 'f46_progestao') || '';
-        p.F46_PORTE = getAny('F46_PORTE', 'f46_porte') || '';
-        p.F46_JUST_D = getAny('F46_JUST_D', 'f46_just_d') || '';
-        p.F46_DOCS_D = getAny('F46_DOCS_D', 'f46_docs_d') || '';
-        p.F46_JUST_E = getAny('F46_JUST_E', 'f46_just_e') || '';
-        p.F46_DOCS_E = getAny('F46_DOCS_E', 'f46_docs_e') || '';
-        p.F466_DOCS = getAny('F466_DOCS', 'f466_docs') || '';
-        p.F466_EXEC_RES = getAny('F466_EXEC_RES', 'f466_exec_res') || '';
+        p.F46_PROGESTAO   = getAny('F46_PROGESTAO', 'f46_progestao') || '';
+        p.F46_PORTE       = getAny('F46_PORTE', 'f46_porte') || '';
+        p.F46_JUST_D      = getAny('F46_JUST_D', 'f46_just_d') || '';
+        p.F46_DOCS_D      = getAny('F46_DOCS_D', 'f46_docs_d') || '';
+        p.F46_JUST_E      = getAny('F46_JUST_E', 'f46_just_e') || '';
+        p.F46_DOCS_E      = getAny('F46_DOCS_E', 'f46_docs_e') || '';
+        p.F466_DOCS       = getAny('F466_DOCS', 'f466_docs') || '';
+        p.F466_EXEC_RES   = getAny('F466_EXEC_RES', 'f466_exec_res') || '';
 
         // 5. Justificativas Gerais
         p.JUSTIFICATIVAS_GERAIS = getAny('JUSTIFICATIVAS_GERAIS', 'justificativas_gerais') || '';
@@ -609,16 +618,10 @@
           console.log('TERMO: payload vazio (__NA_ALL), não vou preencher nada ainda.');
           return;
         }
-        // 🚨 TESTE 1: Payload Bruto (para checar a comunicação)
+
         console.log('TERMO: RAW Payload recebido:', JSON.stringify(payload));
 
-        // =======================================================
-        // 💡 CORREÇÃO FASE 4.3: Converte strings de critérios em arrays
-        // -------------------------------------------------------
-        // Esta correção DEVE ser aplicada ao 'payload' (a entrada)
-        // antes de chamar 'normalizePayload'.
-
-        // Lista de campos que devem ser arrays de strings
+        // Correção fase 4.3: garantir arrays no payload bruto
         const arrFields = [
           'F43_LISTA',
           'F43_LISTA[]',
@@ -630,56 +633,51 @@
           'F43_INCLUIR_B'
         ];
 
-        // Função utilitária para garantir Array a partir de string delimitada
         const ensureArray = (value) => {
-        // Se já for array, retorna filtrando valores falsy
-        if (Array.isArray(value)) return value.filter(Boolean);
-        // Se for nulo ou vazio, retorna array vazio
-        if (!value) return [];
+          if (Array.isArray(value)) return value.filter(Boolean);
+          if (!value) return [];
+          const s = String(value).trim();
+          if (!s) return [];
+          return s
+            .split(/[;,]\s*|\r?\n/)
+            .map(x => x.trim())
+            .filter(Boolean);
+        };
 
-        const s = String(value).trim();
-        if (!s) return [];
-
-        // Separa por ponto e vírgula, vírgula ou quebra de linha
-        return s
-          .split(/[;,]\s*|\r?\n/)
-          .map(x => x.trim())
-          .filter(Boolean);
-      };
-
-      // Aplica a conversão usando 'payload', que é o objeto de entrada.
-      arrFields.forEach((field) => {
-        // Se o campo existir, normaliza como array de strings
-        if (field in payload && payload[field] != null) {
-          payload[field] = ensureArray(payload[field]);
-        }
-      });
-
-        // =======================================================
+        arrFields.forEach((field) => {
+          if (field in payload && payload[field] != null) {
+            payload[field] = ensureArray(payload[field]);
+          }
+        });
 
         const p = normalizePayload(payload || {});
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
 
-        // 🚨 TESTE 2: Chaves F43 após a normalização (o que o script está vendo)
         console.log('TERMO: Normalized F43 keys:', {
-            F43_LISTA: p.F43_LISTA,
-            F43_INCLUIR: p.F43_INCLUIR,
-            F43_INCLUIR_B: p.F43_INCLUIR_B,
-            F43_PLANO: p.F43_PLANO,
-            F43_PLANO_B: p.F43_PLANO_B,
-            F43_DESC_PLANOS: p.F43_DESC_PLANOS,
-            F43_JUST: p.F43_JUST
+          F43_LISTA: p.F43_LISTA,
+          F43_INCLUIR: p.F43_INCLUIR,
+          F43_INCLUIR_B: p.F43_INCLUIR_B,
+          F43_PLANO: p.F43_PLANO,
+          F43_PLANO_B: p.F43_PLANO_B,
+          F43_DESC_PLANOS: p.F43_DESC_PLANOS,
+          F43_JUST: p.F43_JUST
         });
         
         // 1) Cabeçalho/meta
-        ['ente','uf','ug','cnpj_ente','cnpj_ug','email_ente','email_ug',
-         'N_GESCON','DATA_ENC_VIA_GESCON','SEI_PROCESSO','PORTARIA_SRPC',
-         'ORGAO_VINCULACAO_UG','nome_rep_ente','cargo_rep_ente','cpf_rep_ente',
-         'email_rep_ente','tel_rep_ente','nome_rep_ug','cargo_rep_ug','cpf_rep_ug',
-         'email_rep_ug','tel_rep_ug','data_vencimento_ultimo_crp','tipo_emissao_ult_crp'
+        [
+          'ente','uf','ug','cnpj_ente','cnpj_ug','email_ente','email_ug',
+          'N_GESCON','DATA_ENC_VIA_GESCON','SEI_PROCESSO','PORTARIA_SRPC',
+          'ORGAO_VINCULACAO_UG','nome_rep_ente','cargo_rep_ente','cpf_rep_ente',
+          'email_rep_ente','tel_rep_ente','nome_rep_ug','cargo_rep_ug','cpf_rep_ug',
+          'email_rep_ug','tel_rep_ug','data_vencimento_ultimo_crp','tipo_emissao_ult_crp',
+          'F44_ANEXOS','F441_LEGISLACAO','F445_DESC_PLANOS',
+          'F446_DOCS','F446_EXEC_RES',
+          'F45_DOCS','F45_JUST','F453_EXEC_RES',
+          'F46_PROGESTAO','F46_PORTE','F46_JUST_D','F46_DOCS_D',
+          'F46_JUST_E','F46_DOCS_E','F466_DOCS','F466_EXEC_RES'
         ].forEach(k => {
-             let val = p[k] || p[k.toUpperCase()] || p[k.toLowerCase()];
-             fillText(k, val);
+          let val = p[k] || p[k.toUpperCase()] || p[k.toLowerCase()];
+          fillText(k, val);
         });
         
         // 3.4 Prazo Adicional
@@ -709,13 +707,12 @@
         // 4) Fase Selecionada
         let faseSel = p.__FASE_SEL__;
         if (!faseSel) {
-           // Auto-detecção se vazio
-           if (p.F41_OPCAO_TEXT) faseSel = '4.1';
-           else if (p.F42_LISTA.length) faseSel = '4.2';
-           else if (p.F43_LISTA.length || p.F43_INCLUIR.length || p.F43_PLANO) faseSel = '4.3';
-           else if (p.F44_DECLS.length) faseSel = '4.4';
-           else if (p.F45_DECLS.length) faseSel = '4.5';
-           else if (p.F46_DECLS.length || p.F46_CRITERIOS.length) faseSel = '4.6';
+          if (p.F41_OPCAO_TEXT) faseSel = '4.1';
+          else if (p.F42_LISTA.length) faseSel = '4.2';
+          else if (p.F43_LISTA.length || p.F43_INCLUIR.length || p.F43_PLANO) faseSel = '4.3';
+          else if (p.F44_DECLS.length) faseSel = '4.4';
+          else if (p.F45_DECLS.length) faseSel = '4.5';
+          else if (p.F46_DECLS.length || p.F46_CRITERIOS.length) faseSel = '4.6';
         }
 
         // Oculta label "Fase selecionada:"
@@ -738,36 +735,20 @@
         // --- FASE 4.2 ---
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
+        // --- FASE 4.3 ---
         (function run43() {
           console.group('[DEBUG FASE 4.3 - INÍCIO]');
-
           try {
             let hasContent = false;
 
-            // ================================================================
-            // 1. LOG DOS DADOS RECEBIDOS
-            // ================================================================
-            console.log('DADOS BRUTOS (p - Parcial):', {
-              F43_LISTA: p.F43_LISTA,
-              F43_PLANO: p.F43_PLANO,
-              F43_JUST: p.F43_JUST,
-              F43_INCLUIR: p.F43_INCLUIR,
-              F43_PLANO_B: p.F43_PLANO_B,
-              F43_DESC_PLANOS: p.F43_DESC_PLANOS,
-              F43_INCLUIR_B: p.F43_INCLUIR_B
-            });
-
-            // ================================================================
-            // 2. TRATAMENTO DA LISTA DE CRITÉRIOS
-            // ================================================================
             const candidatosF43 = [
-              p.F43_LISTA,           // principal (array já normalizado)
-              p.f43_lista,           // minúsculo
-              p['F43_LISTA[]'],      // variação com colchetes
-              p['F43_ITENS[]'],      // legado do form
-              p.F43_ITENS,           // outro legado
-              p.F43_LISTA_TXT,       // string linearizada (com ";")
-              p['F43_LISTA_TXT[]']   // se vier por algum binding diferente
+              p.F43_LISTA,
+              p.f43_lista,
+              p['F43_LISTA[]'],
+              p['F43_ITENS[]'],
+              p.F43_ITENS,
+              p.F43_LISTA_TXT,
+              p['F43_LISTA_TXT[]']
             ];
 
             let rawList = [];
@@ -781,21 +762,6 @@
 
             console.log('[Fase 4.3] Base bruta de critérios (rawList):', rawList);
 
-            // SUBSTITUIÇÃO COMPLETA DOS SUBITENS 4.3.1 A 4.3.9
-            fillList("#f43-1",  p.F43_LISTA.filter(x => /dipr|repasse|aporte|parcelamento/i.test(x)));
-            fillList("#f43-2",  p.F43_LISTA.filter(x => /utiliza/i.test(x)));
-            fillList("#f43-3",  p.F43_LISTA.filter(x => /aplica|dair|dpin/i.test(x)));
-            fillList("#f43-4",  p.F43_LISTA.filter(x => /limites? de contribui/i.test(x)));
-            fillList("#f43-5",  p.F43_LISTA.filter(x => /rol de benef|plano de benef/i.test(x)));
-            fillList("#f43-6",  p.F43_LISTA.filter(x => /previd|rpc/i.test(x)));
-            fillList("#f43-7",  p.F43_LISTA.filter(x => /envio|nta|draa|msc|esocial/i.test(x)));
-            fillList("#f43-8",  p.F43_LISTA.filter(x => /compensa/i.test(x)));
-            fillList("#f43-9",  p.F43_LISTA.filter(x => /dirig|colegiad|8º\-?b/i.test(x)));
-
-
-            // ================================================================
-            // 3. Função de filtro segura
-            // ================================================================
             const filterList = (keywords) => {
               return rawList.filter(item => {
                 const lowItem = String(item || '').toLowerCase();
@@ -803,10 +769,6 @@
               });
             };
 
-            // ================================================================
-            // 4. Processador de sub-seções
-            //    (USANDO OS IDs NOVOS: #f43-1 ... #f43-9)
-            // ================================================================
             const processSub = (ulId, containerId, keywords) => {
               const list = filterList(keywords);
               const preencheu = fillList(ulId, list);
@@ -820,28 +782,22 @@
               }
 
               show(containerId, preencheu);
-
-              if (preencheu) {
-                hasContent = true;
-              }
+              if (preencheu) hasContent = true;
               return preencheu;
             };
 
-            // ================================================================
-            // 5. EXECUÇÃO DOS SUBITENS 4.3.1 a 4.3.9
-            //    (IDs DO HTML: #f43-1 ... #f43-9)
-            // ================================================================
+            // 4.3.1 a 4.3.9
             processSub('#f43-1', '#f43-sub-1',
               ['dipr', 'caráter contributivo', 'carater contributivo', 'repasse', 'aportes', 'parcelamento']
             );
             processSub('#f43-2', '#f43-sub-2',
-              ['utilização dos recursos', 'utilizacao dos recursos']
+              ['utilização dos recursos', 'utilizacao dos recursos', 'objeto de pap']
             );
             processSub('#f43-3', '#f43-sub-3',
-              ['aplicações financeiras', 'aplicacoes financeiras', 'dair', 'dpin']
+              ['aplicação dos recursos', 'aplicacoes financeiras', 'mercado financeiro', 'dair', 'dpin']
             );
             processSub('#f43-4', '#f43-sub-4',
-              ['limites de contribuição', 'limites de contribuicao']
+              ['limites de contribuição', 'limites de contribuicao', 'ec 103', 'alíquotas', 'aliquotas']
             );
             processSub('#f43-5', '#f43-sub-5',
               ['rol de benefícios', 'rol de beneficios', 'plano de benefícios', 'plano de beneficios']
@@ -861,7 +817,7 @@
               ['compensação previdenciária', 'compensacao previdenciaria']
             );
             processSub('#f43-9', '#f43-sub-9',
-              ['requisitos para os dirigentes', 'colegiados', 'art. 8º-b', 'art. 8º b', '8º-b']
+              ['requisitos para os dirigentes', 'colegiados', 'art. 8º-b', 'art. 8º b', '8º-b', '8º b']
             );
             
             // 4.3.10
@@ -885,10 +841,6 @@
             fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS);
             show("#f43-sub-12", p.F43_INCLUIR_B.length || p.F43_PLANO_B || p.F43_DESC_PLANOS);
 
-
-            // ================================================================
-            // 9. CONTROLE FINAL DO BLOCO
-            // ================================================================
             console.log('-> FASE 4.3 TEM CONTEÚDO FINAL?', hasContent);
             togglePhaseBlock('#fase-43', hasContent);
 
@@ -905,11 +857,39 @@
                 </div>`;
             }
           }
-
           console.groupEnd();
         })();
 
+        // --- FASE 4.4 ---
+        (function(){
+          const has =
+            fillList('#f44-decls', p.F44_DECLS) ||
+            fillList('#f44-finalidades', p.F44_FINALIDADES) ||
+            fillList('#f44-criterios', p.F44_CRITERIOS) ||
+            !!p.F44_ANEXOS || !!p.F445_DESC_PLANOS || !!p.F446_DOCS || !!p.F446_EXEC_RES;
+          togglePhaseBlock('#fase-44', has);
+        })();
 
+        // --- FASE 4.5 ---
+        (function(){
+          const has =
+            fillList('#f45-decls', p.F45_DECLS) ||
+            !!p.F45_DOCS || !!p.F45_JUST || !!p.F453_EXEC_RES;
+          togglePhaseBlock('#fase-45', has);
+        })();
+
+        // --- FASE 4.6 ---
+        (function(){
+          const has =
+            fillList('#f46-criterios', p.F46_CRITERIOS) ||
+            fillList('#f46-finalidades', p.F46_FINALIDADES) ||
+            fillList('#f46-crit-f', p.F462F_CRITERIOS) ||
+            !!p.F46_PROGESTAO || !!p.F46_PORTE ||
+            !!p.F46_JUST_D || !!p.F46_DOCS_D ||
+            !!p.F46_JUST_E || !!p.F46_DOCS_E ||
+            !!p.F466_DOCS || !!p.F466_EXEC_RES;
+          togglePhaseBlock('#fase-46', has);
+        })();
 
         // 5) Justificativas Gerais
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS);
@@ -929,47 +909,37 @@
             sig.innerHTML = isEstDistr
               ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
               : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
-            fillText('ente', p.ENTE); fillText('uf', p.UF);
+            fillText('ente', p.ENTE); 
+            fillText('uf', p.UF);
           }
         })();
 
-        // Flag de pronto para Puppeteer
         if (!window.__TERMO_READY_FIRED__) {
-            window.__TERMO_READY_FIRED__ = true;
-            requestAnimationFrame(() => {
-                document.documentElement.setAttribute('data-termo-ready','1');
-                window.__TERMO_PRINT_READY__ = true;
-                try { document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY')); } catch {}
-            });
+          window.__TERMO_READY_FIRED__ = true;
+          requestAnimationFrame(() => {
+            document.documentElement.setAttribute('data-termo-ready','1');
+            window.__TERMO_PRINT_READY__ = true;
+            try { document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY')); } catch {}
+          });
         }
       }
 
-            // ================================================================
-      // DEBUG LOCAL: permitir testar o termo direto no browser usando ?p=
-      // Ex.: file:///.../termo_solic_crp.html?p=%7B%22FASE_PROGRAMA%22%3A%224.3%22,...%7D
-      // ================================================================
+      // DEBUG LOCAL via ?p=
       try {
         const search = window.location && window.location.search;
         if (search && !window.__TERMO_DATA__) {
           const usp = new URLSearchParams(search);
           const pParam = usp.get('p');
-          
           if (pParam) {
             console.group('[TERMO DEBUG] Carregando payload via ?p=');
             let decoded = pParam;
-            try {
-              decoded = decodeURIComponent(pParam);
-            } catch (e) {
+            try { decoded = decodeURIComponent(pParam); } catch (e) {
               console.warn('decodeURIComponent falhou, usando valor bruto de p:', e);
             }
-
             let json = null;
-            try {
-              json = JSON.parse(decoded);
-            } catch (e) {
+            try { json = JSON.parse(decoded); } catch (e) {
               console.error('[TERMO DEBUG] Erro ao fazer JSON.parse do parâmetro p:', e, 'valor=', decoded);
             }
-
             if (json && typeof json === 'object') {
               console.log('[TERMO DEBUG] Payload parseado com sucesso:', json);
               window.__TERMO_DATA__ = json;
@@ -987,21 +957,20 @@
       window.run = run;
       window.__TERMO_RUN__ = run;
 
-
       // Inicialização
       if (window.__TERMO_DATA__) { 
-          try { run(window.__TERMO_DATA__); } catch {} 
+        try { run(window.__TERMO_DATA__); } catch(e) { console.error(e); } 
       }
-      document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
-      document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch {} });
+      document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch(e){ console.error(e);} });
+      document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch(e){ console.error(e);} });
       
-      // Fallback
       setTimeout(() => {
-         if (!window.__TERMO_READY_FIRED__) {
-             run(window.__TERMO_DATA__ || {__NA_ALL:true});
-         }
+        if (!window.__TERMO_READY_FIRED__) {
+          run(window.__TERMO_DATA__ || {__NA_ALL:true});
+        }
       }, 800);
     })();
   </script>
+
 </body>
 </html>

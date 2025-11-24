@@ -368,3 +368,6 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
     content: none !important; /* Desabilita o fallback para UL/OL vazios */
   }
 }
+/* PATCH 4.3 – Estilização */
+.f43-block { margin-top: 12px; }
+.f43-item { margin: 4px 0; font-size: 14px; }
