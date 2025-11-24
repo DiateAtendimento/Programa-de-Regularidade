@@ -1045,5 +1045,60 @@
     })();
   </script>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      if (!window.payload) return;
+
+      const F43 = window.payload.F43_LISTA || [];
+
+      function fillList(selector, arr) {
+        const ul = document.querySelector(selector);
+        if (!ul) return;
+        ul.innerHTML = "";
+        if (!arr || arr.length === 0) {
+          ul.innerHTML = "<li><i>Não preenchido</i></li>";
+          return;
+        }
+        arr.forEach(item => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          ul.appendChild(li);
+        });
+      }
+
+      // Mapear as faixas de índices: cada bloco 4.3.x tem grupos específicos
+      fillList("#f43-1", F43.slice(0, 2));
+      fillList("#f43-2", F43.slice(2, 3));
+      fillList("#f43-3", F43.slice(3, 6));
+      fillList("#f43-4", F43.slice(6, 8));
+      fillList("#f43-5", F43.slice(8, 9));
+      fillList("#f43-6", F43.slice(9, 10));
+      fillList("#f43-7", F43.slice(10, 18));
+      fillList("#f43-8", F43.slice(18, 19));
+      fillList("#f43-9", F43.slice(19, 20));
+
+      // ======== Campos dinâmicos do item 4.3.10 ========
+      const op = window.payload.F4310_OPCAO || "";
+      if (op.startsWith("a)")) {
+        document.querySelector("#f43-opcao-a").hidden = false;
+        document.querySelector("#val-f4310-leg").textContent = window.payload.F4310_LEGISLACAO || "—";
+      }
+      if (op.startsWith("b)")) {
+        document.querySelector("#f43-opcao-b").hidden = false;
+        document.querySelector("#val-f4310-docs").textContent = window.payload.F4310_DOCS || "—";
+      }
+
+      // ======== Sub-seção 4.3.11 ========
+      fillList("#f43-crit-incluir", (window.payload.F43_INCLUIR || "").split(";"));
+      document.querySelector("#f43-just-11").textContent = window.payload.F43_DESC_PLANOS || "—";
+
+      // ======== Sub-seção 4.3.12 ========
+      fillList("#f43-crit-incluir-12", (window.payload.F43_INCLUIR_B || "").split(";"));
+      document.querySelector("#f43-just-12").textContent = window.payload.F4312_JUST || "—";
+      document.querySelector("#f43-desc-planos-12").textContent = window.payload.F4312_DESC_PLANOS || "—";
+    });
+  </script>
+
+
 </body>
 </html>
