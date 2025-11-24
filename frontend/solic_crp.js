@@ -571,12 +571,31 @@
     // 4.2
     data.values['F42_LISTA[]'] = $$(`#F42_LISTA input[type="checkbox"]:checked`).map(i=>i.value);
 
-    // 4.3
-    data.values['F43_LISTA[]'] = $$(`#F43_LISTA input[type="checkbox"]:checked`).map(i=>i.value);
-    data.values['F43_PLANO']   = $('#F43_PLANO')?.value || '';
-    data.values['F43_INCLUIR[]'] = $$('#F43_INCLUIR input[type="checkbox"]:checked').map(i=>i.value);
-    data.values['F43_SOLICITA_INCLUSAO'] = !!$('#F43_SOLICITA_INCLUSAO')?.checked;
-    data.values['F43_PLANO_B'] = $('#F43_PLANO_B')?.value || '';
+    /* === FASE 4.3 === */
+    const fase43 = {
+        itens: getArr("F43_ITENS[]"),
+        incluir: getArr("F43_INCLUIR[]"),
+        incluir_b: getArr("F43_INCLUIR_B[]"),
+        opcao4310: getVal("F4310_OPCAO"),
+        legislacao4310: getVal("F4310_LEGISLACAO"),
+        docs4310: getVal("F4310_DOCS"),
+        plano: getVal("F43_PLANO"),
+        plano_b: getVal("F43_PLANO_B"),
+        justificativa: getVal("F43_JUST"),
+        desc_planos: getVal("F43_DESC_PLANOS")
+    };
+
+    formData["F43_ITENS"] = fase43.itens;
+    formData["F43_INCLUIR"] = fase43.incluir;
+    formData["F43_INCLUIR_B"] = fase43.incluir_b;
+    formData["F4310_OPCAO"] = fase43.opcao4310;
+    formData["F4310_LEGISLACAO"] = fase43.legislacao4310;
+    formData["F4310_DOCS"] = fase43.docs4310;
+    formData["F43_PLANO"] = fase43.plano;
+    formData["F43_PLANO_B"] = fase43.plano_b;
+    formData["F43_JUST"] = fase43.justificativa;
+    formData["F43_DESC_PLANOS"] = fase43.desc_planos;
+
 
     const _inclArr   = collectCheckedValues('#F43_INCLUIR input[type="checkbox"]');
     const _inclArr_B = collectCheckedValues('#F43_INCLUIR_B input[type="checkbox"]');
