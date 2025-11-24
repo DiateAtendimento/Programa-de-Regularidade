@@ -639,6 +639,8 @@
       // ========= Função principal (Render) =========
       function run(payload){
 
+        console.log("🔥 TESTE 1 – run() INICIOU", payload);
+
         if (payload && payload.__NA_ALL) {
           console.log('TERMO: payload vazio (__NA_ALL), não vou preencher nada ainda.');
           return;
@@ -761,6 +763,9 @@
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
         (function run43() {
+
+          console.log("🔥 TESTE 1B – Entrou em run43()");
+
           console.group('%c[DEBUG – FASE 4.3]', 'color:#0af; font-size:14px');
 
           try {
@@ -770,6 +775,7 @@
             // 1) Recebe TODA a lista bruta
             // ===================================================
             const listaBruta = asArr(
+              
               p.F43_LISTA ||
               p['F43_LISTA[]'] ||
               p.F43_ITENS ||
@@ -777,7 +783,17 @@
               p.F43_LISTA_TXT
             );
 
+            // TESTE 2 — Verificar se o payload trouxe os dados da F43
+            console.log("🔥 TESTE 2 – valor bruto recebido em F43:", {
+              F43_LISTA: p.F43_LISTA,
+              F43_ITENS: p.F43_ITENS,
+              F43_LISTA_TXT: p.F43_LISTA_TXT
+            });
+
             console.log('[4.3] Lista bruta recebida:', listaBruta);
+
+            console.log("🔥 TESTE 3 – listaBruta FINAL =", listaBruta.length, listaBruta);
+
 
             // ===================================================
             // 2) Agrupamento FIXO baseado na ordem
@@ -831,7 +847,13 @@
             };
 
             Object.keys(mapeamentoPDF).forEach(key => {
+              console.log("🔥 TESTE 4 – verificando existência das UL dos itens 4.3…");
+
               const sel = mapeamentoPDF[key];
+
+              const ulExist = document.querySelector(sel);
+              console.log(`🔥 TESTE 4 – UL ${sel} existe?`, !!ulExist, ulExist);
+
               const arr = grupos[key];
 
               console.log(`→ Preenchendo ${key} em ${sel} ::`, arr);
@@ -935,9 +957,35 @@
             console.log('→ FASE 4.3 TEM CONTEÚDO?', hasContent);
             togglePhaseBlock('#fase-43', hasContent);
 
+            console.log("🔥 TESTE 7 – HTML FINAL DA FASE 4.3:");
+            console.log(document.querySelector("#fase-43").innerHTML);
+
+
           } catch (e) {
             console.error('[DEBUG 4.3] ERRO:', e);
           }
+
+          console.log("🔥 TESTE 5 – Computed styles UL 4.3");
+          ['#f43-1','#f43-2','#f43-3','#f43-4','#f43-5','#f43-6','#f43-7','#f43-8','#f43-9']
+            .forEach(id=>{
+              let el=document.querySelector(id);
+              if(el){
+                const cs = window.getComputedStyle(el);
+                console.log(id,'→ display:',cs.display,' visibility:',cs.visibility,' hidden:',el.hidden);
+              }
+            });
+
+            console.log("🔥 TESTE 6 – removendo hidden/display de todos elementos da fase 4.3 TEMPORARIAMENTE");
+            document.querySelectorAll("#fase-43 [hidden]").forEach(el=>{
+              el.hidden = false;
+            });
+            document.querySelectorAll("#fase-43").forEach(el=>{
+              el.style.display = "block";
+              el.hidden = false;
+            });
+
+
+
 
           console.groupEnd();
         })();
