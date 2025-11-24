@@ -735,130 +735,178 @@
         // --- FASE 4.2 ---
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
-        // --- FASE 4.3 ---
         (function run43() {
-          console.group('[DEBUG FASE 4.3 - INÍCIO]');
+          console.group('%c[DEBUG – FASE 4.3]', 'color:#0af; font-size:14px');
+
           try {
             let hasContent = false;
 
-            const candidatosF43 = [
-              p.F43_LISTA,
-              p.f43_lista,
-              p['F43_LISTA[]'],
-              p['F43_ITENS[]'],
-              p.F43_ITENS,
-              p.F43_LISTA_TXT,
-              p['F43_LISTA_TXT[]']
-            ];
+            // ===================================================
+            // 1) Recebe TODA a lista bruta
+            // ===================================================
+            const listaBruta = asArr(
+              p.F43_LISTA ||
+              p['F43_LISTA[]'] ||
+              p.F43_ITENS ||
+              p['F43_ITENS[]'] ||
+              p.F43_LISTA_TXT
+            );
 
-            let rawList = [];
-            for (const cand of candidatosF43) {
-              const arr = asArr(cand);
-              if (arr && arr.length) {
-                rawList = arr;
-                break;
-              }
-            }
+            console.log('[4.3] Lista bruta recebida:', listaBruta);
 
-            console.log('[Fase 4.3] Base bruta de critérios (rawList):', rawList);
-
-            const filterList = (keywords) => {
-              return rawList.filter(item => {
-                const lowItem = String(item || '').toLowerCase();
-                return keywords.some(k => lowItem.includes(k));
-              });
+            // ===================================================
+            // 2) Agrupamento FIXO baseado na ordem
+            // ===================================================
+            const grupos = {
+              '4.3.1': [],
+              '4.3.2': [],
+              '4.3.3': [],
+              '4.3.4': [],
+              '4.3.5': [],
+              '4.3.6': [],
+              '4.3.7': [],
+              '4.3.8': [],
+              '4.3.9': []
             };
 
-            const processSub = (ulId, containerId, keywords) => {
-              const list = filterList(keywords);
-              const preencheu = fillList(ulId, list);
-
-              console.log(
-                `[SUBITEM ${containerId}] Palavras chave: ${JSON.stringify(keywords)} | Encontrados: ${list.length}`
-              );
-
-              if (!document.querySelector(containerId)) {
-                console.error(`[ERRO] Container ${containerId} não encontrado no DOM.`);
-              }
-
-              show(containerId, preencheu);
-              if (preencheu) hasContent = true;
-              return preencheu;
+            const mapaPosicoes = {
+              '4.3.1': [0, 1],
+              '4.3.2': [2, 2],
+              '4.3.3': [3, 5],
+              '4.3.4': [6, 7],
+              '4.3.5': [8, 8],
+              '4.3.6': [9, 9],
+              '4.3.7': [10, 17],
+              '4.3.8': [18, 18],
+              '4.3.9': [19, 19]
             };
 
-            // 4.3.1 a 4.3.9
-            processSub('#f43-1', '#f43-sub-1',
-              ['dipr', 'caráter contributivo', 'carater contributivo', 'repasse', 'aportes', 'parcelamento']
-            );
-            processSub('#f43-2', '#f43-sub-2',
-              ['utilização dos recursos', 'utilizacao dos recursos', 'objeto de pap']
-            );
-            processSub('#f43-3', '#f43-sub-3',
-              ['aplicação dos recursos', 'aplicacoes financeiras', 'mercado financeiro', 'dair', 'dpin']
-            );
-            processSub('#f43-4', '#f43-sub-4',
-              ['limites de contribuição', 'limites de contribuicao', 'ec 103', 'alíquotas', 'aliquotas']
-            );
-            processSub('#f43-5', '#f43-sub-5',
-              ['rol de benefícios', 'rol de beneficios', 'plano de benefícios', 'plano de beneficios']
-            );
-            processSub('#f43-6', '#f43-sub-6',
-              ['previdência complementar', 'previdencia complementar', 'rpc']
-            );
-            processSub('#f43-7', '#f43-sub-7',
-              [
-                'envio dos dados',
-                'solicitação de legislação', 'solicitacao de legislacao',
-                'atendimento à fiscalização', 'atendimento a fiscalizacao',
-                'nta', 'draa', 'msc', 'esocial'
-              ]
-            );
-            processSub('#f43-8', '#f43-sub-8',
-              ['compensação previdenciária', 'compensacao previdenciaria']
-            );
-            processSub('#f43-9', '#f43-sub-9',
-              ['requisitos para os dirigentes', 'colegiados', 'art. 8º-b', 'art. 8º b', '8º-b', '8º b']
-            );
-            
-            // 4.3.10
+            Object.keys(mapaPosicoes).forEach(key => {
+              const [ini, fim] = mapaPosicoes[key];
+              grupos[key] = listaBruta.slice(ini, fim + 1).filter(Boolean);
+            });
+
+            console.table(grupos);
+
+            // ===================================================
+            // 3) POPULA CADA GRUPO NO PDF + LOGS
+            // ===================================================
+
+            const mapeamentoPDF = {
+              '4.3.1': '#f43-1',
+              '4.3.2': '#f43-2',
+              '4.3.3': '#f43-3',
+              '4.3.4': '#f43-4',
+              '4.3.5': '#f43-5',
+              '4.3.6': '#f43-6',
+              '4.3.7': '#f43-7',
+              '4.3.8': '#f43-8',
+              '4.3.9': '#f43-9'
+            };
+
+            Object.keys(mapeamentoPDF).forEach(key => {
+              const sel = mapeamentoPDF[key];
+              const arr = grupos[key];
+
+              console.log(`→ Preenchendo ${key} em ${sel} ::`, arr);
+
+              const ok = fillList(sel, arr);
+              const subId = '#f43-sub-' + key.split('.')[1];
+              const container = document.querySelector(subId);
+
+              if (!container) {
+                console.warn(`[WARN] Container não encontrado: ${subId}`);
+              } else {
+                container.style.display = ok ? '' : 'none';
+              }
+
+              if (ok) {
+                console.log(`✔ ${key} exibido`);
+                hasContent = true;
+              } else {
+                console.warn(`✖ ${key} está vazio (arr.length=${arr.length})`);
+              }
+            });
+
+
+            // ===================================================
+            // 4.3.10 – Log de qual opção foi escolhida
+            // ===================================================
             const opt = (p.F4310_OPCAO || '').trim().toLowerCase();
+            console.log('[4.3.10] Opção selecionada:', opt);
+
             const isA = opt.startsWith('a');
             const isB = opt.startsWith('b');
             show("#f43-opcao-a", isA);
             show("#f43-opcao-b", isB);
             show("#f43-sub-10", isA || isB);
-            if (isA) fillBlock("#val-f4310-leg", p.F4310_LEGISLACAO);
-            if (isB) fillBlock("#val-f4310-docs", p.F4310_DOCS);
 
-            // 4.3.11
-            fillList("#f43-crit-incluir", p.F43_INCLUIR);
-            fillBlock("#f43-just-11", p.F43_PLANO);
-            show("#f43-sub-11", p.F43_INCLUIR.length || p.F43_PLANO);
+            if (isA) {
+              console.log('→ 4.3.10 (a) preenchendo legislação:', p.F4310_LEGISLACAO);
+              fillBlock("#val-f4310-leg", p.F4310_LEGISLACAO);
+              hasContent = true;
+            }
+            if (isB) {
+              console.log('→ 4.3.10 (b) preenchendo docs:', p.F4310_DOCS);
+              fillBlock("#val-f4310-docs", p.F4310_DOCS);
+              hasContent = true;
+            }
 
-            // 4.3.12
-            fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B);
-            fillBlock("#f43-just-12", p.F43_PLANO_B);
-            fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS);
-            show("#f43-sub-12", p.F43_INCLUIR_B.length || p.F43_PLANO_B || p.F43_DESC_PLANOS);
+            // ===================================================
+            // 4.3.11 – Logs
+            // ===================================================
+            console.log('[4.3.11] INCLUIR:', p.F43_INCLUIR);
+            console.log('[4.3.11] PLANO:', p.F43_PLANO);
 
-            console.log('-> FASE 4.3 TEM CONTEÚDO FINAL?', hasContent);
+            const show11 =
+              fillList("#f43-crit-incluir", p.F43_INCLUIR) ||
+              fillBlock("#f43-just-11", p.F43_PLANO);
+
+            if (show11) {
+              console.log('✔ 4.3.11 exibido');
+              show("#f43-sub-11", true);
+              hasContent = true;
+            } else {
+              console.warn('✖ 4.3.11 vazio');
+              show("#f43-sub-11", false);
+            }
+
+            // ===================================================
+            // 4.3.12 – Logs
+            // ===================================================
+            console.log('[4.3.12] INCLUIR_B:', p.F43_INCLUIR_B);
+            console.log('[4.3.12] PLANO_B:', p.F43_PLANO_B);
+            console.log('[4.3.12] DESC_PLANOS:', p.F43_DESC_PLANOS);
+
+            const show12 =
+              fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B) ||
+              fillBlock("#f43-just-12", p.F43_PLANO_B) ||
+              fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS);
+
+            if (show12) {
+              console.log('✔ 4.3.12 exibido');
+              show("#f43-sub-12", true);
+              hasContent = true;
+            } else {
+              console.warn('✖ 4.3.12 vazio');
+              show("#f43-sub-12", false);
+            }
+
+
+            // ===================================================
+            // FINAL
+            // ===================================================
+            console.log('→ FASE 4.3 TEM CONTEÚDO?', hasContent);
             togglePhaseBlock('#fase-43', hasContent);
 
           } catch (e) {
-            console.error('ERRO FATAL NA FASE 4.3:', e);
-            const errEl = document.getElementById('fase-43');
-            if (errEl) {
-              errEl.hidden = false;
-              errEl.style.display = 'block';
-              errEl.innerHTML = `
-                <div style="color:red; border:1px solid red; padding:10px;">
-                  ERRO GRAVE NA FASE 4.3: ${e.message}.  
-                  Veja o console para detalhes.
-                </div>`;
-            }
+            console.error('[DEBUG 4.3] ERRO:', e);
           }
+
           console.groupEnd();
         })();
+
+
 
         // --- FASE 4.4 ---
         (function(){
