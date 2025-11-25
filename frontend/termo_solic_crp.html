@@ -779,10 +779,6 @@
 
         const p = normalizePayload(payload || {});
 
-        if (window.hydrateF43) {
-          try { window.hydrateF43(p); } catch(e){ console.error(e); }
-        }
-
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
 
         console.log('TERMO: Normalized F43 keys:', {
@@ -954,7 +950,21 @@
 
       // Exposição global
       window.run = run;
+      
       window.__TERMO_RUN__ = run;
+
+      document.addEventListener("TERMO_PRINT_READY", () => {
+        try {
+          const p = window.__TERMO_DATA__;
+          if (p && window.hydrateF43) {
+            console.log("🔥 hydrateF43 FINAL → Aplicando sobre o HTML já montado");
+            window.hydrateF43(p);
+          }
+        } catch(e){
+          console.error("hydrateF43 final ERROR:", e);
+        }
+      });
+
 
       // Inicialização
       if (window.__TERMO_DATA__) { 
