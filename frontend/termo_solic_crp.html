@@ -648,35 +648,6 @@
 
         console.log('TERMO: RAW Payload recebido:', JSON.stringify(payload));
 
-        // Correção fase 4.3: garantir arrays no payload bruto
-        const arrFields = [
-          'F43_LISTA',
-          'F43_LISTA[]',
-          'F43_LISTA_TXT',
-          'F43_LISTA_TXT[]',
-          'F43_ITENS',
-          'F43_ITENS[]',
-          'F43_INCLUIR',
-          'F43_INCLUIR_B'
-        ];
-
-        const ensureArray = (value) => {
-          if (Array.isArray(value)) return value.filter(Boolean);
-          if (!value) return [];
-          const s = String(value).trim();
-          if (!s) return [];
-          return s
-            .split(/[;,]\s*|\r?\n/)
-            .map(x => x.trim())
-            .filter(Boolean);
-        };
-
-        arrFields.forEach((field) => {
-          if (field in payload && payload[field] != null) {
-            payload[field] = ensureArray(payload[field]);
-          }
-        });
-
         const p = normalizePayload(payload || {});
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
 
