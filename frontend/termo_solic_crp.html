@@ -696,6 +696,9 @@
 
         console.group('%c[hydrateF43 – FASE 4.3]', 'color:#0af; font-size:14px');
 
+        // 🔥 Variável global para informar ao run() que a fase 4.3 tem conteúdo
+        window.__F43_HAS_CONTENT__ = false;
+
         try {
           let haConteudo = false;
 
@@ -728,7 +731,10 @@
               const sub = document.querySelector('#f43-sub-' + k.split('.')[1]);
               if (sub) sub.style.display = ok ? '' : 'none';
 
-              if (ok) fase43_hasContent = true;
+              if (ok) {
+                  window.__F43_HAS_CONTENT__ = true;
+              }
+
           });
 
 
@@ -775,34 +781,6 @@
               listaBruta.push('');
           }
 
-          const grupos = {
-            '4.3.1': [],
-            '4.3.2': [],
-            '4.3.3': [],
-            '4.3.4': [],
-            '4.3.5': [],
-            '4.3.6': [],
-            '4.3.7': [],
-            '4.3.8': [],
-            '4.3.9': []
-          };
-
-          const mapa = {
-            '4.3.1': [0,1],
-            '4.3.2': [2,2],
-            '4.3.3': [3,5],
-            '4.3.4': [6,7],
-            '4.3.5': [8,8],
-            '4.3.6': [9,9],
-            '4.3.7': [10,17],
-            '4.3.8': [18,18],
-            '4.3.9': [19,19]
-          };
-
-          Object.keys(mapa).forEach(k => {
-            const [ini,fim] = mapa[k];
-            grupos[k] = listaBruta.slice(ini, fim+1).filter(Boolean);
-          });
 
           // Mapeamento para ULs
           const mPDF = {
@@ -982,8 +960,7 @@
         // --- FASE 4.2 ---
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
-        // PATCH 5 — visibilidade REAL da fase 4.3
-        togglePhaseBlock('#fase-43', fase43_hasContent);
+        togglePhaseBlock('#fase-43', window.__F43_HAS_CONTENT__ === true);
 
         // --- FASE 4.4 ---
         (function(){
@@ -1084,23 +1061,18 @@
       window.__TERMO_RUN__ = run;
 
       document.addEventListener("TERMO_PRINT_READY", () => {
-        try {
-          const p = window.__TERMO_DATA__;
-          if (p && window.hydrateF43) {
-            console.log("🔥 hydrateF43 FINAL → Aplicando sobre o HTML já montado");
-            window.hydrateF43(p);
-          }
-        } catch(e){
-          console.error("hydrateF43 final ERROR:", e);
-        }
-      });
+          if (window.__F43_APPLIED__) return;
+          window.__F43_APPLIED__ = true;
 
-      // 🔥 PATCH DEFINITIVO — Executar run() APENAS quando o payload tiver chegado
-      document.addEventListener("TERMO_DATA_READY", () => {
-        console.log("⚡ TERMO_DATA_READY → executando run() + hydrateF43");
-        const p = window.__TERMO_DATA__ || {};
-        run(p);
-        if (window.hydrateF43) hydrateF43(p);
+          try {
+              const p = window.__TERMO_DATA__;
+              if (p && window.hydrateF43) {
+                  console.log("🔥 hydrateF43 FINAL → Aplicando sobre o HTML já montado");
+                  window.hydrateF43(p);
+              }
+          } catch(e){
+              console.error("hydrateF43 final ERROR:", e);
+          }
       });
 
 
