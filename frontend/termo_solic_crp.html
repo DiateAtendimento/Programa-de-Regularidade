@@ -149,10 +149,6 @@
         <div class="avoid-break phase-block" id="fase-43" hidden>
           <h3>4.3 Fase Intermediária/Preparatória – 3º CRP Emergencial</h3>
 
-          <div style="color:red; font-size:20px; border:2px solid red; padding:10px;">
-            TESTE: ESTA É A VERSÃO ATUAL DO ARQUIVO TERMO_SOLIC_CRP.HTML
-          </div>
-
           <!-- 4.3.1 -->
           <div class="sub-section" id="f43-sub-1">
             <p class="small"><strong>4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento:</strong></p>
@@ -522,6 +518,17 @@
         }
       }
 
+      // ==================== FUNÇÃO GLOBAL (usada por hydrateF43) ====================
+      function togglePhaseBlock(id, hasContent) {
+        const el = document.querySelector(id);
+        if (el) {
+          el.hidden = !hasContent;
+          el.style.display = hasContent ? '' : 'none';
+          el.setAttribute('data-empty', hasContent ? 'false' : 'true');
+        }
+      }
+
+
       /* ===== Normalização do payload ===== */
       function normalizePayload(p0){
         const p = Object.assign({}, p0);
@@ -843,14 +850,6 @@
         // Oculta label "Fase selecionada:"
         const faseTxtEl = document.getElementById('fase-escolhida');
         if (faseTxtEl && faseTxtEl.parentElement) faseTxtEl.parentElement.hidden = true;
-
-        function togglePhaseBlock(id, hasContent) {
-          const el = $(id);
-          if (el) {
-            el.hidden = !hasContent;
-            el.setAttribute('data-empty', hasContent ? 'false' : 'true');
-          }
-        }
 
         // --- FASE 4.1 ---
         togglePhaseBlock('#fase-41', !!p.F41_OPCAO_TEXT);
