@@ -152,70 +152,62 @@
           <!-- 4.3.1 -->
           <div class="sub-section" id="f43-sub-1">
             <p class="small"><strong>4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento:</strong></p>
-            <div id="f43-1" class="f43-resposta"></div>
+            
             <ul id="f43-1" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
 
           <!-- 4.3.2 -->
           <div class="sub-section" id="f43-sub-2">
             <p class="small"><strong>4.3.2 Regularidade quanto à utilização de recursos previdenciários:</strong></p>
-            <div id="f43-2" class="f43-resposta"></div>
             <ul id="f43-2" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
 
           <!-- 4.3.3 -->
           <div class="sub-section" id="f43-sub-3">
             <p class="small"><strong>4.3.3 Regularidade quanto à aplicação dos recursos previdenciários no mercado financeiro:</strong></p>
-            <div id="f43-3" class="f43-resposta"></div>
             <ul id="f43-3" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
 
           <!-- 4.3.4 -->
           <div class="sub-section" id="f43-sub-4">
             <p class="small"><strong>4.3.4 Regularidade quanto aos limites de contribuição (EC 103/2019 e Lei 9.717/1998):</strong></p>
-            <div id="f43-4" class="f43-resposta"></div>
             <ul id="f43-4" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
 
           <!-- 4.3.5 -->
           <div class="sub-section" id="f43-sub-5">
             <p class="small"><strong>4.3.5 Regularidade quanto à limitação do rol de benefícios (EC 103/2019):</strong></p>
-            <div id="f43-5" class="f43-resposta"></div>
             <ul id="f43-5" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
 
           <!-- 4.3.6 -->
           <div class="sub-section" id="f43-sub-6">
             <p class="small"><strong>4.3.6 Regularidade quanto à instituição por lei do Regime de Previdência Complementar – RPC:</strong></p>
-            <div id="f43-6" class="f43-resposta"></div>
             <ul id="f43-6" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
 
           <!-- 4.3.7 -->
           <div class="sub-section" id="f43-sub-7">
             <p class="small"><strong>4.3.7 Regularidade quanto ao envio de dados e informações do RPPS:</strong></p>
-            <div id="f43-7" class="f43-resposta"></div>
             <ul id="f43-7" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
 
           <!-- 4.3.8 -->
           <div class="sub-section" id="f43-sub-8">
             <p class="small"><strong>4.3.8 Regularidade quanto à operacionalização da compensação previdenciária:</strong></p>
-            <div id="f43-8" class="f43-resposta"></div>
             <ul id="f43-8" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
 
           <!-- 4.3.9 -->
           <div class="sub-section" id="f43-sub-9">
             <p class="small"><strong>4.3.9 Regularidade quanto aos requisitos dos dirigentes e colegiados (art. 8º-B da Lei 9.717/1998):</strong></p>
-            <div id="f43-9" class="f43-resposta"></div>
             <ul id="f43-9" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
 
           <!-- 4.3.10 -->
           <div class="sub-section" id="f43-sub-10">
             <p class="small"><strong>4.3.10 – Em relação à adequação das regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</strong></p>
-            <div id="f43-10" class="f43-resposta"></div>
+
             <div id="f43-opcao-a" class="field-group" hidden>
               <p><strong>a)</strong> Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS...</p>
               <p class="label-like">Relacionar a legislação:</p>
@@ -232,7 +224,7 @@
           <!-- 4.3.11 -->
           <div class="sub-section" id="f43-sub-11">
             <p class="small"><strong>4.3.11 - Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
-            <div id="f43-11" class="f43-resposta"></div>
+
             <p class="label-like">a) Critérios selecionados:</p>
             <ul id="f43-crit-incluir" class="styled-list" style="display:block; list-style:none; padding-left:0;"></ul>
 
@@ -247,7 +239,7 @@
           <!-- 4.3.12 -->
           <div class="sub-section" id="f43-sub-12">
             <p class="small"><strong>4.3.12 Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
-            <div id="f43-12" class="f43-resposta"></div>
+
             <p class="label-like">a) Critérios que deverão ser incluídos:</p>
             <ul id="f43-crit-incluir-12" class="styled-list" data-empty="Não preenchido"></ul>
 
@@ -641,6 +633,62 @@
         return p;
       }
 
+      /* ===================================================================
+        PATCH 5 — RECONSTRUÇÃO DEFINITIVA DA FASE 4.3 PARA O PDF
+        ===================================================================
+        Este patch corrige a não exibição dos itens 4.3.1 até 4.3.12 no PDF.
+        Ele reorganiza, valida e distribui os itens em seus respectivos ULs.
+        =================================================================== */
+
+      function __reconstruirF43(payload) {
+          const p = payload || {};
+
+          // 1) Fonte primária: F43_LISTA
+          let lista = [];
+          if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length > 0) {
+              lista = [...p.F43_LISTA];
+          }
+
+          // 2) Fonte secundária (fallback): campos individuais
+          const possiveis = [
+              'F43_1','F43_1_TXT','F43_2',
+              'F43_3_A','F43_3_B','F43_3_C',
+              'F43_4_A','F43_4_B',
+              'F43_5','F43_6',
+              'F43_7_A','F43_7_B','F43_7_C','F43_7_D',
+              'F43_7_E','F43_7_F','F43_7_G','F43_7_H',
+              'F43_8','F43_9'
+          ];
+
+          possiveis.forEach(k => {
+              if (p[k]) {
+                  const arr = Array.isArray(p[k]) ? p[k] : [p[k]];
+                  arr.forEach(v => lista.push(String(v).trim()));
+              }
+          });
+
+          // 3) Normalização: remover vazios, nulos, undefined
+          lista = lista.map(v => String(v || '').trim()).filter(v => v);
+
+          // 4) Segurança: garantir pelo menos 20 posições
+          while (lista.length < 20) lista.push('');
+
+          // 5) Divisão exata dos blocos
+          return {
+              "4.3.1": lista.slice(0, 2).filter(v => v),
+              "4.3.2": lista.slice(2, 3).filter(v => v),
+              "4.3.3": lista.slice(3, 6).filter(v => v),
+              "4.3.4": lista.slice(6, 8).filter(v => v),
+              "4.3.5": lista.slice(8, 9).filter(v => v),
+              "4.3.6": lista.slice(9, 10).filter(v => v),
+              "4.3.7": lista.slice(10, 18).filter(v => v),
+              "4.3.8": lista.slice(18, 19).filter(v => v),
+              "4.3.9": lista.slice(19, 20).filter(v => v),
+              // Extras (4.3.10–4.3.12) são tratados no hydrate principal.
+          };
+      }
+
+
       /********************************************************************
        * hydrateF43 — função GLOBAL responsável por renderizar a Fase 4.3
        ********************************************************************/
@@ -650,6 +698,39 @@
 
         try {
           let haConteudo = false;
+
+          // PATCH 5 — APLICA A RECONSTRUÇÃO DEFINITIVA DA FASE 4.3
+          const gruposF43 = __reconstruirF43(p);
+
+          console.log("PATCH 5 → gruposF43 reconstruído:", gruposF43);
+
+          // Mapeamento ULs
+          const mapaUL = {
+              "4.3.1": "#f43-1",
+              "4.3.2": "#f43-2",
+              "4.3.3": "#f43-3",
+              "4.3.4": "#f43-4",
+              "4.3.5": "#f43-5",
+              "4.3.6": "#f43-6",
+              "4.3.7": "#f43-7",
+              "4.3.8": "#f43-8",
+              "4.3.9": "#f43-9"
+          };
+
+          let fase43_hasContent = false;
+
+          Object.keys(mapaUL).forEach(k => {
+              const sel = mapaUL[k];
+              const arr = gruposF43[k] || [];
+
+              const ok = fillList(sel, arr);
+
+              const sub = document.querySelector('#f43-sub-' + k.split('.')[1]);
+              if (sub) sub.style.display = ok ? '' : 'none';
+
+              if (ok) fase43_hasContent = true;
+          });
+
 
           // PATCH: Reconstrução automática caso F43_LISTA não venha linear
           let listaBruta = [];
@@ -742,11 +823,13 @@
 
             const ok = fillList(sel, arr);
 
+            const ul = document.querySelector(sel);
             if (ul) {
-                const has = arr && arr.filter(v => String(v).trim() !== '').length > 0;
-                ul.hidden = !has;
-                ul.style.display = has ? 'block' : 'none';
+              const has = arr && arr.filter(v => String(v).trim() !== '').length > 0;
+              ul.hidden = !has;
+              ul.style.display = has ? 'block' : 'none';
             }
+
 
             const cont = document.querySelector('#f43-sub-' + k.split('.')[1]);
             if (cont) cont.style.display = ok ? '' : 'none';
@@ -782,7 +865,9 @@
           show("#f43-sub-12", show12);
           if (show12) haConteudo = true;
 
-          togglePhaseBlock('#fase-43', haConteudo);
+         // 🔥 PATCH: nunca ocultar fase 4.3 antes do payload
+        document.querySelector('#fase-43').hidden = false;
+        document.querySelector('#fase-43').style.display = 'block';
 
         } catch (e) {
           console.error("hydrateF43 ERROR:", e);
@@ -897,6 +982,9 @@
         // --- FASE 4.2 ---
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
+        // PATCH 5 — visibilidade REAL da fase 4.3
+        togglePhaseBlock('#fase-43', fase43_hasContent);
+
         // --- FASE 4.4 ---
         (function(){
           const has =
@@ -1007,11 +1095,16 @@
         }
       });
 
+      // 🔥 PATCH DEFINITIVO — Executar run() APENAS quando o payload tiver chegado
+      document.addEventListener("TERMO_DATA_READY", () => {
+        console.log("⚡ TERMO_DATA_READY → executando run() + hydrateF43");
+        const p = window.__TERMO_DATA__ || {};
+        run(p);
+        if (window.hydrateF43) hydrateF43(p);
+      });
 
-      // Inicialização
-      if (window.__TERMO_DATA__) { 
-        try { run(window.__TERMO_DATA__); } catch(e) { console.error(e); } 
-      }
+
+
       document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch(e){ console.error(e);} });
       document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch(e){ console.error(e);} });
       
