@@ -2650,18 +2650,23 @@ function syncF46ToTemplate(){
     }
 
     // --- FASE 4.3 (Correção principal) ---
-    // Mapeia F43_ITENS[] (HTML) para F43_LISTA (PDF)
-    if (!payload.F43_LISTA || payload.F43_LISTA.length === 0) {
-      // Prioriza 'F43_LISTA[]' se existir (nome mais novo)
-      if (Array.isArray(payload['F43_LISTA[]']) && payload['F43_LISTA[]'].length > 0) {
-        payload.F43_LISTA = payload['F43_LISTA[]'];
-      }
-      // Fallback para 'F43_ITENS[]' (nome legado)
-      else if (Array.isArray(payload['F43_ITENS[]']) && payload['F43_ITENS[]'].length > 0) {
-        payload.F43_LISTA = payload['F43_ITENS[]'];
-        payload['F43_LISTA[]'] = payload['F43_ITENS[]'];
-      }
+    // Corrige a coleta dos itens 4.3.1 a 4.3.12 (LISTA/ITENS)
+    // Problema original: teste errado impedia sobrescrever arrays vazios
+
+    const f43_lista_arr =
+      (Array.isArray(payload['F43_LISTA[]'])  && payload['F43_LISTA[]'].length  ? payload['F43_LISTA[]']  : null) ||
+      (Array.isArray(payload['F43_ITENS[]'])  && payload['F43_ITENS[]'].length  ? payload['F43_ITENS[]']  : null);
+
+    // Se encontrou algo, sobrescreve SEM verificar se já existia
+    if (f43_lista_arr) {
+      payload.F43_LISTA = f43_lista_arr;
+      payload['F43_LISTA[]'] = f43_lista_arr;
     }
+
+    payload.F43_LISTA_TXT = Array.isArray(payload.F43_LISTA)
+      ? payload.F43_LISTA.join('; ')
+      : (payload.F43_LISTA || '');
+
 
     // --- FASE 4.4 ---
     // 1. Mapeia F44_CONDICOES[] (HTML) para F44_DECLS (PDF - Declarações)

@@ -621,6 +621,124 @@
         return p;
       }
 
+      /********************************************************************
+       * hydrateF43 — função GLOBAL responsável por renderizar a Fase 4.3
+       ********************************************************************/
+        window.hydrateF43 = function(p) {
+
+        console.group('%c[hydrateF43 – FASE 4.3]', 'color:#0af; font-size:14px');
+
+        try {
+          let haConteudo = false;
+
+          const listaBruta = asArr(
+            p.F43_LISTA ||
+            p['F43_LISTA[]'] ||
+            p.F43_ITENS ||
+            p['F43_ITENS[]'] ||
+            p.F43_LISTA_TXT
+          );
+
+          console.log('🔥 hydrateF43 → listaBruta:', listaBruta);
+
+          const grupos = {
+            '4.3.1': [],
+            '4.3.2': [],
+            '4.3.3': [],
+            '4.3.4': [],
+            '4.3.5': [],
+            '4.3.6': [],
+            '4.3.7': [],
+            '4.3.8': [],
+            '4.3.9': []
+          };
+
+          const mapa = {
+            '4.3.1': [0,1],
+            '4.3.2': [2,2],
+            '4.3.3': [3,5],
+            '4.3.4': [6,7],
+            '4.3.5': [8,8],
+            '4.3.6': [9,9],
+            '4.3.7': [10,17],
+            '4.3.8': [18,18],
+            '4.3.9': [19,19]
+          };
+
+          Object.keys(mapa).forEach(k => {
+            const [ini,fim] = mapa[k];
+            grupos[k] = listaBruta.slice(ini, fim+1).filter(Boolean);
+          });
+
+          // Mapeamento para ULs
+          const mPDF = {
+            '4.3.1':'#f43-1',
+            '4.3.2':'#f43-2',
+            '4.3.3':'#f43-3',
+            '4.3.4':'#f43-4',
+            '4.3.5':'#f43-5',
+            '4.3.6':'#f43-6',
+            '4.3.7':'#f43-7',
+            '4.3.8':'#f43-8',
+            '4.3.9':'#f43-9'
+          };
+
+          Object.keys(mPDF).forEach(k=>{
+            const arr = grupos[k];
+            const sel = mPDF[k];
+
+            const ok = fillList(sel, arr);
+
+            const ul = document.querySelector(sel);
+            if (ul) {
+              ul.hidden = !ok;
+              ul.style.display = ok ? 'block' : 'none';
+            }
+
+            const cont = document.querySelector('#f43-sub-' + k.split('.')[1]);
+            if (cont) cont.style.display = ok ? '' : 'none';
+
+            if (ok) haConteudo = true;
+          });
+
+          // 4.3.10
+          const op = String(p.F4310_OPCAO||'').trim().toLowerCase();
+          const isA = op.startsWith('a');
+          const isB = op.startsWith('b');
+
+          show("#f43-opcao-a", isA);
+          show("#f43-opcao-b", isB);
+
+          if (isA) fillBlock("#val-f4310-leg", p.F4310_LEGISLACAO);
+          if (isB) fillBlock("#val-f4310-docs", p.F4310_DOCS);
+
+          // 4.3.11
+          const show11 =
+            fillList("#f43-crit-incluir", p.F43_INCLUIR) ||
+            fillBlock("#f43-just-11", p.F43_PLANO);
+
+          show("#f43-sub-11", show11);
+          if (show11) haConteudo = true;
+
+          // 4.3.12
+          const show12 =
+            fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B) ||
+            fillBlock("#f43-just-12", p.F43_PLANO_B) ||
+            fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS);
+
+          show("#f43-sub-12", show12);
+          if (show12) haConteudo = true;
+
+          togglePhaseBlock('#fase-43', haConteudo);
+
+        } catch (e) {
+          console.error("hydrateF43 ERROR:", e);
+        }
+
+        console.groupEnd();
+      };
+
+
       function hojeBR_robusto(){
         try{
           const s = new Date().toLocaleDateString('pt-BR');
@@ -649,6 +767,11 @@
         console.log('TERMO: RAW Payload recebido:', JSON.stringify(payload));
 
         const p = normalizePayload(payload || {});
+
+        if (window.hydrateF43) {
+          try { window.hydrateF43(p); } catch(e){ console.error(e); }
+        }
+
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
 
         console.log('TERMO: Normalized F43 keys:', {
@@ -732,236 +855,6 @@
 
         // --- FASE 4.2 ---
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
-
-        (function run43() {
-
-          console.log("🔥 TESTE 1B – Entrou em run43()");
-
-          console.group('%c[DEBUG – FASE 4.3]', 'color:#0af; font-size:14px');
-
-          try {
-            let hasContent = false;
-
-            // ===================================================
-            // 1) Recebe TODA a lista bruta
-            // ===================================================
-            const listaBruta = asArr(
-              
-              p.F43_LISTA ||
-              p['F43_LISTA[]'] ||
-              p.F43_ITENS ||
-              p['F43_ITENS[]'] ||
-              p.F43_LISTA_TXT
-            );
-
-            // TESTE 2 — Verificar se o payload trouxe os dados da F43
-            console.log("🔥 TESTE 2 – valor bruto recebido em F43:", {
-              F43_LISTA: p.F43_LISTA,
-              F43_ITENS: p.F43_ITENS,
-              F43_LISTA_TXT: p.F43_LISTA_TXT
-            });
-
-            console.log('[4.3] Lista bruta recebida:', listaBruta);
-
-            console.log("🔥 TESTE 3 – listaBruta FINAL =", listaBruta.length, listaBruta);
-
-
-            // ===================================================
-            // 2) Agrupamento FIXO baseado na ordem
-            // ===================================================
-            const grupos = {
-              '4.3.1': [],
-              '4.3.2': [],
-              '4.3.3': [],
-              '4.3.4': [],
-              '4.3.5': [],
-              '4.3.6': [],
-              '4.3.7': [],
-              '4.3.8': [],
-              '4.3.9': []
-            };
-
-            const mapaPosicoes = {
-              '4.3.1': [0, 1],     // DIPR / Caráter contributivo - Repasse
-              '4.3.2': [2, 2],     // Utilização dos recursos (PAP)
-              '4.3.3': [3, 5],     // Aplicações financeiras + DAIR + DPIN
-              '4.3.4': [6, 7],     // Limites de contribuição (ente / segurados)
-              '4.3.5': [8, 8],     // Rol de benefícios
-              '4.3.6': [9, 9],     // RPC (lei)
-              '4.3.7': [10, 17],   // Envio de dados + NTA/DRAA + MSC + DPIN/DAIR/DIPR + eSocial
-              '4.3.8': [18, 18],   // COMPREV
-              '4.3.9': [19, 19]    // Dirigentes e colegiados
-            };
-
-
-            Object.keys(mapaPosicoes).forEach(key => {
-              const [ini, fim] = mapaPosicoes[key];
-              grupos[key] = listaBruta.slice(ini, fim + 1).filter(Boolean);
-            });
-
-            console.table(grupos);
-
-            // ===================================================
-            // 3) POPULA CADA GRUPO NO PDF + LOGS
-            // ===================================================
-
-            const mapeamentoPDF = {
-              '4.3.1': '#f43-1',
-              '4.3.2': '#f43-2',
-              '4.3.3': '#f43-3',
-              '4.3.4': '#f43-4',
-              '4.3.5': '#f43-5',
-              '4.3.6': '#f43-6',
-              '4.3.7': '#f43-7',
-              '4.3.8': '#f43-8',
-              '4.3.9': '#f43-9'
-            };
-
-            Object.keys(mapeamentoPDF).forEach(key => {
-              console.log("🔥 TESTE 4 – verificando existência das UL dos itens 4.3…");
-
-              const sel = mapeamentoPDF[key];
-
-              const ulExist = document.querySelector(sel);
-              console.log(`🔥 TESTE 4 – UL ${sel} existe?`, !!ulExist, ulExist);
-
-              const arr = grupos[key];
-
-              console.log(`→ Preenchendo ${key} em ${sel} ::`, arr);
-
-              const ok = fillList(sel, arr);
-
-              // PATCH DEFINITIVO — FORÇA VISIBILIDADE DA UL
-              const ulEl = document.querySelector(sel);
-              if (ulEl) {
-                ulEl.style.display = ok ? 'block' : 'none';
-                ulEl.hidden = !ok;
-              }
-
-              // CONTÊINER DO SUB-ITEM (ex.: #f43-sub-1)
-              const subId = '#f43-sub-' + key.split('.')[1];
-              const container = document.querySelector(subId);
-              if (container) {
-                container.style.display = ok ? '' : 'none';
-              } else {
-                console.warn(`[WARN] Container não encontrado: ${subId}`);
-              }
-
-              // Log e controle de exibição
-              if (ok) {
-                console.log(`✔ ${key} exibido`);
-                hasContent = true;
-              } else {
-                console.warn(`✖ ${key} está vazio (arr.length=${arr.length})`);
-              }
-
-            });
-
-
-            // ===================================================
-            // 4.3.10 – Log de qual opção foi escolhida
-            // ===================================================
-            const opt = (p.F4310_OPCAO || '').trim().toLowerCase();
-            console.log('[4.3.10] Opção selecionada:', opt);
-
-            const isA = opt.startsWith('a');
-            const isB = opt.startsWith('b');
-            show("#f43-opcao-a", isA);
-            show("#f43-opcao-b", isB);
-            show("#f43-sub-10", isA || isB);
-
-            if (isA) {
-              console.log('→ 4.3.10 (a) preenchendo legislação:', p.F4310_LEGISLACAO);
-              fillBlock("#val-f4310-leg", p.F4310_LEGISLACAO);
-              hasContent = true;
-            }
-            if (isB) {
-              console.log('→ 4.3.10 (b) preenchendo docs:', p.F4310_DOCS);
-              fillBlock("#val-f4310-docs", p.F4310_DOCS);
-              hasContent = true;
-            }
-
-            // ===================================================
-            // 4.3.11 – Logs
-            // ===================================================
-            console.log('[4.3.11] INCLUIR:', p.F43_INCLUIR);
-            console.log('[4.3.11] PLANO:', p.F43_PLANO);
-
-            const show11 =
-              fillList("#f43-crit-incluir", p.F43_INCLUIR) ||
-              fillBlock("#f43-just-11", p.F43_PLANO);
-
-            if (show11) {
-              console.log('✔ 4.3.11 exibido');
-              show("#f43-sub-11", true);
-              hasContent = true;
-            } else {
-              console.warn('✖ 4.3.11 vazio');
-              show("#f43-sub-11", false);
-            }
-
-            // ===================================================
-            // 4.3.12 – Logs
-            // ===================================================
-            console.log('[4.3.12] INCLUIR_B:', p.F43_INCLUIR_B);
-            console.log('[4.3.12] PLANO_B:', p.F43_PLANO_B);
-            console.log('[4.3.12] DESC_PLANOS:', p.F43_DESC_PLANOS);
-
-            const show12 =
-              fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B) ||
-              fillBlock("#f43-just-12", p.F43_PLANO_B) ||
-              fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS);
-
-            if (show12) {
-              console.log('✔ 4.3.12 exibido');
-              show("#f43-sub-12", true);
-              hasContent = true;
-            } else {
-              console.warn('✖ 4.3.12 vazio');
-              show("#f43-sub-12", false);
-            }
-
-
-            // ===================================================
-            // FINAL
-            // ===================================================
-            console.log('→ FASE 4.3 TEM CONTEÚDO?', hasContent);
-            togglePhaseBlock('#fase-43', hasContent);
-
-            console.log("🔥 TESTE 7 – HTML FINAL DA FASE 4.3:");
-            console.log(document.querySelector("#fase-43").innerHTML);
-
-
-          } catch (e) {
-            console.error('[DEBUG 4.3] ERRO:', e);
-          }
-
-          console.log("🔥 TESTE 5 – Computed styles UL 4.3");
-          ['#f43-1','#f43-2','#f43-3','#f43-4','#f43-5','#f43-6','#f43-7','#f43-8','#f43-9']
-            .forEach(id=>{
-              let el=document.querySelector(id);
-              if(el){
-                const cs = window.getComputedStyle(el);
-                console.log(id,'→ display:',cs.display,' visibility:',cs.visibility,' hidden:',el.hidden);
-              }
-            });
-
-            console.log("🔥 TESTE 6 – removendo hidden/display de todos elementos da fase 4.3 TEMPORARIAMENTE");
-            document.querySelectorAll("#fase-43 [hidden]").forEach(el=>{
-              el.hidden = false;
-            });
-            document.querySelectorAll("#fase-43").forEach(el=>{
-              el.style.display = "block";
-              el.hidden = false;
-            });
-
-
-
-
-          console.groupEnd();
-        })();
-
-
 
         // --- FASE 4.4 ---
         (function(){
