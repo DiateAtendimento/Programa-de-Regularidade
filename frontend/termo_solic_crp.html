@@ -1327,114 +1327,66 @@
           }
         })();
 
-                // 🔥 PATCH ULTRA-FINAL – Garantir que a Fase 4.3 use exatamente o que veio no payload
-        try {
-          // Usa F43_LISTA/F43_LISTA_TXT do payload para montar os grupos 4.3.1–4.3.9
-          const gruposFinais = (typeof __reconstruirF43 === 'function')
-            ? __reconstruirF43(p)
-            : {};
 
-          const mapaULF43 = {
-            "4.3.1": { ul: "#f43-1", txtKey: "F431_LIST_TXT" },
-            "4.3.2": { ul: "#f43-2", txtKey: "F432_LIST_TXT" },
-            "4.3.3": { ul: "#f43-3", txtKey: "F433_LIST_TXT" },
-            "4.3.4": { ul: "#f43-4", txtKey: "F434_LIST_TXT" },
-            "4.3.5": { ul: "#f43-5", txtKey: "F435_LIST_TXT" },
-            "4.3.6": { ul: "#f43-6", txtKey: "F436_LIST_TXT" },
-            "4.3.7": { ul: "#f43-7", txtKey: "F437_LIST_TXT" },
-            "4.3.8": { ul: "#f43-8", txtKey: "F438_LIST_TXT" },
-            "4.3.9": { ul: "#f43-9", txtKey: "F439_LIST_TXT" }
+        // === PATCH ULTRA-FINAL 4.3 (versão simples e definitiva) ========
+        // Objetivo:
+        // - Usar F43_LISTA / F43_LISTA_TXT do payload para preencher
+        //   os textos dos itens 4.3.1 a 4.3.9;
+        // - Nunca deixar "Não informado" nesses itens.
+        try {
+          // 1) Monta base de itens (20 posições) a partir do payload
+          let itensBase = [];
+
+          if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length) {
+            itensBase = p.F43_LISTA.slice();
+          } else if (p.F43_LISTA_TXT) {
+            itensBase = asArr(p.F43_LISTA_TXT);
+          }
+
+          while (itensBase.length < 20) itensBase.push('');
+
+          const gruposTxt = {
+            F431_LIST_TXT: itensBase.slice(0,  2).filter(Boolean).join('; '),  // 4.3.1
+            F432_LIST_TXT: itensBase.slice(2,  3).filter(Boolean).join('; '),  // 4.3.2
+            F433_LIST_TXT: itensBase.slice(3,  6).filter(Boolean).join('; '),  // 4.3.3
+            F434_LIST_TXT: itensBase.slice(6,  8).filter(Boolean).join('; '),  // 4.3.4
+            F435_LIST_TXT: itensBase.slice(8,  9).filter(Boolean).join('; '),  // 4.3.5
+            F436_LIST_TXT: itensBase.slice(9, 10).filter(Boolean).join('; '),  // 4.3.6
+            F437_LIST_TXT: itensBase.slice(10,18).filter(Boolean).join('; '),  // 4.3.7
+            F438_LIST_TXT: itensBase.slice(18,19).filter(Boolean).join('; '),  // 4.3.8
+            F439_LIST_TXT: itensBase.slice(19,20).filter(Boolean).join('; ')   // 4.3.9
           };
 
-          Object.keys(mapaULF43).forEach(chave => {
-            const cfg  = mapaULF43[chave];
-            const itens = gruposFinais[chave] || [];
-            const ul   = document.querySelector(cfg.ul);
-
-            if (ul) {
-              if (itens.length) {
-                ul.innerHTML = itens
-                  .map(x => `<li>${escapeHtml(String(x))}</li>`)
-                  .join('');
-              } else {
-                ul.innerHTML = ''; // deixa vazio; não mostra "Não informado"
-              }
+          // 2) Joga o texto direto nos <p data-k="F43x_LIST_TXT">
+          Object.keys(gruposTxt).forEach(key => {
+            const txt = gruposTxt[key];
+            if (!txt) {
+              // Se não tiver nada, deixa em branco mesmo
+              return;
             }
-
-            // Linha-resumo logo abaixo da pergunta (parágrafo com data-k="F43x_LIST_TXT")
-            const resumo = itens.join('; ');
-            if (resumo) {
-              $$('[data-k="'+cfg.txtKey+'"]').forEach(el => { el.textContent = resumo; });
-            }
+            $$('[data-k="'+ key +'"]').forEach(el => {
+              el.textContent = txt;
+            });
           });
 
-          // 4.3.11 – critérios e plano
-          if (Array.isArray(p.F43_INCLUIR) && p.F43_INCLUIR.length) {
-            const ul11 = document.querySelector('#f43-crit-incluir');
-            if (ul11) {
-              ul11.innerHTML = p.F43_INCLUIR
-                .map(x => `<li>${escapeHtml(String(x))}</li>`)
-                .join('');
-            }
-            const txt11 = p.F43_INCLUIR.join('; ');
-            $$('[data-k="F4311_INCLUIR_TXT"]').forEach(el => { el.textContent = txt11; });
-          }
-
-          if (p.F43_PLANO) {
-            const txtPlano11 = String(p.F43_PLANO).trim();
-            if (txtPlano11) {
-              // bloco principal
-              const just11 = document.querySelector('#f43-just-11');
-              if (just11) just11.textContent = txtPlano11;
-              // texto-resumo
-              $$('[data-k="F4311_PLANO_TXT"]').forEach(el => { el.textContent = txtPlano11; });
-            }
-          }
-
-          // 4.3.12 – critérios, justificativas e descrição
-          if (Array.isArray(p.F43_INCLUIR_B) && p.F43_INCLUIR_B.length) {
-            const ul12 = document.querySelector('#f43-crit-incluir-12');
-            if (ul12) {
-              ul12.innerHTML = p.F43_INCLUIR_B
-                .map(x => `<li>${escapeHtml(String(x))}</li>`)
-                .join('');
-            }
-            const txt12 = p.F43_INCLUIR_B.join('; ');
-            $$('[data-k="F4312_INCLUIR_TXT"]').forEach(el => { el.textContent = txt12; });
-          }
-
-          if (p.F43_PLANO_B) {
-            const txtPlano12 = String(p.F43_PLANO_B).trim();
-            if (txtPlano12) {
-              const just12 = document.querySelector('#f43-just-12');
-              if (just12) just12.textContent = txtPlano12;
-              $$('[data-k="F4312_PLANO_TXT"]').forEach(el => { el.textContent = txtPlano12; });
-            }
-          }
-
-          if (p.F43_DESC_PLANOS) {
-            const txtDesc = String(p.F43_DESC_PLANOS).trim();
-            if (txtDesc) {
-              const desc12 = document.querySelector('#f43-desc-planos-12');
-              if (desc12) desc12.textContent = txtDesc;
-              $$('[data-k="F4312_DESC_TXT"]').forEach(el => { el.textContent = txtDesc; });
-            }
-          }
-
-          // Garante que o bloco da Fase 4.3 esteja sempre visível se houver qualquer conteúdo
-          const fase43 = document.querySelector('#fase-43');
-          if (fase43) {
-            const temAlgumItem =
-              (Array.isArray(p.F43_LISTA)      && p.F43_LISTA.length) ||
-              (Array.isArray(p.F43_INCLUIR)    && p.F43_INCLUIR.length) ||
-              (Array.isArray(p.F43_INCLUIR_B)  && p.F43_INCLUIR_B.length) ||
-              !!(p.F43_PLANO || p.F43_PLANO_B || p.F43_DESC_PLANOS);
-
-            if (temAlgumItem) {
+          // 3) Se tiver qualquer conteúdo na Fase 4.3, garante que o bloco fique visível
+          const temConteudo43 = Object.values(gruposTxt).some(v => v && v.trim());
+          if (temConteudo43) {
+            const fase43 = document.querySelector('#fase-43');
+            if (fase43) {
               fase43.hidden = false;
               fase43.style.display = 'block';
             }
           }
+
+          // 4) Limpa qualquer "Não informado" que eventualmente tenha sido
+          //    colocado antes nos campos da Fase 4.3
+          const na = __NA_LABEL__();
+          $$('[data-k^="F43"]').forEach(el => {
+            if (el.textContent.trim() === na) {
+              el.textContent = ''; // limpa o "Não informado"
+            }
+          });
         } catch (e) {
           console.error('[PATCH ULTRA-FINAL 4.3] erro ao forçar preenchimento da Fase 4.3:', e);
         }
