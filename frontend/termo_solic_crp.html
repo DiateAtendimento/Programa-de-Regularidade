@@ -1019,6 +1019,64 @@
           F43_JUST: p.F43_JUST
         });
 
+                // ===================================================
+        // PATCH FINAL 4.3 – Forçar preenchimento no PDF
+        // Usa __reconstruirF43 para montar os grupos 4.3.1–4.3.9
+        // e joga diretamente nas ULs e textos-resumo, evitando
+        // que fique "Não informado".
+        // ===================================================
+        try {
+          if (typeof __reconstruirF43 === 'function') {
+            const gruposF43 = __reconstruirF43(p);
+
+            // Mapa dos grupos -> ULs
+            const mapaUL = {
+              "4.3.1": "#f43-1",
+              "4.3.2": "#f43-2",
+              "4.3.3": "#f43-3",
+              "4.3.4": "#f43-4",
+              "4.3.5": "#f43-5",
+              "4.3.6": "#f43-6",
+              "4.3.7": "#f43-7",
+              "4.3.8": "#f43-8",
+              "4.3.9": "#f43-9"
+            };
+
+            Object.keys(mapaUL).forEach(chave => {
+              const sel = mapaUL[chave];
+              const arr = gruposF43[chave] || [];
+              const ok  = fillList(sel, arr);
+
+              // Esconde/mostra o bloco 4.3.x conforme tenha conteúdo
+              const idx = chave.split('.').pop(); // "4.3.1" -> "1"
+              const sub = document.querySelector('#f43-sub-' + idx);
+              if (sub) sub.style.display = ok ? '' : 'none';
+            });
+
+            // Textos-resumo (linhas embaixo de cada pergunta),
+            // garantindo que NÃO fique "Não informado"
+            fillText('F431_LIST_TXT', (gruposF43["4.3.1"] || []).join('; '));
+            fillText('F432_LIST_TXT', (gruposF43["4.3.2"] || []).join('; '));
+            fillText('F433_LIST_TXT', (gruposF43["4.3.3"] || []).join('; '));
+            fillText('F434_LIST_TXT', (gruposF43["4.3.4"] || []).join('; '));
+            fillText('F435_LIST_TXT', (gruposF43["4.3.5"] || []).join('; '));
+            fillText('F436_LIST_TXT', (gruposF43["4.3.6"] || []).join('; '));
+            fillText('F437_LIST_TXT', (gruposF43["4.3.7"] || []).join('; '));
+            fillText('F438_LIST_TXT', (gruposF43["4.3.8"] || []).join('; '));
+            fillText('F439_LIST_TXT', (gruposF43["4.3.9"] || []).join('; '));
+
+            // Garante que o bloco da Fase 4.3 esteja visível
+            const fase43 = document.querySelector('#fase-43');
+            if (fase43) {
+              fase43.hidden = false;
+              fase43.style.display = 'block';
+            }
+          }
+        } catch (e) {
+          console.error('[PATCH FINAL 4.3] erro ao forçar renderização da fase 4.3:', e);
+        }
+
+
                 // === APLICAR FASE 4.3 IMEDIATAMENTE COM O PAYLOAD NORMALIZADO ===
         try {
           if (window.hydrateF43) {
