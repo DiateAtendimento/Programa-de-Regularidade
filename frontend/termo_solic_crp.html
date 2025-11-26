@@ -154,54 +154,65 @@
             <p class="small"><strong>4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento:</strong></p>
             
             <ul id="f43-1" class="styled-list" data-empty="Não preenchido"></ul>
+            <!-- Texto-resumo garantido via data-k (mesmo se UL falhar) -->
+            <p class="small" data-k="F431_LIST_TXT"></p>
           </div>
 
-          <!-- 4.3.2 -->
+
           <div class="sub-section" id="f43-sub-2">
             <p class="small"><strong>4.3.2 Regularidade quanto à utilização de recursos previdenciários:</strong></p>
             <ul id="f43-2" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="small" data-k="F432_LIST_TXT"></p>
           </div>
+
 
           <!-- 4.3.3 -->
           <div class="sub-section" id="f43-sub-3">
             <p class="small"><strong>4.3.3 Regularidade quanto à aplicação dos recursos previdenciários no mercado financeiro:</strong></p>
             <ul id="f43-3" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="small" data-k="F433_LIST_TXT"></p>
           </div>
 
           <!-- 4.3.4 -->
           <div class="sub-section" id="f43-sub-4">
             <p class="small"><strong>4.3.4 Regularidade quanto aos limites de contribuição (EC 103/2019 e Lei 9.717/1998):</strong></p>
             <ul id="f43-4" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="small" data-k="F434_LIST_TXT"></p>
           </div>
 
           <!-- 4.3.5 -->
           <div class="sub-section" id="f43-sub-5">
             <p class="small"><strong>4.3.5 Regularidade quanto à limitação do rol de benefícios (EC 103/2019):</strong></p>
             <ul id="f43-5" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="small" data-k="F435_LIST_TXT"></p>
           </div>
 
           <!-- 4.3.6 -->
           <div class="sub-section" id="f43-sub-6">
             <p class="small"><strong>4.3.6 Regularidade quanto à instituição por lei do Regime de Previdência Complementar – RPC:</strong></p>
             <ul id="f43-6" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="small" data-k="F436_LIST_TXT"></p>
           </div>
 
           <!-- 4.3.7 -->
           <div class="sub-section" id="f43-sub-7">
             <p class="small"><strong>4.3.7 Regularidade quanto ao envio de dados e informações do RPPS:</strong></p>
             <ul id="f43-7" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="small" data-k="F437_LIST_TXT"></p>
           </div>
 
           <!-- 4.3.8 -->
           <div class="sub-section" id="f43-sub-8">
             <p class="small"><strong>4.3.8 Regularidade quanto à operacionalização da compensação previdenciária:</strong></p>
             <ul id="f43-8" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="small" data-k="F438_LIST_TXT"></p>
           </div>
 
           <!-- 4.3.9 -->
           <div class="sub-section" id="f43-sub-9">
             <p class="small"><strong>4.3.9 Regularidade quanto aos requisitos dos dirigentes e colegiados (art. 8º-B da Lei 9.717/1998):</strong></p>
             <ul id="f43-9" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="small" data-k="F439_LIST_TXT"></p>
           </div>
 
           <!-- Fallback textual caso os ULs 4.3.1–4.3.9 fiquem vazios -->
@@ -231,14 +242,19 @@
 
             <p class="label-like">a) Critérios selecionados:</p>
             <ul id="f43-crit-incluir" class="styled-list" style="display:block; list-style:none; padding-left:0;"></ul>
+            <!-- Texto-resumo dos critérios (backup) -->
+            <p class="small" data-k="F4311_INCLUIR_TXT"></p>
 
             <p class="label-like">b) Justificativas/Informações:</p>
             <div class="value-block" id="f43-just-11"></div>
+            <!-- Texto-resumo da justificativa (backup) -->
+            <p class="small" data-k="F4311_PLANO_TXT"></p>
 
             <p class="small text-muted small">
               Obs.: Não se aplica a critérios de “DIPR - Consistência e Caráter Contributivo”, “Caráter contributivo - Repasse (PAP)” e “Utilização dos recursos previdenciários (PAP)”.
             </p>
           </div>
+
 
           <!-- 4.3.12 -->
           <div class="sub-section" id="f43-sub-12">
@@ -246,17 +262,21 @@
 
             <p class="label-like">a) Critérios que deverão ser incluídos:</p>
             <ul id="f43-crit-incluir-12" class="styled-list" data-empty="Não preenchido"></ul>
+            <p class="small" data-k="F4312_INCLUIR_TXT"></p>
 
             <p class="label-like">b) Justificativas/Informações apresentadas:</p>
             <div class="value-block" id="f43-just-12"></div>
+            <p class="small" data-k="F4312_PLANO_TXT"></p>
 
             <p class="label-like">c) Descrição dos Planos de Ação:</p>
             <div class="value-block" id="f43-desc-planos-12"></div>
+            <p class="small" data-k="F4312_DESC_TXT"></p>
 
             <p class="small text-muted small">
               Obs.: Não se aplica a critérios de DIPR, Caráter Contributivo – Repasse e Utilização dos Recursos Previdenciários (PAP).
             </p>
           </div>
+
 
         </div> <!-- FIM DA 4.3 -->
 
@@ -630,6 +650,36 @@
         p.F4310_LEGISLACAO = getAny('F4310_LEGISLACAO', 'f4310_legislacao') || '';
         p.F4310_DOCS       = getAny('F4310_DOCS', 'f4310_docs') || '';
 
+        // ====== TEXTOS DE BACKUP PARA 4.3.x (USADOS NO data-k) ======
+        try {
+          // Usa a mesma lógica da hydrateF43 para separar os grupos
+          if (typeof __reconstruirF43 === 'function') {
+            const grupos = __reconstruirF43(p);
+
+            p.F431_LIST_TXT = (grupos["4.3.1"] || []).join('; ');
+            p.F432_LIST_TXT = (grupos["4.3.2"] || []).join('; ');
+            p.F433_LIST_TXT = (grupos["4.3.3"] || []).join('; ');
+            p.F434_LIST_TXT = (grupos["4.3.4"] || []).join('; ');
+            p.F435_LIST_TXT = (grupos["4.3.5"] || []).join('; ');
+            p.F436_LIST_TXT = (grupos["4.3.6"] || []).join('; ');
+            p.F437_LIST_TXT = (grupos["4.3.7"] || []).join('; ');
+            p.F438_LIST_TXT = (grupos["4.3.8"] || []).join('; ');
+            p.F439_LIST_TXT = (grupos["4.3.9"] || []).join('; ');
+          }
+        } catch (e) {
+          console.warn('[F43] erro ao montar textos F431_LIST_TXT etc:', e);
+        }
+
+        // 4.3.11 – sempre gera texto de critérios e justificativa
+        p.F4311_INCLUIR_TXT = (p.F43_INCLUIR || []).join('; ');
+        p.F4311_PLANO_TXT   = p.F43_PLANO || '';
+
+        // 4.3.12 – idem
+        p.F4312_INCLUIR_TXT = (p.F43_INCLUIR_B || []).join('; ');
+        p.F4312_PLANO_TXT   = p.F43_PLANO_B || '';
+        p.F4312_DESC_TXT    = p.F43_DESC_PLANOS || '';
+
+
         // 4.4
         p.F44_CRITERIOS   = asArr(getAny('F44_CRITERIOS', 'F44_CRITERIOS[]', 'f44_criterios'));
         p.F44_DECLS       = asArr(getAny('F44_DECLS', 'F44_DECLS[]', 'f44_decls'));
@@ -978,13 +1028,25 @@
         }
 
         
-        // 1) Cabeçalho/meta
+        // 1) Cabeçalho/meta + textos de backup da 4.3
         [
           'ente','uf','ug','cnpj_ente','cnpj_ug','email_ente','email_ug',
           'N_GESCON','DATA_ENC_VIA_GESCON','SEI_PROCESSO','PORTARIA_SRPC',
           'ORGAO_VINCULACAO_UG','nome_rep_ente','cargo_rep_ente','cpf_rep_ente',
           'email_rep_ente','tel_rep_ente','nome_rep_ug','cargo_rep_ug','cpf_rep_ug',
           'email_rep_ug','tel_rep_ug','data_vencimento_ultimo_crp','tipo_emissao_ult_crp',
+
+          // >>> Textos-resumo dos itens 4.3.1 a 4.3.9
+          'F431_LIST_TXT','F432_LIST_TXT','F433_LIST_TXT','F434_LIST_TXT',
+          'F435_LIST_TXT','F436_LIST_TXT','F437_LIST_TXT','F438_LIST_TXT','F439_LIST_TXT',
+
+          // >>> Textos de 4.3.11
+          'F4311_INCLUIR_TXT','F4311_PLANO_TXT',
+
+          // >>> Textos de 4.3.12
+          'F4312_INCLUIR_TXT','F4312_PLANO_TXT','F4312_DESC_TXT',
+
+          // Demais campos já existentes das outras fases
           'F44_ANEXOS','F441_LEGISLACAO','F445_DESC_PLANOS',
           'F446_DOCS','F446_EXEC_RES',
           'F45_DOCS','F45_JUST','F453_EXEC_RES',
@@ -994,6 +1056,7 @@
           let val = p[k] || p[k.toUpperCase()] || p[k.toLowerCase()];
           fillText(k, val);
         });
+
         
         // 3.4 Prazo Adicional
         (function applyPrazoAdicional(code){
