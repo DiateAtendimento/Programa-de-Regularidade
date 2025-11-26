@@ -204,6 +204,10 @@
             <ul id="f43-9" class="styled-list" data-empty="Não preenchido"></ul>
           </div>
 
+          <!-- Fallback textual caso os ULs 4.3.1–4.3.9 fiquem vazios -->
+          <div id="f43-fallback" class="value-block" style="margin-top: .35rem;"></div>
+
+
           <!-- 4.3.10 -->
           <div class="sub-section" id="f43-sub-10">
             <p class="small"><strong>4.3.10 – Em relação à adequação das regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</strong></p>
@@ -575,14 +579,48 @@
         // 4.2
         p.F42_LISTA = asArr(getAny('F42_LISTA', 'F42_LISTA[]', 'F42_ITENS', 'F42_ITENS[]'));
 
-        // 4.3
-        p.F43_LISTA = asArr(getAny(
-          'F43_LISTA', 'F43_LISTA[]', 'F43_LISTA_TXT', 'F43_LISTA_TXT[]',
-          'F43_ITENS', 'F43_ITENS[]'
-        ));
-        p.F43_INCLUIR   = asArr(getAny('F43_INCLUIR', 'F43_INCLUIR[]', 'F43_INCLUIR_TXT', 'f43_incluir'));
-        p.F43_INCLUIR_B = asArr(getAny('F43_INCLUIR_B', 'F43_INCLUIR_B[]', 'F43_INCLUIR_B_TXT', 'f43_incluir_b'));
-        
+        // 4.3 — montagem mais robusta das listas
+
+        // F43_LISTA: junta qualquer variação que chegar (array, string, "[]", TXT)
+        (function () {
+          const merged = [];
+          ['F43_LISTA', 'F43_LISTA[]', 'F43_ITENS', 'F43_ITENS[]'].forEach(k => {
+            if (p[k] !== undefined && p[k] !== null && p[k] !== '') {
+              merged.push(...asArr(p[k]));
+            }
+          });
+
+          // fallback: se não vier array, tenta o TXT (string com ; entre itens)
+          if (!merged.length && (p.F43_LISTA_TXT || p['F43_LISTA_TXT[]'])) {
+            merged.push(...asArr(p.F43_LISTA_TXT || p['F43_LISTA_TXT[]']));
+          }
+
+          p.F43_LISTA = merged;
+        })();
+
+        // F43_INCLUIR (4.3.11 – critérios a incluir)
+        (function () {
+          const merged = [];
+          ['F43_INCLUIR', 'F43_INCLUIR[]', 'F43_INCLUIR_TXT', 'f43_incluir'].forEach(k => {
+            if (p[k] !== undefined && p[k] !== null && p[k] !== '') {
+              merged.push(...asArr(p[k]));
+            }
+          });
+          p.F43_INCLUIR = merged;
+        })();
+
+        // F43_INCLUIR_B (4.3.12 – critérios a incluir na fase específica)
+        (function () {
+          const merged = [];
+          ['F43_INCLUIR_B', 'F43_INCLUIR_B[]', 'F43_INCLUIR_B_TXT', 'f43_incluir_b'].forEach(k => {
+            if (p[k] !== undefined && p[k] !== null && p[k] !== '') {
+              merged.push(...asArr(p[k]));
+            }
+          });
+          p.F43_INCLUIR_B = merged;
+        })();
+
+        // Demais campos de 4.3
         p.F43_PLANO        = getAny('F43_PLANO', 'f43_plano') || '';
         p.F43_PLANO_B      = getAny('F43_PLANO_B', 'f43_plano_b') || '';
         p.F43_DESC_PLANOS  = getAny('F43_DESC_PLANOS', 'f43_desc_planos') || '';
@@ -825,19 +863,67 @@
           if (show12) haConteudo = true;
 
 
-         // 🔥 PATCH: nunca ocultar fase 4.3 antes do payload
-        document.querySelector('#fase-43').hidden = false;
-        document.querySelector('#fase-43').style.display = 'block';
+          // 🔥 PATCH: nunca ocultar fase 4.3 antes do payload
+          document.querySelector('#fase-43').hidden = false;
+          document.querySelector('#fase-43').style.display = 'block';
 
         } catch (e) {
           console.error("hydrateF43 ERROR:", e);
         }
+
+        // Fallback textual se, por qualquer motivo, as ULs ficarem vazias
+        try {
+          ensureF43Fallback(p);
+        } catch (_) {}
 
         // Marca global indicando que a Fase 4.3 já foi montada
         window.__F43_APPLIED__ = true;
 
         console.groupEnd();
       };
+
+            // Fallback: se nenhuma UL de 4.3.1–4.3.9 receber <li>,
+      // monta uma lista única usando F43_LISTA_TXT ou F43_LISTA.
+      function ensureF43Fallback(p) {
+        try {
+          const ulsSel = [
+            '#f43-1','#f43-2','#f43-3',
+            '#f43-4','#f43-5','#f43-6',
+            '#f43-7','#f43-8','#f43-9'
+          ];
+
+          const temLi = ulsSel.some(sel => {
+            const ul = document.querySelector(sel);
+            return ul && ul.querySelector('li');
+          });
+
+          // Se já tem itens em alguma UL, não faz nada
+          if (temLi) return;
+
+          const fb = document.querySelector('#f43-fallback');
+          if (!fb) return;
+
+          // Base de texto: primeiro tenta o TXT, depois o array
+          const baseTxt = p.F43_LISTA_TXT || '';
+          let itens = [];
+
+          if (baseTxt && baseTxt.trim()) {
+            itens = asArr(baseTxt);   // usa o mesmo asArr do topo
+          } else if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length) {
+            itens = p.F43_LISTA;
+          }
+
+          if (!itens.length) return;
+
+          fb.innerHTML =
+            '<p class="small"><strong>Critérios selecionados na Fase 4.3:</strong></p>' +
+            '<ul class="styled-list">' +
+              itens.map(x => `<li>${escapeHtml(x)}</li>`).join('') +
+            '</ul>';
+        } catch (e) {
+          console.error('ensureF43Fallback ERROR:', e);
+        }
+      }
 
 
       function hojeBR_robusto(){
