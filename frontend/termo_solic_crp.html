@@ -775,7 +775,7 @@
 
 
           console.log('🔥 hydrateF43 → listaBruta:', listaBruta);
-          
+
           // (Bloco antigo de reconstrução baseado em listaBruta/mPDF removido.
           //  A reconstrução definitiva da fase 4.3 agora é feita
           //  exclusivamente via gruposF43 + mapaUL logo acima.)
@@ -793,21 +793,37 @@
           if (isB) fillBlock("#val-f4310-docs", p.F4310_DOCS);
 
           // 4.3.11
-          const show11 =
-            fillList("#f43-crit-incluir", p.F43_INCLUIR) ||
-            fillBlock("#f43-just-11", p.F43_PLANO);
+          let show11 = false;
+
+          if (fillList("#f43-crit-incluir", p.F43_INCLUIR)) {
+            show11 = true;
+          }
+
+          if (fillBlock("#f43-just-11", p.F43_PLANO)) {
+            show11 = true;
+          }
 
           show("#f43-sub-11", show11);
           if (show11) haConteudo = true;
 
           // 4.3.12
-          const show12 =
-            fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B) ||
-            fillBlock("#f43-just-12", p.F43_PLANO_B) ||
-            fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS);
+          let show12 = false;
+
+          if (fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B)) {
+            show12 = true;
+          }
+
+          if (fillBlock("#f43-just-12", p.F43_PLANO_B)) {
+            show12 = true;
+          }
+
+          if (fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS)) {
+            show12 = true;
+          }
 
           show("#f43-sub-12", show12);
           if (show12) haConteudo = true;
+
 
          // 🔥 PATCH: nunca ocultar fase 4.3 antes do payload
         document.querySelector('#fase-43').hidden = false;
@@ -926,7 +942,18 @@
         // --- FASE 4.2 ---
         togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
 
-        togglePhaseBlock('#fase-43', window.__F43_HAS_CONTENT__ === true);
+                // --- FASE 4.2 ---
+        togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
+
+        // --- FASE 4.3 ---
+        const hasF43 =
+          (Array.isArray(p.F43_LISTA)      && p.F43_LISTA.length > 0) ||
+          (Array.isArray(p.F43_INCLUIR)    && p.F43_INCLUIR.length > 0) ||
+          (Array.isArray(p.F43_INCLUIR_B)  && p.F43_INCLUIR_B.length > 0) ||
+          !!(p.F43_PLANO || p.F43_PLANO_B || p.F43_DESC_PLANOS);
+
+        togglePhaseBlock('#fase-43', hasF43);
+
 
         // --- FASE 4.4 ---
         (function(){
