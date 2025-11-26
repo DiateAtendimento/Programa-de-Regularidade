@@ -2428,6 +2428,12 @@ function syncF46ToTemplate(){
         F43_PLANO_B:          payload.F43_PLANO_B || '',
         F43_INCLUIR:          payload.F43_INCLUIR || '',
         'F43_INCLUIR[]':      (payload['F43_INCLUIR[]'] || []),
+        F43_INCLUIR_B:        payload.F43_INCLUIR_B || '',
+        'F43_INCLUIR_B[]':    (payload['F43_INCLUIR_B[]'] || []),
+        F43_INCLUIR_B_TXT:    __stringifyList(
+                                payload.F43_INCLUIR_B || payload['F43_INCLUIR_B[]'] || []
+                              ),
+
         F43_DESC_PLANOS:      payload.F43_DESC_PLANOS || '',
         F4310_OPCAO:          payload.F4310_OPCAO || '',
         F4310_LEGISLACAO:     payload.F4310_LEGISLACAO || '',

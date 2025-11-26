@@ -775,45 +775,11 @@
 
 
           console.log('🔥 hydrateF43 → listaBruta:', listaBruta);
+          
+          // (Bloco antigo de reconstrução baseado em listaBruta/mPDF removido.
+          //  A reconstrução definitiva da fase 4.3 agora é feita
+          //  exclusivamente via gruposF43 + mapaUL logo acima.)
 
-          // 🔥 PATCH: Garantir que listaBruta sempre tenha o tamanho mínimo esperado
-          while (listaBruta.length < 20) {
-              listaBruta.push('');
-          }
-
-
-          // Mapeamento para ULs
-          const mPDF = {
-            '4.3.1':'#f43-1',
-            '4.3.2':'#f43-2',
-            '4.3.3':'#f43-3',
-            '4.3.4':'#f43-4',
-            '4.3.5':'#f43-5',
-            '4.3.6':'#f43-6',
-            '4.3.7':'#f43-7',
-            '4.3.8':'#f43-8',
-            '4.3.9':'#f43-9'
-          };
-
-          Object.keys(mPDF).forEach(k=>{
-            const arr = grupos[k];
-            const sel = mPDF[k];
-
-            const ok = fillList(sel, arr);
-
-            const ul = document.querySelector(sel);
-            if (ul) {
-              const has = arr && arr.filter(v => String(v).trim() !== '').length > 0;
-              ul.hidden = !has;
-              ul.style.display = has ? 'block' : 'none';
-            }
-
-
-            const cont = document.querySelector('#f43-sub-' + k.split('.')[1]);
-            if (cont) cont.style.display = ok ? '' : 'none';
-
-            if (ok) haConteudo = true;
-          });
 
           // 4.3.10
           const op = String(p.F4310_OPCAO||'').trim().toLowerCase();
