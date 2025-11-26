@@ -747,49 +747,67 @@
 
       function __reconstruirF43(payload) {
           const p = payload || {};
-
-          // 1) Fonte primária: F43_LISTA
+          
+          // 1) Obter lista completa de itens marcados (array de strings)
           let lista = [];
+          
+          // Prioridade: array F43_LISTA vindo do JSON
           if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length > 0) {
               lista = [...p.F43_LISTA];
+          } 
+          // Fallback: TXT
+          else if (p.F43_LISTA_TXT) {
+              lista = asArr(p.F43_LISTA_TXT);
           }
 
-          // 2) Fonte secundária (fallback): campos individuais
-          const possiveis = [
-              'F43_1','F43_1_TXT','F43_2',
-              'F43_3_A','F43_3_B','F43_3_C',
-              'F43_4_A','F43_4_B',
-              'F43_5','F43_6',
-              'F43_7_A','F43_7_B','F43_7_C','F43_7_D',
-              'F43_7_E','F43_7_F','F43_7_G','F43_7_H',
-              'F43_8','F43_9'
-          ];
+          // 2) Função helper para categorizar por palavra-chave
+          const filterBy = (terms) => {
+            return lista.filter(item => {
+              const s = String(item).toLowerCase();
+              return terms.some(term => s.includes(term.toLowerCase()));
+            });
+          };
 
-          possiveis.forEach(k => {
-              if (p[k]) {
-                  const arr = Array.isArray(p[k]) ? p[k] : [p[k]];
-                  arr.forEach(v => lista.push(String(v).trim()));
-              }
-          });
-
-          // 3) Normalização: remover vazios, nulos, undefined
-          lista = lista.map(v => String(v || '').trim()).filter(v => v);
-
-          // 4) Segurança: garantir pelo menos 20 posições
-          while (lista.length < 20) lista.push('');
-
-          // 5) Divisão exata dos blocos
+          // 3) Distribuição baseada no CONTEÚDO das strings (conforme form_gera_termo_solic_crp_2.html)
           return {
-              "4.3.1": lista.slice(0, 2).filter(v => v),
-              "4.3.2": lista.slice(2, 3).filter(v => v),
-              "4.3.3": lista.slice(3, 6).filter(v => v),
-              "4.3.4": lista.slice(6, 8).filter(v => v),
-              "4.3.5": lista.slice(8, 9).filter(v => v),
-              "4.3.6": lista.slice(9, 10).filter(v => v),
-              "4.3.7": lista.slice(10, 18).filter(v => v),
-              "4.3.8": lista.slice(18, 19).filter(v => v),
-              "4.3.9": lista.slice(19, 20).filter(v => v),
-              // Extras (4.3.10–4.3.12) são tratados no hydrate principal.
+              "4.3.1": filterBy([
+                  "DIPR - Consistência", 
+                  "Caráter contributivo - Repasse"
+              ]),
+              "4.3.2": filterBy([
+                  "Utilização dos recursos previdenciários"
+              ]),
+              "4.3.3": filterBy([
+                  "Aplicações Financeiras", 
+                  "DAIR – Consistência", 
+                  "DPIN - Consistência"
+              ]),
+              "4.3.4": filterBy([
+                  "limites de contribuição do ente", 
+                  "limites de contribuição dos segurados"
+              ]),
+              "4.3.5": filterBy([
+                  "Plano de benefícios integrado"
+              ]),
+              "4.3.6": filterBy([
+                  "Instituição do regime de previdência complementar"
+              ]),
+              "4.3.7": filterBy([
+                  "Atendimento à solicitação", 
+                  "Atendimento à fiscalização", 
+                  "Equilíbrio Financeiro", 
+                  "Matriz de Saldos", 
+                  "DPIN – Encaminhamento", 
+                  "DAIR – Encaminhamento", 
+                  "DIPR – Encaminhamento", 
+                  "eSocial"
+              ]),
+              "4.3.8": filterBy([
+                  "Operacionalização da compensação"
+              ]),
+              "4.3.9": filterBy([
+                  "Requisitos para os dirigentes"
+              ])
           };
       }
 
@@ -899,33 +917,47 @@
           if (isA) fillBlock("#val-f4310-leg", p.F4310_LEGISLACAO);
           if (isB) fillBlock("#val-f4310-docs", p.F4310_DOCS);
 
-          // 4.3.11
           let show11 = false;
+          // Tenta preencher lista (aceita array ou string separada por ;)
+          if (fillList("#f43-crit-incluir", p.F43_INCLUIR)) show11 = true;
+          
+          // Tenta preencher justificativa
+          if (fillBlock("#f43-just-11", p.F43_PLANO)) show11 = true;
 
-          if (fillList("#f43-crit-incluir", p.F43_INCLUIR)) {
-            show11 = true;
+          // Preencher textos de resumo para garantir visualização se UL falhar
+          const txt11inc = Array.isArray(p.F43_INCLUIR) ? p.F43_INCLUIR.join('; ') : (p.F43_INCLUIR || '');
+          if(txt11inc) {
+             const el = document.getElementById('F4311_INCLUIR_TXT');
+             if(el) { el.textContent = txt11inc; show11 = true; }
           }
-
-          if (fillBlock("#f43-just-11", p.F43_PLANO)) {
-            show11 = true;
+          if(p.F43_PLANO) {
+             const el = document.getElementById('F4311_PLANO_TXT');
+             if(el) { el.textContent = p.F43_PLANO; show11 = true; }
           }
 
           show("#f43-sub-11", show11);
           if (show11) haConteudo = true;
 
-          // 4.3.12
+
+          // --- Lógica Corrigida 4.3.12 ---
           let show12 = false;
+          if (fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B)) show12 = true;
+          if (fillBlock("#f43-just-12", p.F43_PLANO_B)) show12 = true;
+          if (fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS)) show12 = true;
 
-          if (fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B)) {
-            show12 = true;
+          // Preencher textos de resumo
+          const txt12inc = Array.isArray(p.F43_INCLUIR_B) ? p.F43_INCLUIR_B.join('; ') : (p.F43_INCLUIR_B || '');
+          if(txt12inc) {
+             const el = document.getElementById('F4312_INCLUIR_TXT');
+             if(el) { el.textContent = txt12inc; show12 = true; }
           }
-
-          if (fillBlock("#f43-just-12", p.F43_PLANO_B)) {
-            show12 = true;
+          if(p.F43_PLANO_B) {
+             const el = document.getElementById('F4312_PLANO_TXT');
+             if(el) { el.textContent = p.F43_PLANO_B; show12 = true; }
           }
-
-          if (fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS)) {
-            show12 = true;
+          if(p.F43_DESC_PLANOS) {
+             const el = document.getElementById('F4312_DESC_TXT');
+             if(el) { el.textContent = p.F43_DESC_PLANOS; show12 = true; }
           }
 
           show("#f43-sub-12", show12);
@@ -1023,6 +1055,25 @@
         console.log('TERMO: RAW Payload recebido:', JSON.stringify(payload));
 
         const p = normalizePayload(payload || {});
+
+        // PATCH: Limpeza preventiva de "Não informado" para campos complexos da 4.3
+        // Isso impede que o CSS :empty::after mostre o texto errado se o JS demorar a preencher
+        [
+            'F4310_OPCAO', 'F43_INCLUIR', 'F43_INCLUIR_B', 
+            'F43_PLANO', 'F43_PLANO_B', 'F43_DESC_PLANOS',
+            'F431_LIST_TXT', 'F432_LIST_TXT', 'F433_LIST_TXT',
+            'F434_LIST_TXT', 'F435_LIST_TXT', 'F436_LIST_TXT',
+            'F437_LIST_TXT', 'F438_LIST_TXT', 'F439_LIST_TXT',
+            'F4311_INCLUIR_TXT', 'F4311_PLANO_TXT',
+            'F4312_INCLUIR_TXT', 'F4312_PLANO_TXT', 'F4312_DESC_TXT'
+        ].forEach(k => {
+            // Se tivermos dados reais no payload, limpamos o elemento no DOM
+            // para que a lógica de lista (<ul>) ou o fillText posterior assumam o controle.
+            const el = document.querySelector(`[data-k="${k}"]`);
+            if (el) el.textContent = ''; 
+            const elId = document.getElementById(k);
+            if (elId) elId.textContent = '';
+        });
 
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
 
