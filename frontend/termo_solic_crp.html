@@ -816,7 +816,8 @@
 
               const ok = fillList(sel, arr);
 
-              const sub = document.querySelector('#f43-sub-' + k.split('.')[1]);
+              const idx = k.split('.').pop(); // "4.3.1" -> "1"
+              const sub = document.querySelector('#f43-sub-' + idx);
               if (sub) sub.style.display = ok ? '' : 'none';
 
               if (ok) {
@@ -824,6 +825,7 @@
               }
 
           });
+
 
 
           // PATCH: Reconstrução automática caso F43_LISTA não venha linear
@@ -1056,6 +1058,84 @@
           let val = p[k] || p[k.toUpperCase()] || p[k.toLowerCase()];
           fillText(k, val);
         });
+
+                // ===================================================
+        // PATCH – Forçar textos da Fase 4.3 no PDF
+        // Usa diretamente F43_LISTA_TXT para alimentar
+        // F431_LIST_TXT ... F439_LIST_TXT
+        // ===================================================
+        try {
+          if (p.F43_LISTA_TXT && typeof asArr === 'function') {
+            const itens43 = asArr(p.F43_LISTA_TXT); // separa por ; / quebras de linha
+            const gruposTxt = {
+              F431_LIST_TXT: itens43.slice(0,  2).join('; '), // 4.3.1
+              F432_LIST_TXT: itens43.slice(2,  3).join('; '), // 4.3.2
+              F433_LIST_TXT: itens43.slice(3,  6).join('; '), // 4.3.3
+              F434_LIST_TXT: itens43.slice(6,  8).join('; '), // 4.3.4
+              F435_LIST_TXT: itens43.slice(8,  9).join('; '), // 4.3.5
+              F436_LIST_TXT: itens43.slice(9, 10).join('; '), // 4.3.6
+              F437_LIST_TXT: itens43.slice(10,18).join('; '), // 4.3.7
+              F438_LIST_TXT: itens43.slice(18,19).join('; '), // 4.3.8
+              F439_LIST_TXT: itens43.slice(19,20).join('; ')  // 4.3.9
+            };
+
+            Object.keys(gruposTxt).forEach(key => {
+              const txt = gruposTxt[key] && String(gruposTxt[key]).trim();
+              if (txt) {
+                $$('[data-k="'+ key +'"]').forEach(el => {
+                  el.textContent = txt;   // sobrescreve o "Não informado"
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.error('[PATCH 4.3 TXT] erro ao forçar textos dos itens 4.3.x:', e);
+        }
+
+                // ===================================================
+        // PATCH – Forçar textos de 4.3.11 e 4.3.12
+        // usando diretamente F43_INCLUIR / F43_PLANO / etc.
+        // ===================================================
+        try {
+          // 4.3.11 - critérios e justificativa
+          if (Array.isArray(p.F43_INCLUIR) && p.F43_INCLUIR.length) {
+            const txt11a = p.F43_INCLUIR.join('; ');
+            $$('[data-k="F4311_INCLUIR_TXT"]').forEach(el => {
+              el.textContent = txt11a;
+            });
+          }
+
+          if (p.F43_PLANO && String(p.F43_PLANO).trim()) {
+            const txt11b = String(p.F43_PLANO).trim();
+            $$('[data-k="F4311_PLANO_TXT"]').forEach(el => {
+              el.textContent = txt11b;
+            });
+          }
+
+          // 4.3.12 - critérios, justificativa e descrição dos planos
+          if (Array.isArray(p.F43_INCLUIR_B) && p.F43_INCLUIR_B.length) {
+            const txt12a = p.F43_INCLUIR_B.join('; ');
+            $$('[data-k="F4312_INCLUIR_TXT"]').forEach(el => {
+              el.textContent = txt12a;
+            });
+          }
+
+          if (p.F43_PLANO_B && String(p.F43_PLANO_B).trim()) {
+            const txt12b = String(p.F43_PLANO_B).trim();
+            $$('[data-k="F4312_PLANO_TXT"]').forEach(el => {
+              el.textContent = txt12b;
+            });
+          }
+
+          if (p.F43_DESC_PLANOS && String(p.F43_DESC_PLANOS).trim()) {
+            const txt12c = String(p.F43_DESC_PLANOS).trim();
+            $$('[data-k="F4312_DESC_TXT"]').forEach(el => {
+              el.textContent = txt12c;
+            });
+          }
+        } catch (e) {
+          console.error('[PATCH 4.3.11/12 TXT] erro ao forçar textos de 4.3.11/4.3.12:', e);
+        }
 
         
         // 3.4 Prazo Adicional
