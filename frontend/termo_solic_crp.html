@@ -833,6 +833,9 @@
           console.error("hydrateF43 ERROR:", e);
         }
 
+        // Marca global indicando que a Fase 4.3 já foi montada
+        window.__F43_APPLIED__ = true;
+
         console.groupEnd();
       };
 
@@ -877,6 +880,17 @@
           F43_DESC_PLANOS: p.F43_DESC_PLANOS,
           F43_JUST: p.F43_JUST
         });
+
+                // === APLICAR FASE 4.3 IMEDIATAMENTE COM O PAYLOAD NORMALIZADO ===
+        try {
+          if (window.hydrateF43) {
+            console.log('🔥 hydrateF43 via run() → preenchendo Fase 4.3');
+            window.hydrateF43(p);
+          }
+        } catch (e) {
+          console.error('hydrateF43 via run() ERROR:', e);
+        }
+
         
         // 1) Cabeçalho/meta
         [
