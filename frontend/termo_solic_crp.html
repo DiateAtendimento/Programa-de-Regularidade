@@ -441,15 +441,32 @@
       const $  = (s, r=document) => r.querySelector(s);
       const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-      /* ===== Fallbacks “Não informado” ===== */
       const __NA_LABEL__ = () =>
         String((window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_LABEL) || 'Não informado');
 
+      // Agora o padrão NÃO é mais "verdadeiro" para qualquer payload.
+      // Só entra em modo "__NA_ALL" quando for explicitamente marcado.
       const __NA_ALL__ = () => {
         const d = window.__TERMO_DATA__;
-        return (d && Object.prototype.hasOwnProperty.call(d, '__NA_ALL'))
-          ? !!d.__NA_ALL : true;
+        if (!d) return true; // antes de qualquer payload, mantém comportamento antigo
+
+        if (Object.prototype.hasOwnProperty.call(d, '__NA_ALL')) {
+          return !!d.__NA_ALL;
+        }
+
+        // Se já temos dados reais (ente, UF, fase, etc.), não estamos em modo placeholder
+        const temDadosReais =
+          d.ENTE || d.ente ||
+          d.UF   || d.uf   ||
+          d.FASE_PROGRAMA || d.__FASE_SEL__;
+
+        return temDadosReais ? false : true;
       };
+
+      // PATCH: payload real não deve ficar em modo "__NA_ALL"
+      if (payload && !payload.__NA_ALL) {
+        p.__NA_ALL = false;
+      }
 
       function fillText(key, val){
         const raw = (val == null) ? '' : String(val);
@@ -1520,6 +1537,41 @@
           console.error('[PATCH ULTRA-FINAL 4.3] erro ao forçar preenchimento da Fase 4.3:', e);
         }
 
+        
+                // ===== LIMPEZA FINAL – impedir "Não informado" na Fase 4.3 =====
+        try {
+          const na = __NA_LABEL__();
+
+          // 1) Se algum campo de 4.3 ainda tiver texto EXACT "Não informado", limpa.
+          $$('[data-k^="F43"]').forEach(el => {
+            if (el.textContent.trim() === na) {
+              // Em vez de esvaziar totalmente (para não acionar :empty::after),
+              // colocamos um espaço não-quebrável: visualmente fica em branco.
+              el.textContent = '\u00A0';
+            }
+          });
+
+          // 2) Protege também os blocos de 4.3 que não usam data-k, mas podem ter pseudo "Não informado"
+          [
+            '#f43-1','#f43-2','#f43-3','#f43-4','#f43-5',
+            '#f43-6','#f43-7','#f43-8','#f43-9',
+            '#f43-crit-incluir','#f43-crit-incluir-12',
+            '#f43-just-11','#f43-just-12','#f43-desc-planos-12',
+            '#val-f4310-leg','#val-f4310-docs'
+          ].forEach(sel => {
+            const el = document.querySelector(sel);
+            if (!el) return;
+            // Se por alguma razão o innerText for exatamente "Não informado",
+            // substitui por espaço não-quebrável.
+            if (el.textContent.trim() === na) {
+              el.textContent = '\u00A0';
+            }
+          });
+        } catch (e) {
+          console.error('[CLEAN F43 NA] erro ao limpar "Não informado" da Fase 4.3:', e);
+        }
+
+        
 
         if (!window.__TERMO_READY_FIRED__) {
           window.__TERMO_READY_FIRED__ = true;
