@@ -516,8 +516,14 @@
 
       function liList(sel, arr){
         const ul = document.querySelector(sel);
-        if (!ul) return false; 
+        if (!ul) {
+          console.warn('[TERMO F43] liList: UL não encontrada para seletor', sel);
+          return false; 
+        }
         const a = asArr(arr);
+
+        console.log('[TERMO F43] liList: preenchendo', sel, 'com', a);
+
         if (a.length) {
           ul.innerHTML = a.map(x=>`<li>${escapeHtml(x)}</li>`).join('');
           return true;
@@ -526,6 +532,7 @@
         return false;
       }
       const fillList = liList;
+
 
       function renderParagraphs(sel, s){
         const el = document.querySelector(sel);
@@ -559,89 +566,6 @@
           el.style.display = visible ? '' : 'none';
         }
       }
-
-            // ===== PATCH: override robusto da reconstrução da Fase 4.3 =====
-      // Esta versão usa a lista F43_LISTA (ou F43_LISTA_TXT) para
-      // montar os grupos 4.3.1 a 4.3.9 de forma mais tolerante.
-      function __reconstruirF43(payload) {
-        const p = payload || {};
-
-        // Normalizar a lista principal de itens marcados na Fase 4.3
-        let lista = [];
-        if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length > 0) {
-          lista = p.F43_LISTA.slice();
-        } else if (typeof p.F43_LISTA_TXT === 'string' && p.F43_LISTA_TXT.trim()) {
-          lista = asArr(p.F43_LISTA_TXT);
-        } else if (Array.isArray(p["F43_ITENS[]"]) && p["F43_ITENS[]"].length > 0) {
-          lista = p["F43_ITENS[]"].slice();
-        }
-
-        // helper de filtro por substring (case-insensitive)
-        function has(fragmento) {
-          const frag = String(fragmento || '').toLowerCase();
-          return lista.filter((item) => {
-            if (!item) return false;
-            return String(item).toLowerCase().includes(frag);
-          });
-        }
-
-        const grupos = {
-          // 4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento
-          "4.3.1": []
-            .concat(
-              has("dipr - consistência"),
-              has("caráter contributivo - repasse"),
-              has("utilização dos recursos previdenciários")
-            ),
-
-          // 4.3.2 Regularidade quanto à utilização de recursos previdenciários
-          "4.3.2": has("utilização dos recursos previdenciários"),
-
-          // 4.3.3 Regularidade quanto à aplicação dos recursos previdenciários no mercado financeiro
-          "4.3.3": []
-            .concat(
-              has("aplicações financeiras"),
-              has("resol. cmn"),
-              has("dair – consistência"),
-              has("dpin - consistência")
-            ),
-
-          // 4.3.4 Regularidade quanto à instituição e custeio dos regimes previdenciários
-          "4.3.4": []
-            .concat(
-              has("limites de contribuição do ente"),
-              has("limites de contribuição dos segurados e beneficiários")
-            ),
-
-          // 4.3.5 Regularidade quanto à concessão dos benefícios
-          "4.3.5": has("plano de benefícios integrado apenas por aposentadorias"),
-
-          // 4.3.6 Regularidade quanto à instituição do regime de previdência complementar
-          "4.3.6": has("instituição do regime de previdência complementar"),
-
-          // 4.3.7 Regularidade quanto ao atendimento a exigências de controle e fiscalização
-          "4.3.7": []
-            .concat(
-              has("atendimento à solicitação de legislação"),
-              has("atendimento à fiscalização"),
-              has("equilíbrio financeiro e atuarial"),
-              has("matriz de saldos contábeis"),
-              has("dpin – encaminhamento"),
-              has("dair – encaminhamento"),
-              has("dipr – encaminhamento"),
-              has("esocial")
-            ),
-
-          // 4.3.8 Regularidade quanto à operacionalização da compensação previdenciária
-          "4.3.8": has("operacionalização da compensação previdenciária"),
-
-          // 4.3.9 Regularidade quanto aos requisitos para dirigentes e conselheiros
-          "4.3.9": has("requisitos para os dirigentes")
-        };
-
-        return grupos;
-      }
-      // ===== FIM DO PATCH override __reconstruirF43 =====
 
 
       // ==================== FUNÇÃO GLOBAL (usada por hydrateF43) ====================
@@ -751,25 +675,43 @@
         p.F4310_LEGISLACAO = getAny('F4310_LEGISLACAO', 'f4310_legislacao') || '';
         p.F4310_DOCS       = getAny('F4310_DOCS', 'f4310_docs') || '';
 
-        // ====== TEXTOS DE BACKUP PARA 4.3.x (USADOS NO data-k) ======
+        // ===================================================
+        // NOVO PREENCHIMENTO DIRETO DOS TEXTOS 4.3.1 A 4.3.9
+        // (sem usar data-k / fillText) – AGORA TAMBÉM ALIMENTA O PAYLOAD NORMALIZADO
+        // ===================================================
         try {
-          // Usa a mesma lógica da hydrateF43 para separar os grupos
           if (typeof __reconstruirF43 === 'function') {
-            const grupos = __reconstruirF43(p);
+            const gruposF43 = __reconstruirF43(p);
 
-            p.F431_LIST_TXT = (grupos["4.3.1"] || []).join('; ');
-            p.F432_LIST_TXT = (grupos["4.3.2"] || []).join('; ');
-            p.F433_LIST_TXT = (grupos["4.3.3"] || []).join('; ');
-            p.F434_LIST_TXT = (grupos["4.3.4"] || []).join('; ');
-            p.F435_LIST_TXT = (grupos["4.3.5"] || []).join('; ');
-            p.F436_LIST_TXT = (grupos["4.3.6"] || []).join('; ');
-            p.F437_LIST_TXT = (grupos["4.3.7"] || []).join('; ');
-            p.F438_LIST_TXT = (grupos["4.3.8"] || []).join('; ');
-            p.F439_LIST_TXT = (grupos["4.3.9"] || []).join('; ');
+            const mapResumo = {
+              "4.3.1": { sel: "#F431_LIST_TXT", vals: gruposF43["4.3.1"] || [] },
+              "4.3.2": { sel: "#F432_LIST_TXT", vals: gruposF43["4.3.2"] || [] },
+              "4.3.3": { sel: "#F433_LIST_TXT", vals: gruposF43["4.3.3"] || [] },
+              "4.3.4": { sel: "#F434_LIST_TXT", vals: gruposF43["4.3.4"] || [] },
+              "4.3.5": { sel: "#F435_LIST_TXT", vals: gruposF43["4.3.5"] || [] },
+              "4.3.6": { sel: "#F436_LIST_TXT", vals: gruposF43["4.3.6"] || [] },
+              "4.3.7": { sel: "#F437_LIST_TXT", vals: gruposF43["4.3.7"] || [] },
+              "4.3.8": { sel: "#F438_LIST_TXT", vals: gruposF43["4.3.8"] || [] },
+              "4.3.9": { sel: "#F439_LIST_TXT", vals: gruposF43["4.3.9"] || [] }
+            };
+
+            Object.values(mapResumo).forEach(cfg => {
+              const el     = document.querySelector(cfg.sel);
+              const texto  = (cfg.vals || []).join('; ');
+
+              // Atualiza também o objeto normalizado 'p', para que
+              // o fillText() genérico, que roda depois, use o mesmo conteúdo
+              // e NÃO zere o campo.
+              const id = (cfg.sel || '').replace('#',''); // ex.: "#F431_LIST_TXT" -> "F431_LIST_TXT"
+              if (id) p[id] = texto || '';
+
+              if (el) el.textContent = texto || ''; // nunca "Não informado"
+            });
           }
         } catch (e) {
-          console.warn('[F43] erro ao montar textos F431_LIST_TXT etc:', e);
+          console.error('[F43 resumo direto] erro ao preencher textos 4.3.1-4.3.9:', e);
         }
+
 
         // 4.3.11 – sempre gera texto de critérios e justificativa
         const _incl11Arr = asArr(
@@ -1153,6 +1095,22 @@
 
         const p = normalizePayload(payload || {});
 
+        console.log('[TERMO F43] run() – após normalizePayload:', {
+          F43_LISTA: p.F43_LISTA,
+          F43_LISTA_TXT: p.F43_LISTA_TXT,
+          'F43_ITENS[]': p['F43_ITENS[]'],
+          F431_LIST_TXT: p.F431_LIST_TXT,
+          F432_LIST_TXT: p.F432_LIST_TXT,
+          F433_LIST_TXT: p.F433_LIST_TXT,
+          F434_LIST_TXT: p.F434_LIST_TXT,
+          F435_LIST_TXT: p.F435_LIST_TXT,
+          F436_LIST_TXT: p.F436_LIST_TXT,
+          F437_LIST_TXT: p.F437_LIST_TXT,
+          F438_LIST_TXT: p.F438_LIST_TXT,
+          F439_LIST_TXT: p.F439_LIST_TXT
+        });
+
+
         // PATCH: Limpeza preventiva de "Não informado" para campos complexos da 4.3
         // Isso impede que o CSS :empty::after mostre o texto errado se o JS demorar a preencher
         [
@@ -1184,7 +1142,7 @@
           F43_JUST: p.F43_JUST
         });
 
-                // ===================================================
+        // ===================================================
         // NOVO PREENCHIMENTO DIRETO DOS TEXTOS 4.3.1 A 4.3.9
         // (sem usar data-k / fillText)
         // ===================================================

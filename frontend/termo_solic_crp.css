@@ -234,7 +234,6 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 
 
 /* -------------------- Fallbacks de “Não informado” -------------------- */
-/* Regra geral para o termo inteiro */
 .field .value:empty::after,
 .term-section ul:empty::before,
 [data-k]:empty::after{
@@ -243,23 +242,23 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   opacity:.9;
 }
 
-/* EXCEÇÃO: na Fase 4.3 nunca exibir "Não informado" automaticamente */
-#fase-43 .field .value:empty::after,
-#fase-43 ul:empty::before,
-#fase-43 [data-k]:empty::after{
-  content:"";        /* zera o texto do pseudo-elemento */
-  opacity:0;         /* garante que nada apareça mesmo se algum content vazar */
-}
-
-/* Mantém o comportamento normal de quebra/linhas */
 p[data-k], li[data-k], span[data-k], div[data-k]{
   white-space:pre-line;
   overflow-wrap:break-word;
 }
+
 .ni, .not-informed{
   color:var(--muted) !important;
   font-style:italic;
 }
+
+/* Exceção: na Fase 4.3 vamos mostrar só o que o JS montar,
+   sem pseudo "Não informado" para listas e textos-resumo */
+#fase-43 ul:empty::before,
+#fase-43 [data-k]:empty::after{
+  content:"";
+}
+
 
 
 
