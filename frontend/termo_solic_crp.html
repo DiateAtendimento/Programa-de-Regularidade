@@ -688,13 +688,26 @@
         }
 
         // 4.3.11 – sempre gera texto de critérios e justificativa
-        p.F4311_INCLUIR_TXT = (p.F43_INCLUIR || []).join('; ');
+        const _incl11Arr = asArr(
+          p.F43_INCLUIR ||
+          p['F43_INCLUIR[]'] ||
+          p.F43_INCLUIR_TXT ||
+          p.F4311_INCLUIR_TXT
+        );
+        p.F4311_INCLUIR_TXT = _incl11Arr.join('; ');
         p.F4311_PLANO_TXT   = p.F43_PLANO || '';
 
         // 4.3.12 – idem
-        p.F4312_INCLUIR_TXT = (p.F43_INCLUIR_B || []).join('; ');
+        const _incl12Arr = asArr(
+          p.F43_INCLUIR_B ||
+          p['F43_INCLUIR_B[]'] ||
+          p.F43_INCLUIR_B_TXT ||
+          p.F4312_INCLUIR_TXT
+        );
+        p.F4312_INCLUIR_TXT = _incl12Arr.join('; ');
         p.F4312_PLANO_TXT   = p.F43_PLANO_B || '';
         p.F4312_DESC_TXT    = p.F43_DESC_PLANOS || '';
+
 
 
         // 4.4
