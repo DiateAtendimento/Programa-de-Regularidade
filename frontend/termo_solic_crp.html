@@ -560,6 +560,90 @@
         }
       }
 
+            // ===== PATCH: override robusto da reconstrução da Fase 4.3 =====
+      // Esta versão usa a lista F43_LISTA (ou F43_LISTA_TXT) para
+      // montar os grupos 4.3.1 a 4.3.9 de forma mais tolerante.
+      function __reconstruirF43(payload) {
+        const p = payload || {};
+
+        // Normalizar a lista principal de itens marcados na Fase 4.3
+        let lista = [];
+        if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length > 0) {
+          lista = p.F43_LISTA.slice();
+        } else if (typeof p.F43_LISTA_TXT === 'string' && p.F43_LISTA_TXT.trim()) {
+          lista = asArr(p.F43_LISTA_TXT);
+        } else if (Array.isArray(p["F43_ITENS[]"]) && p["F43_ITENS[]"].length > 0) {
+          lista = p["F43_ITENS[]"].slice();
+        }
+
+        // helper de filtro por substring (case-insensitive)
+        function has(fragmento) {
+          const frag = String(fragmento || '').toLowerCase();
+          return lista.filter((item) => {
+            if (!item) return false;
+            return String(item).toLowerCase().includes(frag);
+          });
+        }
+
+        const grupos = {
+          // 4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento
+          "4.3.1": []
+            .concat(
+              has("dipr - consistência"),
+              has("caráter contributivo - repasse"),
+              has("utilização dos recursos previdenciários")
+            ),
+
+          // 4.3.2 Regularidade quanto à utilização de recursos previdenciários
+          "4.3.2": has("utilização dos recursos previdenciários"),
+
+          // 4.3.3 Regularidade quanto à aplicação dos recursos previdenciários no mercado financeiro
+          "4.3.3": []
+            .concat(
+              has("aplicações financeiras"),
+              has("resol. cmn"),
+              has("dair – consistência"),
+              has("dpin - consistência")
+            ),
+
+          // 4.3.4 Regularidade quanto à instituição e custeio dos regimes previdenciários
+          "4.3.4": []
+            .concat(
+              has("limites de contribuição do ente"),
+              has("limites de contribuição dos segurados e beneficiários")
+            ),
+
+          // 4.3.5 Regularidade quanto à concessão dos benefícios
+          "4.3.5": has("plano de benefícios integrado apenas por aposentadorias"),
+
+          // 4.3.6 Regularidade quanto à instituição do regime de previdência complementar
+          "4.3.6": has("instituição do regime de previdência complementar"),
+
+          // 4.3.7 Regularidade quanto ao atendimento a exigências de controle e fiscalização
+          "4.3.7": []
+            .concat(
+              has("atendimento à solicitação de legislação"),
+              has("atendimento à fiscalização"),
+              has("equilíbrio financeiro e atuarial"),
+              has("matriz de saldos contábeis"),
+              has("dpin – encaminhamento"),
+              has("dair – encaminhamento"),
+              has("dipr – encaminhamento"),
+              has("esocial")
+            ),
+
+          // 4.3.8 Regularidade quanto à operacionalização da compensação previdenciária
+          "4.3.8": has("operacionalização da compensação previdenciária"),
+
+          // 4.3.9 Regularidade quanto aos requisitos para dirigentes e conselheiros
+          "4.3.9": has("requisitos para os dirigentes")
+        };
+
+        return grupos;
+      }
+      // ===== FIM DO PATCH override __reconstruirF43 =====
+
+
       // ==================== FUNÇÃO GLOBAL (usada por hydrateF43) ====================
       function togglePhaseBlock(id, hasContent) {
         const el = document.querySelector(id);
