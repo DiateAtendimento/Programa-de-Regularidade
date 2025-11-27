@@ -240,6 +240,14 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   color:var(--muted);
   opacity:.9;
 }
+
+/* PATCH – Exceção: Fase 4.3 não deve exibir "Não informado" automático */
+#fase-43 .field .value:empty::after,
+#fase-43 .term-section ul:empty::before,
+#fase-43 [data-k]:empty::after{
+  content:"";
+}
+
 p[data-k], li[data-k], span[data-k], div[data-k]{
   white-space:pre-line;
   overflow-wrap:break-word;
@@ -248,6 +256,7 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
   color:var(--muted) !important;
   font-style:italic;
 }
+
 
 /* -------------------- Regras específicas de impressão -------------------- */
 @media print{
