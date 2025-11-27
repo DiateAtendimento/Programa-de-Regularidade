@@ -463,11 +463,6 @@
         return temDadosReais ? false : true;
       };
 
-      // PATCH: payload real não deve ficar em modo "__NA_ALL"
-      if (payload && !payload.__NA_ALL) {
-        p.__NA_ALL = false;
-      }
-
       function fillText(key, val){
         const raw = (val == null) ? '' : String(val);
         const trimmed = raw.trim();
@@ -1112,6 +1107,10 @@
 
         const p = normalizePayload(payload || {});
 
+        // Garante que, a partir daqui, estamos em modo "dados reais" (sem placeholder)
+        p.__NA_ALL = false;
+
+
         console.log('[TERMO F43] run() – após normalizePayload:', {
           F43_LISTA: p.F43_LISTA,
           F43_LISTA_TXT: p.F43_LISTA_TXT,
@@ -1571,7 +1570,7 @@
           console.error('[CLEAN F43 NA] erro ao limpar "Não informado" da Fase 4.3:', e);
         }
 
-        
+
 
         if (!window.__TERMO_READY_FIRED__) {
           window.__TERMO_READY_FIRED__ = true;
