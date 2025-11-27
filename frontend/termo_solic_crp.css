@@ -232,7 +232,9 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
 /* Nunca imprime o modal no PDF */
 @media print{ .pdf-modal, .pdf-modal *{ display:none !important; } }
 
+
 /* -------------------- Fallbacks de “Não informado” -------------------- */
+/* Regra geral para o termo inteiro */
 .field .value:empty::after,
 .term-section ul:empty::before,
 [data-k]:empty::after{
@@ -241,13 +243,15 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   opacity:.9;
 }
 
-/* PATCH – Exceção: Fase 4.3 não deve exibir "Não informado" automático */
+/* EXCEÇÃO: na Fase 4.3 nunca exibir "Não informado" automaticamente */
 #fase-43 .field .value:empty::after,
-#fase-43 .term-section ul:empty::before,
+#fase-43 ul:empty::before,
 #fase-43 [data-k]:empty::after{
-  content:"";
+  content:"";        /* zera o texto do pseudo-elemento */
+  opacity:0;         /* garante que nada apareça mesmo se algum content vazar */
 }
 
+/* Mantém o comportamento normal de quebra/linhas */
 p[data-k], li[data-k], span[data-k], div[data-k]{
   white-space:pre-line;
   overflow-wrap:break-word;
@@ -256,6 +260,7 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
   color:var(--muted) !important;
   font-style:italic;
 }
+
 
 
 /* -------------------- Regras específicas de impressão -------------------- */
