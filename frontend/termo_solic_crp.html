@@ -1009,10 +1009,17 @@
           //  exclusivamente via gruposF43 + mapaUL logo acima.)
 
 
-          // 4.3.10
-          const op = String(p.F4310_OPCAO||'').trim().toLowerCase();
-          const isA = op.startsWith('a');
-          const isB = op.startsWith('b');
+          // 4.3.10 - Normalizar opção (A/B) independente do formato
+          const op = String(
+            p.F4310_OPCAO || 
+            p.f4310_opcao || 
+            (p.F43_PLANO ? 'a' : '') || 
+            (p.F4310_DOCS ? 'b' : '')
+          ).trim().toLowerCase();
+          
+          const isA = op.includes('adotadas regras') || op.startsWith('a');
+          const isB = op.includes('encaminhamento') || op.startsWith('b');
+
 
           show("#f43-opcao-a", isA);
           show("#f43-opcao-b", isB);
@@ -1301,7 +1308,7 @@
         }
 
 
-                // === APLICAR FASE 4.3 IMEDIATAMENTE COM O PAYLOAD NORMALIZADO ===
+        // === APLICAR FASE 4.3 IMEDIATAMENTE COM O PAYLOAD NORMALIZADO ===
         try {
           if (window.hydrateF43) {
             console.log('🔥 hydrateF43 via run() → preenchendo Fase 4.3');
@@ -1309,6 +1316,28 @@
           }
         } catch (e) {
           console.error('hydrateF43 via run() ERROR:', e);
+        }
+
+        // ✅ PATCH 4 – fallback se hydrateF43 não rodar
+        // Garantir que F43 sempre seja preenchida (mesmo se hydrateF43 falhar)
+        if (!window.__F43_APPLIED__ && p.F43_LISTA && p.F43_LISTA.length > 0) {
+          console.warn('[TERMO F43] hydrateF43 não rodou, aplicando fallback manual');
+          
+          // Preencher ULs manualmente se hydrateF43 falhar
+          const gruposF43 = __reconstruirF43(p);
+          const mapaUL = {
+            "4.3.1": "#f43-1", "4.3.2": "#f43-2", "4.3.3": "#f43-3",
+            "4.3.4": "#f43-4", "4.3.5": "#f43-5", "4.3.6": "#f43-6",
+            "4.3.7": "#f43-7", "4.3.8": "#f43-8", "4.3.9": "#f43-9"
+          };
+          
+          Object.keys(mapaUL).forEach(k => {
+            const sel = mapaUL[k];
+            const arr = gruposF43[k] || [];
+            fillList(sel, arr);
+          });
+          
+          window.__F43_APPLIED__ = true;
         }
 
         

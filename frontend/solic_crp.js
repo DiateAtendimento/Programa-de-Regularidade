@@ -633,8 +633,75 @@
     // 4.2
     data.values['F42_LISTA[]'] = $$(`#F42_LISTA input[type="checkbox"]:checked`).map(i=>i.value);
 
-    // 4.3
-    data.values['F43_LISTA[]'] = $$(`#F43_LISTA input[type="checkbox"]:checked`).map(i=>i.value);
+    // 4.3 - Captura granular dos 9 blocos (4.3.1 a 4.3.9)
+    const f43_itens_raw = [];
+    
+    // 4.3.1 (2 itens)
+    ['a) "DIPR - Consistência"', 'b) "Caráter contributivo - Repasse (PAP)"'].forEach(label => {
+      const inp = $$('#F43_LISTA input[type="checkbox"]').find(i => 
+        i.nextElementSibling?.textContent?.includes(label.slice(3))
+      );
+      if (inp?.checked) f43_itens_raw.push(inp.value);
+    });
+
+    // 4.3.2 (1 item)
+    const f43_2 = $$('#F43_LISTA input[type="checkbox"]').find(i =>
+      i.nextElementSibling?.textContent?.includes('Utilização dos recursos')
+    );
+    if (f43_2?.checked) f43_itens_raw.push(f43_2.value);
+
+    // 4.3.3 (3 itens: Aplicações, DAIR, DPIN)
+    ['Aplicações Financeiras', 'DAIR – Consistência', 'DPIN - Consistência'].forEach(kw => {
+      const inp = $$('#F43_LISTA input[type="checkbox"]').find(i =>
+        i.nextElementSibling?.textContent?.includes(kw)
+      );
+      if (inp?.checked) f43_itens_raw.push(inp.value);
+    });
+
+    // 4.3.4 (2 itens: limites ente + segurados)
+    ['limites de contribuição do ente', 'limites de contribuição dos segurados'].forEach(kw => {
+      const inp = $$('#F43_LISTA input[type="checkbox"]').find(i =>
+        i.nextElementSibling?.textContent?.includes(kw)
+      );
+      if (inp?.checked) f43_itens_raw.push(inp.value);
+    });
+
+    // 4.3.5 (1 item)
+    const f43_5 = $$('#F43_LISTA input[type="checkbox"]').find(i =>
+      i.nextElementSibling?.textContent?.includes('Plano de benefícios integrado')
+    );
+    if (f43_5?.checked) f43_itens_raw.push(f43_5.value);
+
+    // 4.3.6 (1 item)
+    const f43_6 = $$('#F43_LISTA input[type="checkbox"]').find(i =>
+      i.nextElementSibling?.textContent?.includes('Instituição do regime de previdência complementar')
+    );
+    if (f43_6?.checked) f43_itens_raw.push(f43_6.value);
+
+    // 4.3.7 (8 itens)
+    ['Atendimento à solicitação', 'Atendimento à fiscalização', 'Equilíbrio Financeiro',
+      'Matriz de Saldos', 'DPIN – Encaminhamento', 'DAIR – Encaminhamento',
+      'DIPR – Encaminhamento', 'eSocial'].forEach(kw => {
+      const inp = $$('#F43_LISTA input[type="checkbox"]').find(i =>
+        i.nextElementSibling?.textContent?.includes(kw)
+      );
+      if (inp?.checked) f43_itens_raw.push(inp.value);
+    });
+
+    // 4.3.8 (1 item)
+    const f43_8 = $$('#F43_LISTA input[type="checkbox"]').find(i =>
+      i.nextElementSibling?.textContent?.includes('Operacionalização da compensação')
+    );
+    if (f43_8?.checked) f43_itens_raw.push(f43_8.value);
+
+    // 4.3.9 (1 item)
+    const f43_9 = $$('#F43_LISTA input[type="checkbox"]').find(i =>
+      i.nextElementSibling?.textContent?.includes('Requisitos para os dirigentes')
+    );
+    if (f43_9?.checked) f43_itens_raw.push(f43_9.value);
+
+    data.values['F43_LISTA[]'] = f43_itens_raw;
+
     data.values['F43_PLANO']   = $('#F43_PLANO')?.value || '';
     data.values['F43_INCLUIR[]'] = $$('#F43_INCLUIR input[type="checkbox"]:checked').map(i=>i.value);
     data.values['F43_SOLICITA_INCLUSAO'] = !!$('#F43_SOLICITA_INCLUSAO')?.checked;
@@ -1773,6 +1840,10 @@ function syncF46ToTemplate(){
 
   /* ========= Payload ========= */
   function buildPayload(){
+
+    // estado salvo em localStorage (para recuperar F43_LISTA se necessário)
+    const st = getState() || {};
+
     // === Coletas base ===
     const ESFERA =
       (el.esfMun?.checked ? 'RPPS Municipal' :
@@ -1967,7 +2038,6 @@ function syncF46ToTemplate(){
       F44_DECLS,
       F44_FINALIDADES,
 
-      F43_LISTA: collectCheckedValues('#F43_LISTA input[type="checkbox"]'),
       F43_PLANO: collectTextValue('F43_PLANO'),
       F43_PLANO_B: collectTextValue('F43_PLANO_B'),
       F43_INCLUIR: collectCheckedValues('#F43_INCLUIR input[type="checkbox"]').join('; '),
@@ -2022,6 +2092,13 @@ function syncF46ToTemplate(){
 
       IDEMP_KEY: takeIdemKey() || ''
     };
+
+    // 🔁 PATCH 3: decide entre o que está no form agora ou o que foi salvo no state
+    const f43_saved = (st?.values?.['F43_LISTA[]'] || st?.values?.F43_LISTA || []);
+    const f43_current = collectCheckedValues('#F43_LISTA input[type="checkbox"]');
+    obj['F43_LISTA[]'] = f43_current.length > 0 ? f43_current : f43_saved;
+    obj.F43_LISTA = obj['F43_LISTA[]']; // espelho
+    
     // PORTARIA padronizada (caso não venha do formulário)
     if (!obj.PORTARIA_SRPC) obj.PORTARIA_SRPC = '2.010/2025';
 
