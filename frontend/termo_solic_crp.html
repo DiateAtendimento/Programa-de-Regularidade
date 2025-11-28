@@ -1161,6 +1161,47 @@
 
         const p = normalizePayload(payload || {});
 
+                // === [DEBUG F43 - BLOCO 1 – ANTES DE RENDERIZAR] ===
+        console.groupCollapsed('%c[DEBUG F43] Estado inicial no run()', 'color:#f0f; font-weight:bold;');
+
+        console.log('[DEBUG F43] Payload RAW recebido em run():', payload);
+        console.log('[DEBUG F43] Payload normalizado (p):', JSON.parse(JSON.stringify(p)));
+
+        console.log('[DEBUG F43] chaves principais Fase 4.3 no payload normalizado:', {
+          F43_LISTA: p.F43_LISTA,
+          'F43_LISTA[]': p['F43_LISTA[]'],
+          F43_LISTA_TXT: p.F43_LISTA_TXT,
+          F43_INCLUIR: p.F43_INCLUIR,
+          F43_INCLUIR_B: p.F43_INCLUIR_B,
+          F43_PLANO: p.F43_PLANO,
+          F43_PLANO_B: p.F43_PLANO_B,
+          F43_DESC_PLANOS: p.F43_DESC_PLANOS,
+          F43_JUST: p.F43_JUST,
+          F4310_OPCAO: p.F4310_OPCAO,
+          F4310_LEGISLACAO: p.F4310_LEGISLACAO,
+          F4310_DOCS: p.F4310_DOCS
+        });
+
+        let gruposF43_debug = {};
+        try {
+          if (typeof __reconstruirF43 === 'function') {
+            gruposF43_debug = __reconstruirF43(p);
+          } else {
+            console.warn('[DEBUG F43] __reconstruirF43 NÃO é uma função ou não está definido.');
+          }
+        } catch (e) {
+          console.error('[DEBUG F43] Erro ao chamar __reconstruirF43(p):', e);
+        }
+
+        console.log('[DEBUG F43] Saída de __reconstruirF43(p):', JSON.parse(JSON.stringify(gruposF43_debug || {})));
+
+        ['4.3.1','4.3.2','4.3.3','4.3.4','4.3.5','4.3.6','4.3.7','4.3.8','4.3.9'].forEach(k => {
+          console.log(`[DEBUG F43] Grupo ${k}:`, gruposF43_debug?.[k] || []);
+        });
+
+        console.groupEnd();
+
+
         // Garante que, a partir daqui, estamos em modo "dados reais" (sem placeholder)
         p.__NA_ALL = false;
 
@@ -1645,6 +1686,66 @@
         } catch (e) {
           console.error('[CLEAN F43 NA] erro ao limpar "Não informado" da Fase 4.3:', e);
         }
+
+                // === [DEBUG F43 - BLOCO 2 – DEPOIS DE RENDERIZAR] ===
+        (function debugF43DOM() {
+          console.groupCollapsed('%c[DEBUG F43] Estado do DOM após run()', 'color:#0af; font-weight:bold;');
+
+          const fase43 = document.querySelector('#fase-43');
+          console.log('[DEBUG F43] #fase-43 →', {
+            exists: !!fase43,
+            hidden: fase43 ? fase43.hidden : '(sem nó)',
+            display: fase43 ? getComputedStyle(fase43).display : '(sem nó)'
+          });
+
+          const idsItens = [
+            '#f43-1','#f43-2','#f43-3','#f43-4','#f43-5',
+            '#f43-6','#f43-7','#f43-8','#f43-9'
+          ];
+          idsItens.forEach(sel => {
+            const ul = document.querySelector(sel);
+            if (!ul) {
+              console.warn('[DEBUG F43] UL não encontrada:', sel);
+              return;
+            }
+            const lis = Array.from(ul.querySelectorAll('li')).map(li => li.textContent.trim());
+            console.log(`[DEBUG F43] ${sel} → li count=${lis.length}`, lis);
+          });
+
+          const txtIds = [
+            'F431_LIST_TXT','F432_LIST_TXT','F433_LIST_TXT',
+            'F434_LIST_TXT','F435_LIST_TXT','F436_LIST_TXT',
+            'F437_LIST_TXT','F438_LIST_TXT','F439_LIST_TXT',
+            'F4311_INCLUIR_TXT','F4311_PLANO_TXT',
+            'F4312_INCLUIR_TXT','F4312_PLANO_TXT','F4312_DESC_TXT'
+          ];
+
+          txtIds.forEach(id => {
+            const el = document.getElementById(id) || document.querySelector(`[data-k="${id}"]`);
+            if (!el) {
+              console.warn('[DEBUG F43] Elemento de texto não encontrado para id/data-k:', id);
+              return;
+            }
+            console.log(`[DEBUG F43] ${id} →`, {
+              textContent: el.textContent,
+              innerHTML: el.innerHTML
+            });
+          });
+
+          const naLabel = (typeof __NA_LABEL__ === 'function') ? __NA_LABEL__() : 'Não informado';
+          const aindaComNA = [];
+          document.querySelectorAll('[data-k^="F43"]').forEach(el => {
+            if (el.textContent.trim() === naLabel) {
+              aindaComNA.push({
+                selector: `[data-k="${el.getAttribute('data-k')}"]`,
+                text: el.textContent
+              });
+            }
+          });
+          console.log('[DEBUG F43] Campos de 4.3 ainda com label de NA:', aindaComNA);
+
+          console.groupEnd();
+        })();
 
 
 

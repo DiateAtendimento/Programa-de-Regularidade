@@ -126,65 +126,83 @@
     }
 
     // === AJUSTE ESPECÍFICO PARA F43_LISTA / F43_LISTA_TXT (Fase 4.3.1 a 4.3.9) ===
-    // Garante que o template do PDF receba um array "linear" com todos os itens da 4.3
+    // AGORA usa SEMPRE o TEXTO das opções marcadas em 4.3.1–4.3.9
     (function buildF43Lista() {
-      let lista = [];
+      const itens = [];
 
-      // Se o formulário já tiver <input name="F43_LISTA[]">, usamos direto
-      if (Array.isArray(payload.F43_LISTA)) {
-        lista = payload.F43_LISTA.slice();
-      } else if (Array.isArray(payload['F43_LISTA[]'])) {
-        lista = payload['F43_LISTA[]'].slice();
-      }
+      // 📌 Aqui assumo que todos os checkboxes de 4.3.1–4.3.9
+      // estão dentro de um contêiner com id="F43_LISTA"
+      const checkboxes = formEl.querySelectorAll('#F43_LISTA input[type="checkbox"]');
 
-      // Se ainda estiver vazio, reconstruímos a partir dos campos unitários (F43_1, F43_3_A, etc.)
-      if (!lista.length) {
-        const ordem = [
-          'F43_1',
-          'F43_1_TXT',
-          'F43_2',
-          'F43_3_A',
-          'F43_3_B',
-          'F43_3_C',
-          'F43_4_A',
-          'F43_4_B',
-          'F43_5',
-          'F43_6',
-          'F43_7_A',
-          'F43_7_B',
-          'F43_7_C',
-          'F43_7_D',
-          'F43_7_E',
-          'F43_7_F',
-          'F43_7_G',
-          'F43_7_H',
-          'F43_8',
-          'F43_9'
-        ];
+      checkboxes.forEach(input => {
+        if (!input.checked) return;
 
-        ordem.forEach(k => {
-          const val = payload[k];
-          if (Array.isArray(val)) {
-            val.forEach(v => {
-              if (v) lista.push(String(v));
-            });
-          } else if (val) {
-            lista.push(String(val));
+        // tenta pegar o texto da label logo ao lado do input
+        let labelNode = input.nextElementSibling;
+        if (!labelNode || !labelNode.textContent || !labelNode.textContent.trim()) {
+          // fallback: <label for="id">
+          if (input.id) {
+            const byFor = formEl.querySelector(`label[for="${input.id}"]`);
+            if (byFor) labelNode = byFor;
           }
-        });
-      }
+        }
 
-      // Normaliza removendo vazios e espaços
-      lista = lista
-        .map(v => String(v).trim())
-        .filter(v => v.length > 0);
+        const txt = labelNode && labelNode.textContent
+          ? labelNode.textContent.trim()
+          : String(input.value || '').trim(); // último recurso: value
 
-      if (lista.length) {
-        payload.F43_LISTA     = lista;
+        if (txt) itens.push(txt);
+      });
+
+      // Se não achou nada via DOM (mudança de HTML futuramente), cai no fallback antigo
+      if (!itens.length) {
+        let lista = [];
+
+        if (Array.isArray(payload.F43_LISTA)) {
+          lista = payload.F43_LISTA.slice();
+        } else if (Array.isArray(payload['F43_LISTA[]'])) {
+          lista = payload['F43_LISTA[]'].slice();
+        }
+
+        if (!lista.length) {
+          const ordem = [
+            'F43_1','F43_1_TXT','F43_2',
+            'F43_3_A','F43_3_B','F43_3_C',
+            'F43_4_A','F43_4_B',
+            'F43_5','F43_6',
+            'F43_7_A','F43_7_B','F43_7_C','F43_7_D','F43_7_E','F43_7_F','F43_7_G','F43_7_H',
+            'F43_8','F43_9'
+          ];
+
+          ordem.forEach(k => {
+            const val = payload[k];
+            if (Array.isArray(val)) {
+              val.forEach(v => {
+                const s = String(v || '').trim();
+                if (s) lista.push(s);
+              });
+            } else if (val) {
+              const s = String(val).trim();
+              if (s) lista.push(s);
+            }
+          });
+        }
+
+        lista = lista.map(v => String(v).trim()).filter(Boolean);
+        if (!lista.length) return;
+
+        payload.F43_LISTA      = lista;
         payload['F43_LISTA[]'] = lista.slice();
-        payload.F43_LISTA_TXT = lista.join('; ');
+        payload.F43_LISTA_TXT  = lista.join('; ');
+        return;
       }
+
+      // ✅ Caminho principal: usa o TEXTO das opções como base da Fase 4.3
+      payload.F43_LISTA      = itens;
+      payload['F43_LISTA[]'] = itens.slice();
+      payload.F43_LISTA_TXT  = itens.join('; ');
     })();
+
 
     // espelha a fase também em __FASE_SEL__ (o template usa isso para resolver 4.x)
     if (!payload.__FASE_SEL__) {
@@ -2098,7 +2116,7 @@ function syncF46ToTemplate(){
     const f43_current = collectCheckedValues('#F43_LISTA input[type="checkbox"]');
     obj['F43_LISTA[]'] = f43_current.length > 0 ? f43_current : f43_saved;
     obj.F43_LISTA = obj['F43_LISTA[]']; // espelho
-    
+
     // PORTARIA padronizada (caso não venha do formulário)
     if (!obj.PORTARIA_SRPC) obj.PORTARIA_SRPC = '2.010/2025';
 
