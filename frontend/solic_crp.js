@@ -125,6 +125,67 @@
       payload.F43_INCLUIR_B = payload.F43_INCLUIR_B.join('; ');
     }
 
+    // === AJUSTE ESPECÍFICO PARA F43_LISTA / F43_LISTA_TXT (Fase 4.3.1 a 4.3.9) ===
+    // Garante que o template do PDF receba um array "linear" com todos os itens da 4.3
+    (function buildF43Lista() {
+      let lista = [];
+
+      // Se o formulário já tiver <input name="F43_LISTA[]">, usamos direto
+      if (Array.isArray(payload.F43_LISTA)) {
+        lista = payload.F43_LISTA.slice();
+      } else if (Array.isArray(payload['F43_LISTA[]'])) {
+        lista = payload['F43_LISTA[]'].slice();
+      }
+
+      // Se ainda estiver vazio, reconstruímos a partir dos campos unitários (F43_1, F43_3_A, etc.)
+      if (!lista.length) {
+        const ordem = [
+          'F43_1',
+          'F43_1_TXT',
+          'F43_2',
+          'F43_3_A',
+          'F43_3_B',
+          'F43_3_C',
+          'F43_4_A',
+          'F43_4_B',
+          'F43_5',
+          'F43_6',
+          'F43_7_A',
+          'F43_7_B',
+          'F43_7_C',
+          'F43_7_D',
+          'F43_7_E',
+          'F43_7_F',
+          'F43_7_G',
+          'F43_7_H',
+          'F43_8',
+          'F43_9'
+        ];
+
+        ordem.forEach(k => {
+          const val = payload[k];
+          if (Array.isArray(val)) {
+            val.forEach(v => {
+              if (v) lista.push(String(v));
+            });
+          } else if (val) {
+            lista.push(String(val));
+          }
+        });
+      }
+
+      // Normaliza removendo vazios e espaços
+      lista = lista
+        .map(v => String(v).trim())
+        .filter(v => v.length > 0);
+
+      if (lista.length) {
+        payload.F43_LISTA     = lista;
+        payload['F43_LISTA[]'] = lista.slice();
+        payload.F43_LISTA_TXT = lista.join('; ');
+      }
+    })();
+
     // espelha a fase também em __FASE_SEL__ (o template usa isso para resolver 4.x)
     if (!payload.__FASE_SEL__) {
       payload.__FASE_SEL__ = payload.FASE_PROGRAMA || '';
@@ -133,6 +194,7 @@
 
     return payload;
   }
+
 
   const FORM_STORAGE_KEY = 'solic-crp-form-v1';
   const IDEM_STORE_KEY   = 'rpps-idem-submit:solic-crp';
