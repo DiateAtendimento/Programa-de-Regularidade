@@ -1747,6 +1747,182 @@
           console.groupEnd();
         })();
 
+                // ================== PATCH FINAL – FASE 4.3 (4.3.1 a 4.3.12) ==================
+        (function aplicarPatchFinalF43(){
+          try {
+            // 1) Monta base com os 20 itens da F43 (na ordem do formulário)
+            let itensBase = [];
+
+            if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length) {
+              itensBase = p.F43_LISTA.slice();
+            } else if (Array.isArray(p["F43_LISTA[]"]) && p["F43_LISTA[]"].length) {
+              itensBase = p["F43_LISTA[]"].slice();
+            } else if (p.F43_LISTA_TXT) {
+              itensBase = (typeof asArr === 'function') ? asArr(p.F43_LISTA_TXT) : String(p.F43_LISTA_TXT).split(';');
+            }
+
+            while (itensBase.length < 20) itensBase.push('');
+
+            const grupos = {
+              "4.3.1": itensBase.slice( 0,  2).filter(Boolean),
+              "4.3.2": itensBase.slice( 2,  3).filter(Boolean),
+              "4.3.3": itensBase.slice( 3,  6).filter(Boolean),
+              "4.3.4": itensBase.slice( 6,  8).filter(Boolean),
+              "4.3.5": itensBase.slice( 8,  9).filter(Boolean),
+              "4.3.6": itensBase.slice( 9, 10).filter(Boolean),
+              "4.3.7": itensBase.slice(10, 18).filter(Boolean),
+              "4.3.8": itensBase.slice(18, 19).filter(Boolean),
+              "4.3.9": itensBase.slice(19, 20).filter(Boolean)
+            };
+
+            const idsResumo = {
+              "4.3.1": "F431_LIST_TXT",
+              "4.3.2": "F432_LIST_TXT",
+              "4.3.3": "F433_LIST_TXT",
+              "4.3.4": "F434_LIST_TXT",
+              "4.3.5": "F435_LIST_TXT",
+              "4.3.6": "F436_LIST_TXT",
+              "4.3.7": "F437_LIST_TXT",
+              "4.3.8": "F438_LIST_TXT",
+              "4.3.9": "F439_LIST_TXT"
+            };
+
+            let temConteudo43 = false;
+
+            Object.keys(grupos).forEach(chave => {
+              const arr = grupos[chave];
+              const num = chave.split('.')[1];           // "4.3.1" -> "1"
+              const ulSel  = '#f43-' + num;              // ex.: #f43-1
+              const subSel = '#f43-sub-' + num;          // ex.: #f43-sub-1
+              const txtId  = idsResumo[chave];           // ex.: F431_LIST_TXT
+
+              // UL com os itens marcados
+              const ul = document.querySelector(ulSel);
+              if (ul) {
+                ul.innerHTML = '';
+                arr.forEach(item => {
+                  const li = document.createElement('li');
+                  li.textContent = item;
+                  ul.appendChild(li);
+                });
+              }
+
+              // Texto-resumo (p data-k="F43x_LIST_TXT")
+              if (txtId) {
+                const pTxt = document.getElementById(txtId);
+                if (pTxt) {
+                  pTxt.textContent = arr.join('; ');
+                }
+              }
+
+              // Exibir/esconder o sub-bloco
+              const sub = document.querySelector(subSel);
+              if (sub) {
+                const has = arr.length > 0;
+                sub.style.display = has ? '' : 'none';
+                if (has) temConteudo43 = true;
+              }
+            });
+
+            // 2) 4.3.11 – Solicitação de inclusão (F43_INCLUIR / F43_PLANO)
+            const inc11 = (typeof asArr === 'function')
+              ? asArr(p.F43_INCLUIR || p["F43_INCLUIR[]"] || '')
+              : (Array.isArray(p.F43_INCLUIR) ? p.F43_INCLUIR : []);
+            const jus11 = (p.F43_PLANO || '').toString().trim();
+
+            if (inc11.length || jus11) {
+              const ul11 = document.querySelector('#f43-crit-incluir');
+              if (ul11) {
+                ul11.innerHTML = '';
+                inc11.forEach(item => {
+                  const li = document.createElement('li');
+                  li.textContent = item;
+                  ul11.appendChild(li);
+                });
+              }
+
+              const inc11Txt = document.getElementById('F4311_INCLUIR_TXT');
+              if (inc11Txt) inc11Txt.textContent = inc11.join('; ');
+
+              const justDiv11 = document.getElementById('f43-just-11');
+              if (justDiv11) justDiv11.textContent = jus11;
+
+              const justTxt11 = document.getElementById('F4311_PLANO_TXT');
+              if (justTxt11) justTxt11.textContent = jus11;
+
+              const sub11 = document.querySelector('#f43-sub-11');
+              if (sub11) {
+                sub11.style.display = '';
+                temConteudo43 = true;
+              }
+            }
+
+            // 3) 4.3.12 – Solicitação de inclusão (F43_INCLUIR_B / F43_PLANO_B / F43_DESC_PLANOS)
+            const inc12 = (typeof asArr === 'function')
+              ? asArr(p.F43_INCLUIR_B || p["F43_INCLUIR_B[]"] || '')
+              : (Array.isArray(p.F43_INCLUIR_B) ? p.F43_INCLUIR_B : []);
+            const jus12  = (p.F43_PLANO_B     || '').toString().trim();
+            const desc12 = (p.F43_DESC_PLANOS || '').toString().trim();
+
+            if (inc12.length || jus12 || desc12) {
+              const ul12 = document.querySelector('#f43-crit-incluir-12');
+              if (ul12) {
+                ul12.innerHTML = '';
+                inc12.forEach(item => {
+                  const li = document.createElement('li');
+                  li.textContent = item;
+                  ul12.appendChild(li);
+                });
+              }
+
+              const inc12Txt  = document.getElementById('F4312_INCLUIR_TXT');
+              const plano12Txt = document.getElementById('F4312_PLANO_TXT');
+              const desc12Txt  = document.getElementById('F4312_DESC_TXT');
+
+              if (inc12Txt)   inc12Txt.textContent   = inc12.join('; ');
+              if (plano12Txt) plano12Txt.textContent = jus12;
+              if (desc12Txt)  desc12Txt.textContent  = desc12;
+
+              const justDiv12 = document.getElementById('f43-just-12');
+              const descDiv12 = document.getElementById('f43-desc-planos-12');
+              if (justDiv12) justDiv12.textContent = jus12;
+              if (descDiv12) descDiv12.textContent = desc12;
+
+              const sub12 = document.querySelector('#f43-sub-12');
+              if (sub12) {
+                sub12.style.display = '';
+                temConteudo43 = true;
+              }
+            }
+
+            // 4) Se houver qualquer conteúdo em 4.3, garante exibição do bloco inteiro
+            if (temConteudo43) {
+              const fase43 = document.querySelector('#fase-43');
+              if (fase43) {
+                fase43.hidden = false;
+                fase43.style.display = 'block';
+              }
+            }
+
+            // 5) Garante que nenhum desses campos fique com texto "Não informado"
+            const na = (typeof __NA_LABEL__ === 'function') ? __NA_LABEL__() : 'Não informado';
+            [
+              'F431_LIST_TXT','F432_LIST_TXT','F433_LIST_TXT',
+              'F434_LIST_TXT','F435_LIST_TXT','F436_LIST_TXT',
+              'F437_LIST_TXT','F438_LIST_TXT','F439_LIST_TXT',
+              'F4311_INCLUIR_TXT','F4311_PLANO_TXT',
+              'F4312_INCLUIR_TXT','F4312_PLANO_TXT','F4312_DESC_TXT'
+            ].forEach(id => {
+              const el = document.getElementById(id);
+              if (el && el.textContent.trim() === na) {
+                el.textContent = '';
+              }
+            });
+          } catch (e) {
+            console.error('[PATCH FINAL 4.3] erro ao aplicar patch final da Fase 4.3:', e);
+          }
+        })();
+        // ================== FIM PATCH FINAL – FASE 4.3 ==================
 
 
         if (!window.__TERMO_READY_FIRED__) {
