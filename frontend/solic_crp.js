@@ -129,18 +129,29 @@
     // AGORA usa SEMPRE o TEXTO das opções marcadas em 4.3.1–4.3.9
     (function buildF43Lista() {
       const itens = [];
-      const checkboxes = formEl.querySelectorAll('#F43_LISTA input[type="checkbox"]');
+
+      // ⚠️ IMPORTANTE: o container F43_LISTA fica dentro do modal (fora do <form>)
+      // por isso buscamos direto em document, não em formEl
+      const scope = document;
+      const checkboxes = scope.querySelectorAll('#F43_LISTA input[type="checkbox"]');
+
       checkboxes.forEach(input => {
         if (!input.checked) return;
+
         let labelNode = input.nextElementSibling;
         if (!labelNode || !labelNode.textContent?.trim()) {
-          if (input.id) labelNode = formEl.querySelector(`label[for="${input.id}"]`);
+          if (input.id) {
+            labelNode = scope.querySelector(`label[for="${input.id}"]`);
+          }
         }
-        const txt = labelNode?.textContent?.trim() || input.value?.trim();
+        const txt =
+          labelNode?.textContent?.trim() ||
+          (input.value || '').trim();
+
         if (txt) itens.push(txt);
       });
 
-      // fallback legado
+      // fallback legado (caso no futuro volte a usar campos F43_1, F43_2 etc.)
       if (!itens.length) {
         const ordem = [
           'F43_1','F43_1_TXT','F43_2',
@@ -169,6 +180,7 @@
       payload['F43_LISTA[]'] = itens.slice();
       payload.F43_LISTA_TXT  = itens.join('; ');
     })();
+
 
 
 
@@ -2081,9 +2093,31 @@ function syncF46ToTemplate(){
 
     // 🔁 PATCH 3: decide entre o que está no form agora ou o que foi salvo no state
     const f43_saved = (st?.values?.['F43_LISTA[]'] || st?.values?.F43_LISTA || []);
-    const f43_current = collectCheckedValues('#F43_LISTA input[type="checkbox"]');
+
+    // Usa SEMPRE o TEXTO das opções 4.3.1–4.3.9, lendo direto do modal
+    const f43_current = (() => {
+      const itens = [];
+      document.querySelectorAll('#F43_LISTA input[type="checkbox"]').forEach(input => {
+        if (!input.checked) return;
+
+        let labelNode = input.nextElementSibling;
+        if (!labelNode || !labelNode.textContent?.trim()) {
+          if (input.id) {
+            labelNode = document.querySelector(`label[for="${input.id}"]`);
+          }
+        }
+        const txt =
+          labelNode?.textContent?.trim() ||
+          (input.value || '').trim();
+
+        if (txt) itens.push(txt);
+      });
+      return itens;
+    })();
+
     obj['F43_LISTA[]'] = f43_current.length > 0 ? f43_current : f43_saved;
-    obj.F43_LISTA = obj['F43_LISTA[]']; // espelho
+    obj.F43_LISTA      = obj['F43_LISTA[]']; // espelho textual
+
 
     // PORTARIA padronizada (caso não venha do formulário)
     if (!obj.PORTARIA_SRPC) obj.PORTARIA_SRPC = '2.010/2025';
@@ -2246,6 +2280,13 @@ function syncF46ToTemplate(){
     obj.F46_CRITERIOS_TXT   = (obj.F46_CRITERIOS && Array.isArray(obj.F46_CRITERIOS)) ? obj.F46_CRITERIOS.join('\n') : (obj.F46_CRITERIOS || '');
     obj.F46_FINALIDADES_TXT = (obj.F46_FINALIDADES && Array.isArray(obj.F46_FINALIDADES)) ? obj.F46_FINALIDADES.join('\n') : (obj.F46_FINALIDADES || '');
 
+    // Campo sintético para o template: tudo de 4.3.x junto
+    if (!obj.DEFICIT_ATUARIAL) {
+      obj.DEFICIT_ATUARIAL = obj.F43_LISTA_TXT || '';
+    }
+    obj.DEFICIT_ATUARIAL_TXT = obj.DEFICIT_ATUARIAL;
+
+
     // Padroniza F43_INCLUIR / F43_INCLUIR_B como string SEMPRE!
     const toStr = v => {
       if (Array.isArray(v)) return v.filter(Boolean).join('; ');
@@ -2307,6 +2348,11 @@ function syncF46ToTemplate(){
     if (!DEFICIT_ATUARIAL && (p.F43_PLANO || p.F43_DESC_PLANOS)) {
       DEFICIT_ATUARIAL = '4.3';
     }
+
+    // Reflete no próprio payload para o template conseguir enxergar
+    p.DEFICIT_ATUARIAL     = DEFICIT_ATUARIAL;
+    p.DEFICIT_ATUARIAL_TXT = DEFICIT_ATUARIAL;
+
 
     // 4.4 critérios estruturantes
     const f44c = Array.isArray(p.F44_CRITERIOS) ? p.F44_CRITERIOS
