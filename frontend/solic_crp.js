@@ -2286,6 +2286,41 @@ function syncF46ToTemplate(){
     }
     obj.DEFICIT_ATUARIAL_TXT = obj.DEFICIT_ATUARIAL;
 
+        // === ALIASES PARA 4.3 (DÉFICIT ATUARIAL) ===
+    (function aplicarAliasesDeficitAtuarial() {
+      // texto final consolidado para 4.3
+      const txt =
+        (obj.DEFICIT_ATUARIAL_TXT && String(obj.DEFICIT_ATUARIAL_TXT).trim()) ||
+        (obj.DEFICIT_ATUARIAL && String(obj.DEFICIT_ATUARIAL).trim()) ||
+        (obj.F43_LISTA_TXT && String(obj.F43_LISTA_TXT).trim()) ||
+        (Array.isArray(obj.F43_LISTA) ? obj.F43_LISTA.join('; ').trim() : '');
+
+      if (!txt) return; // nada preenchido, deixa o template decidir o fallback
+
+      // garante os campos em MAIÚSCULO
+      obj.DEFICIT_ATUARIAL     = txt;
+      obj.DEFICIT_ATUARIAL_TXT = txt;
+
+      // aliases em minúsculo / snake_case (legado do template)
+      obj.deficit_atuarial      = txt;
+      obj.deficit_atuarial_txt  = txt;
+      obj['deficit_atuarial[]'] = [txt]; // se algum trecho do template tratar como array
+
+      // espelha também em __TERMO_DATA__, que o template usa para data-k
+      try {
+        window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, {
+          DEFICIT_ATUARIAL:     txt,
+          DEFICIT_ATUARIAL_TXT: txt,
+          deficit_atuarial:     txt,
+          deficit_atuarial_txt: txt
+        });
+        document.dispatchEvent(new Event('TERMO_DATA'));
+      } catch (e) {
+        console.warn('PATCH 4.3 aliases deficit_atuarial falhou:', e);
+      }
+    })();
+
+
 
     // Padroniza F43_INCLUIR / F43_INCLUIR_B como string SEMPRE!
     const toStr = v => {
