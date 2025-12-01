@@ -129,79 +129,47 @@
     // AGORA usa SEMPRE o TEXTO das opções marcadas em 4.3.1–4.3.9
     (function buildF43Lista() {
       const itens = [];
-
-      // 📌 Aqui assumo que todos os checkboxes de 4.3.1–4.3.9
-      // estão dentro de um contêiner com id="F43_LISTA"
       const checkboxes = formEl.querySelectorAll('#F43_LISTA input[type="checkbox"]');
-
       checkboxes.forEach(input => {
         if (!input.checked) return;
-
-        // tenta pegar o texto da label logo ao lado do input
         let labelNode = input.nextElementSibling;
-        if (!labelNode || !labelNode.textContent || !labelNode.textContent.trim()) {
-          // fallback: <label for="id">
-          if (input.id) {
-            const byFor = formEl.querySelector(`label[for="${input.id}"]`);
-            if (byFor) labelNode = byFor;
-          }
+        if (!labelNode || !labelNode.textContent?.trim()) {
+          if (input.id) labelNode = formEl.querySelector(`label[for="${input.id}"]`);
         }
-
-        const txt = labelNode && labelNode.textContent
-          ? labelNode.textContent.trim()
-          : String(input.value || '').trim(); // último recurso: value
-
+        const txt = labelNode?.textContent?.trim() || input.value?.trim();
         if (txt) itens.push(txt);
       });
 
-      // Se não achou nada via DOM (mudança de HTML futuramente), cai no fallback antigo
+      // fallback legado
       if (!itens.length) {
-        let lista = [];
-
-        if (Array.isArray(payload.F43_LISTA)) {
-          lista = payload.F43_LISTA.slice();
-        } else if (Array.isArray(payload['F43_LISTA[]'])) {
-          lista = payload['F43_LISTA[]'].slice();
+        const ordem = [
+          'F43_1','F43_1_TXT','F43_2',
+          'F43_3_A','F43_3_B','F43_3_C',
+          'F43_4_A','F43_4_B',
+          'F43_5','F43_6',
+          'F43_7_A','F43_7_B','F43_7_C','F43_7_D','F43_7_E','F43_7_F','F43_7_G','F43_7_H',
+          'F43_8','F43_9'
+        ];
+        const lista = [];
+        ordem.forEach(k=>{
+          const val = payload[k];
+          if (Array.isArray(val)) val.forEach(v=>lista.push(String(v).trim()));
+          else if (val) lista.push(String(val).trim());
+        });
+        if (lista.length) {
+          payload.F43_LISTA      = lista;
+          payload['F43_LISTA[]'] = lista.slice();
+          payload.F43_LISTA_TXT  = lista.join('; ');
         }
-
-        if (!lista.length) {
-          const ordem = [
-            'F43_1','F43_1_TXT','F43_2',
-            'F43_3_A','F43_3_B','F43_3_C',
-            'F43_4_A','F43_4_B',
-            'F43_5','F43_6',
-            'F43_7_A','F43_7_B','F43_7_C','F43_7_D','F43_7_E','F43_7_F','F43_7_G','F43_7_H',
-            'F43_8','F43_9'
-          ];
-
-          ordem.forEach(k => {
-            const val = payload[k];
-            if (Array.isArray(val)) {
-              val.forEach(v => {
-                const s = String(v || '').trim();
-                if (s) lista.push(s);
-              });
-            } else if (val) {
-              const s = String(val).trim();
-              if (s) lista.push(s);
-            }
-          });
-        }
-
-        lista = lista.map(v => String(v).trim()).filter(Boolean);
-        if (!lista.length) return;
-
-        payload.F43_LISTA      = lista;
-        payload['F43_LISTA[]'] = lista.slice();
-        payload.F43_LISTA_TXT  = lista.join('; ');
         return;
       }
 
-      // ✅ Caminho principal: usa o TEXTO das opções como base da Fase 4.3
+      // ✅ Caminho principal: usa o TEXTO das opções
       payload.F43_LISTA      = itens;
       payload['F43_LISTA[]'] = itens.slice();
       payload.F43_LISTA_TXT  = itens.join('; ');
     })();
+
 
 
     // espelha a fase também em __FASE_SEL__ (o template usa isso para resolver 4.x)
@@ -2729,8 +2697,8 @@ function syncF46ToTemplate(){
 
   // --------- INÍCIO DO PATCH DEFINITIVO DA FASE 4.3 ---------
   const f43FromArray =
-    (Array.isArray(payload['F43_LISTA[]'])  && payload['F43_LISTA[]'].length  ? payload['F43_LISTA[]']  : null) ||
-    (Array.isArray(payload['F43_ITENS[]'])  && payload['F43_ITENS[]'].length  ? payload['F43_ITENS[]']  : null);
+    (Array.isArray(payload['F43_LISTA[]']) && payload['F43_LISTA[]'].length ? payload['F43_LISTA[]'] : null) ||
+    (Array.isArray(payload['F43_ITENS[]']) && payload['F43_ITENS[]'].length ? payload['F43_ITENS[]'] : null);
 
   payload.F43_LISTA = f43FromArray || payload.F43_LISTA || [];
   payload.F43_LISTA_TXT = makeText(payload.F43_LISTA);
@@ -2751,6 +2719,7 @@ function syncF46ToTemplate(){
   payload.F43_INCLUIR_B = f43InclBArr.length ? f43InclBArr.join('; ') : '';
   payload.F43_INCLUIR_B_TXT = payload.F43_INCLUIR_B;
   // --------- FIM DO PATCH DEFINITIVO DA FASE 4.3 ---------
+
 
   // 4.4
   payload.F44_LISTA_CRITERIOS = payload['F44_CRITERIOS[]'] || payload.F44_LISTA_CRITERIOS || [];
@@ -2889,7 +2858,7 @@ function syncF46ToTemplate(){
       payload.F43_INCLUIR_B = payload['F43_INCLUIR_B[]'].join('; ');
     }
 
-        // Compat F43_LISTA → garante que o backend/template sempre enxerguem o array correto
+    // Compat F43_LISTA → garante que o backend/template sempre enxerguem o array correto
     if (!payload.F43_LISTA || !Array.isArray(payload.F43_LISTA) || payload.F43_LISTA.length === 0) {
       if (Array.isArray(payload['F43_LISTA[]']) && payload['F43_LISTA[]'].length > 0) {
         payload.F43_LISTA = payload['F43_LISTA[]'];
@@ -2898,10 +2867,11 @@ function syncF46ToTemplate(){
       }
     }
 
-    // Espelha o array principal em F43_LISTA[] (caso o backend/Joi/flatten use o sufixo [])
+    // Espelha também em F43_LISTA[] (Joi / template)
     if (Array.isArray(payload.F43_LISTA) && (!Array.isArray(payload['F43_LISTA[]']) || !payload['F43_LISTA[]'].length)) {
       payload['F43_LISTA[]'] = payload.F43_LISTA;
     }
+
 
 
     const payloadForPdf = {
