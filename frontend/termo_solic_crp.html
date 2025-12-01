@@ -1925,6 +1925,153 @@
         // ================== FIM PATCH FINAL – FASE 4.3 ==================
 
 
+                // ================== DIAGNÓSTICO DEFINITIVO FASE 4.3 ==================
+        (function diagF43Final() {
+          try {
+            console.group('%c[DIAG F43] Estado FINAL antes do TERMO_READY', 'color:#f00;font-weight:bold;');
+
+            // Helper para ler ULs e textos atuais do DOM
+            function getLis(sel) {
+              const ul = document.querySelector(sel);
+              if (!ul) return ['(UL não encontrada)'];
+              return Array.from(ul.querySelectorAll('li')).map(li => li.textContent.trim() || '(vazio)');
+            }
+            function getText(sel) {
+              const el = document.querySelector(sel);
+              if (!el) return '(nó não encontrado)';
+              return el.textContent.trim() || '(vazio)';
+            }
+
+            console.log('[DIAG F43] Payload normalizado (p.F43_*):', {
+              F43_LISTA: p.F43_LISTA,
+              F43_LISTA_TXT: p.F43_LISTA_TXT,
+              F43_INCLUIR: p.F43_INCLUIR,
+              F43_INCLUIR_B: p.F43_INCLUIR_B,
+              F43_PLANO: p.F43_PLANO,
+              F43_PLANO_B: p.F43_PLANO_B,
+              F43_DESC_PLANOS: p.F43_DESC_PLANOS
+            });
+
+            const diagBox = document.createElement('section');
+            diagBox.id = 'diag-f43';
+            diagBox.style = 'border:3px solid red; padding:8px; font-size:10px; margin:8px 0; background:#fffbe6;';
+
+            let html = '';
+            html += '<h3 style="margin-top:0;color:#b00;">[DIAGNÓSTICO FASE 4.3]</h3>';
+
+            // Payload bruto de F43_LISTA
+            html += '<p><strong>Payload → F43_LISTA (tamanho ' +
+              (Array.isArray(p.F43_LISTA) ? p.F43_LISTA.length : 0) +
+              '):</strong></p>';
+            html += '<pre style="white-space:pre-wrap;word-break:break-word;">' +
+              escapeHtml(JSON.stringify(p.F43_LISTA, null, 2)) +
+              '</pre>';
+
+            html += '<p><strong>Payload → F43_LISTA_TXT:</strong><br>' +
+              escapeHtml(String(p.F43_LISTA_TXT || '')) + '</p>';
+
+            html += '<p><strong>Payload → F43_INCLUIR:</strong><br>' +
+              escapeHtml(JSON.stringify(p.F43_INCLUIR || [], null, 2)) + '</p>';
+
+            html += '<p><strong>Payload → F43_INCLUIR_B:</strong><br>' +
+              escapeHtml(JSON.stringify(p.F43_INCLUIR_B || [], null, 2)) + '</p>';
+
+            html += '<p><strong>Payload → F43_PLANO:</strong><br>' +
+              escapeHtml(String(p.F43_PLANO || '')) + '</p>';
+
+            html += '<p><strong>Payload → F43_PLANO_B:</strong><br>' +
+              escapeHtml(String(p.F43_PLANO_B || '')) + '</p>';
+
+            html += '<p><strong>Payload → F43_DESC_PLANOS:</strong><br>' +
+              escapeHtml(String(p.F43_DESC_PLANOS || '')) + '</p>';
+
+            // Tabela resumida 4.3.1 a 4.3.9
+            html += '<hr><p><strong>DOM atual – Itens 4.3.1 a 4.3.9</strong></p>';
+            html += '<table border="1" cellspacing="0" cellpadding="3" style="border-collapse:collapse;font-size:9px;width:100%;">';
+            html += '<thead><tr>' +
+                      '<th>Item</th>' +
+                      '<th>UL (#f43-x)</th>' +
+                      '<th>Resumo (&lt;p id="F43x_LIST_TXT"&gt;)</th>' +
+                    '</tr></thead><tbody>';
+
+            const mapa = [
+              { item: '4.3.1', ul: '#f43-1', txt: '#F431_LIST_TXT' },
+              { item: '4.3.2', ul: '#f43-2', txt: '#F432_LIST_TXT' },
+              { item: '4.3.3', ul: '#f43-3', txt: '#F433_LIST_TXT' },
+              { item: '4.3.4', ul: '#f43-4', txt: '#F434_LIST_TXT' },
+              { item: '4.3.5', ul: '#f43-5', txt: '#F435_LIST_TXT' },
+              { item: '4.3.6', ul: '#f43-6', txt: '#F436_LIST_TXT' },
+              { item: '4.3.7', ul: '#f43-7', txt: '#F437_LIST_TXT' },
+              { item: '4.3.8', ul: '#f43-8', txt: '#F438_LIST_TXT' },
+              { item: '4.3.9', ul: '#f43-9', txt: '#F439_LIST_TXT' }
+            ];
+
+            mapa.forEach(row => {
+              const lis = getLis(row.ul);
+              const resumo = getText(row.txt);
+              console.log('[DIAG F43] ' + row.item + ' → UL', row.ul, lis, 'Resumo', row.txt, resumo);
+
+              html += '<tr>';
+              html += '<td>' + row.item + '</td>';
+              html += '<td><pre style="white-space:pre-wrap;word-break:break-word;">' +
+                        escapeHtml(JSON.stringify(lis)) +
+                      '</pre></td>';
+              html += '<td>' + escapeHtml(resumo) + '</td>';
+              html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+
+            // 4.3.11 e 4.3.12
+            html += '<hr><p><strong>DOM atual – 4.3.11 e 4.3.12</strong></p>';
+
+            html += '<p><strong>4.3.11 UL #f43-crit-incluir:</strong><br>' +
+              escapeHtml(JSON.stringify(getLis('#f43-crit-incluir'))) + '</p>';
+            html += '<p><strong>4.3.11 F4311_INCLUIR_TXT:</strong><br>' +
+              escapeHtml(getText('#F4311_INCLUIR_TXT')) + '</p>';
+            html += '<p><strong>4.3.11 F4311_PLANO_TXT:</strong><br>' +
+              escapeHtml(getText('#F4311_PLANO_TXT')) + '</p>';
+
+            html += '<p><strong>4.3.12 UL #f43-crit-incluir-12:</strong><br>' +
+              escapeHtml(JSON.stringify(getLis('#f43-crit-incluir-12'))) + '</p>';
+            html += '<p><strong>4.3.12 F4312_INCLUIR_TXT:</strong><br>' +
+              escapeHtml(getText('#F4312_INCLUIR_TXT')) + '</p>';
+            html += '<p><strong>4.3.12 F4312_PLANO_TXT:</strong><br>' +
+              escapeHtml(getText('#F4312_PLANO_TXT')) + '</p>';
+            html += '<p><strong>4.3.12 F4312_DESC_TXT:</strong><br>' +
+              escapeHtml(getText('#F4312_DESC_TXT')) + '</p>';
+
+            // Joga HTML no box
+            diagBox.innerHTML = html;
+
+            // Insere o box logo no começo da Fase 4.3 (ou no topo do body, se não achar)
+            const fase43 = document.querySelector('#fase-43');
+            if (fase43) {
+              fase43.prepend(diagBox);
+            } else {
+              document.body.prepend(diagBox);
+            }
+
+            // 🔴 Força textos de debug nos parágrafos-resumo 4.3.1–4.3.9
+            [
+              'F431_LIST_TXT','F432_LIST_TXT','F433_LIST_TXT',
+              'F434_LIST_TXT','F435_LIST_TXT','F436_LIST_TXT',
+              'F437_LIST_TXT','F438_LIST_TXT','F439_LIST_TXT'
+            ].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) {
+                el.textContent = '[DEBUG ' + id + '] ' + (el.textContent || '').trim();
+                el.style.backgroundColor = '#ffe6e6';
+              }
+            });
+
+            console.groupEnd();
+          } catch (e) {
+            console.error('[DIAG F43] Erro ao injetar diagnóstico final da Fase 4.3:', e);
+          }
+        })();
+        // ================== FIM DIAGNÓSTICO DEFINITIVO FASE 4.3 ==================
+
         if (!window.__TERMO_READY_FIRED__) {
           window.__TERMO_READY_FIRED__ = true;
           requestAnimationFrame(() => {
