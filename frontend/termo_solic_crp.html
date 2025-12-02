@@ -1147,326 +1147,53 @@
         if (t.includes('municip')) return '1.1.1 RPPS Municipal';
         return (typeof __NA_ALL__==='function' && __NA_ALL__()) ? __NA_LABEL__() : '—';
       }
-      // ================== ANCHOR: INÍCIO run(payload) – VERSÃO ATUALIZADA ==================
-      function run(payload){
 
-        console.log("🔥 TESTE 1 – run() INICIOU", payload);
+            // ================== ANCHOR: INÍCIO run(payload) – VERSÃO SIMPLIFICADA ==================
+      function run(payload) {
+        console.log("TERMO: run() iniciado", payload);
 
+        // Se for chamada apenas para "placeholders", não preenche nada
         if (payload && payload.__NA_ALL) {
-          console.log('TERMO: payload vazio (__NA_ALL), não vou preencher nada ainda.');
+          console.log('TERMO: payload em modo __NA_ALL (placeholders), saindo de run().');
           return;
         }
 
-        console.log('TERMO: RAW Payload recebido:', JSON.stringify(payload));
+        console.log('TERMO: RAW payload recebido:', JSON.stringify(payload));
 
+        // Normaliza chaves, arrays e textos
         const p = normalizePayload(payload || {});
-
-        // === [DEBUG F43 - BLOCO 1 – ANTES DE RENDERIZAR] ===
-        console.groupCollapsed('%c[DEBUG F43] Estado inicial no run()', 'color:#f0f; font-weight:bold;');
-
-        console.log('[DEBUG F43] Payload RAW recebido em run():', payload);
-        console.log('[DEBUG F43] Payload normalizado (p):', JSON.parse(JSON.stringify(p)));
-
-        console.log('[DEBUG F43] chaves principais Fase 4.3 no payload normalizado:', {
-          F43_LISTA: p.F43_LISTA,
-          'F43_LISTA[]': p['F43_LISTA[]'],
-          F43_LISTA_TXT: p.F43_LISTA_TXT,
-          F43_INCLUIR: p.F43_INCLUIR,
-          F43_INCLUIR_B: p.F43_INCLUIR_B,
-          F43_PLANO: p.F43_PLANO,
-          F43_PLANO_B: p.F43_PLANO_B,
-          F43_DESC_PLANOS: p.F43_DESC_PLANOS,
-          F43_JUST: p.F43_JUST,
-          F4310_OPCAO: p.F4310_OPCAO,
-          F4310_LEGISLACAO: p.F4310_LEGISLACAO,
-          F4310_DOCS: p.F4310_DOCS
-        });
-
-        let gruposF43_debug = {};
-        try {
-          if (typeof __reconstruirF43 === 'function') {
-            gruposF43_debug = __reconstruirF43(p);
-          } else {
-            console.warn('[DEBUG F43] __reconstruirF43 NÃO é uma função ou não está definido.');
-          }
-        } catch (e) {
-          console.error('[DEBUG F43] Erro ao chamar __reconstruirF43(p):', e);
-        }
-
-        console.log('[DEBUG F43] Saída de __reconstruirF43(p):', JSON.parse(JSON.stringify(gruposF43_debug || {})));
-
-        ['4.3.1','4.3.2','4.3.3','4.3.4','4.3.5','4.3.6','4.3.7','4.3.8','4.3.9'].forEach(k => {
-          console.log(`[DEBUG F43] Grupo ${k}:`, gruposF43_debug?.[k] || []);
-        });
-
-        console.groupEnd();
-
-
-        // Garante que, a partir daqui, estamos em modo "dados reais" (sem placeholder)
         p.__NA_ALL = false;
 
-
-        console.log('[TERMO F43] run() – após normalizePayload:', {
-          F43_LISTA: p.F43_LISTA,
-          F43_LISTA_TXT: p.F43_LISTA_TXT,
-          'F43_ITENS[]': p['F43_ITENS[]'],
-          F431_LIST_TXT: p.F431_LIST_TXT,
-          F432_LIST_TXT: p.F432_LIST_TXT,
-          F433_LIST_TXT: p.F433_LIST_TXT,
-          F434_LIST_TXT: p.F434_LIST_TXT,
-          F435_LIST_TXT: p.F435_LIST_TXT,
-          F436_LIST_TXT: p.F436_LIST_TXT,
-          F437_LIST_TXT: p.F437_LIST_TXT,
-          F438_LIST_TXT: p.F438_LIST_TXT,
-          F439_LIST_TXT: p.F439_LIST_TXT
-        });
-
-
-        // PATCH: Limpeza preventiva de "Não informado" para campos complexos da 4.3
-        [
-          'F4310_OPCAO', 'F43_INCLUIR', 'F43_INCLUIR_B', 
-          'F43_PLANO', 'F43_PLANO_B', 'F43_DESC_PLANOS',
-          'F431_LIST_TXT', 'F432_LIST_TXT', 'F433_LIST_TXT',
-          'F434_LIST_TXT', 'F435_LIST_TXT', 'F436_LIST_TXT',
-          'F437_LIST_TXT', 'F438_LIST_TXT', 'F439_LIST_TXT',
-          'F4311_INCLUIR_TXT', 'F4311_PLANO_TXT',
-          'F4312_INCLUIR_TXT', 'F4312_PLANO_TXT', 'F4312_DESC_TXT'
-        ].forEach(k => {
-          const el = document.querySelector(`[data-k="${k}"]`);
-          if (el) el.textContent = ''; 
-          const elId = document.getElementById(k);
-          if (elId) elId.textContent = '';
-        });
-
+        // Guarda cópia global
         window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
 
-        console.log('TERMO: Normalized F43 keys:', {
-          F43_LISTA: p.F43_LISTA,
-          F43_INCLUIR: p.F43_INCLUIR,
-          F43_INCLUIR_B: p.F43_INCLUIR_B,
-          F43_PLANO: p.F43_PLANO,
-          F43_PLANO_B: p.F43_PLANO_B,
-          F43_DESC_PLANOS: p.F43_DESC_PLANOS,
-          F43_JUST: p.F43_JUST
-        });
-
-        // ===================================================
-        // NOVO PREENCHIMENTO DIRETO DOS TEXTOS 4.3.1 A 4.3.9
-        // (sem usar data-k / fillText)
-        // ===================================================
-        try {
-          if (typeof __reconstruirF43 === 'function') {
-            const gruposF43 = __reconstruirF43(p);
-
-            const mapResumo = {
-              "4.3.1": { sel: "#F431_LIST_TXT", vals: gruposF43["4.3.1"] || [] },
-              "4.3.2": { sel: "#F432_LIST_TXT", vals: gruposF43["4.3.2"] || [] },
-              "4.3.3": { sel: "#F433_LIST_TXT", vals: gruposF43["4.3.3"] || [] },
-              "4.3.4": { sel: "#F434_LIST_TXT", vals: gruposF43["4.3.4"] || [] },
-              "4.3.5": { sel: "#F435_LIST_TXT", vals: gruposF43["4.3.5"] || [] },
-              "4.3.6": { sel: "#F436_LIST_TXT", vals: gruposF43["4.3.6"] || [] },
-              "4.3.7": { sel: "#F437_LIST_TXT", vals: gruposF43["4.3.7"] || [] },
-              "4.3.8": { sel: "#F438_LIST_TXT", vals: gruposF43["4.3.8"] || [] },
-              "4.3.9": { sel: "#F439_LIST_TXT", vals: gruposF43["4.3.9"] || [] }
-            };
-
-            Object.values(mapResumo).forEach(cfg => {
-              const el = document.querySelector(cfg.sel);
-              if (!el) return;
-              const texto = (cfg.vals || []).join('; ');
-              el.textContent = texto || '';
-            });
-          }
-        } catch (e) {
-          console.error('[F43 resumo direto] erro ao preencher textos 4.3.1-4.3.9:', e);
-        }
-
-
-        // ===================================================
-        // PATCH FINAL 4.3 – Forçar preenchimento no PDF
-        // Usa __reconstruirF43 para montar os grupos 4.3.1–4.3.9
-        // e joga diretamente nas ULs e textos-resumo
-        // ===================================================
-        try {
-          if (typeof __reconstruirF43 === 'function') {
-            const gruposF43 = __reconstruirF43(p);
-
-            // Mapa dos grupos -> ULs
-            const mapaUL = {
-              "4.3.1": "#f43-1",
-              "4.3.2": "#f43-2",
-              "4.3.3": "#f43-3",
-              "4.3.4": "#f43-4",
-              "4.3.5": "#f43-5",
-              "4.3.6": "#f43-6",
-              "4.3.7": "#f43-7",
-              "4.3.8": "#f43-8",
-              "4.3.9": "#f43-9"
-            };
-
-            Object.keys(mapaUL).forEach(chave => {
-              const sel = mapaUL[chave];
-              const arr = gruposF43[chave] || [];
-              const ok  = fillList(sel, arr);
-
-              const idx = chave.split('.').pop();
-              const sub = document.querySelector('#f43-sub-' + idx);
-              if (sub) sub.style.display = ok ? '' : 'none';
-            });
-
-            // Textos-resumo (linhas embaixo de cada pergunta)
-            fillText('F431_LIST_TXT', (gruposF43["4.3.1"] || []).join('; '));
-            fillText('F432_LIST_TXT', (gruposF43["4.3.2"] || []).join('; '));
-            fillText('F433_LIST_TXT', (gruposF43["4.3.3"] || []).join('; '));
-            fillText('F434_LIST_TXT', (gruposF43["4.3.4"] || []).join('; '));
-            fillText('F435_LIST_TXT', (gruposF43["4.3.5"] || []).join('; '));
-            fillText('F436_LIST_TXT', (gruposF43["4.3.6"] || []).join('; '));
-            fillText('F437_LIST_TXT', (gruposF43["4.3.7"] || []).join('; '));
-            fillText('F438_LIST_TXT', (gruposF43["4.3.8"] || []).join('; '));
-            fillText('F439_LIST_TXT', (gruposF43["4.3.9"] || []).join('; '));
-
-            const fase43 = document.querySelector('#fase-43');
-            if (fase43) {
-              fase43.hidden = false;
-              fase43.style.display = 'block';
-            }
-          }
-        } catch (e) {
-          console.error('[PATCH FINAL 4.3] erro ao forçar renderização da fase 4.3:', e);
-        }
-
-
-        // === APLICAR FASE 4.3 IMEDIATAMENTE COM O PAYLOAD NORMALIZADO ===
-        try {
-          if (window.hydrateF43) {
-            console.log('🔥 hydrateF43 via run() → preenchendo Fase 4.3');
-            window.hydrateF43(p);
-          }
-        } catch (e) {
-          console.error('hydrateF43 via run() ERROR:', e);
-        }
-
-        // Fallback se hydrateF43 não rodar
-        if (!window.__F43_APPLIED__ && p.F43_LISTA && p.F43_LISTA.length > 0) {
-          console.warn('[TERMO F43] hydrateF43 não rodou, aplicando fallback manual');
-          
-          const gruposF43 = __reconstruirF43(p);
-          const mapaUL = {
-            "4.3.1": "#f43-1", "4.3.2": "#f43-2", "4.3.3": "#f43-3",
-            "4.3.4": "#f43-4", "4.3.5": "#f43-5", "4.3.6": "#f43-6",
-            "4.3.7": "#f43-7", "4.3.8": "#f43-8", "4.3.9": "#f43-9"
-          };
-          
-          Object.keys(mapaUL).forEach(k => {
-            const sel = mapaUL[k];
-            const arr = gruposF43[k] || [];
-            fillList(sel, arr);
-          });
-          
-          window.__F43_APPLIED__ = true;
-        }
-
-        
-        // 1) Cabeçalho/meta + textos-resumo da Fase 4.3
+        // ================== CAMPOS DE TEXTO SIMPLES (data-k) ==================
         [
           'ente','uf','ug','cnpj_ente','cnpj_ug','email_ente','email_ug',
           'N_GESCON','DATA_ENC_VIA_GESCON','SEI_PROCESSO','PORTARIA_SRPC',
-          'ORGAO_VINCULACAO_UG','nome_rep_ente','cargo_rep_ente','cpf_rep_ente',
-          'email_rep_ente','tel_rep_ente','nome_rep_ug','cargo_rep_ug','cpf_rep_ug',
-          'email_rep_ug','tel_rep_ug','data_vencimento_ultimo_crp','tipo_emissao_ult_crp',
-
+          'ORGAO_VINCULACAO_UG',
+          'nome_rep_ente','cargo_rep_ente','cpf_rep_ente','email_rep_ente','tel_rep_ente',
+          'nome_rep_ug','cargo_rep_ug','cpf_rep_ug','email_rep_ug','tel_rep_ug',
+          'data_vencimento_ultimo_crp','tipo_emissao_ult_crp',
+          // Resumos 4.3.x (se vierem no payload; hydrateF43 também reescreve)
           'F431_LIST_TXT','F432_LIST_TXT','F433_LIST_TXT',
           'F434_LIST_TXT','F435_LIST_TXT','F436_LIST_TXT',
           'F437_LIST_TXT','F438_LIST_TXT','F439_LIST_TXT',
           'F4311_INCLUIR_TXT','F4311_PLANO_TXT',
           'F4312_INCLUIR_TXT','F4312_PLANO_TXT','F4312_DESC_TXT',
-
+          // Demais fases
           'F44_ANEXOS','F441_LEGISLACAO','F445_DESC_PLANOS',
           'F446_DOCS','F446_EXEC_RES',
           'F45_DOCS','F45_JUST','F453_EXEC_RES',
           'F46_PROGESTAO','F46_PORTE','F46_JUST_D','F46_DOCS_D',
-          'F46_JUST_E','F46_DOCS_E','F466_DOCS','F466_EXEC_RES'
+          'F46_JUST_E','F46_DOCS_E','F466_DOCS','F466_EXEC_RES',
+          'JUSTIFICATIVAS_GERAIS','data_termo'
         ].forEach(k => {
-          let val = p[k] || p[k.toUpperCase()] || p[k.toLowerCase()];
+          const val = p[k] !== undefined ? p[k] : (p[k && k.toUpperCase()] || p[k && k.toLowerCase()]);
           fillText(k, val);
         });
 
-
-
-        // ===================================================
-        // PATCH – Forçar textos da Fase 4.3 no PDF
-        // usando F43_LISTA_TXT -> F431_LIST_TXT ... F439_LIST_TXT
-        // ===================================================
-        try {
-          if (p.F43_LISTA_TXT && typeof asArr === 'function') {
-            const itens43 = asArr(p.F43_LISTA_TXT);
-            const gruposTxt = {
-              F431_LIST_TXT: itens43.slice(0,  2).join('; '), // 4.3.1
-              F432_LIST_TXT: itens43.slice(2,  3).join('; '), // 4.3.2
-              F433_LIST_TXT: itens43.slice(3,  6).join('; '), // 4.3.3
-              F434_LIST_TXT: itens43.slice(6,  8).join('; '), // 4.3.4
-              F435_LIST_TXT: itens43.slice(8,  9).join('; '), // 4.3.5
-              F436_LIST_TXT: itens43.slice(9, 10).join('; '), // 4.3.6
-              F437_LIST_TXT: itens43.slice(10,18).join('; '), // 4.3.7
-              F438_LIST_TXT: itens43.slice(18,19).join('; '), // 4.3.8
-              F439_LIST_TXT: itens43.slice(19,20).join('; ')  // 4.3.9
-            };
-
-            Object.keys(gruposTxt).forEach(key => {
-              const txt = gruposTxt[key] && String(gruposTxt[key]).trim();
-              if (!txt) return;
-              const el = document.getElementById(key);
-              if (el) {
-                el.textContent = txt;
-              }
-            });
-          }
-        } catch (e) {
-          console.error('[PATCH 4.3 TXT] erro ao forçar textos dos itens 4.3.x:', e);
-        }
-
-        // ===================================================
-        // PATCH – Forçar textos de 4.3.11 e 4.3.12
-        // usando diretamente F43_INCLUIR / F43_PLANO / etc.
-        // ===================================================
-        try {
-          // 4.3.11
-          if (Array.isArray(p.F43_INCLUIR) && p.F43_INCLUIR.length) {
-            const txt11a = p.F43_INCLUIR.join('; ');
-            const el11a = document.getElementById('F4311_INCLUIR_TXT');
-            if (el11a) el11a.textContent = txt11a;
-          }
-
-          if (p.F43_PLANO && String(p.F43_PLANO).trim()) {
-            const txt11b = String(p.F43_PLANO).trim();
-            const el11b = document.getElementById('F4311_PLANO_TXT');
-            if (el11b) el11b.textContent = txt11b;
-          }
-
-          // 4.3.12
-          if (Array.isArray(p.F43_INCLUIR_B) && p.F43_INCLUIR_B.length) {
-            const txt12a = p.F43_INCLUIR_B.join('; ');
-            const el12a = document.getElementById('F4312_INCLUIR_TXT');
-            if (el12a) el12a.textContent = txt12a;
-          }
-
-          if (p.F43_PLANO_B && String(p.F43_PLANO_B).trim()) {
-            const txt12b = String(p.F43_PLANO_B).trim();
-            const el12b = document.getElementById('F4312_PLANO_TXT');
-            if (el12b) el12b.textContent = txt12b;
-          }
-
-          if (p.F43_DESC_PLANOS && String(p.F43_DESC_PLANOS).trim()) {
-            const txt12c = String(p.F43_DESC_PLANOS).trim();
-            const el12c = document.getElementById('F4312_DESC_TXT');
-            if (el12c) el12c.textContent = txt12c;
-          }
-        } catch (e) {
-          console.error('[PATCH 4.3.11/12 TXT] erro ao forçar textos de 4.3.11/4.3.12:', e);
-        }
-
-        
-        // 3.4 Prazo Adicional
+        // ========== 3.4 Prazo adicional ==========
         (function applyPrazoAdicional(code){
           const itens = Array.from(document.querySelectorAll('[data-3_4]'));
           let mostrou = false;
@@ -1480,73 +1207,76 @@
           if (holder) {
             if (mostrou) holder.classList.add('d-none');
             else {
-              const txt = p.PRAZO_ADICIONAL_TEXTO || 'Não informado';
-              holder.textContent = txt;
+              const txt = p.PRAZO_ADICIONAL_TEXTO || '';
+              holder.textContent = txt || '';
               holder.classList.toggle('d-none', !txt.trim());
             }
           }
         })(p.PRAZO_ADICIONAL_COD);
 
-        // 3.3 Listas
-        fillList('#criterios-list', p.__CRITERIOS_ARR__);
+        // ========== 3.3 Critérios irregulares ==========
+        fillList('#criterios-list', p.__CRITERIOS_ARR__ || []);
 
-        // 4) Fase Selecionada
+        // ========== 4. FASES DO PROGRAMA ==========
+        // Detecção de fase selecionada (apenas para fins informativos)
         let faseSel = p.__FASE_SEL__;
         if (!faseSel) {
           if (p.F41_OPCAO_TEXT) faseSel = '4.1';
-          else if (p.F42_LISTA.length) faseSel = '4.2';
-          else if (p.F43_LISTA.length || p.F43_INCLUIR.length || p.F43_PLANO) faseSel = '4.3';
-          else if (p.F44_DECLS.length) faseSel = '4.4';
-          else if (p.F45_DECLS.length) faseSel = '4.5';
-          else if (p.F46_DECLS.length || p.F46_CRITERIOS.length) faseSel = '4.6';
+          else if (p.F42_LISTA && p.F42_LISTA.length) faseSel = '4.2';
+          else if (
+            (p.F43_LISTA && p.F43_LISTA.length) ||
+            (p.F43_INCLUIR && p.F43_INCLUIR.length) ||
+            (p.F43_INCLUIR_B && p.F43_INCLUIR_B.length) ||
+            p.F43_PLANO || p.F43_PLANO_B || p.F43_DESC_PLANOS
+          ) faseSel = '4.3';
+          else if (p.F44_DECLS && p.F44_DECLS.length) faseSel = '4.4';
+          else if (p.F45_DECLS && p.F45_DECLS.length) faseSel = '4.5';
+          else if ((p.F46_DECLS && p.F46_DECLS.length) || (p.F46_CRITERIOS && p.F46_CRITERIOS.length)) faseSel = '4.6';
         }
 
-        // Oculta label "Fase selecionada:"
+        // Esconde label "Fase selecionada:" (texto não é mais crítico para o PDF)
         const faseTxtEl = document.getElementById('fase-escolhida');
         if (faseTxtEl && faseTxtEl.parentElement) faseTxtEl.parentElement.hidden = true;
 
-        // --- FASE 4.1 ---
+        // --- 4.1 ---
         togglePhaseBlock('#fase-41', !!p.F41_OPCAO_TEXT);
-        const ul41 = $('#f41-itens');
-        if(ul41) ul41.innerHTML = p.F41_OPCAO_TEXT ? `<li>${escapeHtml(p.F41_OPCAO_TEXT)}</li>` : '';
+        const ul41 = document.querySelector('#f41-itens');
+        if (ul41) {
+          ul41.innerHTML = p.F41_OPCAO_TEXT
+            ? `<li>${escapeHtml(String(p.F41_OPCAO_TEXT))}</li>`
+            : '';
+        }
 
-        // --- FASE 4.2 ---
-        togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA));
+        // --- 4.2 ---
+        togglePhaseBlock('#fase-42', fillList('#f42-itens', p.F42_LISTA || []));
 
-        // --- FASE 4.3 ---
-        const hasF43 =
-          (Array.isArray(p.F43_LISTA)      && p.F43_LISTA.length > 0) ||
-          (Array.isArray(p.F43_INCLUIR)    && p.F43_INCLUIR.length > 0) ||
-          (Array.isArray(p.F43_INCLUIR_B)  && p.F43_INCLUIR_B.length > 0) ||
-          !!(p.F43_PLANO || p.F43_PLANO_B || p.F43_DESC_PLANOS);
+        // --- 4.3 ---
+        // A fase 4.3 é tratada integralmente pelo hydrateF43, chamado mais abaixo.
 
-        togglePhaseBlock('#fase-43', hasF43);
-
-
-        // --- FASE 4.4 ---
+        // --- 4.4 ---
         (function(){
           const has =
-            fillList('#f44-decls', p.F44_DECLS) ||
-            fillList('#f44-finalidades', p.F44_FINALIDADES) ||
-            fillList('#f44-criterios', p.F44_CRITERIOS) ||
+            fillList('#f44-decls', p.F44_DECLS || []) ||
+            fillList('#f44-finalidades', p.F44_FINALIDADES || []) ||
+            fillList('#f44-criterios', p.F44_CRITERIOS || []) ||
             !!p.F44_ANEXOS || !!p.F445_DESC_PLANOS || !!p.F446_DOCS || !!p.F446_EXEC_RES;
           togglePhaseBlock('#fase-44', has);
         })();
 
-        // --- FASE 4.5 ---
+        // --- 4.5 ---
         (function(){
           const has =
-            fillList('#f45-decls', p.F45_DECLS) ||
+            fillList('#f45-decls', p.F45_DECLS || []) ||
             !!p.F45_DOCS || !!p.F45_JUST || !!p.F453_EXEC_RES;
           togglePhaseBlock('#fase-45', has);
         })();
 
-        // --- FASE 4.6 ---
+        // --- 4.6 ---
         (function(){
           const has =
-            fillList('#f46-criterios', p.F46_CRITERIOS) ||
-            fillList('#f46-finalidades', p.F46_FINALIDADES) ||
-            fillList('#f46-crit-f', p.F462F_CRITERIOS) ||
+            fillList('#f46-criterios', p.F46_CRITERIOS || []) ||
+            fillList('#f46-finalidades', p.F46_FINALIDADES || []) ||
+            fillList('#f46-crit-f', p.F462F_CRITERIOS || []) ||
             !!p.F46_PROGESTAO || !!p.F46_PORTE ||
             !!p.F46_JUST_D || !!p.F46_DOCS_D ||
             !!p.F46_JUST_E || !!p.F46_DOCS_E ||
@@ -1554,321 +1284,52 @@
           togglePhaseBlock('#fase-46', has);
         })();
 
-        // 5) Justificativas Gerais
-        fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS);
-        
-        // 6) Data e Assinaturas
-        let dataTermo = p.data_termo || hojeBR_robusto();
+        // ========== 5. Justificativas Gerais ==========
+        fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
+
+        // ========== 6. Data e assinaturas ==========
+        const dataTermo = (p.data_termo || hojeBR_robusto());
         fillText('data_termo', dataTermo);
 
-        // 7) Esfera
+        // ========== 7. Esfera e legenda de assinatura ==========
         const esferaTxt = normalizarEsfera(p.ESFERA);
         const esferaNode = document.querySelector('[data-esfera]');
         if (esferaNode) esferaNode.textContent = esferaTxt;
+
         (function(){
           const sig = document.getElementById('sig-cap-ente');
-          if (sig) {
-            const isEstDistr = /Estadual\/Distrital/i.test(esferaTxt);
-            sig.innerHTML = isEstDistr
-              ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
-              : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
-            fillText('ente', p.ENTE); 
-            fillText('uf', p.UF);
-          }
+          if (!sig) return;
+          const isEstDistr = /Estadual\/Distrital/i.test(esferaTxt);
+          sig.innerHTML = isEstDistr
+            ? 'Representante legal do Estado/Distrito de <span data-k="ente"></span>/<span data-k="uf"></span>'
+            : 'Representante legal do Município de <span data-k="ente"></span>/<span data-k="uf"></span>';
+          // Garante preenchimento dos placeholders dentro do caption
+          fillText('ente', p.ENTE || p.ente);
+          fillText('uf', p.UF || p.uf);
         })();
 
-
-        // === PATCH ULTRA-FINAL 4.3 (versão simples) ========
+        // ========== Fase 4.3 – chamada única e centralizada ==========
         try {
-          let itensBase = [];
-
-          if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length) {
-            itensBase = p.F43_LISTA.slice();
-          } else if (p.F43_LISTA_TXT) {
-            itensBase = asArr(p.F43_LISTA_TXT);
+          if (window.hydrateF43) {
+            console.log('TERMO: hydrateF43(p) chamado a partir de run()');
+            window.hydrateF43(p);
           }
-
-          while (itensBase.length < 20) itensBase.push('');
-
-          const gruposTxt = {
-            F431_LIST_TXT: itensBase.slice(0,  2).filter(Boolean).join('; '),
-            F432_LIST_TXT: itensBase.slice(2,  3).filter(Boolean).join('; '),
-            F433_LIST_TXT: itensBase.slice(3,  6).filter(Boolean).join('; '),
-            F434_LIST_TXT: itensBase.slice(6,  8).filter(Boolean).join('; '),
-            F435_LIST_TXT: itensBase.slice(8,  9).filter(Boolean).join('; '),
-            F436_LIST_TXT: itensBase.slice(9, 10).filter(Boolean).join('; '),
-            F437_LIST_TXT: itensBase.slice(10,18).filter(Boolean).join('; '),
-            F438_LIST_TXT: itensBase.slice(18,19).filter(Boolean).join('; '),
-            F439_LIST_TXT: itensBase.slice(19,20).filter(Boolean).join('; ')
-          };
-
-          Object.keys(gruposTxt).forEach(key => {
-            const txt = gruposTxt[key];
-            if (!txt) return;
-            const el = document.getElementById(key);
-            if (el) {
-              el.textContent = txt;
-            }
-          });
-
-          const temConteudo43 = Object.values(gruposTxt).some(v => v && v.trim());
-          if (temConteudo43) {
-            const fase43 = document.querySelector('#fase-43');
-            if (fase43) {
-              fase43.hidden = false;
-              fase43.style.display = 'block';
-            }
-          }
-
-          const na = __NA_LABEL__();
-          $$('[data-k^="F43"]').forEach(el => {
-            if (el.textContent.trim() === na) {
-              el.textContent = '';
-            }
-          });
         } catch (e) {
-          console.error('[PATCH ULTRA-FINAL 4.3] erro ao forçar preenchimento da Fase 4.3:', e);
+          console.error('hydrateF43 via run() ERROR:', e);
         }
 
-        
-        // ===== LIMPEZA FINAL – impedir "Não informado" na Fase 4.3 =====
-        try {
-          const na = __NA_LABEL__();
-
-          $$('[data-k^="F43"]').forEach(el => {
-            if (el.textContent.trim() === na) {
-              el.textContent = '\u00A0';
-            }
-          });
-
-          [
-            '#f43-1','#f43-2','#f43-3','#f43-4','#f43-5',
-            '#f43-6','#f43-7','#f43-8','#f43-9',
-            '#f43-crit-incluir','#f43-crit-incluir-12',
-            '#f43-just-11','#f43-just-12','#f43-desc-planos-12',
-            '#val-f4310-leg','#val-f4310-docs'
-          ].forEach(sel => {
-            const el = document.querySelector(sel);
-            if (!el) return;
-            if (el.textContent.trim() === na) {
-              el.textContent = '\u00A0';
-            }
-          });
-        } catch (e) {
-          console.error('[CLEAN F43 NA] erro ao limpar "Não informado" da Fase 4.3:', e);
-        }
-
-        // === [DEBUG F43 - BLOCO 2 – DEPOIS DE RENDERIZAR] ===
-        (function debugF43DOM() {
-          console.groupCollapsed('%c[DEBUG F43] Estado do DOM após run()', 'color:#0af; font-weight:bold;');
-
-          const fase43 = document.querySelector('#fase-43');
-          console.log('[DEBUG F43] #fase-43 →', {
-            exists: !!fase43,
-            hidden: fase43 ? fase43.hidden : '(sem nó)',
-            display: fase43 ? getComputedStyle(fase43).display : '(sem nó)'
-          });
-
-          const idsItens = [
-            '#f43-1','#f43-2','#f43-3','#f43-4','#f43-5',
-            '#f43-6','#f43-7','#f43-8','#f43-9'
-          ];
-          idsItens.forEach(sel => {
-            const ul = document.querySelector(sel);
-            if (!ul) {
-              console.warn('[DEBUG F43] UL não encontrada:', sel);
-              return;
-            }
-            const lis = Array.from(ul.querySelectorAll('li')).map(li => li.textContent.trim());
-            console.log(`[DEBUG F43] ${sel} → li count=${lis.length}`, lis);
-          });
-
-          const txtIds = [
-            'F431_LIST_TXT','F432_LIST_TXT','F433_LIST_TXT',
-            'F434_LIST_TXT','F435_LIST_TXT','F436_LIST_TXT',
-            'F437_LIST_TXT','F438_LIST_TXT','F439_LIST_TXT',
-            'F4311_INCLUIR_TXT','F4311_PLANO_TXT',
-            'F4312_INCLUIR_TXT','F4312_PLANO_TXT','F4312_DESC_TXT'
-          ];
-
-          txtIds.forEach(id => {
-            const el = document.getElementById(id) || document.querySelector(`[data-k="${id}"]`);
-            if (!el) {
-              console.warn('[DEBUG F43] Elemento de texto não encontrado para id/data-k:', id);
-              return;
-            }
-            console.log(`[DEBUG F43] ${id} →`, {
-              textContent: el.textContent,
-              innerHTML: el.innerHTML
-            });
-          });
-
-          const naLabel = (typeof __NA_LABEL__ === 'function') ? __NA_LABEL__() : 'Não informado';
-          const aindaComNA = [];
-          document.querySelectorAll('[data-k^="F43"]').forEach(el => {
-            if (el.textContent.trim() === naLabel) {
-              aindaComNA.push({
-                selector: `[data-k="${el.getAttribute('data-k')}"]`,
-                text: el.textContent
-              });
-            }
-          });
-          console.log('[DEBUG F43] Campos de 4.3 ainda com label de NA:', aindaComNA);
-
-          console.groupEnd();
-        })();
-
-
-        // ================== DIAGNÓSTICO DEFINITIVO FASE 4.3 ==================
-        (function diagF43Final() {
-          try {
-            console.group('%c[DIAG F43] Estado FINAL antes do TERMO_READY', 'color:#f00;font-weight:bold;');
-
-            function getLis(sel) {
-              const ul = document.querySelector(sel);
-              if (!ul) return ['(UL não encontrada)'];
-              return Array.from(ul.querySelectorAll('li')).map(li => li.textContent.trim() || '(vazio)');
-            }
-            function getText(sel) {
-              const el = document.querySelector(sel);
-              if (!el) return '(nó não encontrado)';
-              return el.textContent.trim() || '(vazio)';
-            }
-
-            console.log('[DIAG F43] Payload normalizado (p.F43_*):', {
-              F43_LISTA: p.F43_LISTA,
-              F43_LISTA_TXT: p.F43_LISTA_TXT,
-              F43_INCLUIR: p.F43_INCLUIR,
-              F43_INCLUIR_B: p.F43_INCLUIR_B,
-              F43_PLANO: p.F43_PLANO,
-              F43_PLANO_B: p.F43_PLANO_B,
-              F43_DESC_PLANOS: p.F43_DESC_PLANOS
-            });
-
-            const diagBox = document.createElement('section');
-            diagBox.id = 'diag-f43';
-            diagBox.style = 'border:3px solid red; padding:8px; font-size:10px; margin:8px 0; background:#fffbe6;';
-
-            let html = '';
-            html += '<h3 style="margin-top:0;color:#b00;">[DIAGNÓSTICO FASE 4.3]</h3>';
-
-            html += '<p><strong>Payload → F43_LISTA (tamanho ' +
-              (Array.isArray(p.F43_LISTA) ? p.F43_LISTA.length : 0) +
-              '):</strong></p>';
-            html += '<pre style="white-space:pre-wrap;word-break:break-word;">' +
-              escapeHtml(JSON.stringify(p.F43_LISTA, null, 2)) +
-              '</pre>';
-
-            html += '<p><strong>Payload → F43_LISTA_TXT:</strong><br>' +
-              escapeHtml(String(p.F43_LISTA_TXT || '')) + '</p>';
-
-            html += '<p><strong>Payload → F43_INCLUIR:</strong><br>' +
-              escapeHtml(JSON.stringify(p.F43_INCLUIR || [], null, 2)) + '</p>';
-
-            html += '<p><strong>Payload → F43_INCLUIR_B:</strong><br>' +
-              escapeHtml(JSON.stringify(p.F43_INCLUIR_B || [], null, 2)) + '</p>';
-
-            html += '<p><strong>Payload → F43_PLANO:</strong><br>' +
-              escapeHtml(String(p.F43_PLANO || '')) + '</p>';
-
-            html += '<p><strong>Payload → F43_PLANO_B:</strong><br>' +
-              escapeHtml(String(p.F43_PLANO_B || '')) + '</p>';
-
-            html += '<p><strong>Payload → F43_DESC_PLANOS:</strong><br>' +
-              escapeHtml(String(p.F43_DESC_PLANOS || '')) + '</p>';
-
-            html += '<hr><p><strong>DOM atual – Itens 4.3.1 a 4.3.9</strong></p>';
-            html += '<table border="1" cellspacing="0" cellpadding="3" style="border-collapse:collapse;font-size:9px;width:100%;">';
-            html += '<thead><tr>' +
-                      '<th>Item</th>' +
-                      '<th>UL (#f43-x)</th>' +
-                      '<th>Resumo (&lt;p id="F43x_LIST_TXT"&gt;)</th>' +
-                    '</tr></thead><tbody>';
-
-            const mapa = [
-              { item: '4.3.1', ul: '#f43-1', txt: '#F431_LIST_TXT' },
-              { item: '4.3.2', ul: '#f43-2', txt: '#F432_LIST_TXT' },
-              { item: '4.3.3', ul: '#f43-3', txt: '#F433_LIST_TXT' },
-              { item: '4.3.4', ul: '#f43-4', txt: '#F434_LIST_TXT' },
-              { item: '4.3.5', ul: '#f43-5', txt: '#F435_LIST_TXT' },
-              { item: '4.3.6', ul: '#f43-6', txt: '#F436_LIST_TXT' },
-              { item: '4.3.7', ul: '#f43-7', txt: '#F437_LIST_TXT' },
-              { item: '4.3.8', ul: '#f43-8', txt: '#F438_LIST_TXT' },
-              { item: '4.3.9', ul: '#f43-9', txt: '#F439_LIST_TXT' }
-            ];
-
-            mapa.forEach(row => {
-              const lis = getLis(row.ul);
-              const resumo = getText(row.txt);
-              console.log('[DIAG F43] ' + row.item + ' → UL', row.ul, lis, 'Resumo', row.txt, resumo);
-
-              html += '<tr>';
-              html += '<td>' + row.item + '</td>';
-              html += '<td><pre style="white-space:pre-wrap;word-break:break-word;">' +
-                        escapeHtml(JSON.stringify(lis)) +
-                      '</pre></td>';
-              html += '<td>' + escapeHtml(resumo) + '</td>';
-              html += '</tr>';
-            });
-
-            html += '</tbody></table>';
-
-            html += '<hr><p><strong>DOM atual – 4.3.11 e 4.3.12</strong></p>';
-
-            html += '<p><strong>4.3.11 UL #f43-crit-incluir:</strong><br>' +
-              escapeHtml(JSON.stringify(getLis('#f43-crit-incluir'))) + '</p>';
-            html += '<p><strong>4.3.11 F4311_INCLUIR_TXT:</strong><br>' +
-              escapeHtml(getText('#F4311_INCLUIR_TXT')) + '</p>';
-            html += '<p><strong>4.3.11 F4311_PLANO_TXT:</strong><br>' +
-              escapeHtml(getText('#F4311_PLANO_TXT')) + '</p>';
-
-            html += '<p><strong>4.3.12 UL #f43-crit-incluir-12:</strong><br>' +
-              escapeHtml(JSON.stringify(getLis('#f43-crit-incluir-12'))) + '</p>';
-            html += '<p><strong>4.3.12 F4312_INCLUIR_TXT:</strong><br>' +
-              escapeHtml(getText('#F4312_INCLUIR_TXT')) + '</p>';
-            html += '<p><strong>4.3.12 F4312_PLANO_TXT:</strong><br>' +
-              escapeHtml(getText('#F4312_PLANO_TXT')) + '</p>';
-            html += '<p><strong>4.3.12 F4312_DESC_TXT:</strong><br>' +
-              escapeHtml(getText('#F4312_DESC_TXT')) + '</p>';
-
-            diagBox.innerHTML = html;
-
-            const fase43 = document.querySelector('#fase-43');
-            if (fase43) {
-              fase43.prepend(diagBox);
-            } else {
-              document.body.prepend(diagBox);
-            }
-
-            [
-              'F431_LIST_TXT','F432_LIST_TXT','F433_LIST_TXT',
-              'F434_LIST_TXT','F435_LIST_TXT','F436_LIST_TXT',
-              'F437_LIST_TXT','F438_LIST_TXT','F439_LIST_TXT'
-            ].forEach(id => {
-              const el = document.getElementById(id);
-              if (el) {
-                el.textContent = '[DEBUG ' + id + '] ' + (el.textContent || '').trim();
-                el.style.backgroundColor = '#ffe6e6';
-              }
-            });
-
-            console.groupEnd();
-          } catch (e) {
-            console.error('[DIAG F43] Erro ao injetar diagnóstico final da Fase 4.3:', e);
-          }
-        })();
-        // ================== FIM DIAGNÓSTICO DEFINITIVO FASE 4.3 ==================
-
+        // Marca HTML como pronto para impressão (sinal para o Apps Script)
         if (!window.__TERMO_READY_FIRED__) {
           window.__TERMO_READY_FIRED__ = true;
           requestAnimationFrame(() => {
             document.documentElement.setAttribute('data-termo-ready','1');
             window.__TERMO_PRINT_READY__ = true;
-            try { document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY')); } catch {}
+            try { document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY')); } catch (_) {}
           });
         }
       }
-      // ================== ANCHOR: FIM run(payload) – VERSÃO ATUALIZADA ==================
+      // ================== ANCHOR: FIM run(payload) – VERSÃO SIMPLIFICADA ==================
+
 
       // DEBUG LOCAL via ?p=
       try {

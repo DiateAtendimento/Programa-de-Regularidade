@@ -2925,38 +2925,50 @@ function syncF46ToTemplate(){
   }
 
 
-  // === PATCH: F43_FORCE_SYNC_TO_PDF (garante exibição no PDF) ===
+    // === PATCH: F43_FORCE_SYNC_TO_PDF (garante exibição no PDF) ===
   try {
-    // se houver algo salvo no estado local (saveState), usa-o com prioridade
-    const st = JSON.parse(localStorage.getItem('solic-crp-form-v1') || '{}');
+    // Se houver algo salvo no estado local (saveState), usa-o como fonte de backup
+    const st   = JSON.parse(localStorage.getItem('solic-crp-form-v1') || '{}');
     const vals = st?.values || {};
 
-    // tenta extrair as versões salvas (do preenchimento anterior)
-    const savedArr = vals['F43_LISTA[]'] || vals.F43_LISTA || [];
-    const savedTxt = vals.F43_LISTA_TXT || (Array.isArray(savedArr) ? savedArr.join('; ') : '');
+    // Tenta extrair versões salvas (do preenchimento anterior)
+    const savedArr =
+      vals['F43_LISTA[]'] ||
+      vals.F43_LISTA     ||
+      vals['F43_ITENS[]']||
+      vals.F43_ITENS     ||
+      [];
 
-    // se o payload atual vier vazio, substitui pelos dados salvos
-    if ((!payload.F43_LISTA || !payload.F43_LISTA.length) && Array.isArray(savedArr) && savedArr.length) {
-      payload.F43_LISTA = savedArr;
+    const savedTxt =
+      vals.F43_LISTA_TXT ||
+      (Array.isArray(savedArr) ? savedArr.join('; ') : '');
+
+    // Se o payload atual vier sem F43_LISTA, mas houver algo salvo, restaura
+    if ((!payload.F43_LISTA || !payload.F43_LISTA.length) &&
+        Array.isArray(savedArr) && savedArr.length) {
+
+      payload.F43_LISTA      = savedArr;
       payload['F43_LISTA[]'] = savedArr;
-      payload.F43_LISTA_TXT = savedTxt;
+
       console.info('[PATCH-F43] Restaurado F43_LISTA a partir do localStorage:', savedArr);
     }
 
-    // Espelha versões em texto (string) para o template PDF
-    if (!payload.F43_LISTA_TXT && payload.F43_LISTA?.length) {
+    // Espelha versão em texto (string) SOMENTE quando houver itens reais
+    if (
+      (!payload.F43_LISTA_TXT || !payload.F43_LISTA_TXT.trim()) &&
+      Array.isArray(payload.F43_LISTA) && payload.F43_LISTA.length
+    ) {
       payload.F43_LISTA_TXT = payload.F43_LISTA.join('; ');
     }
 
-    // Fallback adicional: se ainda estiver vazio, define "Não informado" só para PDF
-    if (!payload.F43_LISTA_TXT || payload.F43_LISTA_TXT.trim() === '') {
-      payload.F43_LISTA_TXT = 'Não informado';
-    }
-
+    // IMPORTANTE:
+    // Se não houver itens em F43_LISTA, NÃO definimos "Não informado" aqui.
+    // Deixamos em branco e deixamos o template decidir o que mostrar como fallback.
   } catch (e) {
     console.warn('[PATCH-F43] Falha ao restaurar F43_LISTA', e);
   }
   // === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
+
 
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
