@@ -2392,7 +2392,9 @@ function syncF46ToTemplate(){
     }
     // === FIM PATCH DEFINITIVO F43 ===
 
-
+    const compat = makeSolicCrpCompatFields(obj);
+    dbg('[SOLIC-CRP] Payload (compat):', compat);
+    
     return obj;
   }
 
@@ -2416,18 +2418,35 @@ function syncF46ToTemplate(){
     const REGULARIZACAO_PENDEN_ADMINISTRATIVA = f42.join('; ');
 
     // 4.3 déficit atuarial
-    const f43 = Array.isArray(p.F43_LISTA) ? p.F43_LISTA
-          : Array.isArray(p['F43_LISTA[]']) ? p['F43_LISTA[]']
-          : Array.isArray(p['F43_ITENS[]']) ? p['F43_ITENS[]']
-          : Array.isArray(p.F43_ITENS) ? p.F43_ITENS : [];
-    let DEFICIT_ATUARIAL = f43.join('; ');
+    const fromF43Lista =
+      Array.isArray(p.F43_LISTA)      ? p.F43_LISTA :
+      Array.isArray(p['F43_LISTA[]']) ? p['F43_LISTA[]'] :
+      Array.isArray(p['F43_ITENS[]']) ? p['F43_ITENS[]'] :
+      Array.isArray(p.F43_ITENS)      ? p.F43_ITENS :
+      [];
+
+    // Texto consolidado das opções 4.3.1 a 4.3.9
+    const textoF43 =
+      (p.F43_LISTA_TXT && String(p.F43_LISTA_TXT).trim()) ||
+      (fromF43Lista.length ? fromF43Lista.join('; ') : '');
+
+    let DEFICIT_ATUARIAL = textoF43;
     if (!DEFICIT_ATUARIAL && (p.F43_PLANO || p.F43_DESC_PLANOS)) {
-      DEFICIT_ATUARIAL = '4.3';
+      // fallback mínimo caso só tenha plano / descrição
+      DEFICIT_ATUARIAL = '4.3 – Déficit atuarial (detalhado no corpo do termo)';
     }
 
     // Reflete no próprio payload para o template conseguir enxergar
-    p.DEFICIT_ATUARIAL     = DEFICIT_ATUARIAL;
-    p.DEFICIT_ATUARIAL_TXT = DEFICIT_ATUARIAL;
+    p.DEFICIT_ATUARIAL      = DEFICIT_ATUARIAL;
+    p.DEFICIT_ATUARIAL_TXT  = DEFICIT_ATUARIAL;
+    p.deficit_atuarial      = DEFICIT_ATUARIAL;
+    p.deficit_atuarial_txt  = DEFICIT_ATUARIAL;
+    p['deficit_atuarial[]'] = DEFICIT_ATUARIAL ? [DEFICIT_ATUARIAL] : [];
+
+    // Chaves mais genéricas para a seção 4.3.1–4.3.9 (alguns templates usam "fase4_3_*")
+    p.fase4_3_criterios       = fromF43Lista;
+    p['fase4_3_criterios[]']  = fromF43Lista;
+    p.fase4_3_criterios_txt   = DEFICIT_ATUARIAL;
 
 
     // 4.4 critérios estruturantes
@@ -2643,7 +2662,15 @@ function syncF46ToTemplate(){
       // extras esperados pelo template
       ...FASE4_EXTRAS,
     });
-    
+
+    try {
+      window.__TERMO_DATA__ = Object.assign({}, window.__TERMO_DATA__ || {}, p);
+      document.dispatchEvent(new Event('TERMO_DATA'));
+    } catch (e) {
+      console.warn('[makeSolicCrpCompatFields] aviso: não conseguiu atualizar __TERMO_DATA__', e);
+    }
+
+
     return p;
   }
 
