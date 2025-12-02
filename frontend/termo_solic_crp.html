@@ -464,28 +464,40 @@
         return temDadosReais ? false : true;
       };
 
+
       function fillText(key, val){
         const raw = (val == null) ? '' : String(val);
         const trimmed = raw.trim();
 
-        // 🔥 NÃO usar "Não informado" para a fase 4.3 (4.3.1 a 4.3.12)
+        // 🔥 Campos da Fase 4.3 (4.3.1 a 4.3.12)
         const isF43 =
           /^F43(1|2|3|4|5|6|7|8|9|10|11|12)/i.test(String(key)) ||
           /^F431[0-9]?_/.test(String(key));
 
-        // Se for campo da Fase 4.3:
-        // - se tiver valor => usa o valor
-        // - se estiver vazio => deixa vazio (NUNCA coloca "Não informado")
+        // Se for Fase 4.3 e NÃO vier valor no payload,
+        // não sobrescreve nada que já esteja na tela
+        if (isF43 && !trimmed) {
+          const els = $$('[data-k="'+key+'"]');
+          const jaTemAlgo = els.some(el => String(el.textContent || '').trim());
+          if (jaTemAlgo) {
+            // Já existe texto exibido (ex.: gerado por __reconstruirF43 / hydrateF43),
+            // então não mexe.
+            return;
+          }
+        }
+
         let s;
         if (isF43) {
-          s = trimmed; // se vier vazio, fica vazio mesmo
+          // Para Fase 4.3: usa o que veio, ou deixa vazio (mas nunca "Não informado")
+          s = trimmed;
         } else {
-          // Demais campos continuam com o comportamento padrão
+          // Demais campos: mantém lógica normal com "__NA_LABEL__"
           s = trimmed || (__NA_ALL__() ? __NA_LABEL__() : '');
         }
 
         $$('[data-k="'+key+'"]').forEach(el => { el.textContent = s; });
       }
+
 
 
       /* ===== Utilitários ===== */
@@ -1175,12 +1187,6 @@
           'nome_rep_ente','cargo_rep_ente','cpf_rep_ente','email_rep_ente','tel_rep_ente',
           'nome_rep_ug','cargo_rep_ug','cpf_rep_ug','email_rep_ug','tel_rep_ug',
           'data_vencimento_ultimo_crp','tipo_emissao_ult_crp',
-          // Resumos 4.3.x (se vierem no payload; hydrateF43 também reescreve)
-          'F431_LIST_TXT','F432_LIST_TXT','F433_LIST_TXT',
-          'F434_LIST_TXT','F435_LIST_TXT','F436_LIST_TXT',
-          'F437_LIST_TXT','F438_LIST_TXT','F439_LIST_TXT',
-          'F4311_INCLUIR_TXT','F4311_PLANO_TXT',
-          'F4312_INCLUIR_TXT','F4312_PLANO_TXT','F4312_DESC_TXT',
           // Demais fases
           'F44_ANEXOS','F441_LEGISLACAO','F445_DESC_PLANOS',
           'F446_DOCS','F446_EXEC_RES',
@@ -1389,10 +1395,11 @@
 
       document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch(e){ console.error(e);} });
       document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch(e){ console.error(e);} });
-      
       setTimeout(() => {
-        if (!window.__TERMO_READY_FIRED__) {
-          run(window.__TERMO_DATA__ || {__NA_ALL:true});
+        // Só executa automaticamente se JÁ houver payload real.
+        // Não usa mais {__NA_ALL:true} pra não poluir com "Não informado".
+        if (!window.__TERMO_READY_FIRED__ && window.__TERMO_DATA__) {
+          run(window.__TERMO_DATA__);
         }
       }, 800);
     })();

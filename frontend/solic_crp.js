@@ -2399,6 +2399,9 @@ function syncF46ToTemplate(){
   // === Compat converter → transforma os campos granulares do form 2
   //     nas chaves que o template termo_solic_crp.html espera ===
   function makeSolicCrpCompatFields(p) {
+
+    const obj = p || {};
+
     // 4.1 (até 60 / até 300) a partir de F41_OPCAO
     let CELEBRACAO_TERMO_PARCELA_DEBITOS = '';
     const _f41 = (p.F41_OPCAO_CODE || (String(p.F41_OPCAO||'').match(/4\.1\.[12]/)?.[0] || '')).trim();
@@ -2604,7 +2607,7 @@ function syncF46ToTemplate(){
     const F46_DECLS_TXT       = F46_DECLS.length ? F46_DECLS.join('\n') : 'Não informado';
     const F46_FINALIDADES_TXT = F46_FINALIDADES.length ? F46_FINALIDADES.join('\n') : 'Não informado';
 
-    return {
+    Object.assign(p, {
       CELEBRACAO_TERMO_PARCELA_DEBITOS,
       F41_OPCAO_TXT: CELEBRACAO_TERMO_PARCELA_DEBITOS,
       FASE_41_DESC:  CELEBRACAO_TERMO_PARCELA_DEBITOS,
@@ -2639,7 +2642,9 @@ function syncF46ToTemplate(){
 
       // extras esperados pelo template
       ...FASE4_EXTRAS,
-    };
+    });
+    
+    return p;
   }
 
   // PATCH (F4-TEMPLATE) — garante arrays E versões em texto nas chaves esperadas pelo template
