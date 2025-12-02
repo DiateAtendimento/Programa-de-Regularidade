@@ -2926,48 +2926,50 @@ function syncF46ToTemplate(){
 
 
     // === PATCH: F43_FORCE_SYNC_TO_PDF (garante exibição no PDF) ===
-  try {
-    // Se houver algo salvo no estado local (saveState), usa-o como fonte de backup
-    const st   = JSON.parse(localStorage.getItem('solic-crp-form-v1') || '{}');
-    const vals = st?.values || {};
+    try {
+      // Esse trecho só roda dentro de buildPayload(obj)
+      // Então usamos 'obj' (que é o payload em construção) — não 'payload'
+      const st   = JSON.parse(localStorage.getItem('solic-crp-form-v1') || '{}');
+      const vals = st?.values || {};
 
-    // Tenta extrair versões salvas (do preenchimento anterior)
-    const savedArr =
-      vals['F43_LISTA[]'] ||
-      vals.F43_LISTA     ||
-      vals['F43_ITENS[]']||
-      vals.F43_ITENS     ||
-      [];
+      // Captura arrays de backup (se existir)
+      const savedArr =
+        vals['F43_LISTA[]'] ||
+        vals.F43_LISTA     ||
+        vals['F43_ITENS[]']||
+        vals.F43_ITENS     ||
+        [];
 
-    const savedTxt =
-      vals.F43_LISTA_TXT ||
-      (Array.isArray(savedArr) ? savedArr.join('; ') : '');
+      const savedTxt =
+        vals.F43_LISTA_TXT ||
+        (Array.isArray(savedArr) ? savedArr.join('; ') : '');
 
-    // Se o payload atual vier sem F43_LISTA, mas houver algo salvo, restaura
-    if ((!payload.F43_LISTA || !payload.F43_LISTA.length) &&
-        Array.isArray(savedArr) && savedArr.length) {
+      // Se o objeto atual não tiver F43_LISTA mas o localStorage tiver, restaura
+      if ((!obj.F43_LISTA || !obj.F43_LISTA.length) &&
+          Array.isArray(savedArr) && savedArr.length) {
+        obj.F43_LISTA      = savedArr;
+        obj['F43_LISTA[]'] = savedArr;
+        console.info('[PATCH-F43] Restaurado F43_LISTA a partir do localStorage:', savedArr);
+      }
 
-      payload.F43_LISTA      = savedArr;
-      payload['F43_LISTA[]'] = savedArr;
+      // Cria uma versão em texto apenas se houver dados reais
+      if (
+        (!obj.F43_LISTA_TXT || !obj.F43_LISTA_TXT.trim()) &&
+        Array.isArray(obj.F43_LISTA) && obj.F43_LISTA.length
+      ) {
+        obj.F43_LISTA_TXT = obj.F43_LISTA.join('; ');
+      }
 
-      console.info('[PATCH-F43] Restaurado F43_LISTA a partir do localStorage:', savedArr);
+      // Se não houver nada, não força "Não informado" — deixa vazio
+      if (!obj.F43_LISTA_TXT) {
+        obj.F43_LISTA_TXT = '';
+      }
+
+    } catch (e) {
+      console.warn('[PATCH-F43] Falha ao restaurar F43_LISTA', e);
     }
+    // === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
 
-    // Espelha versão em texto (string) SOMENTE quando houver itens reais
-    if (
-      (!payload.F43_LISTA_TXT || !payload.F43_LISTA_TXT.trim()) &&
-      Array.isArray(payload.F43_LISTA) && payload.F43_LISTA.length
-    ) {
-      payload.F43_LISTA_TXT = payload.F43_LISTA.join('; ');
-    }
-
-    // IMPORTANTE:
-    // Se não houver itens em F43_LISTA, NÃO definimos "Não informado" aqui.
-    // Deixamos em branco e deixamos o template decidir o que mostrar como fallback.
-  } catch (e) {
-    console.warn('[PATCH-F43] Falha ao restaurar F43_LISTA', e);
-  }
-  // === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
 
 
 
