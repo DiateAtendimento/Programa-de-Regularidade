@@ -2354,6 +2354,44 @@ function syncF46ToTemplate(){
       obj.F43_INCLUIR_B = toStr(obj.F43_INCLUIR_B);
     }
 
+    // === PATCH DEFINITIVO F43 dentro de buildPayload() ===
+    try {
+      // Garante que os dados de 4.3 sejam bem formatados antes do envio ao PDF
+      if (obj['F43_LISTA[]'] && Array.isArray(obj['F43_LISTA[]'])) {
+        obj.F43_LISTA = obj['F43_LISTA[]'];
+      }
+
+      // Se ainda não tiver o campo de texto, gera agora
+      if (!obj.F43_LISTA_TXT && obj.F43_LISTA && Array.isArray(obj.F43_LISTA)) {
+        obj.F43_LISTA_TXT = obj.F43_LISTA.join('; ');
+      }
+
+      // Remove qualquer "Não informado" injetado por fallback anterior
+      if (obj.F43_LISTA_TXT && obj.F43_LISTA_TXT.includes('Não informado')) {
+        console.log('[PATCH-F43] Limpando fallback indevido "Não informado"');
+        obj.F43_LISTA_TXT = obj.F43_LISTA_TXT.replace(/Não informado/gi, '').trim();
+      }
+
+      // Se nada sobrou, mas temos subcampos (INCLUIR, PLANO etc.), concatena
+      if ((!obj.F43_LISTA_TXT || !obj.F43_LISTA_TXT.trim()) &&
+          (obj.F43_INCLUIR || obj.F43_INCLUIR_B)) {
+        const parts = [];
+        if (obj.F43_INCLUIR) parts.push(obj.F43_INCLUIR);
+        if (obj.F43_INCLUIR_B) parts.push(obj.F43_INCLUIR_B);
+        obj.F43_LISTA_TXT = parts.join('; ');
+      }
+
+      // Garantia final: nunca envia "Não informado" se houver dados válidos
+      if (obj.F43_LISTA_TXT && obj.F43_LISTA_TXT.trim() === 'Não informado') {
+        obj.F43_LISTA_TXT = '';
+      }
+
+      console.log('[PATCH-F43] Sincronizado com sucesso:', obj.F43_LISTA_TXT);
+    } catch (e) {
+      console.warn('[PATCH-F43] Falha ao sincronizar F43_LISTA dentro do buildPayload()', e);
+    }
+    // === FIM PATCH DEFINITIVO F43 ===
+
 
     return obj;
   }
