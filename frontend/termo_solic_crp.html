@@ -1308,15 +1308,20 @@
           fillText('uf', p.UF || p.uf);
         })();
 
-        // ========== Fase 4.3 – chamada única e centralizada ==========
+        // ========== Fase 4.3 – chamada definitiva e sincronizada ==========
         try {
           if (window.hydrateF43) {
-            console.log('TERMO: hydrateF43(p) chamado a partir de run()');
-            window.hydrateF43(p);
+            console.log('TERMO: adiando execução de hydrateF43 até o DOM estar pronto...');
+            requestAnimationFrame(() => {
+              const payloadFinal = window.__TERMO_DATA__ || p;
+              console.log('🔥 hydrateF43 AGORA (DOM montado):', payloadFinal);
+              window.hydrateF43(payloadFinal);
+            });
           }
         } catch (e) {
           console.error('hydrateF43 via run() ERROR:', e);
         }
+
 
         // Marca HTML como pronto para impressão (sinal para o Apps Script)
         if (!window.__TERMO_READY_FIRED__) {
@@ -1372,8 +1377,8 @@
           try {
               const p = window.__TERMO_DATA__;
               if (p && window.hydrateF43) {
-                  console.log("🔥 hydrateF43 FINAL → Aplicando sobre o HTML já montado");
-                  window.hydrateF43(p);
+                console.log("🔥 hydrateF43 FINAL → Aplicando sobre o HTML já montado");
+                requestAnimationFrame(() => window.hydrateF43(p));
               }
           } catch(e){
               console.error("hydrateF43 final ERROR:", e);
