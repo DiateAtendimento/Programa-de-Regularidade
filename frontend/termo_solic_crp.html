@@ -896,16 +896,9 @@
         try {
           let haConteudo = false;
 
-          try {
-            window.parent?.postMessage({ type: 'F43_DEBUG', gruposF43, F43_LISTA: p.F43_LISTA, F43_LISTA_TXT: p.F43_LISTA_TXT }, '*');
-          } catch (_) {}
-          console.log('[F43 DEBUG] gruposF43=', gruposF43, 'F43_LISTA=', p.F43_LISTA, 'F43_LISTA_TXT=', p.F43_LISTA_TXT);
-
-
-          // PATCH 5 — APLICA A RECONSTRUÇÃO DEFINITIVA DA FASE 4.3
+          // Primeiro reconstrói os grupos; antes o código usava a variável sem tê-la criado e quebrava toda a fase 4.3
           const gruposF43 = __reconstruirF43(p);
 
-          // após const gruposF43 = __reconstruirF43(p);
           try {
             window.parent?.postMessage({
               type: 'F43_DEBUG',
@@ -914,6 +907,8 @@
               F43_LISTA_TXT: p.F43_LISTA_TXT
             }, '*');
           } catch (_) {}
+
+          console.log('[F43 DEBUG] gruposF43=', gruposF43, 'F43_LISTA=', p.F43_LISTA, 'F43_LISTA_TXT=', p.F43_LISTA_TXT);
 
           //console.log('[F43 DEBUG] gruposF43=', gruposF43, 'F43_LISTA=', p.F43_LISTA, 'F43_LISTA_TXT=', p.F43_LISTA_TXT);
 
