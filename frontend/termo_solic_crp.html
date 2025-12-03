@@ -558,6 +558,54 @@
       }
       const fillList = liList;
 
+      /********************************************************************
+       * DEBUG MODE – Diagnóstico de preenchimento da Fase 4.3
+      ********************************************************************/
+      window.__debugF43 = function(p) {
+        console.groupCollapsed("%c[F43 DEBUG] Iniciando diagnóstico detalhado", "color:#0af");
+
+        console.log("Payload Fase 4.3 (chaves relevantes):", {
+          F43_LISTA: p.F43_LISTA,
+          F43_LISTA_TXT: p.F43_LISTA_TXT,
+          F43_INCLUIR: p.F43_INCLUIR,
+          F43_INCLUIR_B: p.F43_INCLUIR_B,
+          F43_PLANO: p.F43_PLANO,
+          F43_PLANO_B: p.F43_PLANO_B,
+          F43_DESC_PLANOS: p.F43_DESC_PLANOS,
+          fase4_3_criterios: p.fase4_3_criterios
+        });
+
+        // Verifica se os elementos HTML existem
+        for (let i = 1; i <= 12; i++) {
+          const el = document.querySelector(`#f43-${i}`) || document.querySelector(`#f43-sub-${i}`);
+          console.log(`Elemento #f43-${i} ou #f43-sub-${i}:`, el ? "OK" : "❌ NÃO ENCONTRADO");
+        }
+
+        // Testa fillList em um UL real (se existir)
+        if (typeof fillList === "function") {
+          console.groupCollapsed("[F43 DEBUG] Testando fillList em #f43-1");
+          const testeOK = fillList("#f43-1", ["Item de teste A", "Item de teste B"]);
+          console.log("fillList(#f43-1, ...) →", testeOK ? "OK (preencheu)" : "FALHOU");
+          console.groupEnd();
+        } else {
+          console.warn("⚠️ função fillList não encontrada no contexto atual!");
+        }
+
+        // Depois de um tempo, lê o DOM para ver o que ficou de fato
+        setTimeout(() => {
+          console.groupCollapsed("[DOM CHECK] Conteúdo atual de cada UL F43");
+          for (let i = 1; i <= 12; i++) {
+            const ul = document.querySelector(`#f43-${i}`);
+            if (ul) {
+              console.log(`#f43-${i}:`, (ul.innerText || "").trim() || "(vazio)");
+            } else {
+              console.warn(`#f43-${i} não existe no template`);
+            }
+          }
+          console.groupEnd();
+          console.groupEnd();
+        }, 1500);
+      };
 
       function renderParagraphs(sel, s){
         const el = document.querySelector(sel);
@@ -1027,6 +1075,15 @@
 
         // 9) Marca global indicando que a Fase 4.3 já foi montada
         window.__F43_APPLIED__ = true;
+
+        // 🔍 Dispara debug detalhado da Fase 4.3
+        try {
+          if (window.__debugF43) {
+            window.__debugF43(p);
+          }
+        } catch (e) {
+          console.error("[F43 DEBUG] Erro ao executar __debugF43:", e);
+        }
       };
 
 
