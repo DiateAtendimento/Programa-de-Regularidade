@@ -938,6 +938,42 @@
        ********************************************************************/
       window.hydrateF43 = function(p) {
 
+        /**************************************************************
+         * PATCH 2 — Diagnóstico direto de Fase 4.3 dentro de hydrateF43
+        **************************************************************/
+        console.groupCollapsed("%c[F43 HYDRATE] Iniciando hidratação da Fase 4.3", "color:#39f");
+        console.log("🚀 Payload F43 recebido:", {
+          F43_LISTA: p.F43_LISTA,
+          F43_LISTA_TXT: p.F43_LISTA_TXT,
+          F43_INCLUIR: p.F43_INCLUIR,
+          F43_PLANO: p.F43_PLANO,
+          F43_DESC_PLANOS: p.F43_DESC_PLANOS
+        });
+
+        // Teste: verifica se as ULs e DIVs realmente existem no DOM
+        const targets = [
+          "#f43-1", "#f43-2", "#f43-3", "#f43-4", "#f43-5",
+          "#f43-6", "#f43-7", "#f43-8", "#f43-9", "#f43-10",
+          "#f43-11", "#f43-12", "#fase43-itens", "#fase43-desc"
+        ];
+        const notFound = [];
+        targets.forEach(sel => {
+          const el = document.querySelector(sel);
+          console.log(sel, el ? "✅ encontrado" : "❌ ausente");
+          if (!el) notFound.push(sel);
+        });
+
+        // Testa manualmente o preenchimento se existir o campo principal
+        const elMain = document.querySelector("#fase43-itens") || document.querySelector("#f43-1");
+        if (elMain) {
+          elMain.innerHTML = "<li style='color:red;'>[DEBUG] elemento #fase43-itens encontrado — preenchimento possível</li>";
+        } else {
+          console.warn("⚠️ Nenhum UL de F43 foi encontrado para preencher!");
+        }
+
+        console.groupEnd();
+
+
         // 🔥 Variável global para informar ao run() que a fase 4.3 tem conteúdo
         window.__F43_HAS_CONTENT__ = false;
 
