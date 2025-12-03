@@ -3075,6 +3075,22 @@ function syncF46ToTemplate(){
       PRAZO_ADICIONAL_TEXTO: (payload.PRAZO_ADICIONAL_FLAG === 'SIM' ? 'SIM' : ''),
     };
 
+    // DEBUG opcional: abrir o template com o payload para inspecionar console/logs
+    const DEBUG_PREVIEW =
+      /debugPreview=1/.test(window.location.search) ||
+      localStorage.getItem('DEBUG_TERMO_PREVIEW') === '1' ||
+      window.__DEBUG_SOLIC_CRP_PREVIEW === true;
+
+    if (DEBUG_PREVIEW) {
+      try {
+        console.info('[DEBUG_PREVIEW] Abrindo termo_solic_crp.html com payload atual');
+        openPreviewWindow(payloadForPdf);
+      } catch (e) {
+        console.warn('[DEBUG_PREVIEW] falhou ao abrir preview', e);
+      }
+    }
+
+
     // 🔥 Aquece o backend/Puppeteer ANTES de pedir o PDF (evita 502/restart)
     try {
       await fetchJSON(api('/warmup'), {}, { label: 'warmup', timeout: 8000, retries: 1 });
