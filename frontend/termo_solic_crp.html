@@ -888,7 +888,7 @@
       /********************************************************************
        * hydrateF43 — função GLOBAL responsável por renderizar a Fase 4.3
        ********************************************************************/
-        window.hydrateF43 = function(p) {
+      window.hydrateF43 = function(p) {
 
         // 🔥 Variável global para informar ao run() que a fase 4.3 tem conteúdo
         window.__F43_HAS_CONTENT__ = false;
@@ -896,9 +896,10 @@
         try {
           let haConteudo = false;
 
-          // Primeiro reconstrói os grupos; antes o código usava a variável sem tê-la criado e quebrava toda a fase 4.3
+          // 1) Reconstrói os grupos de critérios com base em F43_LISTA / F43_LISTA_TXT
           const gruposF43 = __reconstruirF43(p);
 
+          // 2) DEBUG opcional para quem estiver carregando o termo em iframe
           try {
             window.parent?.postMessage({
               type: 'F43_DEBUG',
@@ -910,176 +911,126 @@
 
           console.log('[F43 DEBUG] gruposF43=', gruposF43, 'F43_LISTA=', p.F43_LISTA, 'F43_LISTA_TXT=', p.F43_LISTA_TXT);
 
-          //console.log('[F43 DEBUG] gruposF43=', gruposF43, 'F43_LISTA=', p.F43_LISTA, 'F43_LISTA_TXT=', p.F43_LISTA_TXT);
-
-        
-
-          //console.log("PATCH 5 → gruposF43 reconstruído:", gruposF43);
-
-          // Mapeamento ULs
+          // 3) Mapeia cada grupo 4.3.x para sua UL correspondente
           const mapaUL = {
-              "4.3.1": "#f43-1",
-              "4.3.2": "#f43-2",
-              "4.3.3": "#f43-3",
-              "4.3.4": "#f43-4",
-              "4.3.5": "#f43-5",
-              "4.3.6": "#f43-6",
-              "4.3.7": "#f43-7",
-              "4.3.8": "#f43-8",
-              "4.3.9": "#f43-9"
+            "4.3.1": "#f43-1",
+            "4.3.2": "#f43-2",
+            "4.3.3": "#f43-3",
+            "4.3.4": "#f43-4",
+            "4.3.5": "#f43-5",
+            "4.3.6": "#f43-6",
+            "4.3.7": "#f43-7",
+            "4.3.8": "#f43-8",
+            "4.3.9": "#f43-9"
           };
 
-          let fase43_hasContent = false;
-
           Object.keys(mapaUL).forEach(k => {
-              const sel = mapaUL[k];
-              const arr = gruposF43[k] || [];
+            const sel = mapaUL[k];
+            const arr = gruposF43[k] || [];
 
-              console.log('[F43 DEBUG] preenchendo', k, '->', sel, 'itens:', arr);
+            console.log('[F43 DEBUG] preenchendo', k, '->', sel, 'itens:', arr);
 
+            const ok = fillList(sel, arr);      // preenche a <ul> com <li>
+            const idx = k.split('.').pop();     // "4.3.1" -> "1"
+            const sub = document.querySelector('#f43-sub-' + idx);
+            if (sub) sub.style.display = ok ? '' : 'none';
 
-              const ok = fillList(sel, arr);
-
-              const idx = k.split('.').pop(); // "4.3.1" -> "1"
-              const sub = document.querySelector('#f43-sub-' + idx);
-              if (sub) sub.style.display = ok ? '' : 'none';
-
-              if (ok) {
-                  window.__F43_HAS_CONTENT__ = true;
-              }
-
+            if (ok) {
+              haConteudo = true;
+              window.__F43_HAS_CONTENT__ = true;
+            }
           });
 
-
-
-          // PATCH: Reconstrução automática caso F43_LISTA não venha linear
-          let listaBruta = [];
-
-          if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length > 0) {
-              listaBruta = p.F43_LISTA;
-          } else {
-              const ordem = [
-                  'F43_1',
-                  'F43_1_TXT',
-                  'F43_2',
-                  'F43_3_A',
-                  'F43_3_B',
-                  'F43_3_C',
-                  'F43_4_A',
-                  'F43_4_B',
-                  'F43_5',
-                  'F43_6',
-                  'F43_7_A',
-                  'F43_7_B',
-                  'F43_7_C',
-                  'F43_7_D',
-                  'F43_7_E',
-                  'F43_7_F',
-                  'F43_7_G',
-                  'F43_7_H',
-                  'F43_8',
-                  'F43_9'
-              ];
-
-              ordem.forEach(k => {
-                  const val = p[k] || p[k.toUpperCase()] || '';
-                  listaBruta.push(val);
-              });
-          }
-
-
-          //console.log('🔥 hydrateF43 → listaBruta:', listaBruta);
-
-          // (Bloco antigo de reconstrução baseado em listaBruta/mPDF removido.
-          //  A reconstrução definitiva da fase 4.3 agora é feita
-          //  exclusivamente via gruposF43 + mapaUL logo acima.)
-
-
-          // 4.3.10 - Normalizar opção (A/B) independente do formato
+          // 4) 4.3.10 – Adequação das regras de benefícios (opções a / b)
           const op = String(
-            p.F4310_OPCAO || 
-            p.f4310_opcao || 
-            (p.F43_PLANO ? 'a' : '') || 
+            p.F4310_OPCAO ||
+            p.f4310_opcao ||
+            (p.F43_PLANO ? 'a' : '') ||
             (p.F4310_DOCS ? 'b' : '')
           ).trim().toLowerCase();
-          
+
           const isA = op.includes('adotadas regras') || op.startsWith('a');
           const isB = op.includes('encaminhamento') || op.startsWith('b');
-
 
           show("#f43-opcao-a", isA);
           show("#f43-opcao-b", isB);
 
-          if (isA) fillBlock("#val-f4310-leg", p.F4310_LEGISLACAO);
+          if (isA) fillBlock("#val-f4310-leg",  p.F4310_LEGISLACAO);
           if (isB) fillBlock("#val-f4310-docs", p.F4310_DOCS);
 
+          // 5) 4.3.11 – Inclusão de critérios (fase específica – 1ª parte)
           let show11 = false;
-          // Tenta preencher lista (aceita array ou string separada por ;)
-          if (fillList("#f43-crit-incluir", p.F43_INCLUIR)) show11 = true;
-          
-          // Tenta preencher justificativa
-          if (fillBlock("#f43-just-11", p.F43_PLANO)) show11 = true;
 
-          // Preencher textos de resumo para garantir visualização se UL falhar
-          const txt11inc = Array.isArray(p.F43_INCLUIR) ? p.F43_INCLUIR.join('; ') : (p.F43_INCLUIR || '');
-          if(txt11inc) {
-             const el = document.getElementById('F4311_INCLUIR_TXT');
-             if(el) { el.textContent = txt11inc; show11 = true; }
+          if (fillList("#f43-crit-incluir", p.F43_INCLUIR))  show11 = true;
+          if (fillBlock("#f43-just-11",     p.F43_PLANO))    show11 = true;
+
+          const txt11inc = Array.isArray(p.F43_INCLUIR)
+            ? p.F43_INCLUIR.join('; ')
+            : (p.F43_INCLUIR || '');
+
+          if (txt11inc) {
+            const el = document.getElementById('F4311_INCLUIR_TXT');
+            if (el) { el.textContent = txt11inc; show11 = true; }
           }
-          if(p.F43_PLANO) {
-             const el = document.getElementById('F4311_PLANO_TXT');
-             if(el) { el.textContent = p.F43_PLANO; show11 = true; }
+          if (p.F43_PLANO) {
+            const el = document.getElementById('F4311_PLANO_TXT');
+            if (el) { el.textContent = p.F43_PLANO; show11 = true; }
           }
 
           show("#f43-sub-11", show11);
           if (show11) haConteudo = true;
 
-
-          // --- Lógica Corrigida 4.3.12 ---
+          // 6) 4.3.12 – Inclusão de critérios (fase específica – 2ª parte)
           let show12 = false;
-          if (fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B)) show12 = true;
-          if (fillBlock("#f43-just-12", p.F43_PLANO_B)) show12 = true;
+
+          if (fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B))  show12 = true;
+          if (fillBlock("#f43-just-12",        p.F43_PLANO_B))    show12 = true;
           if (fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS)) show12 = true;
 
-          // Preencher textos de resumo
-          const txt12inc = Array.isArray(p.F43_INCLUIR_B) ? p.F43_INCLUIR_B.join('; ') : (p.F43_INCLUIR_B || '');
-          if(txt12inc) {
-             const el = document.getElementById('F4312_INCLUIR_TXT');
-             if(el) { el.textContent = txt12inc; show12 = true; }
+          const txt12inc = Array.isArray(p.F43_INCLUIR_B)
+            ? p.F43_INCLUIR_B.join('; ')
+            : (p.F43_INCLUIR_B || '');
+
+          if (txt12inc) {
+            const el = document.getElementById('F4312_INCLUIR_TXT');
+            if (el) { el.textContent = txt12inc; show12 = true; }
           }
-          if(p.F43_PLANO_B) {
-             const el = document.getElementById('F4312_PLANO_TXT');
-             if(el) { el.textContent = p.F43_PLANO_B; show12 = true; }
+          if (p.F43_PLANO_B) {
+            const el = document.getElementById('F4312_PLANO_TXT');
+            if (el) { el.textContent = p.F43_PLANO_B; show12 = true; }
           }
-          if(p.F43_DESC_PLANOS) {
-             const el = document.getElementById('F4312_DESC_TXT');
-             if(el) { el.textContent = p.F43_DESC_PLANOS; show12 = true; }
+          if (p.F43_DESC_PLANOS) {
+            const el = document.getElementById('F4312_DESC_TXT');
+            if (el) { el.textContent = p.F43_DESC_PLANOS; show12 = true; }
           }
 
           show("#f43-sub-12", show12);
           if (show12) haConteudo = true;
 
-
-          // 🔥 PATCH: nunca ocultar fase 4.3 antes do payload
-          document.querySelector('#fase-43').hidden = false;
-          document.querySelector('#fase-43').style.display = 'block';
+          // 7) Exibe ou oculta o bloco da fase 4.3 como um todo
+          const fase = document.querySelector('#fase-43');
+          if (fase) {
+            fase.hidden = !haConteudo;
+            fase.style.display = haConteudo ? 'block' : 'none';
+            fase.setAttribute('data-empty', haConteudo ? 'false' : 'true');
+          }
 
         } catch (e) {
           console.error("hydrateF43 ERROR:", e);
         }
 
-        // Fallback textual se, por qualquer motivo, as ULs ficarem vazias
+        // 8) Fallback textual: se, por qualquer motivo, as ULs ficarem vazias,
+        // monta uma lista única em #f43-fallback usando F43_LISTA_TXT / F43_LISTA.
         try {
           ensureF43Fallback(p);
         } catch (_) {}
 
-        // Marca global indicando que a Fase 4.3 já foi montada
+        // 9) Marca global indicando que a Fase 4.3 já foi montada
         window.__F43_APPLIED__ = true;
-
-        console.groupEnd();
       };
 
-            // Fallback: se nenhuma UL de 4.3.1–4.3.9 receber <li>,
+
+      // Fallback: se nenhuma UL de 4.3.1–4.3.9 receber <li>,
       // monta uma lista única usando F43_LISTA_TXT ou F43_LISTA.
       function ensureF43Fallback(p) {
         try {
