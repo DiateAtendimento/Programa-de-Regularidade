@@ -2994,7 +2994,6 @@ function syncF46ToTemplate(){
   payload.F46_CRITERIOS_TXT = makeText(payload.F46_CRITERIOS);
   }
 
-
     // === PATCH: F43_FORCE_SYNC_TO_PDF (garante exibição no PDF) ===
     try {
       // Restaura F43_LISTA a partir do localStorage se o payload atual estiver vazio
@@ -3025,6 +3024,7 @@ function syncF46ToTemplate(){
       console.warn('[PATCH-F43] Falha ao restaurar F43_LISTA', e);
     }
     // === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
+
 
 
 
