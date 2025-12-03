@@ -2997,49 +2997,34 @@ function syncF46ToTemplate(){
 
     // === PATCH: F43_FORCE_SYNC_TO_PDF (garante exibição no PDF) ===
     try {
-      // Esse trecho só roda dentro de buildPayload(obj)
-      // Então usamos 'obj' (que é o payload em construção) — não 'payload'
+      // Restaura F43_LISTA a partir do localStorage se o payload atual estiver vazio
       const st   = JSON.parse(localStorage.getItem('solic-crp-form-v1') || '{}');
       const vals = st?.values || {};
 
-      // Captura arrays de backup (se existir)
       const savedArr =
         vals['F43_LISTA[]'] ||
-        vals.F43_LISTA     ||
-        vals['F43_ITENS[]']||
-        vals.F43_ITENS     ||
+        vals.F43_LISTA      ||
+        vals['F43_ITENS[]'] ||
+        vals.F43_ITENS      ||
         [];
 
-      const savedTxt =
-        vals.F43_LISTA_TXT ||
-        (Array.isArray(savedArr) ? savedArr.join('; ') : '');
-
-      // Se o objeto atual não tiver F43_LISTA mas o localStorage tiver, restaura
-      if ((!obj.F43_LISTA || !obj.F43_LISTA.length) &&
-          Array.isArray(savedArr) && savedArr.length) {
-        obj.F43_LISTA      = savedArr;
-        obj['F43_LISTA[]'] = savedArr;
+      if ((!obj.F43_LISTA || !obj.F43_LISTA.length) && Array.isArray(savedArr) && savedArr.length) {
+        obj.F43_LISTA      = savedArr.slice();
+        obj['F43_LISTA[]'] = savedArr.slice();
         console.info('[PATCH-F43] Restaurado F43_LISTA a partir do localStorage:', savedArr);
       }
 
-      // Cria uma versão em texto apenas se houver dados reais
-      if (
-        (!obj.F43_LISTA_TXT || !obj.F43_LISTA_TXT.trim()) &&
-        Array.isArray(obj.F43_LISTA) && obj.F43_LISTA.length
-      ) {
+      if ((!obj.F43_LISTA_TXT || !obj.F43_LISTA_TXT.trim()) && Array.isArray(obj.F43_LISTA) && obj.F43_LISTA.length) {
         obj.F43_LISTA_TXT = obj.F43_LISTA.join('; ');
       }
 
-      // Se não houver nada, não força "Não informado" — deixa vazio
       if (!obj.F43_LISTA_TXT) {
         obj.F43_LISTA_TXT = '';
       }
-
     } catch (e) {
       console.warn('[PATCH-F43] Falha ao restaurar F43_LISTA', e);
     }
     // === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
-
 
 
 

@@ -803,123 +803,84 @@
       }
 
 
-
-      function __reconstruirF43(payload) {
+            function __reconstruirF43(payload) {
           const p = payload || {};
-          
-          // 1) Obter lista completa de itens marcados (array de strings)
+
+          // 1) Base: pega lista principal ou reconstrói de campos unitários
           let lista = [];
-          
-          // Prioridade: array F43_LISTA vindo do JSON
-          if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length > 0) {
+          if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length) {
               lista = [...p.F43_LISTA];
-          } 
-          // Fallback: TXT
-          else if (p.F43_LISTA_TXT) {
+          } else if (p.F43_LISTA_TXT) {
               lista = asArr(p.F43_LISTA_TXT);
-          }
-
-                    // Se ainda assim a lista estiver vazia, tenta reconstruir
-          // a partir dos campos unitários (F43_1, F43_3_A, etc.)
-          if (!lista.length) {
-            const ordem = [
-              'F43_1',
-              'F43_1_TXT',
-              'F43_2',
-              'F43_3_A',
-              'F43_3_B',
-              'F43_3_C',
-              'F43_4_A',
-              'F43_4_B',
-              'F43_5',
-              'F43_6',
-              'F43_7_A',
-              'F43_7_B',
-              'F43_7_C',
-              'F43_7_D',
-              'F43_7_E',
-              'F43_7_F',
-              'F43_7_G',
-              'F43_7_H',
-              'F43_8',
-              'F43_9'
-            ];
-
-            ordem.forEach(k => {
-              const val =
-                p[k] ||
-                p[k.toUpperCase()] ||
-                p[k.toLowerCase()];
-
-              if (Array.isArray(val)) {
-                val.forEach(v => {
-                  const s = String(v || '').trim();
-                  if (s) lista.push(s);
-                });
-              } else {
-                const s = String(val || '').trim();
-                if (s) lista.push(s);
+          } else {
+              const ordem = [
+                  'F43_1','F43_1_TXT','F43_2',
+                  'F43_3_A','F43_3_B','F43_3_C',
+                  'F43_4_A','F43_4_B',
+                  'F43_5','F43_6',
+                  'F43_7_A','F43_7_B','F43_7_C','F43_7_D','F43_7_E','F43_7_F','F43_7_G','F43_7_H',
+                  'F43_8','F43_9'
+              ];
+              ordem.forEach(k => {
+                  const val = p[k] || p[k.toUpperCase()] || p[k.toLowerCase()];
+                  if (Array.isArray(val)) val.forEach(v => { const s = String(v||'').trim(); if (s) lista.push(s); });
+                  else { const s = String(val||'').trim(); if (s) lista.push(s); }
+              });
+              if (lista.length) {
+                p.F43_LISTA = lista.slice();
+                p.F43_LISTA_TXT = lista.join('; ');
               }
-            });
-
-            // Também espelha de volta no payload normalizado,
-            // para que outros trechos (run/hydrateF43) usem o mesmo array
-            if (lista.length) {
-              p.F43_LISTA     = lista.slice();
-              p.F43_LISTA_TXT = lista.join('; ');
-            }
           }
 
+          // 2) Normalização para comparação (remove acentos e aspas curvas)
+          const normalize = (s) =>
+            String(s||'')
+              .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+              .replace(/[“”„‟]/g, '"')
+              .toLowerCase();
 
-          // 2) Função helper para categorizar por palavra-chave
+          const listaNorm = lista.map(raw => ({ raw, norm: normalize(raw) }));
+
           const filterBy = (terms) => {
-            return lista.filter(item => {
-              const s = String(item).toLowerCase();
-              return terms.some(term => s.includes(term.toLowerCase()));
-            });
+            const norms = terms.map(normalize);
+            return listaNorm
+              .filter(it => norms.some(t => it.norm.includes(t)))
+              .map(it => it.raw);
           };
 
-          // 3) Distribuição baseada no CONTEÚDO das strings (conforme form_gera_termo_solic_crp_2.html)
-          return {
-              "4.3.1": filterBy([
-                  "DIPR - Consistência", 
-                  "Caráter contributivo - Repasse"
-              ]),
-              "4.3.2": filterBy([
-                  "Utilização dos recursos previdenciários"
-              ]),
-              "4.3.3": filterBy([
-                  "Aplicações Financeiras", 
-                  "DAIR – Consistência", 
-                  "DPIN - Consistência"
-              ]),
-              "4.3.4": filterBy([
-                  "limites de contribuição do ente", 
-                  "limites de contribuição dos segurados"
-              ]),
-              "4.3.5": filterBy([
-                  "Plano de benefícios integrado"
-              ]),
-              "4.3.6": filterBy([
-                  "Instituição do regime de previdência complementar"
-              ]),
-              "4.3.7": filterBy([
-                  "Atendimento à solicitação", 
-                  "Atendimento à fiscalização", 
-                  "Equilíbrio Financeiro", 
-                  "Matriz de Saldos", 
-                  "DPIN – Encaminhamento", 
-                  "DAIR – Encaminhamento", 
-                  "DIPR – Encaminhamento", 
-                  "eSocial"
-              ]),
-              "4.3.8": filterBy([
-                  "Operacionalização da compensação"
-              ]),
-              "4.3.9": filterBy([
-                  "Requisitos para os dirigentes"
-              ])
+          // 3) Agrupamento por conteúdo (palavra-chave)
+          const grupos = {
+              "4.3.1": filterBy(["DIPR - Consistencia", "Carater contributivo - Repasse"]),
+              "4.3.2": filterBy(["Utilizacao dos recursos previdenciarios"]),
+              "4.3.3": filterBy(["Aplicacoes Financeiras", "DAIR - Consistencia", "DPIN - Consistencia"]),
+              "4.3.4": filterBy(["limites de contribuicao do ente", "limites de contribuicao dos segurados"]),
+              "4.3.5": filterBy(["Plano de beneficios integrado apenas"]),
+              "4.3.6": filterBy(["regime de previdencia complementar", "aprova"]),
+              "4.3.7": filterBy(["Atendimento a solicitacao", "Atendimento a fiscalizacao", "Equilibrio Financeiro",
+                                 "Matriz de Saldos", "DPIN - Encaminhamento", "DAIR - Encaminhamento",
+                                 "DIPR - Encaminhamento", "esocial"]),
+              "4.3.8": filterBy(["compensacao previdenciaria", "Termo de Adesao"]),
+              "4.3.9": filterBy(["Requisitos para os dirigentes", "colegiados"])
           };
+
+          // 4) Fallback posicional se nada casar (ordem fixa dos 20 itens)
+          const matched = Object.values(grupos).reduce((n, arr) => n + arr.length, 0);
+          if (!matched && lista.length) {
+            const slices = {
+              "4.3.1": [0, 2],
+              "4.3.2": [2, 3],
+              "4.3.3": [3, 6],
+              "4.3.4": [6, 8],
+              "4.3.5": [8, 9],
+              "4.3.6": [9, 10],
+              "4.3.7": [10, 18],
+              "4.3.8": [18, 19],
+              "4.3.9": [19, 20]
+            };
+            Object.entries(slices).forEach(([k,[i,j]]) => { grupos[k] = lista.slice(i, j); });
+          }
+
+          return grupos;
       }
 
 
