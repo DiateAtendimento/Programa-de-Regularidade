@@ -5,6 +5,14 @@
   function dbg(...args){ if (window.__DEBUG_SOLIC_CRP__) console.log(...args); }
   function dbe(...args){ if (window.__DEBUG_SOLIC_CRP__) console.error(...args); }
 
+  // Proxy de logs vindos do template (termo_solic_crp.html)
+  window.addEventListener('message', ev => {
+    if (ev.data && ev.data.type === 'F43_DEBUG') {
+      console.log('[F43 DEBUG from template]', ev.data);
+    }
+  });
+
+
   // === Preview helpers (fallback quando o PDF falhar) ===
   const TERMO_SESSION_KEY = 'TERMO_SOLIC_CRP_PAYLOAD';
   function stashPayloadForPreview(p){
