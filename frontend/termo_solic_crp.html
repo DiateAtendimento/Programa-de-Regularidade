@@ -847,7 +847,7 @@
               .map(it => it.raw);
           };
 
-          // 3) Agrupamento por conteúdo (palavra‑chave)
+           // 3) Agrupamento por conteúdo (palavra‑chave)
           const grupos = {
               "4.3.1": filterBy(["DIPR - Consistencia", "Carater contributivo - Repasse"]),
               "4.3.2": filterBy(["Utilizacao dos recursos previdenciarios"]),
@@ -862,25 +862,27 @@
               "4.3.9": filterBy(["Requisitos para os dirigentes", "colegiados"])
           };
 
-          // 4) Fallback posicional se nada casar (ordem fixa dos 20 itens)
-          const matched = Object.values(grupos).reduce((n, arr) => n + arr.length, 0);
-          if (!matched && lista.length) {
-            const slices = {
-              "4.3.1": [0, 2],
-              "4.3.2": [2, 3],
-              "4.3.3": [3, 6],
-              "4.3.4": [6, 8],
-              "4.3.5": [8, 9],
-              "4.3.6": [9, 10],
-              "4.3.7": [10, 18],
-              "4.3.8": [18, 19],
-              "4.3.9": [19, 20]
-            };
-            Object.entries(slices).forEach(([k,[i,j]]) => { grupos[k] = lista.slice(i, j); });
-          }
+          // 4) Fallback posicional para qualquer grupo que tenha ficado vazio
+          const slices = {
+            "4.3.1": [0, 2],
+            "4.3.2": [2, 3],
+            "4.3.3": [3, 6],
+            "4.3.4": [6, 8],
+            "4.3.5": [8, 9],
+            "4.3.6": [9, 10],
+            "4.3.7": [10, 18],
+            "4.3.8": [18, 19],
+            "4.3.9": [19, 20]
+          };
+          Object.entries(slices).forEach(([k,[i,j]]) => {
+            if (!grupos[k] || grupos[k].length === 0) {
+              grupos[k] = lista.slice(i, j);
+            }
+          });
 
           return grupos;
       }
+
 
 
       /********************************************************************
@@ -898,6 +900,9 @@
 
           // PATCH 5 — APLICA A RECONSTRUÇÃO DEFINITIVA DA FASE 4.3
           const gruposF43 = __reconstruirF43(p);
+          
+          console.log('[F43 DEBUG] gruposF43=', gruposF43, 'F43_LISTA=', p.F43_LISTA, 'F43_LISTA_TXT=', p.F43_LISTA_TXT);
+
 
           console.log("PATCH 5 → gruposF43 reconstruído:", gruposF43);
 
