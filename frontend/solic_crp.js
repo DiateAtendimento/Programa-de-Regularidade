@@ -3067,6 +3067,7 @@ function syncF46ToTemplate(){
     const payloadForPdf = {
       ...payload,
       ...makeSolicCrpCompatFields(payload),
+      __NA_ALL: false,
       __NA_LABEL: 'Não informado',
       HAS_TERMO_ENC_GESCON: payload.HAS_TERMO_ENC_GESCON ? '1' : '',
       DATA: payload.DATA_SOLIC_GERADA || payload.DATA || '',

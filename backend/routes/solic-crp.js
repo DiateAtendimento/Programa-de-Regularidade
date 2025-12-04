@@ -81,7 +81,10 @@ r.post("/termo-solic-crp-pdf", requireKey, async (req, res, next) => {
   try {
     const payload = schemaTermoSolicPdf.parse(req.body);
     // passa o req para o serviço resolver o origin corretamente
-    const pdf = await pdfFromSolicCrp(payload, req);
+    const pdf = await pdfFromSolicCrp(
+      { __NA_ALL: payload.__NA_ALL ?? false, __NA_LABEL: 'Não informado', ...payload },
+      req
+    );
     res.setHeader("Content-Type","application/pdf");
     res.setHeader("Content-Disposition",'attachment; filename="solic-crp.pdf"');
     return res.send(pdf);

@@ -2643,7 +2643,11 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
     const p = validateOr400(res, schemaTermoSolicPdf, req.body || {});
     if (!p) return;
 
-    const payload = { __NA_ALL: true, __NA_LABEL: 'Não informado', ...p };
+    const payload = {
+      __NA_LABEL: 'Não informado',
+      ...p,
+      __NA_ALL: p?.__NA_ALL ?? false, // não bloqueia o hydrateF43
+    };
 
     // =======================================================
     // 💡 INSERIR ESTE LOG: Vendo o Payload Bruto do Servidor
