@@ -1347,6 +1347,29 @@
         // ========== 5. Justificativas Gerais ==========
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
 
+        // ========== PATCH: fallback imediato para 4.3 (antes de hydrateF43) ==========
+        try {
+          const fase43 = document.querySelector('#fase-43');
+          const fb = document.querySelector('#f43-fallback');
+          const itensF43 = (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length)
+            ? p.F43_LISTA
+            : asArr(p.F43_LISTA_TXT);
+          if (fb && itensF43 && itensF43.length) {
+            fb.innerHTML =
+              '<p class="small"><strong>Critérios selecionados na Fase 4.3:</strong></p>' +
+              '<ul class="styled-list">' +
+                itensF43.map(x => `<li>${escapeHtml(x)}</li>`).join('') +
+              '</ul>';
+            if (fase43) {
+              fase43.hidden = false;
+              fase43.style.display = 'block';
+              fase43.setAttribute('data-empty', 'false');
+            }
+          }
+        } catch (e) {
+          console.warn('F43 fallback pre-hydrate fail:', e);
+        }
+
         // ========== 6. Data e assinaturas ==========
         const dataTermo = (p.data_termo || hojeBR_robusto());
         fillText('data_termo', dataTermo);
