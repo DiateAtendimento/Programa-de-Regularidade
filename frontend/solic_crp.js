@@ -3000,10 +3000,15 @@ function syncF46ToTemplate(){
   payload.F46_CRITERIOS = arr(payload.F46_CRITERIOS || payload['F46_CRITERIOS[]']);
   payload.F46_DECLS_TXT = makeText(payload.F46_DECLS);
   payload.F46_CRITERIOS_TXT = makeText(payload.F46_CRITERIOS);
+
+  // Mantém F43_LISTA consistente mesmo após recarregar do localStorage
+  ensureF43ForceSync(payload);
   }
 
- // === PATCH: F43_FORCE_SYNC_TO_PDF (garante exibição no PDF) ===
+// === PATCH: F43_FORCE_SYNC_TO_PDF (garante exibição no PDF) ===
+function ensureF43ForceSync(payload){
   try {
+    if (!payload) return;
     // Restaura F43_LISTA a partir do localStorage se o payload atual estiver vazio
     const st   = getState() || {};
     const vals = st?.values || {};
@@ -3022,17 +3027,17 @@ function syncF46ToTemplate(){
     }
 
     if ((!payload.F43_LISTA_TXT || !payload.F43_LISTA_TXT.trim()) && Array.isArray(payload.F43_LISTA) && payload.F43_LISTA.length) {
-          payload.F43_LISTA_TXT = payload.F43_LISTA.join('; ');
-        }
-
-        if (!payload.F43_LISTA_TXT) {
-          payload.F43_LISTA_TXT = '';
-        }
-      } catch (e) {
-        console.warn('[PATCH-F43] Falha ao restaurar F43_LISTA', e);
-      
-      // === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
+      payload.F43_LISTA_TXT = payload.F43_LISTA.join('; ');
     }
+
+    if (!payload.F43_LISTA_TXT) {
+      payload.F43_LISTA_TXT = '';
+    }
+  } catch (e) {
+    console.warn('[PATCH-F43] Falha ao restaurar F43_LISTA', e);
+  }
+}
+// === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
 
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
