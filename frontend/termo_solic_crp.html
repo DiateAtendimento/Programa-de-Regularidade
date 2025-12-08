@@ -1074,6 +1074,29 @@
           show("#f43-sub-12", show12);
           if (show12) haConteudo = true;
 
+          // 6.1) Caso apenas os textos-resumo (F431_LIST_TXT etc.) estejam
+          // preenchidos, garante que o bloco 4.3 não fique oculto.
+          if (!haConteudo) {
+            const resumidos = [
+              '#F431_LIST_TXT','#F432_LIST_TXT','#F433_LIST_TXT','#F434_LIST_TXT',
+              '#F435_LIST_TXT','#F436_LIST_TXT','#F437_LIST_TXT','#F438_LIST_TXT',
+              '#F439_LIST_TXT',
+              '#f43-crit-incluir','#f43-just-11','#F4311_INCLUIR_TXT','#F4311_PLANO_TXT',
+              '#f43-crit-incluir-12','#f43-just-12','#f43-desc-planos-12',
+              '#F4312_INCLUIR_TXT','#F4312_PLANO_TXT','#F4312_DESC_TXT'
+            ];
+
+            const hasResumo = resumidos.some(sel => {
+              const el = document.querySelector(sel);
+              return el && String(el.textContent || '').trim();
+            });
+
+            if (hasResumo) {
+              haConteudo = true;
+              window.__F43_HAS_CONTENT__ = true;
+            }
+          }
+
           // ================== PATCH 2 — Força exibição do bloco 4.3 mesmo vazio inicialmente ==================
           if (!haConteudo && (p.F43_LISTA_TXT || (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length))) {
             console.log('[PATCH] Forçando exibição de #fase-43 mesmo sem subitens detectados');
