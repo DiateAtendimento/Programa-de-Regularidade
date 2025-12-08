@@ -3015,6 +3015,9 @@ function syncF46ToTemplate(){
         vals.F43_ITENS      ||
         [];
 
+      // usa o payload atual; antes referenciava "obj" inexistente
+      const obj = payload || {};
+
       if ((!obj.F43_LISTA || !obj.F43_LISTA.length) && Array.isArray(savedArr) && savedArr.length) {
         obj.F43_LISTA      = savedArr.slice();
         obj['F43_LISTA[]'] = savedArr.slice();
@@ -3024,6 +3027,7 @@ function syncF46ToTemplate(){
       if ((!obj.F43_LISTA_TXT || !obj.F43_LISTA_TXT.trim()) && Array.isArray(obj.F43_LISTA) && obj.F43_LISTA.length) {
         obj.F43_LISTA_TXT = obj.F43_LISTA.join('; ');
       }
+
 
       if (!obj.F43_LISTA_TXT) {
         obj.F43_LISTA_TXT = '';
