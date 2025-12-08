@@ -1094,6 +1094,18 @@
           show("#f43-sub-12", show12);
           if (show12) haConteudo = true;
 
+          // ================== PATCH 2 — Força exibição do bloco 4.3 mesmo vazio inicialmente ==================
+          if (!haConteudo && (p.F43_LISTA_TXT || (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length))) {
+            console.log('[PATCH] Forçando exibição de #fase-43 mesmo sem subitens detectados');
+            const fase43 = document.querySelector('#fase-43');
+            if (fase43) {
+              fase43.hidden = false;
+              fase43.style.display = 'block';
+              fase43.setAttribute('data-empty', 'false');
+            }
+          }
+
+
           // 7) Exibe ou oculta o bloco da fase 4.3 como um todo
           const fase = document.querySelector('#fase-43');
           if (fase) {
@@ -1361,6 +1373,20 @@
           console.error('hydrateF43 via run() ERROR:', e);
         }
 
+        // ================== PATCH 1 — Execução tardia de segurança ==================
+        setTimeout(() => {
+          try {
+            const payloadFinal = window.__TERMO_DATA__ || p;
+            const fase43 = document.querySelector('#fase-43');
+            if (fase43 && window.hydrateF43 && !window.__F43_APPLIED__) {
+              console.log('⚙️ [PATCH] Rodando hydrateF43 (execução tardia) para garantir preenchimento completo 4.3.1–4.3.12');
+              window.hydrateF43(payloadFinal);
+            }
+          } catch (e) {
+            console.error('[PATCH] Erro na execução tardia de hydrateF43:', e);
+          }
+        }, 1500);
+
 
         // Marca HTML como pronto para impressão (sinal para o Apps Script)
         if (!window.__TERMO_READY_FIRED__) {
@@ -1437,9 +1463,6 @@
       }, 800);
     })();
   </script>
-
-  <script src="mostra_info_form_crp.js" defer></script>
-
 
 </body>
 </html>
