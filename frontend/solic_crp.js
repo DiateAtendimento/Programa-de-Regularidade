@@ -3002,42 +3002,37 @@ function syncF46ToTemplate(){
   payload.F46_CRITERIOS_TXT = makeText(payload.F46_CRITERIOS);
   }
 
-    // === PATCH: F43_FORCE_SYNC_TO_PDF (garante exibição no PDF) ===
-    try {
-      // Restaura F43_LISTA a partir do localStorage se o payload atual estiver vazio
-      const st   = JSON.parse(localStorage.getItem('solic-crp-form-v1') || '{}');
-      const vals = st?.values || {};
+ // === PATCH: F43_FORCE_SYNC_TO_PDF (garante exibição no PDF) ===
+  try {
+    // Restaura F43_LISTA a partir do localStorage se o payload atual estiver vazio
+    const st   = getState() || {};
+    const vals = st?.values || {};
 
-      const savedArr =
-        vals['F43_LISTA[]'] ||
-        vals.F43_LISTA      ||
-        vals['F43_ITENS[]'] ||
-        vals.F43_ITENS      ||
-        [];
+    const savedArr =
+      vals['F43_LISTA[]'] ||
+      vals.F43_LISTA      ||
+      vals['F43_ITENS[]'] ||
+      vals.F43_ITENS      ||
+      [];
 
-      // usa o payload atual; antes referenciava "obj" inexistente
-      const obj = payload || {};
-
-      if ((!obj.F43_LISTA || !obj.F43_LISTA.length) && Array.isArray(savedArr) && savedArr.length) {
-        obj.F43_LISTA      = savedArr.slice();
-        obj['F43_LISTA[]'] = savedArr.slice();
-        console.info('[PATCH-F43] Restaurado F43_LISTA a partir do localStorage:', savedArr);
-      }
-
-      if ((!obj.F43_LISTA_TXT || !obj.F43_LISTA_TXT.trim()) && Array.isArray(obj.F43_LISTA) && obj.F43_LISTA.length) {
-        obj.F43_LISTA_TXT = obj.F43_LISTA.join('; ');
-      }
-
-
-      if (!obj.F43_LISTA_TXT) {
-        obj.F43_LISTA_TXT = '';
-      }
-    } catch (e) {
-      console.warn('[PATCH-F43] Falha ao restaurar F43_LISTA', e);
+    if ((!payload.F43_LISTA || !payload.F43_LISTA.length) && Array.isArray(savedArr) && savedArr.length) {
+      payload.F43_LISTA      = savedArr.slice();
+      payload['F43_LISTA[]'] = savedArr.slice();
+      console.info('[PATCH-F43] Restaurado F43_LISTA a partir do localStorage:', savedArr);
     }
-    // === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
 
+    if ((!payload.F43_LISTA_TXT || !payload.F43_LISTA_TXT.trim()) && Array.isArray(payload.F43_LISTA) && payload.F43_LISTA.length) {
+          payload.F43_LISTA_TXT = payload.F43_LISTA.join('; ');
+        }
 
+        if (!payload.F43_LISTA_TXT) {
+          payload.F43_LISTA_TXT = '';
+        }
+      } catch (e) {
+        console.warn('[PATCH-F43] Falha ao restaurar F43_LISTA', e);
+      
+      // === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
+    }
 
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
