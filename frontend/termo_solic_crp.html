@@ -687,7 +687,7 @@
         // F43_LISTA: junta qualquer variação que chegar (array, string, "[]", TXT)
         (function () {
           const merged = [];
-          ['F43_LISTA', 'F43_LISTA[]', 'F43_ITENS', 'F43_ITENS[]'].forEach(k => {
+          ['F43_LISTA', 'F43_LISTA[]', 'F43_LISTA[][]', 'F43_ITENS', 'F43_ITENS[]', 'F43_ITENS[][]', 'fase4_3_criterios', 'fase4_3_criterios[]'].forEach(k => {
             if (p[k] !== undefined && p[k] !== null && p[k] !== '') {
               merged.push(...asArr(p[k]));
             }
@@ -704,7 +704,7 @@
         // F43_INCLUIR (4.3.11 – critérios a incluir)
         (function () {
           const merged = [];
-          ['F43_INCLUIR', 'F43_INCLUIR[]', 'F43_INCLUIR_TXT', 'f43_incluir'].forEach(k => {
+          ['F43_INCLUIR', 'F43_INCLUIR[]', 'F43_INCLUIR[][]', 'F43_INCLUIR_TXT', 'f43_incluir'].forEach(k => {
             if (p[k] !== undefined && p[k] !== null && p[k] !== '') {
               merged.push(...asArr(p[k]));
             }
@@ -715,7 +715,7 @@
         // F43_INCLUIR_B (4.3.12 – critérios a incluir na fase específica)
         (function () {
           const merged = [];
-          ['F43_INCLUIR_B', 'F43_INCLUIR_B[]', 'F43_INCLUIR_B_TXT', 'f43_incluir_b'].forEach(k => {
+          ['F43_INCLUIR_B', 'F43_INCLUIR_B[]', 'F43_INCLUIR_B[][]', 'F43_INCLUIR_B_TXT', 'f43_incluir_b'].forEach(k => {
             if (p[k] !== undefined && p[k] !== null && p[k] !== '') {
               merged.push(...asArr(p[k]));
             }
@@ -855,6 +855,11 @@
               if (Array.isArray(val)) val.forEach(v => { const s = String(v||'').trim(); if (s) lista.push(s); });
               else { const s = String(val||'').trim(); if (s) lista.push(s); }
           });
+          // aliases extras que podem chegar do backend/Joi
+          const extraLista = p.fase4_3_criterios || p['fase4_3_criterios[]'] || p['F43_LISTA[][]'] || p['F43_ITENS[][]'];
+          if (!lista.length && Array.isArray(extraLista) && extraLista.length) {
+            lista = [...extraLista];
+          }
           if (!lista.length && Array.isArray(p.fase4_3_criterios) && p.fase4_3_criterios.length) {
             lista = [...p.fase4_3_criterios];
             p.F43_LISTA = lista.slice();
