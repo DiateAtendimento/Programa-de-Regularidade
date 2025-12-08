@@ -153,19 +153,17 @@
           <!-- 4.3.1 -->
           <div class="sub-section" id="f43-sub-1">
             <p class="small"><strong>4.3.1 Manutenção de regularidade nos critérios relativos a repasses, aportes e parcelamento:</strong></p>
-            
             <ul id="f43-1" class="styled-list" data-empty="Não preenchido"></ul>
             <!-- Texto-resumo garantido via data-k (mesmo se UL falhar) -->
             <p class="small" id="F431_LIST_TXT" data-k="F431_LIST_TXT"></p>
           </div>
 
-
+          <!-- 4.3.2 -->
           <div class="sub-section" id="f43-sub-2">
             <p class="small"><strong>4.3.2 Regularidade quanto à utilização de recursos previdenciários:</strong></p>
             <ul id="f43-2" class="styled-list" data-empty="Não preenchido"></ul>
             <p class="small" id="F432_LIST_TXT" data-k="F432_LIST_TXT"></p>
           </div>
-
 
           <!-- 4.3.3 -->
           <div class="sub-section" id="f43-sub-3">
@@ -219,7 +217,6 @@
           <!-- Fallback textual caso os ULs 4.3.1–4.3.9 fiquem vazios -->
           <div id="f43-fallback" class="value-block" style="margin-top: .35rem;"></div>
 
-
           <!-- 4.3.10 -->
           <div class="sub-section" id="f43-sub-10">
             <p class="small"><strong>4.3.10 – Em relação à adequação das regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</strong></p>
@@ -227,13 +224,13 @@
             <div id="f43-opcao-a" class="field-group" hidden>
               <p><strong>a)</strong> Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS...</p>
               <p class="label-like">Relacionar a legislação:</p>
-              <div class="value-block" id="val-f4310-leg"></div>
+              <div class="value-block" id="val-f4310-leg" data-k="F4310_LEGISLACAO"></div>
             </div>
 
             <div id="f43-opcao-b" class="field-group" hidden>
               <p><strong>b)</strong> Comprovamos encaminhamento de propostas ao Poder Legislativo...</p>
               <p class="label-like">Documentos anexados:</p>
-              <div class="value-block" id="val-f4310-docs"></div>
+              <div class="value-block" id="val-f4310-docs" data-k="F4310_DOCS"></div>
             </div>
           </div>
 
@@ -256,7 +253,6 @@
             </p>
           </div>
 
-
           <!-- 4.3.12 -->
           <div class="sub-section" id="f43-sub-12">
             <p class="small"><strong>4.3.12 Solicitação de inclusão de critérios nos Planos de Ação da Fase Específica</strong></p>
@@ -277,11 +273,8 @@
               Obs.: Não se aplica a critérios de DIPR, Caráter Contributivo – Repasse e Utilização dos Recursos Previdenciários (PAP).
             </p>
           </div>
-
-
         </div> <!-- FIM DA 4.3 -->
 
-        
         <!-- 4.4 -->
         <div class="avoid-break phase-block" id="fase-44" hidden>
           <h3>4.4 Fase Específica/Focalizada – 4º CRP Emergencial</h3>
@@ -387,10 +380,7 @@
             <div class="value-block" data-k="F466_EXEC_RES"></div>
           </div>
         </div>
-
       </section>
-
-
 
       <!-- 5. JUSTIFICATIVAS GERAIS -->
       <section class="term-section avoid-break">
@@ -464,7 +454,6 @@
         return temDadosReais ? false : true;
       };
 
-
       function fillText(key, val){
         const raw = (val == null) ? '' : String(val);
         const trimmed = raw.trim();
@@ -497,8 +486,6 @@
 
         $$('[data-k="'+key+'"]').forEach(el => { el.textContent = s; });
       }
-
-
 
       /* ===== Utilitários ===== */
       function escapeHtml(s){
@@ -640,7 +627,6 @@
         }
       }
 
-
       // ==================== FUNÇÃO GLOBAL (usada por hydrateF43) ====================
       function togglePhaseBlock(id, hasContent) {
         const el = document.querySelector(id);
@@ -650,7 +636,6 @@
           el.setAttribute('data-empty', hasContent ? 'false' : 'true');
         }
       }
-
 
       /* ===== Normalização do payload ===== */
       function normalizePayload(p0){
@@ -785,7 +770,6 @@
           console.error('[F43 resumo direto] erro ao preencher textos 4.3.1-4.3.9:', e);
         }
 
-
         // 4.3.11 – sempre gera texto de critérios e justificativa
         const _incl11Arr = asArr(
           p.F43_INCLUIR ||
@@ -806,8 +790,6 @@
         p.F4312_INCLUIR_TXT = _incl12Arr.join('; ');
         p.F4312_PLANO_TXT   = p.F43_PLANO_B || '';
         p.F4312_DESC_TXT    = p.F43_DESC_PLANOS || '';
-
-
 
         // 4.4
         p.F44_CRITERIOS   = asArr(getAny('F44_CRITERIOS', 'F44_CRITERIOS[]', 'f44_criterios'));
@@ -851,90 +833,88 @@
       }
 
       function __reconstruirF43(payload) {
-          const p = payload || {};
+        const p = payload || {};
 
-          // 1) Base: pega lista principal ou reconstrói de campos unitários
-          let lista = [];
-          if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length) {
-              lista = [...p.F43_LISTA];
-          } else if (p.F43_LISTA_TXT) {
-              lista = asArr(p.F43_LISTA_TXT);
-          } else {
-            const ordem = [
-                'F43_1','F43_1_TXT','F43_2',
-                'F43_3_A','F43_3_B','F43_3_C',
-                'F43_4_A','F43_4_B',
-                'F43_5','F43_6',
-                'F43_7_A','F43_7_B','F43_7_C','F43_7_D','F43_7_E','F43_7_F','F43_7_G','F43_7_H',
-                'F43_8','F43_9'
-            ];
-            ordem.forEach(k => {
-                const val = p[k] || p[k.toUpperCase()] || p[k.toLowerCase()];
-                if (Array.isArray(val)) val.forEach(v => { const s = String(v||'').trim(); if (s) lista.push(s); });
-                else { const s = String(val||'').trim(); if (s) lista.push(s); }
-            });
-            if (!lista.length && Array.isArray(p.fase4_3_criterios) && p.fase4_3_criterios.length) {
-              lista = [...p.fase4_3_criterios];
-              p.F43_LISTA = lista.slice();
-              p.F43_LISTA_TXT = lista.join('; ');
-            }
-          }
-
-          // 2) Normalização para comparação (remove acentos/aspas curvas)
-          const normalize = (s) =>
-            String(s||'')
-              .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-              .replace(/[“”„«»]/g, '"')
-              .replace(/[–—]/g, '-')         // en/emdash → hífen
-              .replace(/^[a-z]\)\s*/i, '')   // tira “a) ”, “b) ” etc.
-              .toLowerCase();
-
-          const listaNorm = lista.map(raw => ({ raw, norm: normalize(raw) }));
-
-          const filterBy = (terms) => {
-            const norms = terms.map(normalize);
-            return listaNorm
-              .filter(it => norms.some(t => it.norm.includes(t)))
-              .map(it => it.raw);
-          };
-
-           // 3) Agrupamento por conteúdo (palavra‑chave)
-          const grupos = {
-              "4.3.1": filterBy(["DIPR - Consistencia", "Carater contributivo - Repasse"]),
-              "4.3.2": filterBy(["Utilizacao dos recursos previdenciarios"]),
-              "4.3.3": filterBy(["Aplicacoes Financeiras", "DAIR - Consistencia", "DPIN - Consistencia"]),
-              "4.3.4": filterBy(["limites de contribuicao do ente", "limites de contribuicao dos segurados"]),
-              "4.3.5": filterBy(["Plano de beneficios integrado apenas"]),
-              "4.3.6": filterBy(["regime de previdencia complementar", "aprova"]),
-              "4.3.7": filterBy(["Atendimento a solicitacao", "Atendimento a fiscalizacao", "Equilibrio Financeiro",
-                                 "Matriz de Saldos", "DPIN - Encaminhamento", "DAIR - Encaminhamento",
-                                 "DIPR - Encaminhamento", "esocial"]),
-              "4.3.8": filterBy(["compensacao previdenciaria", "Termo de Adesao"]),
-              "4.3.9": filterBy(["Requisitos para os dirigentes", "colegiados"])
-          };
-
-          // 4) Fallback posicional para qualquer grupo que tenha ficado vazio
-          const slices = {
-            "4.3.1": [0, 2],
-            "4.3.2": [2, 3],
-            "4.3.3": [3, 6],
-            "4.3.4": [6, 8],
-            "4.3.5": [8, 9],
-            "4.3.6": [9, 10],
-            "4.3.7": [10, 18],
-            "4.3.8": [18, 19],
-            "4.3.9": [19, 20]
-          };
-          Object.entries(slices).forEach(([k,[i,j]]) => {
-            if (!grupos[k] || grupos[k].length === 0) {
-              grupos[k] = lista.slice(i, j);
-            }
+        // 1) Base: pega lista principal ou reconstrói de campos unitários
+        let lista = [];
+        if (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length) {
+            lista = [...p.F43_LISTA];
+        } else if (p.F43_LISTA_TXT) {
+            lista = asArr(p.F43_LISTA_TXT);
+        } else {
+          const ordem = [
+              'F43_1','F43_1_TXT','F43_2',
+              'F43_3_A','F43_3_B','F43_3_C',
+              'F43_4_A','F43_4_B',
+              'F43_5','F43_6',
+              'F43_7_A','F43_7_B','F43_7_C','F43_7_D','F43_7_E','F43_7_F','F43_7_G','F43_7_H',
+              'F43_8','F43_9'
+          ];
+          ordem.forEach(k => {
+              const val = p[k] || p[k.toUpperCase()] || p[k.toLowerCase()];
+              if (Array.isArray(val)) val.forEach(v => { const s = String(v||'').trim(); if (s) lista.push(s); });
+              else { const s = String(val||'').trim(); if (s) lista.push(s); }
           });
+          if (!lista.length && Array.isArray(p.fase4_3_criterios) && p.fase4_3_criterios.length) {
+            lista = [...p.fase4_3_criterios];
+            p.F43_LISTA = lista.slice();
+            p.F43_LISTA_TXT = lista.join('; ');
+          }
+        }
 
-          return grupos;
+        // 2) Normalização para comparação (remove acentos/aspas curvas)
+        const normalize = (s) =>
+          String(s||'')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[“”„«»]/g, '"')
+            .replace(/[–—]/g, '-')         // en/emdash → hífen
+            .replace(/^[a-z]\)\s*/i, '')   // tira “a) ”, “b) ” etc.
+            .toLowerCase();
+
+        const listaNorm = lista.map(raw => ({ raw, norm: normalize(raw) }));
+
+        const filterBy = (terms) => {
+          const norms = terms.map(normalize);
+          return listaNorm
+            .filter(it => norms.some(t => it.norm.includes(t)))
+            .map(it => it.raw);
+        };
+
+        // 3) Agrupamento por conteúdo (palavra-chave)
+        const grupos = {
+            "4.3.1": filterBy(["DIPR - Consistencia", "Carater contributivo - Repasse"]),
+            "4.3.2": filterBy(["Utilizacao dos recursos previdenciarios"]),
+            "4.3.3": filterBy(["Aplicacoes Financeiras", "DAIR - Consistencia", "DPIN - Consistencia"]),
+            "4.3.4": filterBy(["limites de contribuicao do ente", "limites de contribuicao dos segurados"]),
+            "4.3.5": filterBy(["Plano de beneficios integrado apenas"]),
+            "4.3.6": filterBy(["regime de previdencia complementar", "aprova"]),
+            "4.3.7": filterBy(["Atendimento a solicitacao", "Atendimento a fiscalizacao", "Equilibrio Financeiro",
+                               "Matriz de Saldos", "DPIN - Encaminhamento", "DAIR - Encaminhamento",
+                               "DIPR - Encaminhamento", "esocial"]),
+            "4.3.8": filterBy(["compensacao previdenciaria", "Termo de Adesao"]),
+            "4.3.9": filterBy(["Requisitos para os dirigentes", "colegiados"])
+        };
+
+        // 4) Fallback posicional para qualquer grupo que tenha ficado vazio
+        const slices = {
+          "4.3.1": [0, 2],
+          "4.3.2": [2, 3],
+          "4.3.3": [3, 6],
+          "4.3.4": [6, 8],
+          "4.3.5": [8, 9],
+          "4.3.6": [9, 10],
+          "4.3.7": [10, 18],
+          "4.3.8": [18, 19],
+          "4.3.9": [19, 20]
+        };
+        Object.entries(slices).forEach(([k,[i,j]]) => {
+          if (!grupos[k] || grupos[k].length === 0) {
+            grupos[k] = lista.slice(i, j);
+          }
+        });
+
+        return grupos;
       }
-
-
 
       /********************************************************************
        * hydrateF43 — função GLOBAL responsável por renderizar a Fase 4.3
@@ -976,13 +956,13 @@
 
         console.groupEnd();
 
-
         // 🔥 Variável global para informar ao run() que a fase 4.3 tem conteúdo
         window.__F43_HAS_CONTENT__ = false;
 
-        try {
-          let haConteudo = false;
+        // haConteudo precisa existir também fora do try, para o fallback textual
+        let haConteudo = false;
 
+        try {
           // 1) Reconstrói os grupos de critérios com base em F43_LISTA / F43_LISTA_TXT
           const gruposF43 = __reconstruirF43(p);
 
@@ -1105,7 +1085,6 @@
             }
           }
 
-
           // 7) Exibe ou oculta o bloco da fase 4.3 como um todo
           const fase = document.querySelector('#fase-43');
           if (fase) {
@@ -1128,7 +1107,11 @@
             haConteudo = true;
             window.__F43_HAS_CONTENT__ = true;
             const fase = document.querySelector('#fase-43');
-            if (fase) { fase.hidden = false; fase.style.display = 'block'; fase.setAttribute('data-empty','false'); }
+            if (fase) {
+              fase.hidden = false;
+              fase.style.display = 'block';
+              fase.setAttribute('data-empty','false');
+            }
           }
         } catch (_) {}
 
@@ -1144,7 +1127,6 @@
           console.error("[F43 DEBUG] Erro ao executar __debugF43:", e);
         }
       };
-
 
       // Fallback: se nenhuma UL de 4.3.1–4.3.9 receber <li>,
       // monta uma lista única usando F43_LISTA_TXT ou F43_LISTA.
@@ -1189,7 +1171,6 @@
         }
       }
 
-
       function hojeBR_robusto(){
         try{
           const s = new Date().toLocaleDateString('pt-BR');
@@ -1205,7 +1186,7 @@
         return (typeof __NA_ALL__==='function' && __NA_ALL__()) ? __NA_LABEL__() : '—';
       }
 
-            // ================== ANCHOR: INÍCIO run(payload) – VERSÃO SIMPLIFICADA ==================
+      // ================== ANCHOR: INÍCIO run(payload) – VERSÃO SIMPLIFICADA ==================
       function run(payload) {
         console.log("TERMO: run() iniciado", payload);
 
@@ -1387,7 +1368,6 @@
           }
         }, 1500);
 
-
         // Marca HTML como pronto para impressão (sinal para o Apps Script)
         if (!window.__TERMO_READY_FIRED__) {
           window.__TERMO_READY_FIRED__ = true;
@@ -1399,7 +1379,6 @@
         }
       }
       // ================== ANCHOR: FIM run(payload) – VERSÃO SIMPLIFICADA ==================
-
 
       // DEBUG LOCAL via ?p=
       try {
@@ -1432,25 +1411,22 @@
 
       // Exposição global
       window.run = run;
-      
       window.__TERMO_RUN__ = run;
 
       document.addEventListener("TERMO_PRINT_READY", () => {
-          if (window.__F43_APPLIED__) return;
-          window.__F43_APPLIED__ = true;
+        if (window.__F43_APPLIED__) return;
+        window.__F43_APPLIED__ = true;
 
-          try {
-              const p = window.__TERMO_DATA__;
-              if (p && window.hydrateF43) {
-                console.log("🔥 hydrateF43 FINAL → Aplicando sobre o HTML já montado");
-                requestAnimationFrame(() => window.hydrateF43(p));
-              }
-          } catch(e){
-              console.error("hydrateF43 final ERROR:", e);
+        try {
+          const p = window.__TERMO_DATA__;
+          if (p && window.hydrateF43) {
+            console.log("🔥 hydrateF43 FINAL → Aplicando sobre o HTML já montado");
+            requestAnimationFrame(() => window.hydrateF43(p));
           }
+        } catch(e){
+          console.error("hydrateF43 final ERROR:", e);
+        }
       });
-
-
 
       document.addEventListener('TERMO_DATA_READY', () => { try { run(window.__TERMO_DATA__ || {}); } catch(e){ console.error(e);} });
       document.addEventListener('TERMO_DATA',       () => { try { run(window.__TERMO_DATA__ || {}); } catch(e){ console.error(e);} });
@@ -1463,6 +1439,5 @@
       }, 800);
     })();
   </script>
-
 </body>
 </html>
