@@ -2402,6 +2402,9 @@ function syncF46ToTemplate(){
 
     const compat = makeSolicCrpCompatFields(obj);
     dbg('[SOLIC-CRP] Payload (compat):', compat);
+
+    // Garantia extra: força sincronização do bloco 4.3 antes de devolver
+    ensureF43ForceSync(obj);
     
     return obj;
   }
