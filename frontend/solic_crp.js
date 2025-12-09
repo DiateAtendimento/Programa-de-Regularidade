@@ -2407,7 +2407,6 @@ function syncF46ToTemplate(){
 
     // Garantia extra: força sincronização do bloco 4.3 antes de devolver
     ensureF43ForceSync(obj);
-    populateLegacyF43Text(obj);
     
     return obj;
   }
@@ -3044,19 +3043,6 @@ function ensureF43ForceSync(payload){
   }
 }
 // === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
-
-// Preenche aliases legados/textuais da 4.3 (F431_LIST_TXT ... F439_LIST_TXT)
-function populateLegacyF43Text(payload){
-  try{
-    if (!payload) return;
-    const txt = payload.F43_LISTA_TXT || '';
-    for (let i = 1; i <= 9; i++) {
-      payload[`F43${i}_LIST_TXT`] = txt;
-    }
-  }catch(e){
-    console.warn('populateLegacyF43Text fail', e);
-  }
-}
 
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
