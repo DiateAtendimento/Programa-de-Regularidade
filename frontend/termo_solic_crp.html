@@ -918,6 +918,27 @@
           }
         });
 
+        // 4.1) Se algum grupo vier "inchado" (ex.: todos os 20 itens), corta pelo tamanho esperado
+        const expected = {
+          "4.3.1": 2, "4.3.2": 1, "4.3.3": 3, "4.3.4": 2, "4.3.5": 1,
+          "4.3.6": 1, "4.3.7": 8, "4.3.8": 1, "4.3.9": 1
+        };
+        Object.entries(expected).forEach(([k, max]) => {
+          if (Array.isArray(grupos[k]) && grupos[k].length > max) {
+            grupos[k] = grupos[k].slice(0, max);
+          }
+        });
+
+        // 4.2) Se TODOS os grupos ficaram com o mesmo tamanho da lista completa (bug de filtro),
+        // refaz com os slices padroes para evitar repetir tudo em cada sub-bloco.
+        const allFull = lista.length > 0 &&
+          Object.values(grupos).every(arr => Array.isArray(arr) && arr.length === lista.length);
+        if (allFull) {
+          Object.entries(slices).forEach(([k,[i,j]]) => {
+            grupos[k] = lista.slice(i, j);
+          });
+        }
+
         return grupos;
       }
 
@@ -1033,12 +1054,13 @@
           // 5) 4.3.11 – Inclusão de critérios (fase específica – 1ª parte)
           let show11 = false;
 
-          if (fillList("#f43-crit-incluir", p.F43_INCLUIR))  show11 = true;
+          const inc11 = asArr(p.F43_INCLUIR || p['F43_INCLUIR[]'] || p.F43_INCLUIR_TXT || '');
+          if (fillList("#f43-crit-incluir", inc11))  show11 = true;
           if (fillBlock("#f43-just-11",     p.F43_PLANO))    show11 = true;
 
           const txt11inc = Array.isArray(p.F43_INCLUIR)
             ? p.F43_INCLUIR.join('; ')
-            : (p.F43_INCLUIR || '');
+            : (p.F43_INCLUIR || p.F43_INCLUIR_TXT || '');
 
           if (txt11inc) {
             const el = document.getElementById('F4311_INCLUIR_TXT');
@@ -1055,13 +1077,14 @@
           // 6) 4.3.12 – Inclusão de critérios (fase específica – 2ª parte)
           let show12 = false;
 
-          if (fillList("#f43-crit-incluir-12", p.F43_INCLUIR_B))  show12 = true;
+          const inc12 = asArr(p.F43_INCLUIR_B || p['F43_INCLUIR_B[]'] || p.F43_INCLUIR_B_TXT || '');
+          if (fillList("#f43-crit-incluir-12", inc12))  show12 = true;
           if (fillBlock("#f43-just-12",        p.F43_PLANO_B))    show12 = true;
           if (fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS)) show12 = true;
 
           const txt12inc = Array.isArray(p.F43_INCLUIR_B)
             ? p.F43_INCLUIR_B.join('; ')
-            : (p.F43_INCLUIR_B || '');
+            : (p.F43_INCLUIR_B || p.F43_INCLUIR_B_TXT || '');
 
           if (txt12inc) {
             const el = document.getElementById('F4312_INCLUIR_TXT');
