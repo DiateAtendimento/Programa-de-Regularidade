@@ -991,6 +991,48 @@
         try {
           // 1) Reconstrói os grupos de critérios com base em F43_LISTA / F43_LISTA_TXT
           const gruposF43 = __reconstruirF43(p);
+          const listaBase = asArr(p.F43_LISTA || p['F43_LISTA[]'] || p.F43_LISTA_TXT || '');
+
+          // Se todos os grupos vieram vazios mas temos lista base, força o fatiamento posicional
+          const allEmpty = Object.values(gruposF43).every(arr => !arr || !arr.length);
+          if (allEmpty && listaBase.length) {
+            const slicesHard = {
+              "4.3.1": [0, 2],
+              "4.3.2": [2, 3],
+              "4.3.3": [3, 6],
+              "4.3.4": [6, 8],
+              "4.3.5": [8, 9],
+              "4.3.6": [9, 10],
+              "4.3.7": [10, 18],
+              "4.3.8": [18, 19],
+              "4.3.9": [19, 20]
+            };
+            Object.entries(slicesHard).forEach(([k,[i,j]]) => {
+              gruposF43[k] = listaBase.slice(i,j);
+            });
+            console.warn('[F43 DEBUG] Todos os grupos vazios; aplicando fatiamento posicional de backup', gruposF43);
+          }
+
+          // Se apenas alguns grupos ficaram vazios, ainda assim preencha a partir da lista base
+          if (!allEmpty && listaBase.length) {
+            const slicesHard = {
+              "4.3.1": [0, 2],
+              "4.3.2": [2, 3],
+              "4.3.3": [3, 6],
+              "4.3.4": [6, 8],
+              "4.3.5": [8, 9],
+              "4.3.6": [9, 10],
+              "4.3.7": [10, 18],
+              "4.3.8": [18, 19],
+              "4.3.9": [19, 20]
+            };
+            Object.entries(slicesHard).forEach(([k,[i,j]]) => {
+              if (!gruposF43[k] || !gruposF43[k].length) {
+                gruposF43[k] = listaBase.slice(i, j);
+              }
+            });
+            console.warn('[F43 DEBUG] Grupos parciais; preenchendo vazios com fatiamento posicional', gruposF43);
+          }
 
           // 2) DEBUG opcional para quem estiver carregando o termo em iframe
           try {
