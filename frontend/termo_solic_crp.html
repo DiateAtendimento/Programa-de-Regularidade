@@ -974,9 +974,7 @@
 
         // Testa manualmente o preenchimento se existir o campo principal
         const elMain = document.querySelector("#fase43-itens") || document.querySelector("#f43-1");
-        if (elMain) {
-          elMain.innerHTML = "<li style='color:red;'>[DEBUG] elemento #fase43-itens encontrado — preenchimento possível</li>";
-        } else {
+        if (!elMain) {
           console.warn("⚠️ Nenhum UL de F43 foi encontrado para preencher!");
         }
 
@@ -1075,6 +1073,19 @@
               window.__F43_HAS_CONTENT__ = true;
             }
           });
+
+          // Caso nenhuma UL tenha sido preenchida, mas exista listaBase,
+          // joga toda a lista em 4.3.1 para não sair vazio no PDF.
+          if (!haConteudo && listaBase.length) {
+            const okBase = fillList('#f43-1', listaBase);
+            if (okBase) {
+              console.warn('[F43 DEBUG] Nenhum sub-bloco preenchido; usando listaBase inteira em 4.3.1');
+              const sub1 = document.querySelector('#f43-sub-1');
+              if (sub1) sub1.style.display = '';
+              haConteudo = true;
+              window.__F43_HAS_CONTENT__ = true;
+            }
+          }
 
           // 4) 4.3.10 – Adequação das regras de benefícios (opções a / b)
           const op = String(
