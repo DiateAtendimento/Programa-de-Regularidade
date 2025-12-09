@@ -2287,6 +2287,8 @@ function syncF46ToTemplate(){
     obj.F44_DECLS_TXT       = (obj.F44_DECLS && Array.isArray(obj.F44_DECLS)) ? obj.F44_DECLS.join('\n') : (obj.F44_DECLS || '');
     obj.F46_CRITERIOS_TXT   = (obj.F46_CRITERIOS && Array.isArray(obj.F46_CRITERIOS)) ? obj.F46_CRITERIOS.join('\n') : (obj.F46_CRITERIOS || '');
     obj.F46_FINALIDADES_TXT = (obj.F46_FINALIDADES && Array.isArray(obj.F46_FINALIDADES)) ? obj.F46_FINALIDADES.join('\n') : (obj.F46_FINALIDADES || '');
+    obj.fase4_3_criterios   = Array.isArray(obj.F43_LISTA) ? obj.F43_LISTA.slice() : asArrayCompat(obj.F43_LISTA);
+    obj['fase4_3_criterios[]'] = obj.fase4_3_criterios.slice();
 
     // Campo sintético para o template: tudo de 4.3.x junto
     if (!obj.DEFICIT_ATUARIAL) {
@@ -2405,6 +2407,7 @@ function syncF46ToTemplate(){
 
     // Garantia extra: força sincronização do bloco 4.3 antes de devolver
     ensureF43ForceSync(obj);
+    populateLegacyF43Text(obj);
     
     return obj;
   }
@@ -3041,6 +3044,19 @@ function ensureF43ForceSync(payload){
   }
 }
 // === FIM PATCH: F43_FORCE_SYNC_TO_PDF ===
+
+// Preenche aliases legados/textuais da 4.3 (F431_LIST_TXT ... F439_LIST_TXT)
+function populateLegacyF43Text(payload){
+  try{
+    if (!payload) return;
+    const txt = payload.F43_LISTA_TXT || '';
+    for (let i = 1; i <= 9; i++) {
+      payload[`F43${i}_LIST_TXT`] = txt;
+    }
+  }catch(e){
+    console.warn('populateLegacyF43Text fail', e);
+  }
+}
 
 
   /* ========= Fluxo ÚNICO/ROBUSTO de PDF (via backend) ========= */
