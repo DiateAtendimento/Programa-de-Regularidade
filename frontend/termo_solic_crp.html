@@ -1220,8 +1220,6 @@
         } catch (_) {}
 
         // 9) Marca global indicando que a Fase 4.3 já foi montada
-        window.__F43_APPLIED__ = true;
-
         // 🔍 Dispara debug detalhado da Fase 4.3
         try {
           if (window.__debugF43) {
@@ -1542,13 +1540,19 @@
 
       document.addEventListener("TERMO_PRINT_READY", () => {
         if (window.__F43_APPLIED__) return;
-        window.__F43_APPLIED__ = true;
-
         try {
           const p = window.__TERMO_DATA__;
           if (p && window.hydrateF43) {
             console.log("🔥 hydrateF43 FINAL → Aplicando sobre o HTML já montado");
-            requestAnimationFrame(() => window.hydrateF43(p));
+            requestAnimationFrame(() => {
+              try {
+                window.hydrateF43(p);
+                window.__F43_APPLIED__ = true; // marca sucesso
+              } catch (e) {
+                window.__F43_APPLIED__ = false; // permite nova tentativa
+                console.error("hydrateF43 final ERROR:", e);
+              }
+            });
           }
         } catch(e){
           console.error("hydrateF43 final ERROR:", e);
