@@ -2126,6 +2126,15 @@ function syncF46ToTemplate(){
     obj['F43_LISTA[]'] = f43_current.length > 0 ? f43_current : f43_saved;
     obj.F43_LISTA      = obj['F43_LISTA[]']; // espelho textual
 
+    if (window.__DEBUG_SOLIC_CRP__) {
+      console.log('[DEBUG_F43_BUILD] selecao 4.3.1-4.3.9', {
+        f43_current,
+        f43_saved,
+        F43_LISTA: obj.F43_LISTA,
+        F43_LISTA_TXT: obj.F43_LISTA_TXT
+      });
+    }
+
 
     // PORTARIA padronizada (caso não venha do formulário)
     if (!obj.PORTARIA_SRPC) obj.PORTARIA_SRPC = '2.010/2025';
@@ -3071,6 +3080,15 @@ function ensureF43ForceSync(payload){
       payload['F43_LISTA[]'] = payload.F43_LISTA;
     }
 
+    if (window.__DEBUG_SOLIC_CRP__) {
+      console.log('[DEBUG_F43_PDF] antes do compat', {
+        F43_LISTA: payload.F43_LISTA,
+        F43_LISTA_TXT: payload.F43_LISTA_TXT,
+        F43_INCLUIR: payload.F43_INCLUIR,
+        F43_INCLUIR_B: payload.F43_INCLUIR_B
+      });
+    }
+
 
 
     const payloadForPdf = {
@@ -3175,6 +3193,18 @@ function ensureF43ForceSync(payload){
       // 2. ATRIBUIÇÃO: Agora apenas atribui o valor (sem 'const')
       payload = buildPayload(); 
       collectFase4IntoPayload(payload);
+
+      if (window.__DEBUG_SOLIC_CRP__) {
+        console.log('[DEBUG_F43_AFTER_COLLECT] pos-collectFase4IntoPayload', {
+          F43_LISTA: payload.F43_LISTA,
+          F43_LISTA_TXT: payload.F43_LISTA_TXT,
+          F43_INCLUIR: payload.F43_INCLUIR,
+          F43_INCLUIR_B: payload.F43_INCLUIR_B,
+          F4310_OPCAO: payload.F4310_OPCAO,
+          F4310_LEGISLACAO: payload.F4310_LEGISLACAO,
+          F4310_DOCS: payload.F4310_DOCS
+        });
+      }
 
       if (window.__DEBUG_SOLIC_CRP__) {
         try {

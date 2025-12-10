@@ -699,6 +699,19 @@
           }
 
           p.F43_LISTA = merged;
+
+          if (window.__DEBUG_SOLIC_CRP__) {
+            console.log('[DEBUG_F43_NORMALIZE] merge F43_LISTA', {
+              merged,
+              F43_LISTA_TXT: p.F43_LISTA_TXT,
+              raw: {
+                F43_LISTA: p.F43_LISTA,
+                F43_LISTA_TXT: p.F43_LISTA_TXT,
+                fase4_3_criterios: p.fase4_3_criterios,
+                fase4_3_criterios_txt: p.fase4_3_criterios_txt
+              }
+            });
+          }
         })();
 
         // F43_INCLUIR (4.3.11 – critérios a incluir)
@@ -742,20 +755,29 @@
             const gruposF43 = __reconstruirF43(p);
 
             const mapResumo = {
-              "4.3.1": { sel: "#F431_LIST_TXT", vals: gruposF43["4.3.1"] || [] },
-              "4.3.2": { sel: "#F432_LIST_TXT", vals: gruposF43["4.3.2"] || [] },
-              "4.3.3": { sel: "#F433_LIST_TXT", vals: gruposF43["4.3.3"] || [] },
-              "4.3.4": { sel: "#F434_LIST_TXT", vals: gruposF43["4.3.4"] || [] },
-              "4.3.5": { sel: "#F435_LIST_TXT", vals: gruposF43["4.3.5"] || [] },
-              "4.3.6": { sel: "#F436_LIST_TXT", vals: gruposF43["4.3.6"] || [] },
-              "4.3.7": { sel: "#F437_LIST_TXT", vals: gruposF43["4.3.7"] || [] },
-              "4.3.8": { sel: "#F438_LIST_TXT", vals: gruposF43["4.3.8"] || [] },
-              "4.3.9": { sel: "#F439_LIST_TXT", vals: gruposF43["4.3.9"] || [] }
+              "4.3.1": { sel: "#F431_LIST_TXT" },
+              "4.3.2": { sel: "#F432_LIST_TXT" },
+              "4.3.3": { sel: "#F433_LIST_TXT" },
+              "4.3.4": { sel: "#F434_LIST_TXT" },
+              "4.3.5": { sel: "#F435_LIST_TXT" },
+              "4.3.6": { sel: "#F436_LIST_TXT" },
+              "4.3.7": { sel: "#F437_LIST_TXT" },
+              "4.3.8": { sel: "#F438_LIST_TXT" },
+              "4.3.9": { sel: "#F439_LIST_TXT" }
             };
 
-            Object.values(mapResumo).forEach(cfg => {
+            const resolveVals = (k) => {
+              const idx = k.split('.').pop();
+              return gruposF43[k]
+                || gruposF43[`grupo${idx}`]
+                || (gruposF43.grupos ? gruposF43.grupos[k] : [])
+                || [];
+            };
+
+            Object.entries(mapResumo).forEach(([k, cfg]) => {
+              const vals   = resolveVals(k);
               const el     = document.querySelector(cfg.sel);
-              const texto  = (cfg.vals || []).join('; ');
+              const texto  = (vals || []).join('; ');
 
               // Atualiza também o objeto normalizado 'p', para que
               // o fillText() genérico, que roda depois, use o mesmo conteúdo
@@ -1671,14 +1693,32 @@
         const extra = g.splice(expected[i]);
         remaining.push(...extra);
       }
-      if (g.length === 0 && remaining.length) {
-        g.push(...remaining.splice(0, expected[i]));
+      if (g.length < expected[i] && remaining.length) {
+        g.push(...remaining.splice(0, expected[i] - g.length));
       }
     });
 
     const resto = remaining;
 
+    const mapa = {
+      "4.3.1": groups[0],
+      "4.3.2": groups[1],
+      "4.3.3": groups[2],
+      "4.3.4": groups[3],
+      "4.3.5": groups[4],
+      "4.3.6": groups[5],
+      "4.3.7": groups[6],
+      "4.3.8": groups[7],
+      "4.3.9": groups[8]
+    };
+
+    if (window.__DEBUG_SOLIC_CRP__) {
+      console.log('[DEBUG_F43_RECON] grupos finais', { mapa, resto, base });
+    }
+
     return {
+      ...mapa,
+      grupos: mapa,
       grupo1: groups[0],
       grupo2: groups[1],
       grupo3: groups[2],
@@ -1689,7 +1729,8 @@
       grupo8: groups[7],
       grupo9: groups[8],
       resto,
-      listaBase: base
+      listaBase: base,
+      gruposArr: groups
     };
   }
 
@@ -1729,6 +1770,14 @@
       data.grupo4,data.grupo5,data.grupo6,
       data.grupo7,data.grupo8,data.grupo9
     ];
+
+    if (window.__DEBUG_SOLIC_CRP__) {
+      console.log('[DEBUG_F43_HYDRATE_V2] grupos reconstruidos', {
+        groups,
+        resto: data.resto,
+        listaBase: data.listaBase
+      });
+    }
 
     groups.forEach((g, i) => {
       fillList(`#f43-${i+1}`, g);
