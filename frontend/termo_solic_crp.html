@@ -1737,8 +1737,9 @@
       setVal(`#F43${i+1}_LIST_TXT`, txt);
     });
 
-    fillList('#f43-fallback', data.resto);
-    show('#f43-fallback-wrap', !!(data.resto && data.resto.length));
+      fillList('#f43-fallback', data.resto);
+      // HTML usa <div id="f43-fallback"> (sem "-wrap"); ajustar selector para exibir o texto
+      show('#f43-fallback', !!(data.resto && data.resto.length));
 
     const anyList = groups.some(g => g && g.length) || (data.resto && data.resto.length);
 
