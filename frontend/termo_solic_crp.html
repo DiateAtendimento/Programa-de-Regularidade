@@ -432,6 +432,58 @@
       const $  = (s, r=document) => r.querySelector(s);
       const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
+      // === INJEÇÃO DE PAYLOAD (hash, query, sessionStorage ou postMessage) ===
+      (function initPayload(){
+        const KEY = 'TERMO_SOLIC_CRP_PAYLOAD';
+        const setPayload = (p) => {
+          if (!p || typeof p !== 'object') return;
+          window.__TERMO_DATA__ = p;
+          try {
+            document.dispatchEvent(new Event('TERMO_DATA'));
+            document.dispatchEvent(new Event('TERMO_DATA_READY'));
+          } catch (_) {}
+        };
+
+        // hash #payload_b64=
+        try {
+          const h = location.hash || '';
+          const m = h.match(/payload_b64=([^&]+)/);
+          if (m && m[1]) {
+            const json = decodeURIComponent(escape(atob(m[1])));
+            setPayload(JSON.parse(json));
+            return;
+          }
+        } catch(e){ console.warn('[TERMO] falha ao ler payload_b64', e); }
+
+        // query ?p= (JSON)
+        try {
+          const pParam = new URLSearchParams(location.search).get('p');
+          if (pParam) {
+            const decoded = decodeURIComponent(pParam);
+            setPayload(JSON.parse(decoded));
+            return;
+          }
+        } catch(e){ console.warn('[TERMO] falha ao ler query ?p=', e); }
+
+        // sessionStorage (salvo pelo app)
+        try {
+          const ss = sessionStorage.getItem(KEY);
+          if (ss) {
+            setPayload(JSON.parse(ss));
+            return;
+          }
+        } catch(_) {}
+
+        // postMessage de janela pai
+        try {
+          window.addEventListener('message', ev => {
+            if (ev.data && (ev.data.type === 'TERMO_PAYLOAD' || ev.data.type === 'TERMO_SOLIC_CRP_PAYLOAD')) {
+              setPayload(ev.data.data || ev.data.payload || ev.data);
+            }
+          });
+        } catch(_) {}
+      })();
+
       const __NA_LABEL__ = () =>
         String((window.__TERMO_DATA__ && window.__TERMO_DATA__.__NA_LABEL) || 'Não informado');
 
