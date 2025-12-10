@@ -1104,53 +1104,69 @@
           if (isA) fillBlock("#val-f4310-leg",  p.F4310_LEGISLACAO);
           if (isB) fillBlock("#val-f4310-docs", p.F4310_DOCS);
 
-          // 5) 4.3.11 – Inclusão de critérios (fase específica – 1ª parte)
+          // 5) 4.3.11 — Inclusão de critérios (fase específica — 1ª parte)
           let show11 = false;
 
-          const inc11 = asArr(p.F43_INCLUIR || p['F43_INCLUIR[]'] || p.F43_INCLUIR_TXT || '');
-          if (fillList("#f43-crit-incluir", inc11))  show11 = true;
-          if (fillBlock("#f43-just-11",     p.F43_PLANO))    show11 = true;
+          const inc11 = asArr(
+            p.F43_INCLUIR ||
+            p['F43_INCLUIR[]'] ||
+            p.F43_INCLUIR_TXT ||
+            p.F4311_INCLUIR_TXT ||
+            ''
+          );
 
-          const txt11inc = Array.isArray(p.F43_INCLUIR)
-            ? p.F43_INCLUIR.join('; ')
-            : (p.F43_INCLUIR || p.F43_INCLUIR_TXT || '');
+          const plano11 =
+            p.F43_PLANO ||
+            p.F4311_PLANO_TXT ||
+            '';
 
-          if (txt11inc) {
-            const el = document.getElementById('F4311_INCLUIR_TXT');
-            if (el) { el.textContent = txt11inc; show11 = true; }
-          }
-          if (p.F43_PLANO) {
-            const el = document.getElementById('F4311_PLANO_TXT');
-            if (el) { el.textContent = p.F43_PLANO; show11 = true; }
-          }
+          if (fillList("#f43-crit-incluir", inc11)) show11 = true;
+          if (fillBlock("#f43-just-11", plano11))   show11 = true;
+
+          const txt11inc = inc11.length ? inc11.join('; ') : '';
+          const el4311Inc = document.getElementById('F4311_INCLUIR_TXT');
+          if (el4311Inc && txt11inc) { el4311Inc.textContent = txt11inc; show11 = true; p.F4311_INCLUIR_TXT = txt11inc; }
+
+          const el4311Plano = document.getElementById('F4311_PLANO_TXT');
+          if (el4311Plano && plano11) { el4311Plano.textContent = plano11; show11 = true; p.F4311_PLANO_TXT = plano11; }
 
           show("#f43-sub-11", show11);
           if (show11) haConteudo = true;
 
-          // 6) 4.3.12 – Inclusão de critérios (fase específica – 2ª parte)
+          // 6) 4.3.12 — Inclusão de critérios (fase específica — 2ª parte)
           let show12 = false;
 
-          const inc12 = asArr(p.F43_INCLUIR_B || p['F43_INCLUIR_B[]'] || p.F43_INCLUIR_B_TXT || '');
-          if (fillList("#f43-crit-incluir-12", inc12))  show12 = true;
-          if (fillBlock("#f43-just-12",        p.F43_PLANO_B))    show12 = true;
-          if (fillBlock("#f43-desc-planos-12", p.F43_DESC_PLANOS)) show12 = true;
+          const inc12 = asArr(
+            p.F43_INCLUIR_B ||
+            p['F43_INCLUIR_B[]'] ||
+            p.F43_INCLUIR_B_TXT ||
+            p.F4312_INCLUIR_TXT ||
+            ''
+          );
 
-          const txt12inc = Array.isArray(p.F43_INCLUIR_B)
-            ? p.F43_INCLUIR_B.join('; ')
-            : (p.F43_INCLUIR_B || p.F43_INCLUIR_B_TXT || '');
+          const plano12 =
+            p.F43_PLANO_B ||
+            p.F4312_PLANO_TXT ||
+            '';
 
-          if (txt12inc) {
-            const el = document.getElementById('F4312_INCLUIR_TXT');
-            if (el) { el.textContent = txt12inc; show12 = true; }
-          }
-          if (p.F43_PLANO_B) {
-            const el = document.getElementById('F4312_PLANO_TXT');
-            if (el) { el.textContent = p.F43_PLANO_B; show12 = true; }
-          }
-          if (p.F43_DESC_PLANOS) {
-            const el = document.getElementById('F4312_DESC_TXT');
-            if (el) { el.textContent = p.F43_DESC_PLANOS; show12 = true; }
-          }
+          const desc12 =
+            p.F43_DESC_PLANOS ||
+            p.F4312_DESC_TXT ||
+            '';
+
+          if (fillList("#f43-crit-incluir-12", inc12)) show12 = true;
+          if (fillBlock("#f43-just-12", plano12)) show12 = true;
+          if (fillBlock("#f43-desc-planos-12", desc12)) show12 = true;
+
+          const txt12inc = inc12.length ? inc12.join('; ') : '';
+          const el4312Inc = document.getElementById('F4312_INCLUIR_TXT');
+          if (el4312Inc && txt12inc) { el4312Inc.textContent = txt12inc; show12 = true; p.F4312_INCLUIR_TXT = txt12inc; }
+
+          const el4312Plano = document.getElementById('F4312_PLANO_TXT');
+          if (el4312Plano && plano12) { el4312Plano.textContent = plano12; show12 = true; p.F4312_PLANO_TXT = plano12; }
+
+          const el4312Desc = document.getElementById('F4312_DESC_TXT');
+          if (el4312Desc && desc12) { el4312Desc.textContent = desc12; show12 = true; p.F4312_DESC_TXT = desc12; }
 
           show("#f43-sub-12", show12);
           if (show12) haConteudo = true;
@@ -1569,6 +1585,221 @@
         }
       }, 800);
     })();
-  </script>
+</script>
+
+<script>
+// === Rebuild & hydrate Fase 4.3 (robusto) ===
+(function(){
+  const norm = (s) => String(s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  const asArr = (v) => {
+    const out = [];
+    if (Array.isArray(v)) {
+      v.forEach(x => out.push(...asArr(x)));
+    } else if (typeof v === 'string') {
+      String(v).split(/[\n;]+/).forEach(p => {
+        const t = p.trim();
+        if (t) out.push(t);
+      });
+    }
+    return out;
+  };
+
+  const asStr = (v, sep = '; ') => asArr(v).join(sep);
+
+  const clean = (s) => String(s || '')
+    .replace(/^[\s\-\d\.\)]+/,'')
+    .replace(/^[a-h]\)\s*/i,'')
+    .trim();
+
+  function __reconstruirF43(payload = {}) {
+    const src = [];
+    const grab = (...keys) => keys.forEach(k => {
+      const v = payload[k];
+      if (v === undefined || v === null) return;
+      if (Array.isArray(v)) src.push(...v);
+      else if (typeof v === 'string' && v.trim()) src.push(v);
+    });
+
+    grab(
+      'F43_LISTA','F43_LISTA[]','F43_LISTA_TXT','F43_LISTA[][]',
+      'fase4_3_criterios','fase4_3_criterios[]','fase4_3_criterios_txt',
+      'F43_ITENS','F43_ITENS[]','F43_ITENS[][]',
+      'F431_LIST_TXT','F432_LIST_TXT','F433_LIST_TXT','F434_LIST_TXT','F435_LIST_TXT','F436_LIST_TXT','F437_LIST_TXT','F438_LIST_TXT','F439_LIST_TXT',
+      'F43_INCLUIR','F43_INCLUIR[]','F43_INCLUIR_B','F43_INCLUIR_B[]','F43_INCLUIR_TXT','F43_INCLUIR_B_TXT',
+      'F43_PLANO','F43_PLANO_B','F43_DESC_PLANOS'
+    );
+
+    [
+      'F43_1','F43_1_TXT','F43_2',
+      'F43_3_A','F43_3_B','F43_3_C',
+      'F43_4_A','F43_4_B',
+      'F43_5','F43_6',
+      'F43_7_A','F43_7_B','F43_7_C','F43_7_D','F43_7_E','F43_7_F','F43_7_G','F43_7_H',
+      'F43_8','F43_9'
+    ].forEach(grab);
+
+    const base = asArr(src).map(clean).filter(Boolean);
+    const used = new Set();
+    const groups = Array.from({ length: 9 }, () => []);
+
+    const match = (txt, kws) => kws.every(w => norm(txt).includes(w));
+
+    base.forEach((item, idx) => {
+      const n = norm(item);
+      const push = (i) => { groups[i].push(item); used.add(idx); };
+
+      if (match(item, ['dipr']) && (n.includes('contrib') || n.includes('repasse') || n.includes('aporte') || n.includes('parcel'))) { push(0); return; }
+      if (match(item, ['utilizacao','recursos','previd'])) { push(1); return; }
+      if (n.includes('aplic') || n.includes('dair') || n.includes('dpin')) { push(2); return; }
+      if (n.includes('limite') && n.includes('contrib')) { push(3); return; }
+      if (n.includes('plano de beneficios') || n.includes('rol de beneficios')) { push(4); return; }
+      if (n.includes('previdencia complementar') || n.includes('rpc')) { push(5); return; }
+      if (n.includes('solicitacao') || n.includes('fiscalizacao') || n.includes('equilibrio') || n.includes('matriz de saldos') || n.includes('draa') || n.includes('nta') || n.includes('esocial')) { push(6); return; }
+      if (n.includes('compensacao previdenciaria') || n.includes('empresa de tecnologia')) { push(7); return; }
+      if (n.includes('dirigent') || n.includes('conselho') || n.includes('comite')) { push(8); return; }
+    });
+
+    const expected = [2,1,3,2,1,1,8,1,1];
+    const remaining = base.filter((_, idx) => !used.has(idx));
+
+    groups.forEach((g, i) => {
+      if (g.length > expected[i]) {
+        const extra = g.splice(expected[i]);
+        remaining.push(...extra);
+      }
+      if (g.length === 0 && remaining.length) {
+        g.push(...remaining.splice(0, expected[i]));
+      }
+    });
+
+    const resto = remaining;
+
+    return {
+      grupo1: groups[0],
+      grupo2: groups[1],
+      grupo3: groups[2],
+      grupo4: groups[3],
+      grupo5: groups[4],
+      grupo6: groups[5],
+      grupo7: groups[6],
+      grupo8: groups[7],
+      grupo9: groups[8],
+      resto,
+      listaBase: base
+    };
+  }
+
+  function hydrateF43(p) {
+    p = p || {};
+    const data = __reconstruirF43(p);
+
+    const fillList = (sel, arr) => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      if (!arr || !arr.length) { el.innerHTML = ''; el.dataset.empty = '1'; return; }
+      el.innerHTML = arr.map(x => `<li>${x}</li>`).join('');
+      delete el.dataset.empty;
+    };
+    const setVal = (sel, val) => {
+      const el = document.querySelector(sel);
+      if (el) el.textContent = val || '';
+    };
+    const show = (sel, cond) => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      if (cond) {
+        el.hidden = false;
+        el.removeAttribute('hidden');
+        el.style.display = '';
+        delete el.dataset.empty;
+      } else {
+        el.hidden = true;
+        el.style.display = 'none';
+        el.dataset.empty = '1';
+      }
+    };
+    const mkTxt = (v) => asStr(v);
+
+    const groups = [
+      data.grupo1,data.grupo2,data.grupo3,
+      data.grupo4,data.grupo5,data.grupo6,
+      data.grupo7,data.grupo8,data.grupo9
+    ];
+
+    groups.forEach((g, i) => {
+      fillList(`#f43-${i+1}`, g);
+      const txt = mkTxt(g);
+      p[`F43${i+1}_LIST_TXT`] = txt;
+      setVal(`#F43${i+1}_LIST_TXT`, txt);
+    });
+
+    fillList('#f43-fallback', data.resto);
+    show('#f43-fallback-wrap', !!(data.resto && data.resto.length));
+
+    const anyList = groups.some(g => g && g.length) || (data.resto && data.resto.length);
+
+    const getVal = (...keys) => {
+      for (const k of keys) {
+        const v = p[k];
+        if (v === undefined || v === null) continue;
+        if (Array.isArray(v)) {
+          const arr = asArr(v);
+          if (arr.length) return arr.join('; ');
+        }
+        const s = String(v).trim();
+        if (s) return s;
+      }
+      return '';
+    };
+
+    // 4.3.10 (A/B)
+    const op = getVal('F4310_OPCAO','F4310_OPCAO_TXT').toLowerCase();
+    show('#f43-opcao-a', op.startsWith('a'));
+    show('#f43-opcao-b', op.startsWith('b'));
+    setVal('#val-f4310-leg', getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG'));
+    setVal('#val-f4310-docs', getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC'));
+
+    // 4.3.11
+    const incluir = asArr(getVal('F43_INCLUIR','F43_INCLUIR_TXT','F4311_INCLUIR_TXT','F43_INCLUIR[]'));
+    const plano = getVal('F43_PLANO','F4311_PLANO_TXT');
+    const just11 = getVal('F43_JUST','F4311_JUST_TXT');
+    fillList('#f43-crit-incluir', incluir);
+    setVal('#f43-just-11', plano || just11);
+    p.F4311_INCLUIR_TXT = asStr(incluir);
+    p.F4311_PLANO_TXT = plano;
+    const has11 = incluir.length || plano || just11;
+    show('#f43-sub-11', !!has11);
+
+    // 4.3.12
+    const incluirB = asArr(getVal('F43_INCLUIR_B','F43_INCLUIR_B_TXT','F4312_INCLUIR_TXT','F43_INCLUIR_B[]'));
+    const planoB = getVal('F43_PLANO_B','F4312_PLANO_TXT');
+    const desc12 = getVal('F43_DESC_PLANOS','F4312_DESC_TXT');
+    const just12 = getVal('F4312_JUST_TXT');
+    fillList('#f43-crit-incluir-12', incluirB);
+    setVal('#f43-just-12', planoB || just12);
+    setVal('#f43-desc-planos-12', desc12);
+    p.F4312_INCLUIR_TXT = asStr(incluirB);
+    p.F4312_PLANO_TXT = planoB;
+    p.F4312_DESC_TXT = desc12;
+    const has12 = incluirB.length || planoB || desc12 || just12;
+    show('#f43-sub-12', !!has12);
+
+    const any = anyList || has11 || has12 || op;
+    show('#fase-43', !!any);
+    if (!any) document.querySelector('#fase-43')?.setAttribute('data-empty','1');
+
+    window.__F43_LAST__ = data;
+    return data;
+  }
+
+  window.__reconstruirF43 = __reconstruirF43;
+  window.hydrateF43 = hydrateF43;
+  window.ensureF43Fallback = function(){ return; };
+})();
+</script>
 </body>
 </html>
