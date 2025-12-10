@@ -2488,13 +2488,21 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     fillList('f41-itens', flat['f41_lista'] || flat['f41_itens']); // com schema acima, agora vem
     
     fillList('f42-itens', flat['f42_lista']);
-        // === Listas das fases 4.x – garante preenchimento 1:1 com o payload ===
+        // === Listas das fases 4.x — garante preenchimento 1:1 com o payload ===
     // 4.1
     fillList('f41-itens',       flat['f41_lista'] || flat['f41_itens']);
     // 4.2
     fillList('f42-itens',       flat['f42_lista']);
     // 4.3
     fillList('f43-itens',       flat['f43_lista']);
+    // Garantia extra: se houver itens de 4.3, injeta na 4.3.1 e no fallback; se não houver, mantém "Não informado" quando configurado
+    if (Array.isArray(flat['f43_lista']) && flat['f43_lista'].length) {
+      fillList('f43-1', flat['f43_lista']);   // coloca tudo em 4.3.1
+      fillList('f43-fallback', flat['f43_lista']); // mostra a lista completa
+    } else if (useNA && NA_LABEL) {
+      fillList('f43-1', [NA_LABEL]);
+      fillList('f43-fallback', [NA_LABEL]);
+    }
     // 4.4
     fillList('f44-criterios',   flat['f44_criterios'] || flat['criterios_irregulares']);
     fillList('f44-decls',       flat['f44_decls']);
