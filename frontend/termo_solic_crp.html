@@ -1799,7 +1799,48 @@
 
   window.__reconstruirF43 = __reconstruirF43;
   window.hydrateF43 = hydrateF43;
-  window.ensureF43Fallback = function(){ return; };
+  // Fallback para exibir os critérios 4.3 quando o template não preencher via data-k
+  window.ensureF43Fallback = function ensureF43Fallback(payload){
+    try{
+      const box = document.getElementById('f43-fallback');
+      if (!box) return;
+
+      const splitTxt = (txt='') => String(txt)
+        .split(/;|\n/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const escapeHtml = (s='') => String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+      let itens = [];
+      if (payload && Array.isArray(payload?.resto) && payload.resto.length) {
+        itens = payload.resto.filter(Boolean);
+      } else if (payload && typeof payload?.resto === 'string' && payload.resto.trim()) {
+        itens = splitTxt(payload.resto);
+      } else if (payload && Array.isArray(payload?.F43_LISTA) && payload.F43_LISTA.length) {
+        itens = payload.F43_LISTA.filter(Boolean);
+      } else if (payload && payload.F43_LISTA_TXT) {
+        itens = splitTxt(payload.F43_LISTA_TXT);
+      }
+
+      if (!itens.length) {
+        box.style.display = 'none';
+        return;
+      }
+
+      box.innerHTML = `
+        <p class="small mb-1"><strong>Critérios selecionados na Fase 4.3:</strong></p>
+        <ul class="mb-2">
+          ${itens.map(t => `<li>${escapeHtml(t)}</li>`).join('')}
+        </ul>
+      `;
+      box.style.display = '';
+    }catch(e){
+      console.error('[termo_solic_crp] ensureF43Fallback fail', e);
+    }
+  };
 })();
 </script>
 </body>
