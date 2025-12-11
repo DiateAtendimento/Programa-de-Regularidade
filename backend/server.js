@@ -2522,30 +2522,24 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
       if (!Array.isArray(f43Arr) || !f43Arr.length) return;
 
       const groups = {
-        '4.3.1': [0, 2],
-        '4.3.2': [2, 3],
-        '4.3.3': [3, 6],
-        '4.3.4': [6, 8],
-        '4.3.5': [8, 9],
-        '4.3.6': [9, 10],
-        '4.3.7': [10, 18],
-        '4.3.8': [18, 19],
-        '4.3.9': [19, 20]
+        'f43-1': f43Arr.slice(0, 2),
+        'f43-2': f43Arr.slice(2, 3),
+        'f43-3': f43Arr.slice(3, 6),
+        'f43-4': f43Arr.slice(6, 8),
+        'f43-5': f43Arr.slice(8, 9),
+        'f43-6': f43Arr.slice(9, 10),
+        'f43-7': f43Arr.slice(10, 18),
+        'f43-8': f43Arr.slice(18, 19),
+        'f43-9': f43Arr.slice(19, 20)
       };
 
-      Object.entries(groups).forEach(([k,[i,j]]) => {
-        const id = `f43-${k.split('.').pop()}`;
+      Object.entries(groups).forEach(([id, slice]) => {
         const el = document.getElementById(id);
         if (!el) return;
-        const hasContent = (el.textContent || '').trim().length > 0;
-        if (!hasContent) {
-          const slice = f43Arr.slice(i, j);
-          fillList(id, slice);
-        }
+        if (!(el.textContent || '').trim()) fillList(id, uniqArr(slice));
       });
 
-      const fb = document.getElementById('f43-fallback');
-      if (fb && !(fb.textContent || '').trim()) fillList('f43-fallback', f43Arr);
+      // Não preenche f43-fallback para evitar duplicação após 4.3.9
     })();
 
     // 4.3.10 (A/B) – fallback direto
@@ -2592,12 +2586,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     setText('#f46-just-planos',  flat['f46_just_planos']);
     setText('#f46-comp-cumpr',   flat['f46_comp_cumpr']);
 
-    fillList('f43-itens', flat['f43_lista']);
-    fillList('f44-criterios', flat['f44_criterios']);
-    fillList('f44-decls', flat['f44_decls']);
-    fillList('f44-finalidades', flat['f44_finalidades']);
-    fillList('f45-decls', flat['f45_decls']);
-    fillList('f46-finalidades', flat['f46_finalidades']);
+    // Evita preencher de novo (já tratamos acima)
 
     // 4.4.6 blocos de texto (docs/exec) – aceitam CSV quebrado em linhas
     const fillBlockCsv = (id, v) => {
