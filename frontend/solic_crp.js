@@ -2135,6 +2135,14 @@ function syncF46ToTemplate(){
       });
     }
 
+    // Deduplica lista 4.3 (garante que só o marcado atual ou salvo unico fique no payload)
+    const uniq = (arr) => Array.from(new Set((arr || []).map(v => String(v || '').trim()).filter(Boolean)));
+    const f43_base = f43_current.length > 0 ? f43_current : f43_saved;
+    const f43_final = uniq(f43_base);
+    obj['F43_LISTA[]'] = f43_final;
+    obj.F43_LISTA = f43_final;
+    obj.F43_LISTA_TXT = f43_final.join('; ');
+
 
     // PORTARIA padronizada (caso não venha do formulário)
     if (!obj.PORTARIA_SRPC) obj.PORTARIA_SRPC = '2.010/2025';

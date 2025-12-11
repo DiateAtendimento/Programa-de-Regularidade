@@ -1690,6 +1690,8 @@
     .trim();
 
   function __reconstruirF43(payload = {}) {
+    const uniq = (arr) => Array.from(new Set((arr || []).map(v => String(v || '').trim()).filter(Boolean)));
+
     const src = [];
     const grab = (...keys) => keys.forEach(k => {
       const v = payload[k];
@@ -1716,7 +1718,7 @@
       'F43_8','F43_9'
     ].forEach(grab);
 
-    const base = asArr(src).map(clean).filter(Boolean);
+    const base = uniq(asArr(src).map(clean).filter(Boolean));
     const used = new Set();
     const groups = Array.from({ length: 9 }, () => []);
 
@@ -1751,6 +1753,9 @@
     });
 
     const resto = remaining;
+
+    // dedup grupos
+    groups.forEach((g, idx) => { groups[idx] = uniq(g); });
 
     const mapa = {
       "4.3.1": groups[0],
@@ -1789,11 +1794,13 @@
   function hydrateF43(p) {
     p = p || {};
     const data = __reconstruirF43(p);
+    const uniq = (arr) => Array.from(new Set((arr || []).map(v => String(v || '').trim()).filter(Boolean)));
 
     const fillList = (sel, arr) => {
       const el = document.querySelector(sel);
       if (!el) return;
-      if (!arr || !arr.length) { el.innerHTML = ''; el.dataset.empty = '1'; return; }
+      const items = uniq(arr);
+      if (!items.length) { el.innerHTML = ''; el.dataset.empty = '1'; return; }
       el.innerHTML = arr.map(x => `<li>${x}</li>`).join('');
       delete el.dataset.empty;
     };
