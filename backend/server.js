@@ -2304,6 +2304,11 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
       .replace(/_+/g,'_')
       .replace(/^_+|_+$/g,'');
 
+    const uniqArr = (arr) => {
+      if (!Array.isArray(arr)) return [];
+      return Array.from(new Set(arr.map(v => (v == null ? '' : String(v)).trim()).filter(Boolean)));
+    };
+
     const flat = {};
     const walk = (obj, prefix='') => {
       if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
@@ -2494,15 +2499,10 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     // 4.2
     fillList('f42-itens',       flat['f42_lista']);
     // 4.3
+    flat['f43_lista'] = uniqArr(flat['f43_lista']);
+
     fillList('f43-itens',       flat['f43_lista']);
-    // Garantia extra: se houver itens de 4.3, injeta na 4.3.1 e no fallback; se não houver, mantém "Não informado" quando configurado
-    if (Array.isArray(flat['f43_lista']) && flat['f43_lista'].length) {
-      fillList('f43-1', flat['f43_lista']);   // coloca tudo em 4.3.1
-      fillList('f43-fallback', flat['f43_lista']); // mostra a lista completa
-    } else if (useNA && NA_LABEL) {
-      fillList('f43-1', [NA_LABEL]);
-      fillList('f43-fallback', [NA_LABEL]);
-    }
+    // Garantia extra: não injeta mais F43 direto para evitar duplicação; template hidrata normalmente.
     // 4.4
     fillList('f44-criterios',   flat['f44_criterios'] || flat['criterios_irregulares']);
     fillList('f44-decls',       flat['f44_decls']);
