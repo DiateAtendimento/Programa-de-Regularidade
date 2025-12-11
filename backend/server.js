@@ -2513,7 +2513,9 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     // 4.3
     flat['f43_lista'] = uniqArr(flat['f43_lista']);
 
-    fillList('f43-itens',       flat['f43_lista']);
+    // Evita lista geral duplicada no PDF; os grupos 4.3.x serão preenchidos abaixo
+    const clearList = (ulId) => { const el = document.getElementById(ulId); if (el) el.innerHTML = ''; };
+    clearList('f43-itens');
     // Fallback dirigido para 4.3: distribui itens por subgrupos 4.3.1–4.3.9 (ou usa slice posicional)
     (function(){
       const f43Arr = flat['f43_lista'] || [];
@@ -2549,21 +2551,17 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     // 4.3.10 (A/B) – fallback direto
     (function(){
       const op = (flat['f4310_opcao'] || '').toLowerCase();
-      if (op.startsWith('a') && !(document.getElementById('val-f4310-leg')?.textContent || '').trim()) {
-        setText('#val-f4310-leg', flat['f4310_legislacao']);
-      }
-      if (op.startsWith('b') && !(document.getElementById('val-f4310-docs')?.textContent || '').trim()) {
-        setText('#val-f4310-docs', flat['f4310_docs']);
-      }
+      if (op.startsWith('a')) setText('#val-f4310-leg', flat['f4310_legislacao']);
+      if (op.startsWith('b')) setText('#val-f4310-docs', flat['f4310_docs']);
     })();
 
     // 4.3.11 – fallback direto
     (function(){
       const inc = uniqArr(flat['f43_incluir'] || flat['f43_incluir_txt'] || flat['f4311_incluir_txt'] || []);
       const plano = flat['f43_plano'] || flat['f4311_plano_txt'] || '';
-      if (!(document.getElementById('f43-crit-incluir')?.textContent || '').trim()) fillList('f43-crit-incluir', inc);
+      fillList('f43-crit-incluir', inc);
       const elJust = document.getElementById('f43-just-11');
-      if (elJust && !(elJust.textContent || '').trim()) elJust.textContent = plano || (useNA ? NA_LABEL : '');
+      if (elJust) elJust.textContent = plano || (useNA ? NA_LABEL : '');
     })();
 
     // 4.3.12 – fallback direto
@@ -2571,11 +2569,11 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
       const inc = uniqArr(flat['f43_incluir_b'] || flat['f43_incluir_b_txt'] || flat['f4312_incluir_txt'] || []);
       const plano = flat['f43_plano_b'] || flat['f4312_plano_txt'] || '';
       const desc = flat['f43_desc_planos'] || flat['f4312_desc_txt'] || '';
-      if (!(document.getElementById('f43-crit-incluir-12')?.textContent || '').trim()) fillList('f43-crit-incluir-12', inc);
+      fillList('f43-crit-incluir-12', inc);
       const elJust = document.getElementById('f43-just-12');
-      if (elJust && !(elJust.textContent || '').trim()) elJust.textContent = plano || (useNA ? NA_LABEL : '');
+      if (elJust) elJust.textContent = plano || (useNA ? NA_LABEL : '');
       const elDesc = document.getElementById('f43-desc-planos-12');
-      if (elDesc && !(elDesc.textContent || '').trim()) elDesc.textContent = desc || (useNA ? NA_LABEL : '');
+      if (elDesc) elDesc.textContent = desc || (useNA ? NA_LABEL : '');
     })();
     // 4.4
     fillList('f44-criterios',   flat['f44_criterios'] || flat['criterios_irregulares']);
