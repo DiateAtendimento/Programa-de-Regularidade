@@ -2551,7 +2551,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
 
     // 4.3.11 – fallback direto
     (function(){
-      const inc = uniqArr(flat['f43_incluir'] || flat['f43_incluir_txt'] || flat['f4311_incluir_txt'] || []);
+      const inc = uniqArr(toArr(flat['f43_incluir'] || flat['f43_incluir_txt'] || flat['f4311_incluir_txt']));
       const plano = flat['f43_plano'] || flat['f4311_plano_txt'] || '';
       fillList('f43-crit-incluir', inc);
       const elJust = document.getElementById('f43-just-11');
@@ -2560,7 +2560,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
 
     // 4.3.12 – fallback direto
     (function(){
-      const inc = uniqArr(flat['f43_incluir_b'] || flat['f43_incluir_b_txt'] || flat['f4312_incluir_txt'] || []);
+      const inc = uniqArr(toArr(flat['f43_incluir_b'] || flat['f43_incluir_b_txt'] || flat['f4312_incluir_txt']));
       const plano = flat['f43_plano_b'] || flat['f4312_plano_txt'] || '';
       const desc = flat['f43_desc_planos'] || flat['f4312_desc_txt'] || '';
       fillList('f43-crit-incluir-12', inc);
