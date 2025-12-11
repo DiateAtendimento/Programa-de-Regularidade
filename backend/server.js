@@ -2502,7 +2502,18 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     flat['f43_lista'] = uniqArr(flat['f43_lista']);
 
     fillList('f43-itens',       flat['f43_lista']);
-    // Garantia extra: não injeta mais F43 direto para evitar duplicação; template hidrata normalmente.
+    // Fallback dirigido: se os ULs específicos de 4.3 estiverem vazios, preenche com a lista deduplicada
+    (function(){
+      const f43Arr = flat['f43_lista'] || [];
+      if (!Array.isArray(f43Arr) || !f43Arr.length) return;
+      const targets = ['f43-1','f43-2','f43-3','f43-4','f43-5','f43-6','f43-7','f43-8','f43-9','f43-fallback'];
+      targets.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const hasContent = (el.textContent || '').trim().length > 0;
+        if (!hasContent) fillList(id, f43Arr);
+      });
+    })();
     // 4.4
     fillList('f44-criterios',   flat['f44_criterios'] || flat['criterios_irregulares']);
     fillList('f44-decls',       flat['f44_decls']);
