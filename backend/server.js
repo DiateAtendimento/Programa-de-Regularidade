@@ -2358,7 +2358,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
       if (!list.length && typeof raw.F43_LISTA_TXT === 'string') {
         list = raw.F43_LISTA_TXT.split(/;|\n/);
       }
-      flat['f43_lista'] = uniqArr(list);
+    flat['f43_lista'] = uniqArr(list);
     })();
 
     // === FORMATA "YYYY-MM-DD" -> "DD/MM/AAAA" (mantém outros formatos) ===
@@ -2514,17 +2514,36 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     flat['f43_lista'] = uniqArr(flat['f43_lista']);
 
     fillList('f43-itens',       flat['f43_lista']);
-    // Fallback dirigido: se os ULs específicos de 4.3 estiverem vazios, preenche com a lista deduplicada
+    // Fallback dirigido para 4.3: distribui itens por subgrupos 4.3.1–4.3.9 (ou usa slice posicional)
     (function(){
       const f43Arr = flat['f43_lista'] || [];
       if (!Array.isArray(f43Arr) || !f43Arr.length) return;
-      const targets = ['f43-1','f43-2','f43-3','f43-4','f43-5','f43-6','f43-7','f43-8','f43-9','f43-fallback'];
-      targets.forEach(id => {
+
+      const groups = {
+        '4.3.1': [0, 2],
+        '4.3.2': [2, 3],
+        '4.3.3': [3, 6],
+        '4.3.4': [6, 8],
+        '4.3.5': [8, 9],
+        '4.3.6': [9, 10],
+        '4.3.7': [10, 18],
+        '4.3.8': [18, 19],
+        '4.3.9': [19, 20]
+      };
+
+      Object.entries(groups).forEach(([k,[i,j]]) => {
+        const id = `f43-${k.split('.').pop()}`;
         const el = document.getElementById(id);
         if (!el) return;
         const hasContent = (el.textContent || '').trim().length > 0;
-        if (!hasContent) fillList(id, f43Arr);
+        if (!hasContent) {
+          const slice = f43Arr.slice(i, j);
+          fillList(id, slice);
+        }
       });
+
+      const fb = document.getElementById('f43-fallback');
+      if (fb && !(fb.textContent || '').trim()) fillList('f43-fallback', f43Arr);
     })();
     // 4.4
     fillList('f44-criterios',   flat['f44_criterios'] || flat['criterios_irregulares']);
