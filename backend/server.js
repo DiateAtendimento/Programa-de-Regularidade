@@ -2349,8 +2349,7 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     flat['email_rep_ug']   = flat['email_rep_ug']   || flat['__snapshot_email_rep_ug'];
     flat['tel_rep_ug']     = flat['tel_rep_ug']     || flat['__snapshot_tel_rep_ug']     || flat['responsaveis_ug_telefone'];
 
-    // Canonicaliza F43_LISTA: prioriza array do payload; evita parsing repetido de strings
-    (function() {
+    // Helpers globais para arrays/textos
     const uniqArr = (arr) => Array.from(new Set((arr || []).map(v => String(v || '').trim()).filter(Boolean)));
     function toArr(v){
       if (Array.isArray(v)) return v.filter(Boolean);
@@ -2359,13 +2358,16 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
         .map(s => s.trim())
         .filter(Boolean);
     }
+
+    // Canonicaliza F43_LISTA: prioriza array do payload; evita parsing repetido de strings
+    (function() {
       let list = [];
       if (Array.isArray(raw.F43_LISTA)) list = raw.F43_LISTA;
       else if (Array.isArray(raw['F43_LISTA[]'])) list = raw['F43_LISTA[]'];
       if (!list.length && typeof raw.F43_LISTA_TXT === 'string') {
         list = raw.F43_LISTA_TXT.split(/;|\n/);
       }
-    flat['f43_lista'] = uniqArr(list);
+      flat['f43_lista'] = uniqArr(list);
     })();
 
     // === FORMATA "YYYY-MM-DD" -> "DD/MM/AAAA" (mantém outros formatos) ===
