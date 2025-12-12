@@ -2304,11 +2304,6 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
       .replace(/_+/g,'_')
       .replace(/^_+|_+$/g,'');
 
-    const uniqArr = (arr) => {
-      if (!Array.isArray(arr)) return [];
-      return Array.from(new Set(arr.map(v => (v == null ? '' : String(v)).trim()).filter(Boolean)));
-    };
-
     const flat = {};
     const walk = (obj, prefix='') => {
       if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
