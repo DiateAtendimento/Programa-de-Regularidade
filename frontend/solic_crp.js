@@ -3136,7 +3136,10 @@ function ensureF43ForceSync(payload){
         F43_LISTA: payload.F43_LISTA,
         F43_LISTA_TXT: payload.F43_LISTA_TXT,
         F43_INCLUIR: payload.F43_INCLUIR,
-        F43_INCLUIR_B: payload.F43_INCLUIR_B
+        F43_INCLUIR_B: payload.F43_INCLUIR_B,
+        F4310_OPCAO: payload.F4310_OPCAO,
+        F4310_LEGISLACAO: payload.F4310_LEGISLACAO,
+        F4310_DOCS: payload.F4310_DOCS
       });
     }
 

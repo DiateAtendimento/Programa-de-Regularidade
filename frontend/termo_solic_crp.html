@@ -1867,6 +1867,12 @@
 
     // 4.3.10 (A/B)
     let op = getVal('F4310_OPCAO','F4310_OPCAO_TXT');
+    console.info('[PDF 4.3.10]', {
+      opRaw: op,
+      opNorm: String(op||'').trim().toLowerCase(),
+      leg: getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG'),
+      docs: getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC')
+    });
     const opNorm = String(op || '').trim().toLowerCase();
     const hasLeg = !!getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG');
     const hasDocs = !!getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC');
