@@ -1501,9 +1501,11 @@
       r.addEventListener('change', () => {
         const a = document.getElementById('F4310_LEGISLACAO_WRAP');
         const b = document.getElementById('F4310_DOCS_WRAP');
-        const val = document.querySelector('input[name="F4310_OPCAO"]:checked')?.value;
-        if (a) a.classList.toggle('d-none', val !== 'A');
-        if (b) b.classList.toggle('d-none', val !== 'B');
+        const val = (document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || '').trim().toLowerCase();
+        const isA = val.startsWith('a');
+        const isB = val.startsWith('b');
+        if (a) a.classList.toggle('d-none', !isA);
+        if (b) b.classList.toggle('d-none', !isB);
       });
     });
 
@@ -2950,7 +2952,10 @@ function syncF46ToTemplate(){
 
   // 5) radios
   payload.F41_OPCAO = payload.F41_OPCAO || (document.querySelector('input[name="F41_OPCAO"]:checked')?.value || '');
-  payload.F4310_OPCAO = payload.F4310_OPCAO || (document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || '');
+  // ReforÃ§o: garante que 4.3.10 seja capturado do DOM (opÃ§Ã£o + textos)
+  payload.F4310_OPCAO = (document.querySelector('input[name="F4310_OPCAO"]:checked')?.value || payload.F4310_OPCAO || '').trim();
+  payload.F4310_LEGISLACAO = (document.getElementById('F4310_LEGISLACAO')?.value || payload.F4310_LEGISLACAO || '').trim();
+  payload.F4310_DOCS = (document.getElementById('F4310_DOCS')?.value || payload.F4310_DOCS || '').trim();
 
   // 6) checkbox simples
   payload.F43_SOLICITA_INCLUSAO = document.getElementById('F43_SOLICITA_INCLUSAO')?.checked ? 'SIM' : (payload.F43_SOLICITA_INCLUSAO || '');
