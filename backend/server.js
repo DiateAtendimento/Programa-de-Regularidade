@@ -2351,7 +2351,14 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
 
     // Canonicaliza F43_LISTA: prioriza array do payload; evita parsing repetido de strings
     (function() {
-      const uniqArr = (arr) => Array.from(new Set((arr || []).map(v => String(v || '').trim()).filter(Boolean)));
+    const uniqArr = (arr) => Array.from(new Set((arr || []).map(v => String(v || '').trim()).filter(Boolean)));
+    function toArr(v){
+      if (Array.isArray(v)) return v.filter(Boolean);
+      return String(v || '')
+        .split(/;|,|\n/)
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
       let list = [];
       if (Array.isArray(raw.F43_LISTA)) list = raw.F43_LISTA;
       else if (Array.isArray(raw['F43_LISTA[]'])) list = raw['F43_LISTA[]'];
