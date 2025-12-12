@@ -1866,11 +1866,16 @@
     };
 
     // 4.3.10 (A/B)
-    const op = getVal('F4310_OPCAO','F4310_OPCAO_TXT').toLowerCase();
-    show('#f43-opcao-a', op.startsWith('a'));
-    show('#f43-opcao-b', op.startsWith('b'));
-    setVal('#val-f4310-leg', getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG'));
-    setVal('#val-f4310-docs', getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC'));
+    let op = getVal('F4310_OPCAO','F4310_OPCAO_TXT');
+    const opNorm = String(op || '').trim().toLowerCase();
+    const hasLeg = !!getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG');
+    const hasDocs = !!getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC');
+    const selA = opNorm.startsWith('a') || (!opNorm && hasLeg);
+    const selB = opNorm.startsWith('b') || (!opNorm && !selA && hasDocs);
+    show('#f43-opcao-a', selA);
+    show('#f43-opcao-b', selB);
+    setVal('#val-f4310-leg', hasLeg ? getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG') : '');
+    setVal('#val-f4310-docs', hasDocs ? getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC') : '');
 
     // 4.3.11
     const incluir = asArr(getVal('F43_INCLUIR','F43_INCLUIR_TXT','F4311_INCLUIR_TXT','F43_INCLUIR[]'));
