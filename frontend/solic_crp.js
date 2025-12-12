@@ -858,12 +858,22 @@
       // 4.3.10 radios/áreas condicionais
       (function(){
         const v = st.values?.['F4310_OPCAO'] || '';
-        const r = v && document.querySelector(`input[name="F4310_OPCAO"][value="${v}"]`);
+        const radios = Array.from(document.querySelectorAll('input[name="F4310_OPCAO"]'));
+        const valNorm = v.trim().toLowerCase();
+
+        // Marca o rádio correspondente (match exato ou por primeira letra)
+        const r = v && (
+          document.querySelector(`input[name="F4310_OPCAO"][value="${v}"]`) ||
+          radios.find(el => el.value.trim().toLowerCase().startsWith(valNorm.slice(0,1)))
+        );
         if (r) { r.checked = true; }
+
+        const isA = valNorm.startsWith('a');
+        const isB = valNorm.startsWith('b');
         const a = document.getElementById('F4310_LEGISLACAO_WRAP');
         const b = document.getElementById('F4310_DOCS_WRAP');
-        if (a) a.classList.toggle('d-none', v !== 'A');
-        if (b) b.classList.toggle('d-none', v !== 'B');
+        if (a) a.classList.toggle('d-none', !isA);
+        if (b) b.classList.toggle('d-none', !isB);
       })();
 
       // 4.3.12 toggle
@@ -2142,6 +2152,21 @@ function syncF46ToTemplate(){
     obj['F43_LISTA[]'] = f43_final;
     obj.F43_LISTA = f43_final;
     obj.F43_LISTA_TXT = f43_final.join('; ');
+
+    // Fatias específicas (4.3.8 e 4.3.9) para exibição direta no PDF/template
+    const norm = (s) => String(s || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    const f438 = f43_final.filter(v => {
+      const n = norm(v);
+      return n.includes('compensacao previdenciaria') || n.includes('empresa de tecnologia');
+    });
+    const f439 = f43_final.filter(v => {
+      const n = norm(v);
+      return n.includes('dirigent') || n.includes('conselho') || n.includes('comite');
+    });
+    obj.F438_LIST_TXT = f438.join('; ');
+    obj.F439_LIST_TXT = f439.join('; ');
 
 
     // PORTARIA padronizada (caso não venha do formulário)
