@@ -2165,8 +2165,9 @@ function syncF46ToTemplate(){
       const n = norm(v);
       return n.includes('dirigent') || n.includes('conselho') || n.includes('comite');
     });
-    obj.F438_LIST_TXT = f438.join('; ');
-    obj.F439_LIST_TXT = f439.join('; ');
+    // Só envia o texto direto se a lista base estiver vazia (evita duplicar UL + parágrafo)
+    obj.F438_LIST_TXT = (!obj.F43_LISTA || !obj.F43_LISTA.length) ? f438.join('; ') : '';
+    obj.F439_LIST_TXT = (!obj.F43_LISTA || !obj.F43_LISTA.length) ? f439.join('; ') : '';
 
 
     // PORTARIA padronizada (caso não venha do formulário)
@@ -2850,10 +2851,13 @@ function syncF46ToTemplate(){
       continue;
     }
 
-    // radio
+    // radio (nÃ£o sobrescreve se jÃ¡ havia um selecionado)
     if (el.type === 'radio') {
-      if (el.checked) payload[name] = el.value;
-      else payload[name] = payload[name] ?? '';
+      if (el.checked) {
+        payload[name] = el.value;
+      } else if (payload[name] === undefined) {
+        payload[name] = '';
+      }
       continue;
     }
 
