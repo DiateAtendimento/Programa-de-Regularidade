@@ -2523,6 +2523,15 @@ function syncF46ToTemplate(){
     const PROVIDENCIA_NECESS_ADESAO  = String(p.F45_DOCS || '').trim();
     const CONDICAO_VIGENCIA          = String(p.F46_JUST_PLANOS || '').trim();
 
+    // 4.3.10 fallback: normaliza opÃ§Ã£o (A/B) e texto auxiliar
+    const op4310Raw = String(p.F4310_OPCAO || '').trim();
+    let op4310Txt = op4310Raw;
+    if (!op4310Txt) {
+      if (p.F4310_LEGISLACAO) op4310Txt = 'a';
+      else if (p.F4310_DOCS)  op4310Txt = 'b';
+    }
+    p.F4310_OPCAO_TXT = op4310Txt;
+
     // Data
     const DATA_TERMO_GERADO = p.DATA_SOLIC_GERADA || p.DATA || '';
 
@@ -3152,6 +3161,11 @@ function ensureF43ForceSync(payload){
       ),
       PRAZO_ADICIONAL_TEXTO: (payload.PRAZO_ADICIONAL_FLAG === 'SIM' ? 'SIM' : ''),
     };
+
+    // Fallback 4.3.10: garante opção/texto para o template/PDF
+    if (!payloadForPdf.F4310_OPCAO && payloadForPdf.F4310_OPCAO_TXT) {
+      payloadForPdf.F4310_OPCAO = payloadForPdf.F4310_OPCAO_TXT;
+    }
 
     // DEBUG opcional: abrir o template com o payload para inspecionar console/logs
     const DEBUG_PREVIEW =
