@@ -1970,6 +1970,14 @@
         itens = splitTxt(payload.F43_LISTA_TXT);
       }
 
+      // Inclui 4.3.10 se houver dados
+      const opTxt = payload?.F4310_OPCAO || payload?.F4310_OPCAO_TXT || '';
+      const legTxt = payload?.F4310_LEGISLACAO || payload?.F4310_LEGISLACAO_TXT || payload?.F4310_LEG || '';
+      const docTxt = payload?.F4310_DOCS || payload?.F4310_DOCS_TXT || payload?.F4310_DOC || '';
+      if (opTxt || legTxt || docTxt) {
+        itens.push(`<strong>4.3.10</strong> ${[opTxt, legTxt || docTxt].filter(Boolean).join(' - ')}`);
+      }
+
       if (!itens.length) {
         box.style.display = 'none';
         return;
