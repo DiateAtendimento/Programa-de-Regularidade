@@ -1909,6 +1909,25 @@
     setVal('#val-f4310-leg', hasLeg ? legVal : (selA ? op : ''));
     setVal('#val-f4310-docs', hasDocs ? docsVal : '');
 
+    // Se algo de 4.3.10 existe, garante exibição na fase e no fallback
+    if (op || hasLeg || hasDocs) {
+      const fase43 = document.querySelector('#fase-43');
+      if (fase43) {
+        fase43.hidden = false;
+        fase43.style.display = 'block';
+        fase43.setAttribute('data-empty','false');
+      }
+      const fb = document.getElementById('f43-fallback');
+      if (fb) {
+        const txt4310 = [op, legVal || docsVal].filter(Boolean).join(' - ') || 'Informações do item 4.3.10';
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>4.3.10</strong> ${txt4310}`;
+        const ul = fb.querySelector('ul') || fb.appendChild(document.createElement('ul'));
+        ul.appendChild(li);
+        fb.style.display = '';
+      }
+    }
+
     // 4.3.11
     const incluir = asArr(getVal('F43_INCLUIR','F43_INCLUIR_TXT','F4311_INCLUIR_TXT','F43_INCLUIR[]'));
     const plano = getVal('F43_PLANO','F4311_PLANO_TXT');
