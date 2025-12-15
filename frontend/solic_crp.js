@@ -2530,7 +2530,11 @@ function syncF46ToTemplate(){
       if (p.F4310_LEGISLACAO) op4310Txt = 'a';
       else if (p.F4310_DOCS)  op4310Txt = 'b';
     }
+    const op4310Code = op4310Txt ? op4310Txt.trim().charAt(0).toUpperCase() : '';
     p.F4310_OPCAO_TXT = op4310Txt;
+    p.F4310_OPCAO_CODE = op4310Code;
+    p.F4310_LEG = p.F4310_LEGISLACAO || '';
+    p.F4310_DOC = p.F4310_DOCS || '';
 
     // Data
     const DATA_TERMO_GERADO = p.DATA_SOLIC_GERADA || p.DATA || '';
@@ -3166,9 +3170,16 @@ function ensureF43ForceSync(payload){
     };
 
     // Fallback 4.3.10: garante opção/texto para o template/PDF
+    // NormalizaÃ§Ã£o 4.3.10 para o template/PDF
     if (!payloadForPdf.F4310_OPCAO && payloadForPdf.F4310_OPCAO_TXT) {
       payloadForPdf.F4310_OPCAO = payloadForPdf.F4310_OPCAO_TXT;
     }
+    if (!payloadForPdf.F4310_OPCAO_CODE && payloadForPdf.F4310_OPCAO) {
+      payloadForPdf.F4310_OPCAO_CODE = String(payloadForPdf.F4310_OPCAO).trim().charAt(0).toUpperCase();
+    }
+    payloadForPdf.f4310_opcao = payloadForPdf.F4310_OPCAO_CODE || payloadForPdf.F4310_OPCAO;
+    payloadForPdf.f4310_legislacao = payloadForPdf.F4310_LEGISLACAO || payloadForPdf.F4310_LEG || '';
+    payloadForPdf.f4310_docs = payloadForPdf.F4310_DOCS || payloadForPdf.F4310_DOC || '';
 
     // DEBUG opcional: abrir o template com o payload para inspecionar console/logs
     const DEBUG_PREVIEW =
