@@ -1891,25 +1891,29 @@
     const legVal = getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG');
     const docsVal = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC');
     const opNorm = String(op || '').trim().toLowerCase();
-    console.info('[PDF 4.3.10]', {
-      opRaw: op,
-      opNorm,
-      leg: legVal,
-      docs: docsVal
-    });
+    console.info('[PDF 4.3.10]', { opRaw: op, opNorm, leg: legVal, docs: docsVal });
+
     const hasLeg = !!legVal;
     const hasDocs = !!docsVal;
     let selA = opNorm.startsWith('a') || (!opNorm && hasLeg);
     let selB = opNorm.startsWith('b') || (!opNorm && !selA && hasDocs);
-    if (!selA && !selB && (hasLeg || hasDocs || opNorm)) {
-      selA = true; // força mostrar algo se houver dados
+    if (!selA && !selB && (hasLeg || hasDocs || opNorm)) selA = true; // padrão para mostrar
+
+    // força exibir os blocos A/B com conteúdo
+    const blocoA = document.querySelector('#f43-opcao-a');
+    const blocoB = document.querySelector('#f43-opcao-b');
+    if (blocoA) {
+      blocoA.hidden = !selA;
+      blocoA.style.display = selA ? 'block' : 'none';
     }
-    show('#f43-opcao-a', selA);
-    show('#f43-opcao-b', selB);
-    setVal('#val-f4310-leg', hasLeg ? legVal : (selA ? op : ''));
+    if (blocoB) {
+      blocoB.hidden = !selB;
+      blocoB.style.display = selB ? 'block' : 'none';
+    }
+    setVal('#val-f4310-leg', hasLeg ? legVal : (selA ? (op || '') : ''));
     setVal('#val-f4310-docs', hasDocs ? docsVal : '');
 
-    // Se algo de 4.3.10 existe, garante exibição na fase e no fallback
+    // Se algo de 4.3.10 existe, garante exibição geral da fase e injeta no fallback
     if (op || hasLeg || hasDocs) {
       const fase43 = document.querySelector('#fase-43');
       if (fase43) {
@@ -1920,9 +1924,9 @@
       const fb = document.getElementById('f43-fallback');
       if (fb) {
         const txt4310 = [op, legVal || docsVal].filter(Boolean).join(' - ') || 'Informações do item 4.3.10';
+        const ul = fb.querySelector('ul') || (() => { const u=document.createElement('ul'); fb.appendChild(u); return u; })();
         const li = document.createElement('li');
         li.innerHTML = `<strong>4.3.10</strong> ${txt4310}`;
-        const ul = fb.querySelector('ul') || fb.appendChild(document.createElement('ul'));
         ul.appendChild(li);
         fb.style.display = '';
       }
