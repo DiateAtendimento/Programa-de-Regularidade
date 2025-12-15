@@ -3203,6 +3203,17 @@ function ensureF43ForceSync(payload){
 
       // Campo auxiliar para depuração
       payloadForPdf.F4310_FALLBACK_TXT = linha4310;
+
+      // Injeta também no texto consolidado do dÉficit atuarial (para templates que usam DEFICIT_ATUARIAL)
+      const appendTxt = (curr = '') => {
+        const base = String(curr || '').trim();
+        return base ? `${base}; 4.3.10 ${linha4310}` : `4.3.10 ${linha4310}`;
+      };
+      payloadForPdf.DEFICIT_ATUARIAL     = appendTxt(payloadForPdf.DEFICIT_ATUARIAL);
+      payloadForPdf.DEFICIT_ATUARIAL_TXT = appendTxt(payloadForPdf.DEFICIT_ATUARIAL_TXT);
+      payloadForPdf.deficit_atuarial     = appendTxt(payloadForPdf.deficit_atuarial);
+      payloadForPdf.deficit_atuarial_txt = appendTxt(payloadForPdf.deficit_atuarial_txt);
+      payloadForPdf['deficit_atuarial[]'] = (payloadForPdf['deficit_atuarial[]'] || []).concat([`4.3.10 ${linha4310}`]);
     })();
 
     // DEBUG opcional: abrir o template com o payload para inspecionar console/logs
