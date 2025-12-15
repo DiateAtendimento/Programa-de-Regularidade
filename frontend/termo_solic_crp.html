@@ -1937,6 +1937,25 @@
       }
     }
 
+    // Loga o estado final do 4.3.10 no template (para saber se o PDF leu este arquivo).
+    (function log4310Rendered() {
+      const aBlock = document.querySelector('#f43-opcao-a');
+      const bBlock = document.querySelector('#f43-opcao-b');
+      const logPayload = {
+        opFinal: op,
+        legFinal: document.querySelector('#val-f4310-leg')?.textContent || '',
+        docsFinal: document.querySelector('#val-f4310-docs')?.textContent || '',
+        aVisible: !!(aBlock && aBlock.style.display !== 'none' && !aBlock.hidden),
+        bVisible: !!(bBlock && bBlock.style.display !== 'none' && !bBlock.hidden),
+        fbHas4310: !!document.querySelector('#f43-fallback li strong')
+      };
+      try {
+        console.info('[PDF 4.3.10 rendered]', logPayload);
+      } catch (_e) {
+        /* ignore console failure in some PDF engines */
+      }
+    })();
+
     // 4.3.11
     const incluir = asArr(getVal('F43_INCLUIR','F43_INCLUIR_TXT','F4311_INCLUIR_TXT','F43_INCLUIR[]'));
     const plano = getVal('F43_PLANO','F4311_PLANO_TXT');
