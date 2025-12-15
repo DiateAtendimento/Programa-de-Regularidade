@@ -3194,15 +3194,17 @@ function ensureF43ForceSync(payload){
       const linha4310 = partes.join(' - ').trim();
       if (!linha4310) return;
 
-      // Array principal
-      if (!Array.isArray(payloadForPdf.F43_LISTA)) payloadForPdf.F43_LISTA = [];
-      payloadForPdf.F43_LISTA.push(`4.3.10 ${linha4310}`);
-
-      // Espelha em F43_LISTA[] e TXT para templates mais antigos
-      if (!Array.isArray(payloadForPdf['F43_LISTA[]'])) payloadForPdf['F43_LISTA[]'] = [];
-      payloadForPdf['F43_LISTA[]'] = payloadForPdf.F43_LISTA.slice();
-
-      payloadForPdf.F43_LISTA_TXT = (payloadForPdf.F43_LISTA_TXT ? payloadForPdf.F43_LISTA_TXT + '; ' : '') + `4.3.10 ${linha4310}`;
+      // Recria arrays/listas garantindo a linha 4.3.10 (sem depender de push encadeado)
+      const baseLista = Array.isArray(payloadForPdf.F43_LISTA)
+        ? payloadForPdf.F43_LISTA.slice()
+        : Array.isArray(payloadForPdf['F43_LISTA[]'])
+          ? payloadForPdf['F43_LISTA[]'].slice()
+          : [];
+      baseLista.push(`4.3.10 ${linha4310}`);
+      payloadForPdf.F43_LISTA = baseLista;
+      payloadForPdf['F43_LISTA[]'] = baseLista.slice();
+      const txtLista = (payloadForPdf.F43_LISTA_TXT ? payloadForPdf.F43_LISTA_TXT + '; ' : '') + `4.3.10 ${linha4310}`;
+      payloadForPdf.F43_LISTA_TXT = txtLista;
 
       // Campo auxiliar para depuração
       payloadForPdf.F4310_FALLBACK_TXT = linha4310;
@@ -3212,10 +3214,10 @@ function ensureF43ForceSync(payload){
         const base = String(curr || '').trim();
         return base ? `${base}; 4.3.10 ${linha4310}` : `4.3.10 ${linha4310}`;
       };
-      payloadForPdf.DEFICIT_ATUARIAL     = appendTxt(payloadForPdf.DEFICIT_ATUARIAL);
-      payloadForPdf.DEFICIT_ATUARIAL_TXT = appendTxt(payloadForPdf.DEFICIT_ATUARIAL_TXT);
-      payloadForPdf.deficit_atuarial     = appendTxt(payloadForPdf.deficit_atuarial);
-      payloadForPdf.deficit_atuarial_txt = appendTxt(payloadForPdf.deficit_atuarial_txt);
+      payloadForPdf.DEFICIT_ATUARIAL      = appendTxt(payloadForPdf.DEFICIT_ATUARIAL);
+      payloadForPdf.DEFICIT_ATUARIAL_TXT  = appendTxt(payloadForPdf.DEFICIT_ATUARIAL_TXT);
+      payloadForPdf.deficit_atuarial      = appendTxt(payloadForPdf.deficit_atuarial);
+      payloadForPdf.deficit_atuarial_txt  = appendTxt(payloadForPdf.deficit_atuarial_txt);
       payloadForPdf['deficit_atuarial[]'] = (payloadForPdf['deficit_atuarial[]'] || []).concat([`4.3.10 ${linha4310}`]);
     })();
 
