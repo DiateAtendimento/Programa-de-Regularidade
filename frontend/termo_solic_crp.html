@@ -1307,6 +1307,27 @@
               fase.setAttribute('data-empty','false');
             }
           }
+
+          // Fallback extra: se 4.3.10 tiver texto e nÃ£o pintou nos blocos, injeta no fallback
+          const opTxt = getVal('F4310_OPCAO','F4310_OPCAO_TXT');
+          const legTxt = getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG');
+          const docTxt = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC');
+          if ((opTxt || legTxt || docTxt) && !document.querySelector('#f43-opcao-a li') && !document.querySelector('#f43-opcao-b li')) {
+            const fb = document.getElementById('f43-fallback');
+            if (fb) {
+              const li = document.createElement('li');
+              li.innerHTML = `<strong>4.3.10</strong> ${[opTxt, legTxt || docTxt].filter(Boolean).join(' - ')}`;
+              fb.appendChild(li);
+              fb.style.display = '';
+              haConteudo = true;
+              const fase = document.querySelector('#fase-43');
+              if (fase) {
+                fase.hidden = false;
+                fase.style.display = 'block';
+                fase.setAttribute('data-empty','false');
+              }
+            }
+          }
         } catch (_) {}
 
         // 9) Marca global indicando que a Fase 4.3 já foi montada
@@ -1867,21 +1888,26 @@
 
     // 4.3.10 (A/B)
     let op = getVal('F4310_OPCAO','F4310_OPCAO_TXT');
+    const legVal = getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG');
+    const docsVal = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC');
+    const opNorm = String(op || '').trim().toLowerCase();
     console.info('[PDF 4.3.10]', {
       opRaw: op,
-      opNorm: String(op||'').trim().toLowerCase(),
-      leg: getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG'),
-      docs: getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC')
+      opNorm,
+      leg: legVal,
+      docs: docsVal
     });
-    const opNorm = String(op || '').trim().toLowerCase();
-    const hasLeg = !!getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG');
-    const hasDocs = !!getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC');
-    const selA = opNorm.startsWith('a') || (!opNorm && hasLeg);
-    const selB = opNorm.startsWith('b') || (!opNorm && !selA && hasDocs);
+    const hasLeg = !!legVal;
+    const hasDocs = !!docsVal;
+    let selA = opNorm.startsWith('a') || (!opNorm && hasLeg);
+    let selB = opNorm.startsWith('b') || (!opNorm && !selA && hasDocs);
+    if (!selA && !selB && (hasLeg || hasDocs || opNorm)) {
+      selA = true; // força mostrar algo se houver dados
+    }
     show('#f43-opcao-a', selA);
     show('#f43-opcao-b', selB);
-    setVal('#val-f4310-leg', hasLeg ? getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG') : '');
-    setVal('#val-f4310-docs', hasDocs ? getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC') : '');
+    setVal('#val-f4310-leg', hasLeg ? legVal : (selA ? op : ''));
+    setVal('#val-f4310-docs', hasDocs ? docsVal : '');
 
     // 4.3.11
     const incluir = asArr(getVal('F43_INCLUIR','F43_INCLUIR_TXT','F4311_INCLUIR_TXT','F43_INCLUIR[]'));
