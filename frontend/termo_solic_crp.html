@@ -1887,33 +1887,28 @@
     };
 
     // 4.3.10 (A/B)
-    let op = getVal('F4310_OPCAO','F4310_OPCAO_TXT');
-    const legVal = getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG');
-    const docsVal = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC');
+    let op = getVal('F4310_OPCAO','F4310_OPCAO_TXT','f4310_opcao');
+    const legVal = getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG','f4310_legislacao');
+    const docsVal = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC','f4310_docs');
     const opNorm = String(op || '').trim().toLowerCase();
     console.info('[PDF 4.3.10]', { opRaw: op, opNorm, leg: legVal, docs: docsVal });
 
     const hasLeg = !!legVal;
     const hasDocs = !!docsVal;
-    let selA = opNorm.startsWith('a') || (!opNorm && hasLeg);
-    let selB = opNorm.startsWith('b') || (!opNorm && !selA && hasDocs);
-    if (!selA && !selB && (hasLeg || hasDocs || opNorm)) selA = true; // padrão para mostrar
+    let selA = opNorm.startsWith('a') || opNorm.includes('adotadas regras') || (!opNorm && hasLeg);
+    let selB = opNorm.startsWith('b') || opNorm.includes('encaminhamento') || (!opNorm && hasDocs && !selA);
+    if (!selA && !selB && (hasLeg || hasDocs || opNorm)) selA = true;
 
-    // força exibir os blocos A/B com conteúdo
     const blocoA = document.querySelector('#f43-opcao-a');
     const blocoB = document.querySelector('#f43-opcao-b');
-    if (blocoA) {
-      blocoA.hidden = !selA;
-      blocoA.style.display = selA ? 'block' : 'none';
-    }
-    if (blocoB) {
-      blocoB.hidden = !selB;
-      blocoB.style.display = selB ? 'block' : 'none';
-    }
-    setVal('#val-f4310-leg', hasLeg ? legVal : (selA ? (op || '') : ''));
-    setVal('#val-f4310-docs', hasDocs ? docsVal : '');
+    if (blocoA) { blocoA.hidden = !selA; blocoA.style.display = selA ? 'block' : 'none'; }
+    if (blocoB) { blocoB.hidden = !selB; blocoB.style.display = selB ? 'block' : 'none'; }
 
-    // Se algo de 4.3.10 existe, garante exibição geral da fase e injeta no fallback
+    const txtA = hasLeg ? legVal : (selA ? (op || '') : '');
+    const txtB = hasDocs ? docsVal : '';
+    setVal('#val-f4310-leg', txtA);
+    setVal('#val-f4310-docs', txtB);
+
     if (op || hasLeg || hasDocs) {
       const fase43 = document.querySelector('#fase-43');
       if (fase43) {
