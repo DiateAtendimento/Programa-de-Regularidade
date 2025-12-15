@@ -1909,6 +1909,13 @@
     setVal('#val-f4310-leg', txtA);
     setVal('#val-f4310-docs', txtB);
 
+    // garante que o bloco 4.3.10 fique visível se houver dados
+    const sub10 = document.getElementById('f43-sub-10');
+    if (sub10 && (op || hasLeg || hasDocs)) {
+      sub10.hidden = false;
+      sub10.style.display = 'block';
+    }
+
     if (op || hasLeg || hasDocs) {
       const fase43 = document.querySelector('#fase-43');
       if (fase43) {
