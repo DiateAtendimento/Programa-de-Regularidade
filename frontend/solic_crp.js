@@ -3181,6 +3181,30 @@ function ensureF43ForceSync(payload){
     payloadForPdf.f4310_legislacao = payloadForPdf.F4310_LEGISLACAO || payloadForPdf.F4310_LEG || '';
     payloadForPdf.f4310_docs = payloadForPdf.F4310_DOCS || payloadForPdf.F4310_DOC || '';
 
+    // Fallback extra: injeta 4.3.10 como item de lista caso o template do backend esteja desatualizado
+    (function ensure4310FallbackInList() {
+      const partes = [
+        payloadForPdf.F4310_OPCAO || payloadForPdf.F4310_OPCAO_TXT || payloadForPdf.f4310_opcao || '',
+        payloadForPdf.F4310_LEGISLACAO || payloadForPdf.F4310_LEG || payloadForPdf.f4310_legislacao || '',
+        payloadForPdf.F4310_DOCS || payloadForPdf.F4310_DOC || payloadForPdf.f4310_docs || ''
+      ].filter(Boolean);
+      const linha4310 = partes.join(' - ').trim();
+      if (!linha4310) return;
+
+      // Array principal
+      if (!Array.isArray(payloadForPdf.F43_LISTA)) payloadForPdf.F43_LISTA = [];
+      payloadForPdf.F43_LISTA.push(`4.3.10 ${linha4310}`);
+
+      // Espelha em F43_LISTA[] e TXT para templates mais antigos
+      if (!Array.isArray(payloadForPdf['F43_LISTA[]'])) payloadForPdf['F43_LISTA[]'] = [];
+      payloadForPdf['F43_LISTA[]'] = payloadForPdf.F43_LISTA.slice();
+
+      payloadForPdf.F43_LISTA_TXT = (payloadForPdf.F43_LISTA_TXT ? payloadForPdf.F43_LISTA_TXT + '; ' : '') + `4.3.10 ${linha4310}`;
+
+      // Campo auxiliar para depuração
+      payloadForPdf.F4310_FALLBACK_TXT = linha4310;
+    })();
+
     // DEBUG opcional: abrir o template com o payload para inspecionar console/logs
     const DEBUG_PREVIEW =
       /debugPreview=1/.test(window.location.search) ||
