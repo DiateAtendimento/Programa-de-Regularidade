@@ -3180,6 +3180,9 @@ function ensureF43ForceSync(payload){
     payloadForPdf.f4310_opcao = payloadForPdf.F4310_OPCAO_CODE || payloadForPdf.F4310_OPCAO;
     payloadForPdf.f4310_legislacao = payloadForPdf.F4310_LEGISLACAO || payloadForPdf.F4310_LEG || '';
     payloadForPdf.f4310_docs = payloadForPdf.F4310_DOCS || payloadForPdf.F4310_DOC || '';
+    // Duplicatas para esquemas/templates que esperam *_TXT
+    payloadForPdf.F4310_LEGISLACAO_TXT = payloadForPdf.F4310_LEGISLACAO || payloadForPdf.F4310_LEG || '';
+    payloadForPdf.F4310_DOCS_TXT       = payloadForPdf.F4310_DOCS || payloadForPdf.F4310_DOC || '';
 
     // Fallback extra: injeta 4.3.10 como item de lista caso o template do backend esteja desatualizado
     (function ensure4310FallbackInList() {
