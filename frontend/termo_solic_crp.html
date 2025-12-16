@@ -2100,5 +2100,41 @@
   setTimeout(trigger, 900);
 })();
 </script>
+
+<!-- Injeção final para exibir 4.3.10 mesmo em templates/rotas antigas -->
+<script>
+(() => {
+  function render4310() {
+    try {
+      const p = window.__TERMO_DATA__ || {};
+      const txt4310 =
+        p.F4310_FALLBACK_TXT ||
+        p.F4310_LEGISLACAO_TXT || p.F4310_LEGISLACAO || p.F4310_LEG ||
+        p.F4310_DOCS_TXT || p.F4310_DOCS || p.F4310_DOC ||
+        '';
+      if (!txt4310) return;
+
+      const fase43 = document.querySelector('#fase-43');
+      if (fase43) {
+        fase43.hidden = false;
+        fase43.style.display = 'block';
+        fase43.setAttribute('data-empty','false');
+      }
+
+      const fb = document.getElementById('f43-fallback') || fase43 || document.body;
+      const ul = fb.querySelector('ul') || (() => { const u=document.createElement('ul'); fb.appendChild(u); return u; })();
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>4.3.10</strong> ${txt4310}`;
+      ul.appendChild(li);
+      fb.style.display = '';
+    } catch(e) {
+      console.warn('[PDF 4.3.10 ultimate inject] falha', e);
+    }
+  }
+  document.addEventListener('TERMO_DATA', render4310);
+  document.addEventListener('TERMO_DATA_READY', render4310);
+  setTimeout(render4310, 500);
+})();
+</script>
 </body>
 </html>
