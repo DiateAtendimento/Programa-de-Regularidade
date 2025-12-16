@@ -1436,8 +1436,12 @@ const schemaTermoSolicPdf = Joi.object({
   F43_INCLUIR_B: Joi.string().allow(''),
   F43_DESC_PLANOS: Joi.string().allow(''),
   F4310_OPCAO: Joi.string().allow(''),
+  F4310_OPCAO_CODE: Joi.string().allow(''),
+  F4310_OPCAO_TXT: Joi.string().allow(''),
   F4310_LEGISLACAO: Joi.string().allow(''),
+  F4310_LEG: Joi.string().allow(''),
   F4310_DOCS: Joi.string().allow(''),
+  F4310_DOC: Joi.string().allow(''),
 
   F44_CRITERIOS: Joi.array().items(Joi.string()).optional(),
   F44_DECLS: Joi.array().items(Joi.string()).optional(),
@@ -2129,14 +2133,37 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
       F41_LISTA: asCSV(p.F41_LISTA),
       F42_LISTA: asCSV(p.F42_LISTA),
 
-      F43_LISTA: asCSV(p.F43_LISTA),
-      F4310_OPCAO: p.F4310_OPCAO || '',
+      F43_LISTA: (() => {
+        const base = asArr(p.F43_LISTA);
+        const fallback4310 = (() => {
+          const opTxt = p.F4310_OPCAO_TXT || p.F4310_OPCAO || '';
+          const legTxt = p.F4310_LEGISLACAO || p.F4310_LEG || '';
+          const docTxt = p.F4310_DOCS || p.F4310_DOC || '';
+          const joined = [opTxt || `Opção ${(p.F4310_OPCAO || '').toString().trim().toUpperCase()}`, legTxt || docTxt].filter(Boolean).join(' - ');
+          return joined ? `4.3.10 ${joined}` : '';
+        })();
+        if (fallback4310) base.push(fallback4310);
+        return base.join(', ');
+      })(),
+      // 4.3.10 - normaliza A/B e preserva label/textos
+      F4310_OPCAO: (p.F4310_OPCAO || '').toString().trim().charAt(0).toUpperCase(),
+      F4310_OPCAO_CODE: (p.F4310_OPCAO || '').toString().trim().charAt(0).toUpperCase(),
+      F4310_OPCAO_TXT: p.F4310_OPCAO_TXT || p.F4310_OPCAO || '',
       F4310_LEGISLACAO: p.F4310_LEGISLACAO || '',
+      F4310_LEG: p.F4310_LEGISLACAO || p.F4310_LEG || '',
       F4310_DOCS: p.F4310_DOCS || '',
+      F4310_DOC: p.F4310_DOCS || p.F4310_DOC || '',
       F43_JUST: p.F43_JUST || '',
       F43_INCLUIR: p.F43_INCLUIR || '',
       F43_PLANO: p.F43_PLANO || '',
       F43_DESC_PLANOS: p.F43_DESC_PLANOS || '',
+      // Fallback seguro: injeta 4.3.10 em listas se houver dados
+      F4310_FALLBACK_TXT: (() => {
+        const opTxt = p.F4310_OPCAO_TXT || p.F4310_OPCAO || '';
+        const legTxt = p.F4310_LEGISLACAO || p.F4310_LEG || '';
+        const docTxt = p.F4310_DOCS || p.F4310_DOC || '';
+        return [opTxt || `Opção ${(p.F4310_OPCAO || '').toString().trim().toUpperCase()}`, legTxt || docTxt].filter(Boolean).join(' - ');
+      })(),
 
       F44_DECLS: asCSV(p.F44_DECLS),
       F441_LEGISLACAO: p.F441_LEGISLACAO || '',

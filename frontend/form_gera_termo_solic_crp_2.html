@@ -919,7 +919,7 @@
               <div class="fw-semibold mb-2">4.3.10 – Em relação à adequação das regras de benefícios do RPPS à Emenda Constitucional nº 103/2019:</div>
 
               <label class="form-check mb-2">
-                <input class="form-check-input me-2" type="radio" name="F4310_OPCAO" value="a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS (reforma das regras de benefícios)...">
+                <input class="form-check-input me-2" type="radio" name="F4310_OPCAO" value="A" data-label="a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS (reforma das regras de benefícios)...">
                 <span class="form-check-label">
                   a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS (reforma das regras de benefícios)...
                 </span>
@@ -932,7 +932,7 @@
               <div class="text-center my-2"><span class="badge bg-light text-dark">OU</span></div>
 
               <label class="form-check mb-2">
-                <input class="form-check-input me-2" type="radio" name="F4310_OPCAO" value="b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...">
+                <input class="form-check-input me-2" type="radio" name="F4310_OPCAO" value="B" data-label="b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...">
                 <span class="form-check-label">
                   b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...
                 </span>
@@ -941,6 +941,7 @@
                 <label class="form-label" for="F4310_DOCS">Lista de documentos anexados, que comprovam o encaminhamento dos projetos de alteração das regras de benefícios:</label>
                 <textarea id="F4310_DOCS" name="F4310_DOCS" class="form-control" rows="3"></textarea>
               </div>
+              <input type="hidden" id="F4310_OPCAO_TXT" name="F4310_OPCAO_TXT">
             </div>
 
             <!-- 4.3.11 + 4.3.12 -->
@@ -1392,10 +1393,14 @@
       const r4310 = document.querySelectorAll('input[name="F4310_OPCAO"]');
       const wLeg = document.getElementById('F4310_LEGISLACAO_WRAP');
       const wDocs = document.getElementById('F4310_DOCS_WRAP');
+      const hidTxt4310 = document.getElementById('F4310_OPCAO_TXT');
       const sync4310 = () => {
-        const sel = document.querySelector('input[name="F4310_OPCAO"]:checked')?.value;
-        if (wLeg) wLeg.classList.toggle('d-none', sel !== 'a) Foram adotadas regras de elegibilidade, de cálculo e de reajustamento dos benefícios do RPPS (reforma das regras de benefícios)...');
-        if (wDocs) wDocs.classList.toggle('d-none', sel !== 'b) Comprovamos o encaminhamento, pelo ente ao Poder Legislativo, de propostas de alteração...');
+        const sel = document.querySelector('input[name="F4310_OPCAO"]:checked');
+        const val = sel?.value || '';
+        const lbl = sel?.dataset?.label || sel?.nextElementSibling?.innerText?.trim() || '';
+        if (hidTxt4310) hidTxt4310.value = lbl || val;
+        if (wLeg) wLeg.classList.toggle('d-none', val !== 'A');
+        if (wDocs) wDocs.classList.toggle('d-none', val !== 'B');
       };
       r4310.forEach(r => r.addEventListener('change', sync4310));
       sync4310();

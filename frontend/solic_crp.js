@@ -2970,6 +2970,19 @@ function syncF46ToTemplate(){
   payload.F4310_LEGISLACAO = (document.getElementById('F4310_LEGISLACAO')?.value || payload.F4310_LEGISLACAO || '').trim();
   payload.F4310_DOCS = (document.getElementById('F4310_DOCS')?.value || payload.F4310_DOCS || '').trim();
 
+  // NormalizaÇõÇœo segura para 4.3.10 (A/B + texto label)
+  (function normalize4310(){
+    const sel = document.querySelector('input[name="F4310_OPCAO"]:checked');
+    const opVal = (sel?.value || payload.F4310_OPCAO || '').trim();
+    const opCode = opVal ? opVal.charAt(0).toUpperCase() : '';
+    const opTxt = (sel?.dataset?.label || document.getElementById('F4310_OPCAO_TXT')?.value || sel?.nextElementSibling?.innerText || payload.F4310_OPCAO_TXT || opVal || '').trim();
+    payload.F4310_OPCAO = opCode;
+    payload.F4310_OPCAO_CODE = opCode;
+    payload.F4310_OPCAO_TXT = opTxt || opCode;
+    payload.F4310_LEG = payload.F4310_LEGISLACAO || '';
+    payload.F4310_DOC = payload.F4310_DOCS || '';
+  })();
+
   // 6) checkbox simples
   payload.F43_SOLICITA_INCLUSAO = document.getElementById('F43_SOLICITA_INCLUSAO')?.checked ? 'SIM' : (payload.F43_SOLICITA_INCLUSAO || '');
 

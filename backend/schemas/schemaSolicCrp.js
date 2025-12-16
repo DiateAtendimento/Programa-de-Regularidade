@@ -153,9 +153,15 @@ export const schemaSolicCrp = z
     F43_LISTA_8: zArrStr, // 4.3.8 Compensação Previdenciária
     F43_LISTA_9: zArrStr, // 4.3.9 Requisitos Dirigentes/Colegiados
     
-    F4310_OPCAO: z.enum(["A", "B"]).optional().or(z.literal("")).default(""),
+    F4310_OPCAO: z.preprocess(
+      (v) => String(v || "").trim().charAt(0).toUpperCase(),
+      z.enum(["A", "B"]).optional().or(z.literal("")).default("")
+    ),
+    F4310_OPCAO_TXT: zStr,
     F4310_LEGISLACAO: zStr,
     F4310_DOCS: zStr,
+    F4310_LEG: zStr,
+    F4310_DOC: zStr,
     F43_INCLUIR: zStr, // 4.3.11(a) — critérios a incluir (enviado como string)    // 4.3.12 — campos explícitos (pedido do usuário)
     F43_INCLUIR_B: zStr,           
     // 4.4
