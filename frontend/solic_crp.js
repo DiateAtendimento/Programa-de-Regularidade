@@ -2981,6 +2981,16 @@ function syncF46ToTemplate(){
     payload.F4310_OPCAO_TXT = opTxt || opCode;
     payload.F4310_LEG = payload.F4310_LEGISLACAO || '';
     payload.F4310_DOC = payload.F4310_DOCS || '';
+
+    // Regra de segurança: se houver opção e texto (leg/docs), injeta linha 4.3.10 nas listas
+    const linha4310 = [opTxt || `Opção ${opCode}`, payload.F4310_LEG || payload.F4310_DOC].filter(Boolean).join(' - ').trim();
+    if (linha4310) {
+      const arr = Array.isArray(payload.F43_LISTA) ? payload.F43_LISTA.slice() : [];
+      arr.push(`4.3.10 ${linha4310}`);
+      payload.F43_LISTA = arr;
+      payload['F43_LISTA[]'] = arr.slice();
+      payload.F43_LISTA_TXT = arr.join('; ');
+    }
   })();
 
   // 6) checkbox simples
