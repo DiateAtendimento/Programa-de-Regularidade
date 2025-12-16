@@ -1933,6 +1933,7 @@
     let op = getVal('F4310_OPCAO_CODE','F4310_OPCAO','F4310_OPCAO_TXT','f4310_opcao');
     const legVal = getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG','f4310_legislacao');
     const docsVal = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC','f4310_docs');
+    const has4310 = !!(op || legVal || docsVal);
     const opNorm = String(op || '').trim().toLowerCase();
     console.info('[PDF 4.3.10]', { opRaw: op, opNorm, leg: legVal, docs: docsVal });
     console.info('[PDF 4.3.10 FULL PAYLOAD SNAPSHOT]', {
@@ -1973,7 +1974,8 @@
       sub10.style.display = 'block';
     }
 
-    if (op || hasLeg || hasDocs) {
+    if (has4310) {
+      window.__F4310_RENDERED__ = true;
       const fase43 = document.querySelector('#fase-43');
       if (fase43) {
         fase43.hidden = false;
@@ -2045,7 +2047,7 @@
     const has12 = incluirB.length || planoB || desc12 || just12;
     show('#f43-sub-12', !!has12);
 
-    const any = anyList || has11 || has12 || op;
+    const any = anyList || has11 || has12 || has4310;
     show('#fase-43', !!any);
     if (!any) document.querySelector('#fase-43')?.setAttribute('data-empty','1');
 
