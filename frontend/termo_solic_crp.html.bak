@@ -1498,44 +1498,6 @@
 
         // --- 4.3 ---
         // A fase 4.3 é tratada integralmente pelo hydrateF43, chamado mais abaixo.
-        // Fallback rápido para garantir exibição do 4.3.10 mesmo sem hydrateF43
-        (function apply4310Fallback(){
-          const getVal = (...keys) => {
-            for (const k of keys) {
-              const v = p[k];
-              if (v === undefined || v === null) continue;
-              if (Array.isArray(v)) {
-                const arr = v.filter(Boolean).map(String).map(s=>s.trim()).filter(Boolean);
-                if (arr.length) return arr.join('; ');
-              }
-              const s = String(v).trim();
-              if (s) return s;
-            }
-            return '';
-          };
-
-          const op   = getVal('F4310_OPCAO','F4310_OPCAO_TXT','F4310_OPCAO_CODE','f4310_opcao');
-          const leg  = getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG','f4310_legislacao');
-          const docs = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC','f4310_docs');
-          if (!(op || leg || docs)) return;
-
-          const opNorm = String(op||'').toLowerCase();
-          const selA = opNorm.startsWith('a') || (!opNorm && leg);
-          const selB = opNorm.startsWith('b') || (!opNorm && docs && !selA);
-
-          const setVal = (sel,val) => { const el = document.querySelector(sel); if (el) el.textContent = val || ''; };
-          const show = (sel, on) => { const el = document.querySelector(sel); if (el) { el.hidden = !on; el.style.display = on ? 'block' : 'none'; } };
-
-          show('#f43-opcao-a', selA);
-          show('#f43-opcao-b', selB);
-          show('#f43-sub-10', true);
-
-          const fase43 = document.querySelector('#fase-43');
-          if (fase43) { fase43.hidden = false; fase43.style.display = 'block'; fase43.setAttribute('data-empty','false'); }
-
-          setVal('#val-f4310-leg', selA ? (leg || op) : (leg || ''));
-          setVal('#val-f4310-docs', selB ? (docs || op) : (docs || ''));
-        })();
 
         // --- 4.4 ---
         (function(){
