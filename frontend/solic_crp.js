@@ -3221,6 +3221,16 @@ function ensureF43ForceSync(payload){
       payloadForPdf['deficit_atuarial[]'] = (payloadForPdf['deficit_atuarial[]'] || []).concat([`4.3.10 ${linha4310}`]);
     })();
 
+    // Log de depuração para confirmar injeção da linha 4.3.10
+    if (window.__DEBUG_SOLIC_CRP__) {
+      console.info('[F4310 FALLBACK INJECT]', {
+        F4310_FALLBACK_TXT: payloadForPdf.F4310_FALLBACK_TXT,
+        F43_LISTA: payloadForPdf.F43_LISTA,
+        F43_LISTA_TXT: payloadForPdf.F43_LISTA_TXT,
+        DEFICIT_ATUARIAL: payloadForPdf.DEFICIT_ATUARIAL
+      });
+    }
+
     // Garantia final: se, por qualquer motivo, F43_LISTA/F43_LISTA_TXT ainda não tiverem 4.3.10, injeta de novo
     (function ensure4310InF43Lists() {
       const linha4310 = payloadForPdf.F4310_FALLBACK_TXT;
