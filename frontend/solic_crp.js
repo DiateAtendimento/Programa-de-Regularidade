@@ -3221,6 +3221,24 @@ function ensureF43ForceSync(payload){
       payloadForPdf['deficit_atuarial[]'] = (payloadForPdf['deficit_atuarial[]'] || []).concat([`4.3.10 ${linha4310}`]);
     })();
 
+    // Garantia final: se, por qualquer motivo, F43_LISTA/F43_LISTA_TXT ainda não tiverem 4.3.10, injeta de novo
+    (function ensure4310InF43Lists() {
+      const linha4310 = payloadForPdf.F4310_FALLBACK_TXT;
+      if (!linha4310) return;
+      const hasInArr = (arr) => Array.isArray(arr) && arr.some(i => String(i).includes('4.3.10'));
+
+      if (!hasInArr(payloadForPdf.F43_LISTA)) {
+        const arr = Array.isArray(payloadForPdf.F43_LISTA) ? payloadForPdf.F43_LISTA.slice() : [];
+        arr.push(`4.3.10 ${linha4310}`);
+        payloadForPdf.F43_LISTA = arr;
+      }
+      payloadForPdf['F43_LISTA[]'] = Array.isArray(payloadForPdf.F43_LISTA) ? payloadForPdf.F43_LISTA.slice() : [];
+
+      if (!String(payloadForPdf.F43_LISTA_TXT || '').includes('4.3.10')) {
+        payloadForPdf.F43_LISTA_TXT = (payloadForPdf.F43_LISTA_TXT ? payloadForPdf.F43_LISTA_TXT + '; ' : '') + `4.3.10 ${linha4310}`;
+      }
+    })();
+
     // DEBUG opcional: abrir o template com o payload para inspecionar console/logs
     const DEBUG_PREVIEW =
       /debugPreview=1/.test(window.location.search) ||
