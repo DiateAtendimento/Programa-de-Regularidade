@@ -1500,10 +1500,10 @@
         // --- 4.3 ---
         // A fase 4.3 é tratada integralmente pelo hydrateF43, chamado mais abaixo.
         // Fallback rápido para garantir exibição do 4.3.10 mesmo sem hydrateF43
-        (function apply4310Fallback(){
+        function render4310Block(pLocal){
           const getVal = (...keys) => {
             for (const k of keys) {
-              const v = p[k];
+              const v = pLocal[k];
               if (v === undefined || v === null) continue;
               if (Array.isArray(v)) {
                 const arr = v.filter(Boolean).map(String).map(s=>s.trim()).filter(Boolean);
@@ -1518,7 +1518,7 @@
           const op   = getVal('F4310_OPCAO','F4310_OPCAO_TXT','F4310_OPCAO_CODE','f4310_opcao');
           const leg  = getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG','f4310_legislacao');
           const docs = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC','f4310_docs');
-          if (!(op || leg || docs)) return;
+          if (!(op || leg || docs)) return false;
 
           const opNorm = String(op||'').toLowerCase();
           const selA = opNorm.startsWith('a') || (!opNorm && leg);
@@ -1537,7 +1537,9 @@
           setVal('#val-f4310-leg', selA ? (leg || op) : (leg || ''));
           setVal('#val-f4310-docs', selB ? (docs || op) : (docs || ''));
           window.__F4310_RENDERED__ = true;
-        })();
+          return true;
+        }
+        render4310Block(p);
 
         // --- 4.4 ---
         (function(){
