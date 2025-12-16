@@ -2768,6 +2768,18 @@ app.post('/api/termo-solic-crp-pdf', async (req, res) => {
     // Stringify o payload para ver todas as chaves e valores
     console.log(JSON.stringify(payload, null, 2)); 
     console.log('-----------------------------------');
+    // Log específico do 4.3.10 para depuração rápida
+    try {
+      const dbg4310 = {
+        F4310_OPCAO: payload.F4310_OPCAO,
+        F4310_OPCAO_TXT: payload.F4310_OPCAO_TXT,
+        F4310_LEGISLACAO: payload.F4310_LEGISLACAO,
+        F4310_DOCS: payload.F4310_DOCS,
+        F43_LISTA: payload.F43_LISTA,
+        F43_LISTA_TXT: payload.F43_LISTA_TXT
+      };
+      console.log('[DEBUG 4.3.10 PAYLOAD]', JSON.stringify(dbg4310, null, 2));
+    } catch(_) {}
     // =======================================================
 
     await withPdfLimiter(async () => {

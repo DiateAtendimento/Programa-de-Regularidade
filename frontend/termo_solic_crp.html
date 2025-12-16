@@ -1892,6 +1892,17 @@
     const docsVal = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC','f4310_docs');
     const opNorm = String(op || '').trim().toLowerCase();
     console.info('[PDF 4.3.10]', { opRaw: op, opNorm, leg: legVal, docs: docsVal });
+    console.info('[PDF 4.3.10 FULL PAYLOAD SNAPSHOT]', {
+      F4310_OPCAO: p.F4310_OPCAO,
+      F4310_OPCAO_TXT: p.F4310_OPCAO_TXT,
+      F4310_OPCAO_CODE: p.F4310_OPCAO_CODE,
+      F4310_LEGISLACAO: p.F4310_LEGISLACAO,
+      F4310_LEGISLACAO_TXT: p.F4310_LEGISLACAO_TXT,
+      F4310_DOCS: p.F4310_DOCS,
+      F4310_DOCS_TXT: p.F4310_DOCS_TXT,
+      F43_LISTA: p.F43_LISTA,
+      F43_LISTA_TXT: p.F43_LISTA_TXT
+    });
 
     const hasLeg = !!legVal;
     const hasDocs = !!docsVal;
