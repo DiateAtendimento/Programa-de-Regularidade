@@ -21,7 +21,7 @@
   function openPreviewWindow(payload){
     try {
       const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-      const url = `termo_solic_crp.html#payload_b64=${b64}`;
+      const url = `termo_solic_crp.html?v=2025-12-16-4310#payload_b64=${b64}`;
       const w = window.open(url, '_blank', 'noopener');
       if (!w) return;
       // envia o payload repetidamente por alguns segundos até o template estar pronto
