@@ -2143,7 +2143,19 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
           return joined ? `4.3.10 ${joined}` : '';
         })();
         if (fallback4310) base.push(fallback4310);
-        return base.join(', ');
+        return base;
+      })(),
+      F43_LISTA_TXT: (() => {
+        const arr = asArr(p.F43_LISTA);
+        const extra = (() => {
+          const opTxt = p.F4310_OPCAO_TXT || p.F4310_OPCAO || '';
+          const legTxt = p.F4310_LEGISLACAO || p.F4310_LEG || '';
+          const docTxt = p.F4310_DOCS || p.F4310_DOC || '';
+          const joined = [opTxt || `OpÇõÇœo ${(p.F4310_OPCAO || '').toString().trim().toUpperCase()}`, legTxt || docTxt].filter(Boolean).join(' - ');
+          return joined ? `4.3.10 ${joined}` : '';
+        })();
+        if (extra) arr.push(extra);
+        return arr.join('; ');
       })(),
       // 4.3.10 - normaliza A/B e preserva label/textos
       F4310_OPCAO: (p.F4310_OPCAO || '').toString().trim().charAt(0).toUpperCase(),
