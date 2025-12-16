@@ -3203,6 +3203,13 @@ function ensureF43ForceSync(payload){
       baseLista.push(`4.3.10 ${linha4310}`);
       payloadForPdf.F43_LISTA = baseLista;
       payloadForPdf['F43_LISTA[]'] = baseLista.slice();
+      // Espelha em variações que alguns templates/serializadores usam
+      payloadForPdf['F43_LISTA[][]'] = baseLista.slice();
+      payloadForPdf.fase4_3_criterios = baseLista.slice();
+      payloadForPdf['fase4_3_criterios[]'] = baseLista.slice();
+      payloadForPdf.fase4_3_criterios_txt = (payloadForPdf.fase4_3_criterios_txt ? payloadForPdf.fase4_3_criterios_txt + '; ' : '') + `4.3.10 ${linha4310}`;
+      payloadForPdf.fase4_3_criterios_txt_txt = payloadForPdf.fase4_3_criterios_txt;
+
       const txtLista = (payloadForPdf.F43_LISTA_TXT ? payloadForPdf.F43_LISTA_TXT + '; ' : '') + `4.3.10 ${linha4310}`;
       payloadForPdf.F43_LISTA_TXT = txtLista;
 
