@@ -2257,6 +2257,20 @@
         p.F4310_LEGISLACAO_TXT || p.F4310_LEGISLACAO || p.F4310_LEG ||
         p.F4310_DOCS_TXT || p.F4310_DOCS || p.F4310_DOC ||
         '';
+      // Se nada foi pintado nos blocos principais, injeta diretamente no inline e libera o sub-bloco.
+      const mainA   = document.getElementById('val-f4310-leg');
+      const inlineA = document.getElementById('val-f4310-inline');
+      const sub10   = document.getElementById('f43-sub-10');
+      if (txt4310) {
+        if (mainA && !mainA.textContent.trim()) {
+          mainA.textContent = txt4310;
+        }
+        if (inlineA && !inlineA.textContent.trim()) {
+          inlineA.textContent = txt4310;
+          inlineA.style.display = '';
+        }
+        if (sub10) { sub10.hidden = false; sub10.style.display = 'block'; }
+      }
       if (!txt4310) return;
 
       const fase43 = document.querySelector('#fase-43');
