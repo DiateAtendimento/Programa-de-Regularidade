@@ -2285,6 +2285,16 @@
       if (blocoA) { blocoA.hidden = false; blocoA.style.display = 'block'; }
       if (blocoB) { blocoB.hidden = true;  blocoB.style.display = 'none';  }
       valA.textContent = txt;
+
+      // Duplica no fallback para garantir captura no PDF mesmo se o layout quebrar
+      const fb = document.getElementById('f43-fallback') || fase;
+      if (fb) {
+        const ul = fb.querySelector('ul') || (() => { const u=document.createElement('ul'); fb.appendChild(u); return u; })();
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>4.3.10</strong> ${txt}`;
+        ul.appendChild(li);
+        fb.style.display = '';
+      }
       window.__F4310_RENDERED__ = true;
     } catch(e) {
       console.warn('force4310 fail', e);
@@ -2292,6 +2302,14 @@
   }
 
   document.addEventListener('TERMO_PRINT_READY', force4310);
+  if (window.matchMedia) {
+    try {
+      const mq = window.matchMedia('print');
+      if (mq && mq.addEventListener) {
+        mq.addEventListener('change', (ev) => { if (ev.matches) force4310(); });
+      }
+    } catch(_) {}
+  }
   setTimeout(force4310, 1200);
 })();
 </script>
