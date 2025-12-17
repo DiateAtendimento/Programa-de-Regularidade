@@ -2054,6 +2054,22 @@
     // Marca a pÇagina como pronta apÇüs renderizar o 4.3.10 (evita captura precoce no PDF)
     markPrintReady('hydrateF43');
 
+    // Salvaguarda extra: se por qualquer motivo nヒオ houver texto vis¡vel, injeta no inline e reexibe o sub-bloco.
+    (function ensureInline4310(){
+      const inline4310 = document.getElementById('val-f4310-inline');
+      if (!inline4310) return;
+      const txtInline =
+        document.querySelector('#val-f4310-leg')?.textContent?.trim() ||
+        document.querySelector('#val-f4310-docs')?.textContent?.trim() ||
+        fallback4310 || resto4310 || list4310 || op || legVal || docsVal || '';
+      if (txtInline && !inline4310.textContent.trim()) {
+        inline4310.textContent = txtInline;
+        inline4310.style.display = '';
+        const sub10 = document.getElementById('f43-sub-10');
+        if (sub10) { sub10.hidden = false; sub10.style.display = 'block'; }
+      }
+    })();
+
     // Loga o estado final do 4.3.10 no template (para saber se o PDF leu este arquivo).
     (function log4310Rendered() {
       const aBlock = document.querySelector('#f43-opcao-a');
