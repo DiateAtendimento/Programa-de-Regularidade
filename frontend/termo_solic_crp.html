@@ -795,9 +795,10 @@
         p.F43_JUST         = getAny('F43_JUST', 'f43_just') || '';
         
         // 4.3.10: captura e normaliza (aceita aliases/códigos/texto)
-        p.F4310_OPCAO      = getAny('F4310_OPCAO', 'F4310_OPCAO_CODE', 'F4310_OPCAO_TXT', 'f4310_opcao') || '';
-        p.F4310_LEGISLACAO = getAny('F4310_LEGISLACAO', 'F4310_LEGISLACAO_TXT', 'F4310_LEG', 'f4310_legislacao') || '';
-        p.F4310_DOCS       = getAny('F4310_DOCS', 'F4310_DOCS_TXT', 'F4310_DOC', 'f4310_docs') || '';
+        p.F4310_OPCAO        = getAny('F4310_OPCAO', 'F4310_OPCAO_CODE', 'F4310_OPCAO_TXT', 'f4310_opcao') || '';
+        p.F4310_LEGISLACAO   = getAny('F4310_LEGISLACAO', 'F4310_LEGISLACAO_TXT', 'F4310_LEG', 'f4310_legislacao') || '';
+        p.F4310_DOCS         = getAny('F4310_DOCS', 'F4310_DOCS_TXT', 'F4310_DOC', 'f4310_docs') || '';
+        p.F4310_FALLBACK_TXT = getAny('F4310_FALLBACK_TXT', 'f4310_fallback_txt') || '';
 
         // ===================================================
         // NOVO PREENCHIMENTO DIRETO DOS TEXTOS 4.3.1 A 4.3.9
