@@ -2240,5 +2240,60 @@
   setTimeout(render4310, 500);
 })();
 </script>
+
+<!-- Salvaguarda final: garante 4.3.10 visível mesmo se algo apagar o valor -->
+<script>
+(() => {
+  const pick = (...keys) => {
+    const p = window.__TERMO_DATA__ || {};
+    for (const k of keys) {
+      const v = p[k];
+      if (v === undefined || v === null) continue;
+      if (Array.isArray(v)) {
+        const arr = v.filter(Boolean).map(x => String(x).trim()).filter(Boolean);
+        if (arr.length) return arr.join('; ');
+      }
+      const s = String(v || '').trim();
+      if (s) return s;
+    }
+    return '';
+  };
+
+  function force4310() {
+    try {
+      const fase = document.querySelector('#fase-43');
+      const sub10 = document.getElementById('f43-sub-10');
+      const valA = document.getElementById('val-f4310-leg');
+      const valB = document.getElementById('val-f4310-docs');
+      if (!(fase && sub10 && valA && valB)) return;
+
+      const txt = pick(
+        'F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG',
+        'F4310_DOCS','F4310_DOCS_TXT','F4310_DOC',
+        'F4310_FALLBACK_TXT','F4310_OPCAO','F4310_OPCAO_TXT','F4310_OPCAO_CODE'
+      );
+
+      // Se já temos texto, nada a fazer
+      if (valA.textContent.trim() || valB.textContent.trim()) return;
+      if (!txt) return;
+
+      // Força exibição no bloco A
+      sub10.hidden = false; sub10.style.display = 'block';
+      fase.hidden = false; fase.style.display = 'block'; fase.setAttribute('data-empty','false');
+      const blocoA = document.querySelector('#f43-opcao-a');
+      const blocoB = document.querySelector('#f43-opcao-b');
+      if (blocoA) { blocoA.hidden = false; blocoA.style.display = 'block'; }
+      if (blocoB) { blocoB.hidden = true;  blocoB.style.display = 'none';  }
+      valA.textContent = txt;
+      window.__F4310_RENDERED__ = true;
+    } catch(e) {
+      console.warn('force4310 fail', e);
+    }
+  }
+
+  document.addEventListener('TERMO_PRINT_READY', force4310);
+  setTimeout(force4310, 1200);
+})();
+</script>
 </body>
 </html>
