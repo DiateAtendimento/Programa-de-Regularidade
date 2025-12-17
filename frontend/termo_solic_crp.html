@@ -1949,9 +1949,9 @@
     setVal('#val-f4310-leg', txtA);
     setVal('#val-f4310-docs', txtB);
 
-    // garante que o bloco 4.3.10 fique visível se houver dados
+    // garante que o bloco 4.3.10 fique visível se houver dados (inclui fallback)
     const sub10 = document.getElementById('f43-sub-10');
-    if (sub10 && (op || hasLeg || hasDocs)) {
+    if (sub10 && (op || hasLeg || hasDocs || fallback4310)) {
       sub10.hidden = false;
       sub10.style.display = 'block';
     }
