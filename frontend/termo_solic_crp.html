@@ -1839,6 +1839,10 @@
     p = p || {};
     const data = __reconstruirF43(p);
     const uniq = (arr) => Array.from(new Set((arr || []).map(v => String(v || '').trim()).filter(Boolean)));
+    // Clona o resto para permitir filtragem (ex.: reaproveitar item 4.3.10)
+    let restoArr = Array.isArray(data.resto)
+      ? data.resto.slice()
+      : (data.resto ? asArr(data.resto) : []);
 
     const fillList = (sel, arr) => {
       const el = document.querySelector(sel);
@@ -1889,11 +1893,11 @@
       setVal(`#F43${i+1}_LIST_TXT`, txt);
     });
 
-    fillList('#f43-fallback', data.resto);
+    fillList('#f43-fallback', restoArr);
     // HTML usa <div id="f43-fallback"> (sem "-wrap"); ajustar selector para exibir o texto
-    show('#f43-fallback', !!(data.resto && data.resto.length));
+    show('#f43-fallback', !!(restoArr && restoArr.length));
 
-    const anyList = groups.some(g => g && g.length) || (data.resto && data.resto.length);
+    const anyList = groups.some(g => g && g.length) || (restoArr && restoArr.length);
 
     const getVal = (...keys) => {
       for (const k of keys) {
@@ -1914,7 +1918,7 @@
     const legVal = getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG','f4310_legislacao','F4310_FALLBACK_TXT');
     const docsVal = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC','f4310_docs','F4310_FALLBACK_TXT');
     const fallback4310 = getVal('F4310_FALLBACK_TXT');
-    const has4310 = !!(op || legVal || docsVal || fallback4310);
+    let has4310 = !!(op || legVal || docsVal || fallback4310);
     const opNorm = String(op || '').trim().toLowerCase();
     console.info('[PDF 4.3.10]', { opRaw: op, opNorm, leg: legVal, docs: docsVal });
     console.info('[PDF 4.3.10 FULL PAYLOAD SNAPSHOT]', {
@@ -1933,9 +1937,26 @@
     const hasDocs = !!docsVal;
     let selA = opNorm.startsWith('a') || opNorm.includes('adotadas regras') || (!opNorm && hasLeg);
     let selB = opNorm.startsWith('b') || opNorm.includes('encaminhamento') || (!opNorm && hasDocs && !selA);
+
+    // Se não há dados explícitos mas sobrou algo em "resto", usa como texto do 4.3.10 (bloco A)
+    let resto4310 = '';
+    if (!has4310 && restoArr.length) {
+      const idx = restoArr.findIndex(t => /4\.?3\.?10/i.test(String(t || '')));
+      if (idx >= 0) {
+        resto4310 = restoArr.splice(idx, 1)[0];
+      } else {
+        resto4310 = restoArr.join('; ');
+        restoArr = [];
+      }
+      if (resto4310) {
+        has4310 = true;
+        selA = true;
+      }
+    }
+
     if (!selA && !selB && (hasLeg || hasDocs || opNorm)) selA = true;
-    if (!selA && !selB && fallback4310) selA = true; // fallback text vai para A
-    if (!selA && !selB && !(hasLeg || hasDocs || opNorm || fallback4310)) {
+    if (!selA && !selB && (fallback4310 || resto4310)) selA = true; // fallback text vai para A
+    if (!selA && !selB && !(hasLeg || hasDocs || opNorm || fallback4310 || resto4310)) {
       console.warn('[PDF 4.3.10] nenhum bloco exibido (sem dados)');
     }
 
@@ -1944,7 +1965,7 @@
     if (blocoA) { blocoA.hidden = !selA; blocoA.style.display = selA ? 'block' : 'none'; }
     if (blocoB) { blocoB.hidden = !selB; blocoB.style.display = selB ? 'block' : 'none'; }
 
-    const txtA = hasLeg ? legVal : (selA ? (op || fallback4310 || '') : '');
+    const txtA = hasLeg ? legVal : (selA ? (op || fallback4310 || resto4310 || '') : '');
     const txtB = hasDocs ? docsVal : '';
     setVal('#val-f4310-leg', txtA);
     setVal('#val-f4310-docs', txtB);
