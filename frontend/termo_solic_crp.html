@@ -878,6 +878,9 @@
         p.F445_DESC_PLANOS = getAny('F445_DESC_PLANOS', 'f445_desc_planos') || '';
         p.F446_DOCS       = getAny('F446_DOCS', 'f446_docs') || '';
         p.F446_EXEC_RES   = getAny('F446_EXEC_RES', 'f446_exec_res') || '';
+        // 4.3.10 já normalizado acima, mas replica para data-k simples
+        p.F4310_LEGISLACAO = p.F4310_LEGISLACAO || getAny('F4310_LEGISLACAO', 'F4310_LEGISLACAO_TXT', 'F4310_LEG', 'f4310_legislacao') || '';
+        p.F4310_DOCS       = p.F4310_DOCS       || getAny('F4310_DOCS', 'F4310_DOCS_TXT', 'F4310_DOC', 'f4310_docs') || '';
 
         // 4.5
         p.F45_DECLS       = asArr(getAny('F45_DECLS', 'F45_DECLS[]', 'f45_decls', 'F45_CONDICOES[]'));
