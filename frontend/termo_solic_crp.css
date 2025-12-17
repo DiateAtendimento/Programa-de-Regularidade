@@ -382,3 +382,14 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
   }
 }
 
+/* Permite quebrar a Fase 4.3 em múltiplas páginas (evita página em branco) */
+@media print {
+  #fase-43 {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  #fase-43 .sub-section {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+}

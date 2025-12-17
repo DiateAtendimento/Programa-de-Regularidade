@@ -1982,14 +1982,17 @@
         fase43.style.display = 'block';
         fase43.setAttribute('data-empty','false');
       }
-      const fb = document.getElementById('f43-fallback');
-      if (fb) {
-        const txt4310 = [op, legVal || docsVal].filter(Boolean).join(' - ') || 'Informações do item 4.3.10';
-        const ul = fb.querySelector('ul') || (() => { const u=document.createElement('ul'); fb.appendChild(u); return u; })();
-        const li = document.createElement('li');
-        li.innerHTML = `<strong>4.3.10</strong> ${txt4310}`;
-        ul.appendChild(li);
-        fb.style.display = '';
+      // Apenas empurra para o fallback se nenhum bloco A/B tiver sido exibido
+      if (!selA && !selB) {
+        const fb = document.getElementById('f43-fallback');
+        if (fb) {
+          const txt4310 = [op, legVal || docsVal].filter(Boolean).join(' - ') || 'Informações do item 4.3.10';
+          const ul = fb.querySelector('ul') || (() => { const u=document.createElement('ul'); fb.appendChild(u); return u; })();
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>4.3.10</strong> ${txt4310}`;
+          ul.appendChild(li);
+          fb.style.display = '';
+        }
       }
     } else {
       // fallback de último recurso: se por algum motivo os campos vierem vazios, exibe placeholder claro
