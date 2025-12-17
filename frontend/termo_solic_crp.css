@@ -393,3 +393,11 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
     page-break-inside: avoid !important;
   }
 }
+
+/* Permite que a seção 4 inteira quebre sem deixar página vazia */
+@media print {
+  #sec-fase {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+}

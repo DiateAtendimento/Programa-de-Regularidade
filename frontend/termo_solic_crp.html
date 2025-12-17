@@ -1909,9 +1909,9 @@
       setVal(`#F43${i+1}_LIST_TXT`, txt);
     });
 
-      fillList('#f43-fallback', data.resto);
-      // HTML usa <div id="f43-fallback"> (sem "-wrap"); ajustar selector para exibir o texto
-      show('#f43-fallback', !!(data.resto && data.resto.length));
+    fillList('#f43-fallback', data.resto);
+    // HTML usa <div id="f43-fallback"> (sem "-wrap"); ajustar selector para exibir o texto
+    show('#f43-fallback', !!(data.resto && data.resto.length));
 
     const anyList = groups.some(g => g && g.length) || (data.resto && data.resto.length);
 
@@ -2049,6 +2049,16 @@
     p.F4312_DESC_TXT = desc12;
     const has12 = incluirB.length || planoB || desc12 || just12;
     show('#f43-sub-12', !!has12);
+
+    // Se já temos listas principais, limpamos qualquer fallback residual para evitar duplicação ou deslocamento visual
+    if (anyList) {
+      const fb = document.getElementById('f43-fallback');
+      if (fb) {
+        fb.innerHTML = '';
+        fb.style.display = 'none';
+        fb.dataset.empty = '1';
+      }
+    }
 
     const any = anyList || has11 || has12 || has4310;
     show('#fase-43', !!any);
