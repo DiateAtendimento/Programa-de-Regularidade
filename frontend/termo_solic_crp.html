@@ -2375,5 +2375,28 @@
   setTimeout(force4310, 1200);
 })();
 </script>
+<!-- Salvaguarda CSS/JS final para 4.3.10: garante texto exibido e visível mesmo se hidratação falhar -->
+<script>
+  document.addEventListener('TERMO_DATA_READY', () => {
+    try {
+      const p = window.__TERMO_DATA__ || {};
+      const txt4310 =
+        p.F4310_LEGISLACAO || p.F4310_LEGISLACAO_TXT || p.F4310_LEG ||
+        p.F4310_DOCS || p.F4310_DOCS_TXT || p.F4310_DOC ||
+        p.F4310_FALLBACK_TXT || p.f4310_legislacao || p.f4310_docs || p.f4310_opcao || '';
+      if (!txt4310) return;
+      const aEl = document.getElementById('val-f4310-leg');
+      const bEl = document.getElementById('val-f4310-docs');
+      const inEl = document.getElementById('val-f4310-inline');
+      const sub10 = document.getElementById('f43-sub-10');
+      if (aEl && !aEl.textContent.trim()) aEl.textContent = txt4310;
+      if (bEl && !bEl.textContent.trim() && p.F4310_DOCS) bEl.textContent = p.F4310_DOCS;
+      if (inEl && !inEl.textContent.trim()) { inEl.textContent = txt4310; inEl.style.display = ''; }
+      if (sub10) { sub10.hidden = false; sub10.style.display = 'block'; sub10.dataset.empty = 'false'; }
+    } catch(e) {
+      console.warn('[force4310-final] falha', e);
+    }
+  });
+</script>
 </body>
 </html>
