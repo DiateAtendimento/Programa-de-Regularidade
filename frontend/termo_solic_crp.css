@@ -389,8 +389,9 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
     page-break-inside: auto !important;
   }
   #fase-43 .sub-section {
-    break-inside: avoid-page !important;
-    page-break-inside: avoid !important;
+    /* Permite quebrar dentro da subseção para evitar grandes vazios */
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 }
 

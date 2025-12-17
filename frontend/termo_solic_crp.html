@@ -1575,28 +1575,7 @@
         // ========== 5. Justificativas Gerais ==========
         fillText('justificativas_gerais', p.JUSTIFICATIVAS_GERAIS || '');
 
-        // ========== PATCH: fallback imediato para 4.3 (antes de hydrateF43) ==========
-        try {
-          const fase43 = document.querySelector('#fase-43');
-          const fb = document.querySelector('#f43-fallback');
-          const itensF43 = (Array.isArray(p.F43_LISTA) && p.F43_LISTA.length)
-            ? p.F43_LISTA
-            : asArr(p.F43_LISTA_TXT);
-          if (fb && itensF43 && itensF43.length) {
-            fb.innerHTML =
-              '<p class="small"><strong>Critérios selecionados na Fase 4.3:</strong></p>' +
-              '<ul class="styled-list">' +
-                itensF43.map(x => `<li>${escapeHtml(x)}</li>`).join('') +
-              '</ul>';
-            if (fase43) {
-              fase43.hidden = false;
-              fase43.style.display = 'block';
-              fase43.setAttribute('data-empty', 'false');
-            }
-          }
-        } catch (e) {
-          console.warn('F43 fallback pre-hydrate fail:', e);
-        }
+        // Removido fallback pré-hydrate para evitar conteúdo antes dos títulos da 4.3
 
         // ========== 6. Data e assinaturas ==========
         const dataTermo = (p.data_termo || hojeBR_robusto());
@@ -1803,7 +1782,8 @@
       if (n.includes('dirigent') || n.includes('conselho') || n.includes('comite')) { push(8); return; }
     });
 
-    const expected = [2,1,3,2,1,1,8,1,1];
+    // Permite mais itens em 4.3.8 e 4.3.9 para evitar envio ao "resto"
+    const expected = [2,1,3,2,1,1,8,2,2];
     const remaining = base.filter((_, idx) => !used.has(idx));
 
     groups.forEach((g, i) => {
