@@ -1978,6 +1978,21 @@
       sub10.style.display = 'block';
     }
 
+    // Fallback final: se chegamos até aqui sem pintar nada visível, injeta texto bruto logo no bloco A
+    const renderedA = document.querySelector('#val-f4310-leg')?.textContent?.trim();
+    const renderedB = document.querySelector('#val-f4310-docs')?.textContent?.trim();
+    if (has4310 && !renderedA && !renderedB) {
+      const raw4310 = [op, legVal, docsVal, fallback4310, resto4310]
+        .filter(Boolean)
+        .join(' - ');
+      if (raw4310) {
+        selA = true; selB = false;
+        if (blocoA) { blocoA.hidden = false; blocoA.style.display = 'block'; }
+        if (blocoB) { blocoB.hidden = true; blocoB.style.display = 'none'; }
+        setVal('#val-f4310-leg', raw4310);
+      }
+    }
+
     if (has4310) {
       window.__F4310_RENDERED__ = true;
       const fase43 = document.querySelector('#fase-43');
