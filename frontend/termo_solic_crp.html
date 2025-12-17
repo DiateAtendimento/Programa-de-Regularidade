@@ -1844,6 +1844,9 @@
     let restoArr = Array.isArray(data.resto)
       ? data.resto.slice()
       : (data.resto ? asArr(data.resto) : []);
+    // Captura a lista bruta (sem clean) para achar textos contendo "4.3.10"
+    const rawListAll = asArr(p.F43_LISTA_TXT || p.F43_LISTA || p['F43_LISTA[]'] || '');
+    const raw4310FromList = (rawListAll.find(x => /4\.?3\.?10/.test(String(x || ''))) || '').trim();
 
     const fillList = (sel, arr) => {
       const el = document.querySelector(sel);
@@ -1919,7 +1922,8 @@
     const legVal = getVal('F4310_LEGISLACAO','F4310_LEGISLACAO_TXT','F4310_LEG','f4310_legislacao','F4310_FALLBACK_TXT');
     const docsVal = getVal('F4310_DOCS','F4310_DOCS_TXT','F4310_DOC','f4310_docs','F4310_FALLBACK_TXT');
     const fallback4310 = getVal('F4310_FALLBACK_TXT');
-    let has4310 = !!(op || legVal || docsVal || fallback4310);
+    const list4310 = raw4310FromList;
+    let has4310 = !!(op || legVal || docsVal || fallback4310 || list4310);
     const opNorm = String(op || '').trim().toLowerCase();
     console.info('[PDF 4.3.10]', { opRaw: op, opNorm, leg: legVal, docs: docsVal });
     console.info('[PDF 4.3.10 FULL PAYLOAD SNAPSHOT]', {
@@ -1956,8 +1960,8 @@
     }
 
     if (!selA && !selB && (hasLeg || hasDocs || opNorm)) selA = true;
-    if (!selA && !selB && (fallback4310 || resto4310)) selA = true; // fallback text vai para A
-    if (!selA && !selB && !(hasLeg || hasDocs || opNorm || fallback4310 || resto4310)) {
+    if (!selA && !selB && (fallback4310 || resto4310 || list4310)) selA = true; // fallback text vai para A
+    if (!selA && !selB && !(hasLeg || hasDocs || opNorm || fallback4310 || resto4310 || list4310)) {
       console.warn('[PDF 4.3.10] nenhum bloco exibido (sem dados)');
     }
 
@@ -1966,7 +1970,7 @@
     if (blocoA) { blocoA.hidden = !selA; blocoA.style.display = selA ? 'block' : 'none'; }
     if (blocoB) { blocoB.hidden = !selB; blocoB.style.display = selB ? 'block' : 'none'; }
 
-    const txtA = hasLeg ? legVal : (selA ? (op || fallback4310 || resto4310 || '') : '');
+    const txtA = hasLeg ? legVal : (selA ? (op || fallback4310 || resto4310 || list4310 || '') : '');
     const txtB = hasDocs ? docsVal : '';
     setVal('#val-f4310-leg', txtA);
     setVal('#val-f4310-docs', txtB);
