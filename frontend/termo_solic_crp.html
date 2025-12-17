@@ -232,6 +232,8 @@
               <p class="label-like">Documentos anexados:</p>
               <div class="value-block" id="val-f4310-docs" data-k="F4310_DOCS"></div>
             </div>
+            <!-- Fallback direto: mostra texto de 4.3.10 mesmo se blocos A/B falharem -->
+            <div class="value-block" id="val-f4310-inline"></div>
           </div>
 
           <!-- 4.3.11 -->
@@ -1975,6 +1977,11 @@
     const txtB = hasDocs ? docsVal : '';
     setVal('#val-f4310-leg', txtA);
     setVal('#val-f4310-docs', txtB);
+    const inline4310 = document.getElementById('val-f4310-inline');
+    if (inline4310) {
+      inline4310.textContent = has4310 ? (txtA || txtB || fallback4310 || resto4310 || list4310 || '') : '';
+      inline4310.style.display = has4310 ? '' : 'none';
+    }
 
     // garante que o bloco 4.3.10 fique visível se houver dados (inclui fallback)
     const sub10 = document.getElementById('f43-sub-10');
@@ -2296,6 +2303,13 @@
         ul.appendChild(li);
         fb.style.display = '';
       }
+      // Atualiza fallback inline também
+      const inline4310 = document.getElementById('val-f4310-inline');
+      if (inline4310 && !inline4310.textContent.trim()) {
+        inline4310.textContent = txt;
+        inline4310.style.display = '';
+      }
+
       window.__F4310_RENDERED__ = true;
     } catch(e) {
       console.warn('force4310 fail', e);
