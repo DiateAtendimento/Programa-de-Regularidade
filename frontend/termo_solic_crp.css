@@ -259,6 +259,15 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
   content:"";
 }
 
+#f43-sub-10 {
+  break-inside: avoid-page !important;
+  page-break-inside: avoid !important;
+}
+
+#f43-sub-10 .value-block {
+  min-height: 1.2em; /* evita colapso quando o texto entra via JS/inline */
+}
+
 
 
 

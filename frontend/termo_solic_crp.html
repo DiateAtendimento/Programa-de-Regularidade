@@ -1842,7 +1842,18 @@
     };
   }
 
-  function hydrateF43(p) {
+      function markPrintReady(reason = '') {
+        if (window.__TERMO_READY_FIRED__ && document.documentElement.dataset.termoReady === '1') return;
+        window.__TERMO_READY_FIRED__ = true;
+        requestAnimationFrame(() => {
+          document.documentElement.setAttribute('data-termo-ready','1');
+          if (reason) document.documentElement.setAttribute('data-termo-ready-reason', reason);
+          window.__TERMO_PRINT_READY__ = true;
+          try { document.dispatchEvent(new CustomEvent('TERMO_PRINT_READY', { detail: { reason } })); } catch (_) {}
+        });
+      }
+
+      function hydrateF43(p) {
     p = p || {};
     const data = __reconstruirF43(p);
     const uniq = (arr) => Array.from(new Set((arr || []).map(v => String(v || '').trim()).filter(Boolean)));
@@ -2039,6 +2050,9 @@
         fb.style.display = '';
       }
     }
+
+    // Marca a pÇagina como pronta apÇüs renderizar o 4.3.10 (evita captura precoce no PDF)
+    markPrintReady('hydrateF43');
 
     // Loga o estado final do 4.3.10 no template (para saber se o PDF leu este arquivo).
     (function log4310Rendered() {
