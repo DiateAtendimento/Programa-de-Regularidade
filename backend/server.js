@@ -2151,7 +2151,7 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
           return joined ? `4.3.10 ${joined}` : '';
         })();
         if (!base.length && fallback4310) base.push(fallback4310);
-        return base;
+        return base.join(', ');
       })(),
       F43_LISTA_TXT: (() => {
         const arr = asArr(p.F43_LISTA);
