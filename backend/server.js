@@ -1782,9 +1782,9 @@ const SOLIC_HEADERS = [
   'FIN_3_2_MANUTENCAO_CONFORMIDADE','FIN_3_2_DEFICIT_ATUARIAL','FIN_3_2_CRITERIOS_ESTRUTURANTES','FIN_3_2_OUTRO_CRITERIO_COMPLEXO',
   'TIPO_EMISSAO_ULTIMO_CRP','DATA_VENC_ULTIMO_CRP',
   'CRITERIOS_IRREGULARES',
-  'FASE_PROGRAMA','F41_OPCAO','F41_LISTA','F42_LISTA','F43_LISTA',
-  'F4310_OPCAO','F4310_LEGISLACAO','F4310_DOCS',
-  'F43_JUST','F43_INCLUIR','F43_PLANO','F43_DESC_PLANOS',
+  'FASE_PROGRAMA','F41_OPCAO','F41_LISTA','F42_LISTA','F43_LISTA','F43_LISTA_TXT',
+  'F4310_OPCAO','F4310_OPCAO_CODE','F4310_OPCAO_TXT','F4310_LEGISLACAO','F4310_DOCS','F4310_FALLBACK_TXT',
+  'F43_JUST','F43_INCLUIR','F43_INCLUIR_B','F43_PLANO','F43_PLANO_B','F43_DESC_PLANOS',
   'F44_DECLS','F441_LEGISLACAO','F44_FINALIDADES','F44_CRITERIOS','F44_ANEXOS',
   'F445_DESC_PLANOS','F446_DOCS','F446_EXEC_RES',
   'F45_OK451','F45_DOCS','F45_JUST','F453_EXEC_RES',
@@ -2060,7 +2060,7 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
     const s = await getOrCreateSheet('Solic_CRPs', SOLIC_HEADERS);
     await ensureMinColumns(s, SOLIC_HEADERS.length);
     await ensureHeaderRow(s, SOLIC_HEADERS);
-    await ensureSheetHasColumns(s, ['IDEMP_KEY']);
+    await ensureSheetHasColumns(s, SOLIC_HEADERS);
 
     const idemHeader = String(req.headers['x-idempotency-key'] || '').trim();
     const idemBody   = String(p.IDEMP_KEY || '').trim();
@@ -2150,7 +2150,7 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
           const joined = [opTxt || `Opção ${(p.F4310_OPCAO || '').toString().trim().toUpperCase()}`, legTxt || docTxt].filter(Boolean).join(' - ');
           return joined ? `4.3.10 ${joined}` : '';
         })();
-        if (fallback4310) base.push(fallback4310);
+        if (!base.length && fallback4310) base.push(fallback4310);
         return base;
       })(),
       F43_LISTA_TXT: (() => {
@@ -2162,7 +2162,7 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
           const joined = [opTxt || `OpÇõÇœo ${(p.F4310_OPCAO || '').toString().trim().toUpperCase()}`, legTxt || docTxt].filter(Boolean).join(' - ');
           return joined ? `4.3.10 ${joined}` : '';
         })();
-        if (extra) arr.push(extra);
+        if (!arr.length && extra) arr.push(extra);
         return arr.join('; ');
       })(),
       // 4.3.10 - normaliza A/B e preserva label/textos
@@ -2175,7 +2175,9 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
       F4310_DOC: p.F4310_DOCS || p.F4310_DOC || '',
       F43_JUST: p.F43_JUST || '',
       F43_INCLUIR: p.F43_INCLUIR || '',
+      F43_INCLUIR_B: p.F43_INCLUIR_B || '',
       F43_PLANO: p.F43_PLANO || '',
+      F43_PLANO_B: p.F43_PLANO_B || '',
       F43_DESC_PLANOS: p.F43_DESC_PLANOS || '',
       // Fallback seguro: injeta 4.3.10 em listas se houver dados
       F4310_FALLBACK_TXT: (() => {
