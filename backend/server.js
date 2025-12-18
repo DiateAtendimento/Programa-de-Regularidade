@@ -27,6 +27,7 @@ const app = express();
 const LOG_LEVEL = (process.env.LOG_LEVEL || 'warn').toLowerCase();
 const DEBUG_PDF = (process.env.DEBUG_PDF || '0') === '1';
 const DEBUG_CORS = process.env.DEBUG_CORS === '1';
+const DEBUG_ERRORS = (process.env.DEBUG_ERRORS || '0') === '1';
 
 /* ───────────── Conexões/robustez ───────────── */
 http.globalAgent.keepAlive = true;
@@ -2241,7 +2242,8 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
     if (msg.includes('timeout:') || msg.includes('etimedout')) {
       return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
     }
-    return res.status(500).json({ error:'Falha ao registrar a solicitação de CRP.' });
+    const payloadErr = DEBUG_ERRORS ? { detail: String(err?.message || err || '') } : {};
+    return res.status(500).json({ error:'Falha ao registrar a solicitação de CRP.', ...payloadErr });
   }
 });
 
