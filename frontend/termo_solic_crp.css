@@ -262,10 +262,12 @@ p[data-k], li[data-k], span[data-k], div[data-k]{
 #f43-sub-10 {
   break-inside: avoid-page !important;
   page-break-inside: avoid !important;
+  display: block !important; /* força exibição do bloco mesmo se algum script deixar escondido */
 }
 
 #f43-sub-10 .value-block {
   min-height: 1.2em; /* evita colapso quando o texto entra via JS/inline */
+  display: block !important; /* evita display:none herdado */
 }
 
 
