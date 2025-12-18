@@ -144,7 +144,10 @@ html.pdf-export, body.pdf-export{ background:#fff !important; }
   font-size:13.6px; font-weight:700; color:var(--ink);
   margin-top:3.5mm; margin-bottom:1.2mm;
 }
-.term-section p, .term-section li{
+.term-section p,
+.term-section li,
+.term-section .value,
+.term-section .linha .valor{
   font-size:13.2px; line-height:1.48; text-align:justify; text-justify:inter-word;
   hyphens:auto; overflow-wrap:break-word; orphans:2; widows:2;
 }
