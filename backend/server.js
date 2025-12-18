@@ -2585,12 +2585,55 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
       // Não preenche f43-fallback para evitar duplicação após 4.3.9
     })();
 
-    // 4.3.10 (A/B) – fallback direto
+    // 4.3.10 (A/B) – renderização corrigida para PDF
     (function(){
-      const op = (flat['f4310_opcao'] || '').toLowerCase();
-      if (op.startsWith('a')) setText('#val-f4310-leg', flat['f4310_legislacao']);
-      if (op.startsWith('b')) setText('#val-f4310-docs', flat['f4310_docs']);
+      const opRaw = (flat['f4310_opcao'] || flat['F4310_OPCAO_TXT'] || '').toLowerCase().trim();
+      const leg = (flat['f4310_legislacao'] || flat['F4310_LEGISLACAO'] || '').trim();
+      const docs = (flat['f4310_docs'] || flat['F4310_DOCS'] || '').trim();
+
+      const show = (sel, on) => {
+        const el = document.querySelector(sel);
+        if (!el) return;
+        if (on) {
+          el.removeAttribute('hidden');
+          el.style.display = 'block';
+        } else {
+          el.setAttribute('hidden', 'true');
+          el.style.display = 'none';
+        }
+      };
+
+      const isA = opRaw.startsWith('a') || (!opRaw && !!leg);
+      const isB = opRaw.startsWith('b') || (!opRaw && !!docs);
+
+      if (isA) {
+        setText('#val-f4310-leg', leg);
+        show('#f43-opcao-a', true);
+        show('#f43-opcao-b', false);
+      } else if (isB) {
+        setText('#val-f4310-docs', docs);
+        show('#f43-opcao-a', false);
+        show('#f43-opcao-b', true);
+      } else {
+        // fallback quando o campo vem apenas concatenado (F4310_FALLBACK_TXT)
+        const fb = flat['F4310_FALLBACK_TXT'] || '';
+        if (fb) {
+          const el = document.querySelector('#f43-fallback');
+          if (el) {
+            el.textContent = fb;
+            el.style.display = 'block';
+          }
+        }
+      }
+
+      // garante que o subtítulo 4.3.10 sempre apareça
+      const sub = document.querySelector('#f43-sub-10');
+      if (sub) {
+        sub.removeAttribute('hidden');
+        sub.style.display = 'block';
+      }
     })();
+
 
     // 4.3.11 – fallback direto
     (function(){
