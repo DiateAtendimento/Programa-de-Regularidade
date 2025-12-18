@@ -255,6 +255,13 @@ const low    = v => norm(v).toLowerCase();
 const digits = v => norm(v).replace(/\D+/g,'');
 const cnpj14 = v => digits(v).padStart(14, '0').slice(-14);
 const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(norm(v));
+// Normaliza valor qualquer em array de strings (sem vazios)
+function asArr(v) {
+  if (Array.isArray(v)) return v.map(x => String(x || '').trim()).filter(Boolean);
+  if (v == null) return [];
+  if (typeof v === 'string') return v.split(/;|,|\n/).map(s => s.trim()).filter(Boolean);
+  return [String(v)].map(s => s.trim()).filter(Boolean);
+}
 
 const _hdrKey = (s) => (s ?? '')
   .toString()
