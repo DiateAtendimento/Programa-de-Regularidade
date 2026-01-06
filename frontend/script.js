@@ -367,6 +367,8 @@
   function clearAllState() {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     clearIdemKey();
+    hasGenerated = false;
+    syncSubmitEnabled();
   }
 
   function getState(){
@@ -389,7 +391,8 @@
       values: {},
       seenWelcome: prev?.seenWelcome ?? false,
       lastSaved: Date.now(),
-      finalizedAt: prev?.finalizedAt || 0
+      finalizedAt: prev?.finalizedAt || 0,
+      hasGenerated: hasGenerated
     };
     [
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
@@ -439,6 +442,8 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       const st = JSON.parse(raw);
+      hasGenerated = !!st.hasGenerated;
+      syncSubmitEnabled();
       const vals = st?.values || {};
 
       // 1) Restaurar arrays (ex.: ESFERA_GOVERNO[], CRITERIOS_IRREGULARES[])
@@ -858,6 +863,12 @@
   const navFooter= $('#navFooter');
   const pesquisaRow = $('#pesquisaRow');
 
+  let hasGenerated = false;
+  function syncSubmitEnabled(){
+    if (!btnSubmit) return;
+    btnSubmit.disabled = !hasGenerated;
+  }
+
   // descobrir último step a partir do DOM
   const stepsMeta = $$(FORM_SEL).map(s => Number(s.dataset.step)||0);
   const LAST_STEP = stepsMeta.length ? Math.max(...stepsMeta) : 6;
@@ -900,6 +911,7 @@
     }
     btnSubmit?.classList.toggle('d-none', step !== LAST_STEP);
     btnGerar?.classList.toggle('d-none', step !== LAST_STEP);
+    syncSubmitEnabled();
   }
 
   function updateFooterAlign(){
@@ -1849,10 +1861,10 @@
   /* ========= AÇÃO: Gerar Formulário (download do PDF) ========= */
   let gerarBusy = false;
 
-  btnGerar?.addEventListener('click', async () => {
-    if (gerarBusy) return;
+    btnGerar?.addEventListener('click', async () => {
+      if (gerarBusy) return;
 
-    for (let s = 1; s <= LAST_STEP; s++) { if (!validateStep(s)) return; }
+      for (let s = 1; s <= LAST_STEP; s++) { if (!validateStep(s)) return; }
 
     gerarBusy = true;
     if (btnGerar) btnGerar.disabled = true;
@@ -1861,11 +1873,14 @@
     const payload = buildPayload();
 
     try {
-      safeShowModal(modalGerandoPdf);
-      await gerarBaixarPDF(payload);
-      try { modalGerandoPdf.hide(); } catch {}
-      safeShowModal(modalSucesso);
-    } catch (e) {
+        safeShowModal(modalGerandoPdf);
+        await gerarBaixarPDF(payload);
+        try { modalGerandoPdf.hide(); } catch {}
+        safeShowModal(modalSucesso);
+        hasGenerated = true;
+        syncSubmitEnabled();
+        saveState();
+      } catch (e) {
       try { modalGerandoPdf.hide(); } catch {}
       showErro(['Não foi possível gerar o PDF.', e?.message || '']);
     } finally {
@@ -1909,6 +1924,7 @@
 
   form?.addEventListener('submit', async (e)=>{
     e.preventDefault();
+    if (!hasGenerated) { showAtencao(['Clique em "Gerar formulário" antes de salvar.']); return; }
     for (let s=1; s<=LAST_STEP; s++){ if(!validateStep(s)) return; }
 
     await upsertBaseIfMissing();

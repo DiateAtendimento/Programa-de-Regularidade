@@ -507,6 +507,12 @@
     navFooter: $('#navFooter')
   };
 
+  let hasGenerated = false;
+  function syncSubmitEnabled(){
+    if (!el.btnSubmit) return;
+    el.btnSubmit.disabled = !hasGenerated;
+  }
+
   /* ========= Máscaras ========= */
   function maskCNPJ(v){
     const d = digits(v).slice(0,14);
@@ -591,6 +597,8 @@
   function clearAllState(){
     try{ localStorage.removeItem(FORM_STORAGE_KEY); }catch{}
     clearIdemKey();
+    hasGenerated = false;
+    syncSubmitEnabled();
   }
   function saveState(){
     const prev = getState();
@@ -598,7 +606,8 @@
       step: curStep,
       values: {},
       lastSaved: Date.now(),
-      finalizedAt: prev?.finalizedAt || 0
+      finalizedAt: prev?.finalizedAt || 0,
+      hasGenerated: hasGenerated
     };
     [
       'UF','ENTE','CNPJ_ENTE','EMAIL_ENTE','UG','CNPJ_UG','EMAIL_UG',
@@ -832,11 +841,14 @@
       }
       if(!raw) return null;
 
-      const st  = JSON.parse(raw);
-      const now = Date.now();
-      if(st.lastSaved && (now - st.lastSaved > FORM_TTL_MS)){ clearAllState(); return null; }
+        const st  = JSON.parse(raw);
+        const now = Date.now();
+        if(st.lastSaved && (now - st.lastSaved > FORM_TTL_MS)){ clearAllState(); return null; }
 
-      const vals = st.values || {};
+        hasGenerated = !!st.hasGenerated;
+        syncSubmitEnabled();
+
+        const vals = st.values || {};
       // Restaura campos que são arrays (terminam com [])
       Object.entries(vals).forEach(([k,v])=>{
         if (k.endsWith('[]')){
@@ -951,6 +963,7 @@
       el.btnPrev.style.visibility = (curStep===0 ? 'hidden' : 'visible');
       el.btnNext.classList.toggle('d-none', curStep === el.sections.length-1);
       el.btnSubmit.classList.toggle('d-none', !(curStep === el.sections.length-1));
+      syncSubmitEnabled();
       if (el.btnNext) el.btnNext.disabled = (curStep === 0 && el.hasGescon?.value !== '1');
 
       const slot = el.slotNextStep0;
@@ -3398,6 +3411,9 @@ function ensureF43ForceSync(payload){
       await gerarBaixarPDF(payload);
       md.hide();
       bootstrap.Modal.getOrCreateInstance($('#modalSucesso')).show();
+      hasGenerated = true;
+      syncSubmitEnabled();
+      saveState();
 
     } catch (e) {
       bootstrap.Modal.getOrCreateInstance($('#modalGerandoPdf')).hide();
@@ -3417,6 +3433,7 @@ function ensureF43ForceSync(payload){
   const form = $('#solicCrpForm');
   form?.addEventListener('submit', async (ev)=>{
     ev.preventDefault();
+    if (!hasGenerated) { showAtencao(['Clique em "Gerar formul\u00e1rio" antes de salvar.']); return; }
     if (!validarCamposBasicos()) return;
 
     const vf = validarFaseSelecionada();
