@@ -291,6 +291,9 @@ html, body, .container, .row{ overflow-x: clip; }
   /* reduz a calha do Bootstrap */
   .row{ --bs-gutter-x: 1rem; }
 
+  /* espaÃ§o entre o bloco de 2 botÃµes e o bloco de 3 botÃµes */
+  .home-wrap > .row + .row{ margin-top: .75rem; }
+
   /* form */
   header h1{
     font-size:var(--h1-mobile);
@@ -346,7 +349,7 @@ html, body, .container, .row{ overflow-x: clip; }
   }
 
   .home-menu{
-    gap: .5rem !important;           /* equivalente ao gap-2 do Bootstrap */
+    gap: .75rem !important;          /* espaçamento coeso entre os 2 primeiros botões */
   }
 
   /* todos os botões da home com MESMA ALTURA */
@@ -357,6 +360,11 @@ html, body, .container, .row{ overflow-x: clip; }
   .home-btn-sub{
     display:block;
     text-wrap: balance;               /* quebra mais bonita em 2 linhas */
+  }
+
+  /* mesma distância entre os 3 botões da faixa inferior */
+  .home-wrap > .row.justify-content-center{
+    --bs-gutter-y: .75rem;
   }
 
   /* FORM – etapa 0 (CNPJ + Pesquisar) empilhado e visível */
