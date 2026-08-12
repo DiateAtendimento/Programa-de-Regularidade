@@ -19,6 +19,7 @@
   const digits = (value) => String(value || '').replace(/\D+/g, '');
   const declarationLetters = 'ABCDEFGHIJ'.split('');
   let idempotencyKey = null;
+  let successAnimation = null;
 
   function formatCnpj(value) {
     return digits(value).slice(0, 14)
@@ -90,6 +91,30 @@
   function syncRepresentativeSummary() {
     document.getElementById('resumoRepresentanteUg').textContent = representativeInput.value.trim() || '—';
     document.getElementById('resumoCargoRepresentanteUg').textContent = representativeRoleInput.value.trim() || '—';
+  }
+
+  function playSuccessAnimation() {
+    const container = document.getElementById('successLottie');
+    if (!container || !window.lottie) return;
+    if (successAnimation) successAnimation.destroy();
+    successAnimation = window.lottie.loadAnimation({
+      container,
+      renderer: 'svg',
+      loop: false,
+      autoplay: true,
+      path: 'animacao/confirm-success.json'
+    });
+  }
+
+  function resetFormAfterSuccess() {
+    form.reset();
+    form.querySelectorAll('.is-valid, .is-invalid').forEach((control) => {
+      control.classList.remove('is-valid', 'is-invalid');
+    });
+    document.getElementById('nivelFeedback').classList.add('d-none');
+    dateInput.value = todayBr();
+    idempotencyKey = null;
+    syncRepresentativeSummary();
   }
 
   function validateForm() {
@@ -203,7 +228,9 @@
 
       downloadBlob(blob, filenameFromResponse(response));
       document.getElementById('numeroControle').textContent = response.headers.get('x-control-number') || response.headers.get('x-request-id') || 'Gerado';
+      resetFormAfterSuccess();
       successBox.classList.remove('d-none');
+      playSuccessAnimation();
       successBox.focus({ preventScroll: true });
       successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (error) {

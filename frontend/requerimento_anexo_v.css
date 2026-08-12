@@ -51,6 +51,9 @@
 
 #formAlert, #successBox { scroll-margin-top: 1rem; }
 
+#successBox { text-align: center; }
+.success-lottie { width: 120px; height: 120px; }
+
 @media (max-width: 575.98px) {
   .requerimento-header h1 { font-size: 1.15rem; }
   .requerimento-subtitulo { font-size: .9rem; }
