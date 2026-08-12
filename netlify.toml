@@ -56,6 +56,11 @@
   to = "/form_gera_termo_solic_crp_2.html"
   status = 200
 
+[[redirects]]
+  from = "/requerimento-anexo-v"
+  to = "/requerimento_anexo_v.html"
+  status = 200
+
 # -------------------------
 # SPA fallback
 # -------------------------

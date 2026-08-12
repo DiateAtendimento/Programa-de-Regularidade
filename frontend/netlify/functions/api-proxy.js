@@ -39,6 +39,9 @@ const PATH_ALLOWLIST = [
    /^\/gerar-solic-crp$/i,
   /^\/termo-solic-crp-pdf-v2$/i,
 
+  // —— Requerimento Anexo V / Portaria SRPC/MPS nº 1.183/2026 ——
+  /^\/requerimento-anexo-v$/i,
+
   // —— Ferramentas de diagnóstico do próprio proxy ——
   /^\/_diag$/i,
   /^\/_probe$/i,
@@ -58,7 +61,7 @@ export async function handler(event) {
         'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type,Cache-Control,X-Idempotency-Key,X-API-Key,Authorization,X-Requested-With',
         'Access-Control-Max-Age': '3600',
-        'Access-Control-Expose-Headers': 'Content-Disposition',
+        'Access-Control-Expose-Headers': 'Content-Disposition, X-Control-Number, X-Request-Id',
         Vary: 'Origin',
       },
     };
@@ -175,10 +178,10 @@ export async function handler(event) {
   const outHeaders = {
     'Content-Type': upstreamCT,
     'Access-Control-Allow-Origin': corsOrigin,
-    'Access-Control-Expose-Headers': 'Content-Disposition',
+      'Access-Control-Expose-Headers': 'Content-Disposition, X-Control-Number, X-Request-Id',
     Vary: 'Origin'
   };
-  ['Content-Disposition','Cache-Control','ETag','Last-Modified'].forEach(k => {
+  ['Content-Disposition','Cache-Control','ETag','Last-Modified','X-Control-Number','X-Request-Id'].forEach(k => {
     const v = res.headers.get(k); if (v) outHeaders[k] = v;
   });
 
@@ -206,7 +209,7 @@ function json(status, obj, origin='*'){
     headers: {
       'Content-Type':'application/json; charset=utf-8',
       'Access-Control-Allow-Origin': origin,
-      'Access-Control-Expose-Headers': 'Content-Disposition',
+    'Access-Control-Expose-Headers': 'Content-Disposition, X-Control-Number, X-Request-Id',
       Vary:'Origin'
     },
     body: JSON.stringify(obj)

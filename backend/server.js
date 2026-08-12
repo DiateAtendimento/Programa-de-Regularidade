@@ -155,12 +155,13 @@ app.use('/api/termos-registrados', rlCommon);
 app.use('/api/solic-crp-pdf', rlPdf);
 app.use('/api/gerar-solic-crp', rlWrite);
 app.use('/api/termo-solic-crp-pdf', rlPdf);
+app.use('/api/requerimento-anexo-v', rlPdf);
 
 app.use(hpp());
 app.use(express.json({ limit: '1mb' }));
 
 app.use(
-  ['/api/termo-solic-crp-pdf','/api/solic-crp-pdf','/api/termo-pdf'],
+  ['/api/termo-solic-crp-pdf','/api/solic-crp-pdf','/api/termo-pdf','/api/requerimento-anexo-v'],
   (req,res,next)=>{
     if (!DEBUG_PDF) return next();
     const { method, path: p } = req;
@@ -1593,6 +1594,64 @@ const schemaSolicCrpPdf = schemaSolicCrp.fork(
   (s) => s.optional()
 ).unknown(true);
 
+const UFS_BR = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+
+function isValidCnpj(value) {
+  const cnpj = digits(value);
+  if (cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false;
+  const digitAt = (length) => {
+    let sum = 0;
+    let weight = length - 7;
+    for (let i = 0; i < length; i += 1) {
+      sum += Number(cnpj[i]) * weight;
+      weight -= 1;
+      if (weight < 2) weight = 9;
+    }
+    const result = 11 - (sum % 11);
+    return result > 9 ? 0 : result;
+  };
+  return digitAt(12) === Number(cnpj[12]) && digitAt(13) === Number(cnpj[13]);
+}
+
+function isValidBrDate(value) {
+  const match = norm(value).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return false;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+const schemaRequerimentoAnexoV = Joi.object({
+  ENTE_FEDERATIVO: Joi.string().trim().min(2).max(160).required(),
+  UF: Joi.string().uppercase().valid(...UFS_BR).required(),
+  UNIDADE_GESTORA_RPPS: Joi.string().trim().min(2).max(180).required(),
+  CNPJ: Joi.string().custom((value, helpers) => isValidCnpj(value) ? digits(value) : helpers.error('any.invalid')).required().messages({ 'any.invalid': 'CNPJ inválido.' }),
+  REPRESENTANTE_LEGAL_ENTE: Joi.string().trim().min(2).max(160).required(),
+  CARGO_REPRESENTANTE_ENTE: Joi.string().trim().min(2).max(120).required(),
+  REPRESENTANTE_LEGAL_UG: Joi.string().trim().min(2).max(160).required(),
+  CARGO_REPRESENTANTE_UG: Joi.string().trim().min(2).max(120).required(),
+  EMAIL_CONTATO: Joi.string().trim().email().max(180).required(),
+  TELEFONE_CONTATO: Joi.string().custom((value, helpers) => [10,11].includes(digits(value).length) ? digits(value) : helpers.error('any.invalid')).required().messages({ 'any.invalid': 'Telefone inválido.' }),
+  NIVEL_PRO_GESTAO: Joi.string().valid('II','III').required(),
+  DECLARACAO_A: Joi.boolean().valid(true).required(),
+  DECLARACAO_B: Joi.boolean().valid(true).required(),
+  DECLARACAO_C: Joi.boolean().valid(true).required(),
+  DECLARACAO_D: Joi.boolean().valid(true).required(),
+  DECLARACAO_E: Joi.boolean().valid(true).required(),
+  DECLARACAO_F: Joi.boolean().valid(true).required(),
+  DECLARACAO_G: Joi.boolean().valid(true).required(),
+  DECLARACAO_H: Joi.boolean().valid(true).required(),
+  DECLARACAO_I: Joi.boolean().valid(true).required(),
+  DECLARACAO_J: Joi.boolean().valid(true).required(),
+  LOCAL: Joi.string().trim().min(2).max(160).required(),
+  DATA_REQUERIMENTO: Joi.string().custom((value, helpers) => isValidBrDate(value) ? norm(value) : helpers.error('any.invalid')).required().messages({ 'any.invalid': 'Data do requerimento inválida.' }),
+  RESP_APLICACOES_NOME: Joi.string().trim().min(2).max(160).required(),
+  RESP_APLICACOES_CARGO: Joi.string().trim().min(2).max(120).required(),
+  IDEMP_KEY: Joi.string().trim().max(160).allow('').optional()
+}).unknown(false);
+
 function validateOr400(res, schema, obj) {
   const { error, value } = schema.validate(obj, { abortEarly: false, stripUnknown: false, convert: true });
   if (error) {
@@ -2246,6 +2305,168 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
     }
     const payloadErr = DEBUG_ERRORS ? { detail: String(err?.message || err || '') } : {};
     return res.status(500).json({ error:'Falha ao registrar a solicitação de CRP.', ...payloadErr });
+  }
+});
+
+const REQUERIMENTO_ANEXO_V_HEADERS = [
+  'ID_REQUERIMENTO','DATA_HORA_ENVIO','STATUS','ENTE_FEDERATIVO','UF','UNIDADE_GESTORA_RPPS','CNPJ',
+  'REPRESENTANTE_LEGAL_ENTE','CARGO_REPRESENTANTE_ENTE','REPRESENTANTE_LEGAL_UG','CARGO_REPRESENTANTE_UG',
+  'EMAIL_CONTATO','TELEFONE_CONTATO','NIVEL_PRO_GESTAO','DECLARACAO_A','DECLARACAO_B','DECLARACAO_C',
+  'DECLARACAO_D','DECLARACAO_E','DECLARACAO_F','DECLARACAO_G','DECLARACAO_H','DECLARACAO_I','DECLARACAO_J',
+  'LOCAL','DATA_REQUERIMENTO','RESP_APLICACOES_NOME','RESP_APLICACOES_CARGO','ARQUIVO_GERADO',
+  'DATA_HORA_GERACAO','VERSAO_FORMULARIO','PROTOCOLO_GESCON','OBSERVACAO'
+];
+
+function makeAnexoVControlNumber(payload) {
+  const canonical = {};
+  for (const key of Object.keys(payload || {}).sort()) {
+    if (key !== 'IDEMP_KEY') canonical[key] = payload[key];
+  }
+  const suffix = crypto.createHash('sha256').update(JSON.stringify(canonical)).digest('hex').slice(0, 16).toUpperCase();
+  return `ANXV-2026-${suffix}`;
+}
+
+function safeFilenamePart(value, fallback = 'RPPS') {
+  const clean = norm(value)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 80);
+  return clean || fallback;
+}
+
+function formatCnpjBr(value) {
+  return cnpj14(value).replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+}
+
+function formatPhoneBr(value) {
+  const phone = digits(value);
+  if (phone.length === 11) return phone.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+  return phone.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+}
+
+async function assertExactSheetHeaders(sheet, expectedHeaders) {
+  await sheet.loadHeaderRow();
+  const current = (sheet.headerValues || []).map(h => norm(h));
+  const missing = expectedHeaders.filter(h => !current.includes(h));
+  if (missing.length) {
+    const error = new Error(`Cabeçalhos ausentes na aba ${sheet.title}: ${missing.join(', ')}`);
+    error.code = 'SHEET_HEADERS_MISSING';
+    throw error;
+  }
+}
+
+async function hasRequerimentoControlNumber(sheet, controlNumber) {
+  const headers = sheet.headerValues || [];
+  const columnIndex = headers.findIndex(h => norm(h) === 'ID_REQUERIMENTO');
+  if (columnIndex < 0) return false;
+  const endRow = Number(sheet.rowCount || 1000);
+  await safeLoadCells(sheet, {
+    startRowIndex: 1,
+    startColumnIndex: columnIndex,
+    endRowIndex: endRow,
+    endColumnIndex: columnIndex + 1
+  }, 'Req_aplic_anexo_V:scanId');
+  for (let rowIndex = 1; rowIndex < endRow; rowIndex += 1) {
+    if (norm(sheet.getCell(rowIndex, columnIndex)?.value) === controlNumber) return true;
+  }
+  return false;
+}
+
+let anexoVWriteQueue = Promise.resolve();
+function withAnexoVWriteLock(task) {
+  const run = anexoVWriteQueue.then(task, task);
+  anexoVWriteQueue = run.catch(() => undefined);
+  return run;
+}
+
+/**
+ * Valida, gera o PDF e registra o requerimento na aba existente.
+ * A linha só recebe STATUS=GERADO depois que o buffer do documento existe.
+ */
+app.post('/api/requerimento-anexo-v', async (req, res) => {
+  try {
+    const payload = validateOr400(res, schemaRequerimentoAnexoV, req.body || {});
+    if (!payload) return;
+
+    const controlNumber = makeAnexoVControlNumber(payload);
+    const entityPart = safeFilenamePart(payload.ENTE_FEDERATIVO, 'Ente');
+    const filename = `Requerimento_Anexo_V_${entityPart}_${payload.UF}.pdf`;
+    const pdfPayload = {
+      ...payload,
+      ENTE: payload.ENTE_FEDERATIVO,
+      UG: payload.UNIDADE_GESTORA_RPPS,
+      ID_REQUERIMENTO: controlNumber,
+      CNPJ_FORMATADO: formatCnpjBr(payload.CNPJ),
+      TELEFONE_FORMATADO: formatPhoneBr(payload.TELEFONE_CONTATO),
+      MARCA_NIVEL_II: payload.NIVEL_PRO_GESTAO === 'II' ? 'X' : '',
+      MARCA_NIVEL_III: payload.NIVEL_PRO_GESTAO === 'III' ? 'X' : ''
+    };
+
+    const pdfResult = await withPdfLimiter(() => gerarPdfDoTemplateSimples({
+      templateFile: 'requerimento_anexo_v_pdf.html',
+      payload: pdfPayload,
+      filenameFallback: filename.replace(/\.pdf$/i, '')
+    }));
+    if (!pdfResult?.buffer?.length) throw new Error('PDF vazio.');
+
+    await withAnexoVWriteLock(async () => {
+      await authSheets();
+      const sheet = await getSheetStrict('Req_aplic_anexo_V');
+      await assertExactSheetHeaders(sheet, REQUERIMENTO_ANEXO_V_HEADERS);
+
+      const duplicate = await hasRequerimentoControlNumber(sheet, controlNumber);
+      if (duplicate) return;
+
+      const stamp = nowBR();
+      const dateTime = `${stamp.DATA} ${stamp.HORA}`;
+      await safeAddRow(sheet, {
+        ID_REQUERIMENTO: controlNumber,
+        DATA_HORA_ENVIO: dateTime,
+        STATUS: 'GERADO',
+        ENTE_FEDERATIVO: payload.ENTE_FEDERATIVO,
+        UF: payload.UF,
+        UNIDADE_GESTORA_RPPS: payload.UNIDADE_GESTORA_RPPS,
+        CNPJ: asSheetCNPJ(payload.CNPJ),
+        REPRESENTANTE_LEGAL_ENTE: payload.REPRESENTANTE_LEGAL_ENTE,
+        CARGO_REPRESENTANTE_ENTE: payload.CARGO_REPRESENTANTE_ENTE,
+        REPRESENTANTE_LEGAL_UG: payload.REPRESENTANTE_LEGAL_UG,
+        CARGO_REPRESENTANTE_UG: payload.CARGO_REPRESENTANTE_UG,
+        EMAIL_CONTATO: payload.EMAIL_CONTATO,
+        TELEFONE_CONTATO: payload.TELEFONE_CONTATO,
+        NIVEL_PRO_GESTAO: payload.NIVEL_PRO_GESTAO,
+        DECLARACAO_A: 'SIM', DECLARACAO_B: 'SIM', DECLARACAO_C: 'SIM', DECLARACAO_D: 'SIM', DECLARACAO_E: 'SIM',
+        DECLARACAO_F: 'SIM', DECLARACAO_G: 'SIM', DECLARACAO_H: 'SIM', DECLARACAO_I: 'SIM', DECLARACAO_J: 'SIM',
+        LOCAL: payload.LOCAL,
+        DATA_REQUERIMENTO: payload.DATA_REQUERIMENTO,
+        RESP_APLICACOES_NOME: payload.RESP_APLICACOES_NOME,
+        RESP_APLICACOES_CARGO: payload.RESP_APLICACOES_CARGO,
+        ARQUIVO_GERADO: filename,
+        DATA_HORA_GERACAO: dateTime,
+        VERSAO_FORMULARIO: '1183/2026',
+        PROTOCOLO_GESCON: '',
+        OBSERVACAO: ''
+      }, 'Req_aplic_anexo_V:add');
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('X-Control-Number', controlNumber);
+    res.setHeader('X-Request-Id', controlNumber);
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    return res.send(pdfResult.buffer);
+  } catch (error) {
+    console.error('❌ /api/requerimento-anexo-v:', error);
+    if (res.headersSent) return;
+    const message = String(error?.message || '').toLowerCase();
+    if (message.includes('timeout:') || message.includes('etimedout')) {
+      return res.status(504).json({ error: 'Tempo de resposta esgotado. Tente novamente.' });
+    }
+    if (error?.code === 'SHEET_HEADERS_MISSING') {
+      return res.status(500).json({ error: 'A estrutura da aba Req_aplic_anexo_V está incompatível com o formulário.' });
+    }
+    return res.status(500).json({ error: 'Falha ao gerar o requerimento.' });
   }
 });
 

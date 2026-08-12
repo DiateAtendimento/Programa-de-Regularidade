@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Requerimento – Anexo V / Portaria nº 1.183/2026</title>
+  <link rel="icon" href="imagens/favicon.svg" type="image/svg+xml">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/rawline" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="requerimento_anexo_v.css">
+</head>
+<body>
+  <div class="app-bg"></div>
+
+  <main class="container-xl py-4 position-relative">
+    <header class="mb-4 text-center requerimento-header">
+      <div class="brand mb-2">
+        <img src="imagens/logo-termo-drpps.svg" alt="Ministério da Previdência Social" height="56">
+      </div>
+      <h1 class="h3 fw-800 mb-2">REQUERIMENTO DE APLICAÇÃO DAS MEDIDAS PREVISTAS NO ANEXO V DA PORTARIA SRPC/MPS Nº 236/2026</h1>
+      <p class="requerimento-subtitulo mb-0">Anexo V da Portaria SRPC/MPS nº 236, de 3 de fevereiro de 2026, acrescido pela Portaria SRPC/MPS nº 1.183, de 31 de julho de 2026.</p>
+    </header>
+
+    <div class="card app-card glass">
+      <div class="card-body p-3 p-md-4 p-lg-5">
+        <section class="important-box mb-4" aria-labelledby="tituloFinalidade">
+          <h2 id="tituloFinalidade" class="section-title">Finalidade</h2>
+          <p>Este formulário destina-se ao requerimento para aplicação dos critérios previstos no Anexo V da Portaria SRPC/MPS nº 236, de 2026, para fins de análise do enquadramento dos investimentos do RPPS em segmentos e tipos de ativos destinados, conforme disposto na Resolução CMN nº 5.272, de 2025, aos RPPS que comprovarem a adoção de boas práticas de governança na gestão previdenciária.</p>
+          <p class="mb-0">Os critérios previstos no Anexo V da Portaria SRPC/MPS nº 236, de 2026, não substituem a certificação institucional no Pró-Gestão RPPS, a ser obtida pelo ente federativo até 2 de fevereiro de 2028, e visam à análise, pelo Departamento dos Regimes Próprios de Previdência Social, do critério do extrato previdenciário “Demonstrativo das Aplicações e Investimentos dos Recursos - DAIR – consistência”.</p>
+        </section>
+
+        <div id="formAlert" class="alert d-none" role="alert" tabindex="-1"></div>
+
+        <form id="requerimentoForm" novalidate autocomplete="off">
+          <section class="app-section" aria-labelledby="tituloIdentificacao">
+            <h2 id="tituloIdentificacao" class="section-title">1 — Identificação</h2>
+            <div class="row g-3">
+              <div class="col-12 col-lg-8">
+                <label class="form-label" for="enteFederativo">Ente federativo</label>
+                <input class="form-control" id="enteFederativo" name="ENTE_FEDERATIVO" type="text" maxlength="160" required>
+                <div class="invalid-feedback">Informe o ente federativo.</div>
+              </div>
+              <div class="col-12 col-sm-4 col-lg-4">
+                <label class="form-label" for="uf">UF</label>
+                <select class="form-select" id="uf" name="UF" required>
+                  <option value="">Selecione</option>
+                  <option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option><option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option><option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option><option>SP</option><option>SE</option><option>TO</option>
+                </select>
+                <div class="invalid-feedback">Selecione a UF.</div>
+              </div>
+              <div class="col-12 col-lg-8">
+                <label class="form-label" for="unidadeGestora">Unidade gestora do RPPS</label>
+                <input class="form-control" id="unidadeGestora" name="UNIDADE_GESTORA_RPPS" type="text" maxlength="180" required>
+                <div class="invalid-feedback">Informe a unidade gestora.</div>
+              </div>
+              <div class="col-12 col-sm-8 col-lg-4">
+                <label class="form-label" for="cnpj">CNPJ</label>
+                <input class="form-control" id="cnpj" name="CNPJ" type="text" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00" required>
+                <div class="invalid-feedback">Informe um CNPJ válido.</div>
+              </div>
+              <div class="col-12 col-lg-8">
+                <label class="form-label" for="representanteEnte">Representante legal do ente federativo</label>
+                <input class="form-control" id="representanteEnte" name="REPRESENTANTE_LEGAL_ENTE" type="text" maxlength="160" required>
+                <div class="invalid-feedback">Informe o representante legal do ente.</div>
+              </div>
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="cargoRepresentanteEnte">Cargo</label>
+                <input class="form-control" id="cargoRepresentanteEnte" name="CARGO_REPRESENTANTE_ENTE" type="text" maxlength="120" required>
+                <div class="invalid-feedback">Informe o cargo.</div>
+              </div>
+              <div class="col-12 col-lg-8">
+                <label class="form-label" for="representanteUg">Representante legal da unidade gestora</label>
+                <input class="form-control" id="representanteUg" name="REPRESENTANTE_LEGAL_UG" type="text" maxlength="160" required>
+                <div class="invalid-feedback">Informe o representante legal da unidade gestora.</div>
+              </div>
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="cargoRepresentanteUg">Cargo</label>
+                <input class="form-control" id="cargoRepresentanteUg" name="CARGO_REPRESENTANTE_UG" type="text" maxlength="120" required>
+                <div class="invalid-feedback">Informe o cargo.</div>
+              </div>
+              <div class="col-12 col-lg-7">
+                <label class="form-label" for="emailContato">Correio eletrônico para contato</label>
+                <input class="form-control" id="emailContato" name="EMAIL_CONTATO" type="email" maxlength="180" required>
+                <div class="invalid-feedback">Informe um e-mail válido.</div>
+              </div>
+              <div class="col-12 col-sm-8 col-lg-5">
+                <label class="form-label" for="telefoneContato">Telefone</label>
+                <input class="form-control" id="telefoneContato" name="TELEFONE_CONTATO" type="tel" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000" required>
+                <div class="invalid-feedback">Informe um telefone com DDD.</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="app-section" aria-labelledby="tituloObjeto">
+            <h2 id="tituloObjeto" class="section-title">2 — Objeto do Requerimento</h2>
+            <p>O RPPS acima identificado requer ao Departamento dos Regimes Próprios de Previdência Social a aplicação dos critérios previstos no Anexo V da Portaria SRPC/MPS nº 236, de 3 de fevereiro de 2026, exclusivamente para fins do enquadramento das aplicações à exigência de certificação institucional no Pró-Gestão RPPS prevista na Resolução CMN nº 5.272/2025, como forma de cumprimento desses critérios enquanto não obtida a certificação institucional.</p>
+            <fieldset class="card-subblock">
+              <legend class="sub-title fs-6">Nível do Pró-Gestão RPPS para fins de aplicação dos critérios</legend>
+              <div class="form-check mb-2">
+                <input class="form-check-input" id="nivelII" name="NIVEL_PRO_GESTAO" type="radio" value="II" required>
+                <label class="form-check-label" for="nivelII">Nível II — critérios do art. 1º, inciso I, do Anexo V.</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" id="nivelIII" name="NIVEL_PRO_GESTAO" type="radio" value="III" required>
+                <label class="form-check-label" for="nivelIII">Nível III — critérios do art. 1º, inciso II, do Anexo V.</label>
+              </div>
+              <div id="nivelFeedback" class="invalid-feedback d-none">Selecione o nível II ou III.</div>
+            </fieldset>
+          </section>
+
+          <section class="app-section" aria-labelledby="tituloDeclaracoes">
+            <h2 id="tituloDeclaracoes" class="section-title">3 — Declarações</h2>
+            <p>O RPPS declara, sob as responsabilidades legais cabíveis, que atende e mantém os requisitos a seguir, integralmente:</p>
+            <div id="declaracoes" class="declaracoes-lista">
+              <div class="form-check declaracao-item"><input class="form-check-input" id="declaracaoA" name="DECLARACAO_A" type="checkbox" required><label class="form-check-label" for="declaracaoA"><strong>a)</strong> Possui certificação no Pró-Gestão RPPS no nível imediatamente anterior ao requerido ou, na hipótese de requerimento ao nível II, caso não possua certificação institucional, realizou a adesão ao Pró-Gestão RPPS por meio do envio do Termo de Adesão pelo Cadprev.</label><div class="invalid-feedback">Confirme a declaração A.</div></div>
+              <div class="form-check declaracao-item"><input class="form-check-input" id="declaracaoB" name="DECLARACAO_B" type="checkbox" required><label class="form-check-label" for="declaracaoB"><strong>b)</strong> O responsável pela gestão das aplicações de recursos detém certificação profissional em nível intermediário, observado o Manual da Certificação dos Profissionais dos RPPS, no caso de o RPPS não possuir certificação no Pró-Gestão RPPS e esteja pleiteando o nível II; ou no caso de o RPPS possuir certificação no Pró-Gestão RPPS no nível II e esteja pleiteando o nível III.</label><div class="invalid-feedback">Confirme a declaração B.</div></div>
+              <div class="form-check declaracao-item"><input class="form-check-input" id="declaracaoC" name="DECLARACAO_C" type="checkbox" required><label class="form-check-label" for="declaracaoC"><strong>c)</strong> Encontra-se regular nos critérios do extrato previdenciário relativos a Aplicações Financeiras Resol. CMN (Objeto de PAP), DAIR - encaminhamento, DAIR - consistência, DPIN - encaminhamento e DPIN - consistência.</label><div class="invalid-feedback">Confirme a declaração C.</div></div>
+              <div class="form-check declaracao-item"><input class="form-check-input" id="declaracaoD" name="DECLARACAO_D" type="checkbox" required><label class="form-check-label" for="declaracaoD"><strong>d)</strong> Os membros do comitê de investimentos e o responsável pela gestão das aplicações de recursos cumprem os requisitos do art. 76 da Portaria MTP nº 1.467, de 2 de junho de 2022.</label><div class="invalid-feedback">Confirme a declaração D.</div></div>
+              <div class="form-check declaracao-item"><input class="form-check-input" id="declaracaoE" name="DECLARACAO_E" type="checkbox" required><label class="form-check-label" for="declaracaoE"><strong>e)</strong> Compromete-se a manter os critérios previstos no Anexo V da Portaria SRPC/MPS nº 236/2026 durante o período de sua aplicação, a informar eventual alteração que implique perda de algum dos requisitos exigidos e a obter a certificação institucional no Pró-Gestão RPPS até 2 de fevereiro de 2028.</label><div class="invalid-feedback">Confirme a declaração E.</div></div>
+              <div class="form-check declaracao-item"><input class="form-check-input" id="declaracaoF" name="DECLARACAO_F" type="checkbox" required><label class="form-check-label" for="declaracaoF"><strong>f)</strong> Comunicar ao Departamento dos Regimes Próprios de Previdência Social a perda superveniente de qualquer dos critérios exigidos.</label><div class="invalid-feedback">Confirme a declaração F.</div></div>
+              <div class="form-check declaracao-item"><input class="form-check-input" id="declaracaoG" name="DECLARACAO_G" type="checkbox" required><label class="form-check-label" for="declaracaoG"><strong>g)</strong> Os dados de identificação, certificação e qualificação dos membros do comitê de investimentos e do responsável pela gestão das aplicações de recursos encontram-se registrados e atualizados no Cadprev, permanecendo a documentação comprobatória arquivada na unidade gestora, à disposição dos órgãos de fiscalização e controle.</label><div class="invalid-feedback">Confirme a declaração G.</div></div>
+              <div class="form-check declaracao-item"><input class="form-check-input" id="declaracaoH" name="DECLARACAO_H" type="checkbox" required><label class="form-check-label" for="declaracaoH"><strong>h)</strong> Tem ciência de que o reconhecimento do cumprimento dos requisitos previstos no Anexo V da Portaria SRPC/MPS nº 236/2026 não concede, altera ou substitui certificação institucional no âmbito do Pró-Gestão RPPS, nem dispensa a auditoria realizada por entidade certificadora credenciada.</label><div class="invalid-feedback">Confirme a declaração H.</div></div>
+              <div class="form-check declaracao-item"><input class="form-check-input" id="declaracaoI" name="DECLARACAO_I" type="checkbox" required><label class="form-check-label" for="declaracaoI"><strong>i)</strong> Tem ciência de que a aplicação dos critérios previstos no Anexo V da Portaria SRPC/MPS nº 236/2026 produz efeitos exclusivamente sobre os critérios de análise da conformidade das aplicações financeiras alcançados pela norma, não afastando a necessidade de observância dos demais requisitos para emissão e manutenção do Certificado de Regularidade Previdenciária - CRP.</label><div class="invalid-feedback">Confirme a declaração I.</div></div>
+              <div class="form-check declaracao-item"><input class="form-check-input" id="declaracaoJ" name="DECLARACAO_J" type="checkbox" required><label class="form-check-label" for="declaracaoJ"><strong>j)</strong> Os dados relativos aos dirigentes, ao responsável pelas aplicações de recursos, aos membros dos conselhos deliberativo e fiscal e do comitê de investimentos do órgão ou entidade gestora do RPPS estão atualizados no Cadprev e demonstram o atendimento aos critérios previstos no Anexo V da Portaria SRPC/MPS nº 236, de 3 de fevereiro de 2026, especialmente os relativos às certificações exigidas.</label><div class="invalid-feedback">Confirme a declaração J.</div></div>
+            </div>
+          </section>
+
+          <section class="app-section" aria-labelledby="tituloAssinaturas">
+            <h2 id="tituloAssinaturas" class="section-title">4 — Local, Data e Assinaturas</h2>
+            <div class="row g-3">
+              <div class="col-12 col-lg-7">
+                <label class="form-label" for="local">Local</label>
+                <input class="form-control" id="local" name="LOCAL" type="text" maxlength="160" required>
+                <div class="invalid-feedback">Informe o local.</div>
+              </div>
+              <div class="col-12 col-sm-7 col-lg-5">
+                <label class="form-label" for="dataRequerimento">Data do requerimento</label>
+                <input class="form-control" id="dataRequerimento" name="DATA_REQUERIMENTO" type="text" inputmode="numeric" maxlength="10" placeholder="DD/MM/AAAA" required>
+                <div class="invalid-feedback">Informe uma data válida no formato DD/MM/AAAA.</div>
+              </div>
+              <div class="col-12 col-lg-7">
+                <label class="form-label" for="responsavelAplicacoesNome">Responsável pela gestão das aplicações financeiras do RPPS — Nome</label>
+                <input class="form-control" id="responsavelAplicacoesNome" name="RESP_APLICACOES_NOME" type="text" maxlength="160" required>
+                <div class="invalid-feedback">Informe o nome do responsável.</div>
+              </div>
+              <div class="col-12 col-lg-5">
+                <label class="form-label" for="responsavelAplicacoesCargo">Cargo</label>
+                <input class="form-control" id="responsavelAplicacoesCargo" name="RESP_APLICACOES_CARGO" type="text" maxlength="120" required>
+                <div class="invalid-feedback">Informe o cargo do responsável.</div>
+              </div>
+            </div>
+
+            <div class="card-subblock mt-3" aria-live="polite">
+              <p class="sub-title mb-2">Representante legal da unidade gestora (reaproveitado da identificação)</p>
+              <div class="row g-2 small">
+                <div class="col-12 col-md-7"><strong>Nome:</strong> <span id="resumoRepresentanteUg">—</span></div>
+                <div class="col-12 col-md-5"><strong>Cargo:</strong> <span id="resumoCargoRepresentanteUg">—</span></div>
+              </div>
+            </div>
+          </section>
+
+          <div class="alert alert-info orientacao-gescon">
+            <strong>Forma de envio:</strong> após a assinatura, encaminhe o requerimento via Gescon-RPPS.<br>
+            <strong>Assunto:</strong> Enquadramento à Resolução CMN<br>
+            <strong>Assunto específico:</strong> Atendimento aos requisitos da Portaria SRPC/MPS nº 1.183/2026.
+          </div>
+
+          <button id="btnGerar" class="btn btn-primary w-100 py-3" type="submit">
+            <span class="btn-label">Gerar Requerimento</span>
+            <span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+          </button>
+        </form>
+
+        <section id="successBox" class="alert alert-success mt-4 d-none" tabindex="-1" aria-live="polite">
+          <h2 class="h5 alert-heading">Requerimento gerado com sucesso.</h2>
+          <p class="mb-2"><strong>Nº de controle:</strong> <span id="numeroControle"></span></p>
+          <p>O arquivo foi gerado e o download foi iniciado.</p>
+          <p class="mb-1">Após a assinatura, encaminhe o requerimento por meio do Gescon-RPPS:</p>
+          <p class="mb-0"><strong>Assunto:</strong> Enquadramento à Resolução CMN<br><strong>Assunto específico:</strong> Atendimento aos requisitos da Portaria SRPC/MPS nº 1.183/2026.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="requerimento_anexo_v.js" defer></script>
+</body>
+</html>
