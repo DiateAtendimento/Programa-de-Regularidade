@@ -51,6 +51,12 @@
 
 #formAlert, #successBox { scroll-margin-top: 1rem; }
 
+#stepper .step.completed { background: #93c5fd; color: #0b2240; }
+#navFooter { min-height: 44px; }
+
+[data-step][hidden] { display: none !important; }
+.modal:not(.show) { display: none; }
+
 #successBox { text-align: center; }
 .success-lottie { width: 120px; height: 120px; }
 
