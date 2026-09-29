@@ -1440,6 +1440,11 @@ const schemaTermoSolicPdf = Joi.object({
   F43_LISTA: Joi.array().items(Joi.string()).optional(),
   F43_JUST: Joi.string().allow(''),
   F43_PLANO: Joi.string().allow(''),
+  RESP23_POSSUI_ESTRUTURA: Joi.string().valid('SIM','NAO').allow(''),
+  RESP23_CRITERIO_DECLARADO: Joi.string().allow(''),
+  RESP23_NORMAS_JSON: Joi.string().allow(''),
+  RESP23_COMPOSICAO_JSON: Joi.string().allow(''),
+  RESP23_JUSTIFICATIVA: Joi.string().allow(''),
   F43_INCLUIR: Joi.string().allow(''),
   F43_PLANO_B: Joi.string().allow(''),
   F43_INCLUIR_B: Joi.string().allow(''),
@@ -1526,6 +1531,11 @@ const schemaSolicCrp = Joi.object({
   F43_LISTA: Joi.array().items(Joi.string()).optional(),
   F43_JUST: Joi.string().allow(''),
   F43_PLANO: Joi.string().allow(''),
+  RESP23_POSSUI_ESTRUTURA: Joi.string().valid('SIM','NAO').allow(''),
+  RESP23_CRITERIO_DECLARADO: Joi.string().allow(''),
+  RESP23_NORMAS_JSON: Joi.string().allow(''),
+  RESP23_COMPOSICAO_JSON: Joi.string().allow(''),
+  RESP23_JUSTIFICATIVA: Joi.string().allow(''),
 
   // NOVOS (4.3.10, inclusões, descrições de planos)
   F4310_OPCAO: Joi.string().allow(''),
@@ -1842,6 +1852,7 @@ const SOLIC_HEADERS = [
   'TIPO_EMISSAO_ULTIMO_CRP','DATA_VENC_ULTIMO_CRP',
   'CRITERIOS_IRREGULARES',
   'FASE_PROGRAMA','F41_OPCAO','F41_LISTA','F42_LISTA','F43_LISTA','F43_LISTA_TXT',
+  'RESP23_POSSUI_ESTRUTURA','RESP23_CRITERIO_DECLARADO','RESP23_NORMAS_JSON','RESP23_COMPOSICAO_JSON','RESP23_JUSTIFICATIVA',
   'F4310_OPCAO','F4310_OPCAO_CODE','F4310_OPCAO_TXT','F4310_LEGISLACAO','F4310_DOCS','F4310_FALLBACK_TXT',
   'F43_JUST','F43_INCLUIR','F43_INCLUIR_B','F43_PLANO','F43_PLANO_B','F43_DESC_PLANOS',
   'F44_DECLS','F441_LEGISLACAO','F44_FINALIDADES','F44_CRITERIOS','F44_ANEXOS',
@@ -2115,6 +2126,28 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
     const p = validateOr400(res, schemaSolicCrp, req.body || {});
     if (!p) return;
 
+    {
+      const possui = norm(p.RESP23_POSSUI_ESTRUTURA).toUpperCase();
+      let normas = [];
+      let composicao = [];
+      try { normas = JSON.parse(p.RESP23_NORMAS_JSON || '[]'); } catch (_) {}
+      try { composicao = JSON.parse(p.RESP23_COMPOSICAO_JSON || '[]'); } catch (_) {}
+      const invalid = (detail) => res.status(400).json({ error: 'VALIDATION', details: [detail] });
+      if (!['SIM','NAO'].includes(possui)) return invalid('Informe se o RPPS possui dirigentes ou órgãos colegiados no item 2.3.');
+      if (possui === 'NAO' && !norm(p.RESP23_JUSTIFICATIVA)) return invalid('Informe a justificativa obrigatória do item 2.3.');
+      if (possui === 'SIM') {
+        if (norm(p.RESP23_CRITERIO_DECLARADO).toUpperCase() !== 'SIM') return invalid('Confirme o critério declarado do item 2.3.');
+        if (!Array.isArray(normas) || !normas.length || normas.some(n => !norm(n?.tipo) || !norm(n?.numero) || !/^\d{4}$/.test(norm(n?.ano)))) {
+          return invalid('Informe ao menos uma norma completa no item 2.3.');
+        }
+        const qtd = value => /^\d+$/.test(norm(value));
+        const suplente = value => qtd(value) || /^(não possui|não se aplica)$/i.test(norm(value));
+        if (!Array.isArray(composicao) || !composicao.length || composicao.some(item => !norm(item?.tipo) || !qtd(item?.titular) || !suplente(item?.suplente) || !norm(item?.dispositivo))) {
+          return invalid('Informe ao menos uma estrutura de gestão completa no item 2.3.');
+        }
+      }
+    }
+
     await authSheets();
     const s = await getOrCreateSheet('Solic_CRPs', SOLIC_HEADERS);
     await ensureMinColumns(s, SOLIC_HEADERS.length);
@@ -2224,6 +2257,11 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
         if (!arr.length && extra) arr.push(extra);
         return arr.join('; ');
       })(),
+      RESP23_POSSUI_ESTRUTURA: p.RESP23_POSSUI_ESTRUTURA || '',
+      RESP23_CRITERIO_DECLARADO: p.RESP23_CRITERIO_DECLARADO || '',
+      RESP23_NORMAS_JSON: p.RESP23_NORMAS_JSON || '[]',
+      RESP23_COMPOSICAO_JSON: p.RESP23_COMPOSICAO_JSON || '[]',
+      RESP23_JUSTIFICATIVA: p.RESP23_JUSTIFICATIVA || '',
       // 4.3.10 - normaliza A/B e preserva label/textos
       F4310_OPCAO: (p.F4310_OPCAO || '').toString().trim().charAt(0).toUpperCase(),
       F4310_OPCAO_CODE: (p.F4310_OPCAO || '').toString().trim().charAt(0).toUpperCase(),

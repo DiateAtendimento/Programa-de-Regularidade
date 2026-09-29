@@ -715,6 +715,13 @@
     );
     if (f43_9?.checked) f43_itens_raw.push(f43_9.value);
 
+    const resp23State = collectResp23Data();
+    data.values['RESP23_POSSUI_ESTRUTURA'] = resp23State.possui;
+    data.values['RESP23_CRITERIO_DECLARADO'] = resp23State.criterioDeclarado;
+    data.values['RESP23_NORMAS_JSON'] = JSON.stringify(resp23State.normas);
+    data.values['RESP23_COMPOSICAO_JSON'] = JSON.stringify(resp23State.composicao);
+    data.values['RESP23_JUSTIFICATIVA'] = resp23State.justificativa;
+
     data.values['F43_LISTA[]'] = f43_itens_raw;
 
     data.values['F43_PLANO']   = $('#F43_PLANO')?.value || '';
@@ -886,6 +893,43 @@
         const b = document.getElementById('F4310_DOCS_WRAP');
         if (a) a.classList.toggle('d-none', !isA);
         if (b) b.classList.toggle('d-none', !isB);
+      })();
+
+      // 2.3 — dirigentes, colegiados, normas e composição
+      (function(){
+        const possui = st.values?.RESP23_POSSUI_ESTRUTURA || '';
+        const radio = possui && document.querySelector(`input[name="RESP23_POSSUI_ESTRUTURA"][value="${possui}"]`);
+        if (radio) radio.checked = true;
+        const declaracao = document.getElementById('RESP23_CRITERIO_DECLARADO');
+        if (declaracao) declaracao.checked = !!st.values?.RESP23_CRITERIO_DECLARADO;
+        const justificativa = document.getElementById('RESP23_JUSTIFICATIVA');
+        if (justificativa) justificativa.value = st.values?.RESP23_JUSTIFICATIVA || '';
+
+        try {
+          const normas = JSON.parse(st.values?.RESP23_NORMAS_JSON || '[]');
+          const body = document.getElementById('RESP23_NORMAS_BODY');
+          if (body && Array.isArray(normas) && normas.length) {
+            body.innerHTML = '';
+            normas.forEach(addResp23NormaRow);
+          }
+        } catch {}
+
+        try {
+          const composicao = JSON.parse(st.values?.RESP23_COMPOSICAO_JSON || '[]');
+          if (Array.isArray(composicao)) composicao.forEach(item => {
+            const row = document.querySelector(`#RESP23_ESTRUTURA_BODY tr[data-resp23-tipo="${item.tipo}"]`);
+            if (!row) return;
+            const check = row.querySelector('.resp23-estrutura-check');
+            if (check) check.checked = true;
+            const titular = row.querySelector('.resp23-titular');
+            const suplente = row.querySelector('.resp23-suplente');
+            const dispositivo = row.querySelector('.resp23-dispositivo');
+            if (titular) titular.value = item.titular || '';
+            if (suplente && !suplente.readOnly) suplente.value = item.suplente || '';
+            if (dispositivo) dispositivo.value = item.dispositivo || '';
+          });
+        } catch {}
+        syncResp23Visibility();
       })();
 
       // 4.3.12 toggle
@@ -1677,6 +1721,33 @@ function syncF46ToTemplate(){
     const f = document.querySelector('input[name="FASE_PROGRAMA"]:checked')?.value || '';
     if(!f) return { ok:false, motivo:'Selecione a fase do Programa (4.1 a 4.6).' };
 
+    const resp23 = collectResp23Data();
+    if (!resp23.possui) {
+      return { ok:false, motivo:'No item 2.3, informe se o RPPS possui dirigentes ou órgãos colegiados constituídos.' };
+    }
+    if (resp23.possui === 'NAO' && !resp23.justificativa) {
+      return { ok:false, motivo:'No item 2.3, apresente a justificativa para a inexistência de dirigentes ou órgãos colegiados.' };
+    }
+    if (resp23.possui === 'SIM') {
+      if (!resp23.criterioDeclarado) {
+        return { ok:false, motivo:'No item 2.3, confirme a declaração relativa aos requisitos dos dirigentes e colegiados.' };
+      }
+      if (!resp23.normas.length) {
+        return { ok:false, motivo:'No item 2.3, informe ao menos uma norma que discipline a estrutura de gestão.' };
+      }
+      if (resp23.normas.some(n => !n.tipo || !n.numero || !/^\d{4}$/.test(n.ano))) {
+        return { ok:false, motivo:'No item 2.3, preencha tipo, número e ano (com quatro dígitos) de todas as normas informadas.' };
+      }
+      if (!resp23.composicao.length) {
+        return { ok:false, motivo:'No item 2.3, marque ao menos uma estrutura de gestão existente.' };
+      }
+      const quantidadeValida = value => /^\d+$/.test(String(value || '').trim());
+      const suplenteValido = value => quantidadeValida(value) || /^(não possui|não se aplica)$/i.test(String(value || '').trim());
+      if (resp23.composicao.some(item => !quantidadeValida(item.titular) || !suplenteValido(item.suplente) || !item.dispositivo)) {
+        return { ok:false, motivo:'No item 2.3, informe quantidades válidas para titulares e suplentes e o dispositivo da norma em todas as estruturas marcadas.' };
+      }
+    }
+
     if (f==='4.1'){
       const opt = $('input[name="F41_OPCAO"]:checked', el.blk41);
       if(!opt) return { ok:false, motivo:'Na fase 4.1, selecione 4.1.1 ou 4.1.2.' };
@@ -1699,6 +1770,7 @@ function syncF46ToTemplate(){
       if(!ok){
         return { ok:false, motivo:'Na fase 4.3, marque ao menos um critério ou descreva/justifique no(s) campo(s) disponível(is).' };
       }
+
     }
 
     if (f==='4.4'){
@@ -1869,6 +1941,83 @@ function syncF46ToTemplate(){
     return el ? String(el.value || '').trim() : '';
   }
 
+  const RESP23_ESTRUTURA_LABELS = {
+    dirigente_maximo: 'Dirigente Máximo da Unidade Gestora do RPPS',
+    demais_dirigentes: 'Demais dirigentes (membros da diretoria)',
+    conselho_deliberativo: 'Membros do Conselho Deliberativo',
+    conselho_fiscal: 'Membros do Conselho Fiscal',
+    responsavel_aplicacoes: 'Responsável pela gestão das aplicações dos recursos do RPPS',
+    comite_investimentos: 'Membros do Comitê de Investimentos'
+  };
+
+  function addResp23NormaRow(data = {}) {
+    const body = document.getElementById('RESP23_NORMAS_BODY');
+    if (!body) return;
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><select class="form-select form-select-sm resp23-norma-tipo"><option value="">Selecione</option><option>Lei</option><option>Decreto</option><option>Portaria</option><option>Resolução</option><option>Outro</option></select></td>
+      <td><input class="form-control form-control-sm resp23-norma-numero" placeholder="Ex.: 14"></td>
+      <td><input class="form-control form-control-sm resp23-norma-ano" inputmode="numeric" maxlength="4" placeholder="AAAA"></td>
+      <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger resp23-remove-norma" aria-label="Remover norma">×</button></td>`;
+    row.querySelector('.resp23-norma-tipo').value = data.tipo || '';
+    row.querySelector('.resp23-norma-numero').value = data.numero || '';
+    row.querySelector('.resp23-norma-ano').value = data.ano || '';
+    row.querySelector('.resp23-remove-norma').addEventListener('click', () => {
+      row.remove();
+      if (!body.children.length) addResp23NormaRow();
+      saveState();
+    });
+    row.querySelectorAll('input,select').forEach(node => node.addEventListener('change', saveState));
+    body.appendChild(row);
+  }
+
+  function collectResp23Data() {
+    const possui = document.querySelector('input[name="RESP23_POSSUI_ESTRUTURA"]:checked')?.value || '';
+    const normas = Array.from(document.querySelectorAll('#RESP23_NORMAS_BODY tr')).map(row => ({
+      tipo: row.querySelector('.resp23-norma-tipo')?.value?.trim() || '',
+      numero: row.querySelector('.resp23-norma-numero')?.value?.trim() || '',
+      ano: row.querySelector('.resp23-norma-ano')?.value?.trim() || ''
+    })).filter(n => n.tipo || n.numero || n.ano);
+    const composicao = Array.from(document.querySelectorAll('#RESP23_ESTRUTURA_BODY tr')).filter(row =>
+      row.querySelector('.resp23-estrutura-check')?.checked
+    ).map(row => ({
+      tipo: row.dataset.resp23Tipo || '',
+      estrutura: RESP23_ESTRUTURA_LABELS[row.dataset.resp23Tipo] || '',
+      titular: row.querySelector('.resp23-titular')?.value?.trim() || '',
+      suplente: row.querySelector('.resp23-suplente')?.value?.trim() || '',
+      dispositivo: row.querySelector('.resp23-dispositivo')?.value?.trim() || ''
+    }));
+    return {
+      possui,
+      criterioDeclarado: !!document.getElementById('RESP23_CRITERIO_DECLARADO')?.checked,
+      normas,
+      composicao,
+      justificativa: collectTextValue('RESP23_JUSTIFICATIVA')
+    };
+  }
+
+  function syncResp23Visibility() {
+    const data = collectResp23Data();
+    document.getElementById('RESP23_SIM_WRAP')?.classList.toggle('d-none', data.possui !== 'SIM');
+    document.getElementById('RESP23_NAO_WRAP')?.classList.toggle('d-none', data.possui !== 'NAO');
+    document.querySelectorAll('#RESP23_ESTRUTURA_BODY tr').forEach(row => {
+      const active = !!row.querySelector('.resp23-estrutura-check')?.checked;
+      row.querySelectorAll('.resp23-titular,.resp23-suplente,.resp23-dispositivo').forEach(input => {
+        if (!input.readOnly) input.disabled = !active;
+      });
+    });
+  }
+
+  function initResp23() {
+    if (!document.getElementById('RESP23_BLOCO')) return;
+    if (!document.querySelector('#RESP23_NORMAS_BODY tr')) addResp23NormaRow();
+    document.getElementById('RESP23_ADD_NORMA')?.addEventListener('click', () => addResp23NormaRow());
+    document.querySelectorAll('input[name="RESP23_POSSUI_ESTRUTURA"], #RESP23_CRITERIO_DECLARADO, #RESP23_ESTRUTURA_BODY input, #RESP23_JUSTIFICATIVA').forEach(node => {
+      node.addEventListener('change', () => { syncResp23Visibility(); saveState(); });
+    });
+    syncResp23Visibility();
+  }
+
   /* ========= Payload ========= */
   function buildPayload(){
 
@@ -2016,6 +2165,8 @@ function syncF46ToTemplate(){
       if (PRAZO_ADICIONAL_COD === '3.4.4') FIN_3_2_OUTRO_CRITERIO_COMPLEXO = 'SIM';
     }
 
+    const resp23 = collectResp23Data();
+
     // === Montagem do objeto (SEM chaves duplicadas) ===
     const obj = {
       HAS_TERMO_ENC_GESCON: el.hasGescon?.value === '1',
@@ -2103,6 +2254,12 @@ function syncF46ToTemplate(){
 
       F43_DESC_PLANOS: collectTextValue('F43_DESC_PLANOS'),
 
+      RESP23_POSSUI_ESTRUTURA: resp23.possui,
+      RESP23_CRITERIO_DECLARADO: resp23.criterioDeclarado ? 'SIM' : '',
+      RESP23_NORMAS_JSON: JSON.stringify(resp23.normas),
+      RESP23_COMPOSICAO_JSON: JSON.stringify(resp23.composicao),
+      RESP23_JUSTIFICATIVA: resp23.justificativa,
+
       F441_LEGISLACAO: $('#F441_LEGISLACAO')?.value || '',
       F445_DESC_PLANOS: collectTextValue('F445_DESC_PLANOS'),
       F446_DOCS:       $('#F446_DOCS')?.value || '',
@@ -2139,9 +2296,7 @@ function syncF46ToTemplate(){
             labelNode = document.querySelector(`label[for="${input.id}"]`);
           }
         }
-        const txt =
-          labelNode?.textContent?.trim() ||
-          (input.value || '').trim();
+        const txt = labelNode?.textContent?.trim() || (input.value || '').trim();
 
         if (txt) itens.push(txt);
       });
@@ -3586,6 +3741,7 @@ function ensureF43ForceSync(payload){
     setupFase4Toggles();
 
     bindCondicionais();
+    initResp23();
 
     // Botão pesquisar
     el.btnPesquisar?.addEventListener('click', onPesquisar);

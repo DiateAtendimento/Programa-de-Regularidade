@@ -132,6 +132,11 @@ export const schemaSolicCrp = z
     F43_LISTA_7: zArrStr, // 4.3.7 Envio de Dados/Informações
     F43_LISTA_8: zArrStr, // 4.3.8 Compensação Previdenciária
     F43_LISTA_9: zArrStr, // 4.3.9 Requisitos Dirigentes/Colegiados
+    RESP23_POSSUI_ESTRUTURA: z.enum(["SIM", "NAO"]).optional().or(z.literal("")).default(""),
+    RESP23_CRITERIO_DECLARADO: zStr,
+    RESP23_NORMAS_JSON: zStr,
+    RESP23_COMPOSICAO_JSON: zStr,
+    RESP23_JUSTIFICATIVA: zStr,
 
     // 4.3 — blocos padrão
     F43_LISTA: zArrStr,
