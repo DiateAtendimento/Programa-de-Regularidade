@@ -334,21 +334,11 @@
 
             <div class="card-subblock mt-3" id="RESP23_BLOCO">
               <div class="sub-title">2.3 Regularidade quanto aos requisitos dos dirigentes e colegiados (art. 8º-B da Lei nº 9.717/1998)</div>
-              <p class="fw-semibold mb-2">O RPPS possui dirigentes ou órgãos colegiados constituídos em sua estrutura de gestão? <span class="text-danger">*</span></p>
-              <div class="form-check mb-2">
-                <input class="form-check-input" type="radio" name="RESP23_POSSUI_ESTRUTURA" id="RESP23_POSSUI_SIM" value="SIM">
-                <label class="form-check-label" for="RESP23_POSSUI_SIM">Sim, possui um ou mais dirigentes ou órgãos colegiados.</label>
-              </div>
-              <div class="form-check mb-3">
-                <input class="form-check-input" type="radio" name="RESP23_POSSUI_ESTRUTURA" id="RESP23_POSSUI_NAO" value="NAO">
-                <label class="form-check-label" for="RESP23_POSSUI_NAO">Não possui dirigentes nem órgãos colegiados constituídos.</label>
-              </div>
-
-              <div id="RESP23_SIM_WRAP" class="d-none">
+              <div id="RESP23_SIM_WRAP">
                 <div class="form-check mb-3">
                   <input class="form-check-input" type="checkbox" id="RESP23_CRITERIO_DECLARADO">
                   <label class="form-check-label" for="RESP23_CRITERIO_DECLARADO">
-                    Declaro o atendimento aos requisitos para os dirigentes, membros titulares dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS. <span class="text-danger">*</span>
+                    Declaro o atendimento aos requisitos para os dirigentes, membros titulares dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS.
                   </label>
                 </div>
 
@@ -367,8 +357,8 @@
                   <table class="table table-sm table-bordered align-middle">
                     <thead class="table-light"><tr><th>Estrutura existente</th><th>Quant. titular</th><th>Quant. suplente</th><th>Dispositivo da norma</th></tr></thead>
                     <tbody id="RESP23_ESTRUTURA_BODY">
-                      <tr data-resp23-tipo="dirigente_maximo"><td><label class="d-flex gap-2"><input type="checkbox" class="form-check-input resp23-estrutura-check"> Dirigente Máximo da Unidade Gestora do RPPS</label></td><td><input class="form-control form-control-sm resp23-titular" inputmode="numeric"></td><td><input class="form-control form-control-sm resp23-suplente" value="Não se aplica" readonly></td><td><input class="form-control form-control-sm resp23-dispositivo" placeholder="Ex.: art. 14"></td></tr>
-                      <tr data-resp23-tipo="demais_dirigentes"><td><label class="d-flex gap-2"><input type="checkbox" class="form-check-input resp23-estrutura-check"> Demais dirigentes (membros da diretoria)</label></td><td><input class="form-control form-control-sm resp23-titular" inputmode="numeric"></td><td><input class="form-control form-control-sm resp23-suplente" value="Não se aplica" readonly></td><td><input class="form-control form-control-sm resp23-dispositivo" placeholder="Ex.: art. 14"></td></tr>
+                      <tr data-resp23-tipo="dirigente_maximo"><td><label class="d-flex gap-2"><input type="checkbox" class="form-check-input resp23-estrutura-check"> Dirigente Máximo da Unidade Gestora do RPPS</label></td><td><input class="form-control form-control-sm resp23-titular" inputmode="numeric"></td><td><input class="form-control form-control-sm resp23-suplente" placeholder="Quantidade ou Não possui"></td><td><input class="form-control form-control-sm resp23-dispositivo" placeholder="Ex.: art. 14"></td></tr>
+                      <tr data-resp23-tipo="demais_dirigentes"><td><label class="d-flex gap-2"><input type="checkbox" class="form-check-input resp23-estrutura-check"> Demais dirigentes (membros da diretoria)</label></td><td><input class="form-control form-control-sm resp23-titular" inputmode="numeric"></td><td><input class="form-control form-control-sm resp23-suplente" placeholder="Quantidade ou Não possui"></td><td><input class="form-control form-control-sm resp23-dispositivo" placeholder="Ex.: art. 14"></td></tr>
                       <tr data-resp23-tipo="conselho_deliberativo"><td><label class="d-flex gap-2"><input type="checkbox" class="form-check-input resp23-estrutura-check"> Membros do Conselho Deliberativo</label></td><td><input class="form-control form-control-sm resp23-titular" inputmode="numeric"></td><td><input class="form-control form-control-sm resp23-suplente" placeholder="Quantidade ou Não possui"></td><td><input class="form-control form-control-sm resp23-dispositivo" placeholder="Ex.: art. 14"></td></tr>
                       <tr data-resp23-tipo="conselho_fiscal"><td><label class="d-flex gap-2"><input type="checkbox" class="form-check-input resp23-estrutura-check"> Membros do Conselho Fiscal</label></td><td><input class="form-control form-control-sm resp23-titular" inputmode="numeric"></td><td><input class="form-control form-control-sm resp23-suplente" placeholder="Quantidade ou Não possui"></td><td><input class="form-control form-control-sm resp23-dispositivo" placeholder="Ex.: art. 14"></td></tr>
                       <tr data-resp23-tipo="responsavel_aplicacoes"><td><label class="d-flex gap-2"><input type="checkbox" class="form-check-input resp23-estrutura-check"> Responsável pela gestão das aplicações dos recursos do RPPS</label></td><td><input class="form-control form-control-sm resp23-titular" inputmode="numeric"></td><td><input class="form-control form-control-sm resp23-suplente" placeholder="Quantidade ou Não possui"></td><td><input class="form-control form-control-sm resp23-dispositivo" placeholder="Ex.: art. 14"></td></tr>
@@ -378,10 +368,6 @@
                 </div>
               </div>
 
-              <div id="RESP23_NAO_WRAP" class="d-none">
-                <label for="RESP23_JUSTIFICATIVA" class="form-label fw-semibold">Justificativa/Informações <span class="text-danger">*</span></label>
-                <textarea id="RESP23_JUSTIFICATIVA" class="form-control" rows="4" placeholder="Informe a razão pela qual o RPPS não possui dirigentes ou órgãos colegiados constituídos e, quando houver, as providências adotadas para sua regularização."></textarea>
-              </div>
             </div>
           </section>
           <!-- ETAPA 3 -->
@@ -1525,7 +1511,7 @@
   </script>
 
   <!-- cache-busting para carregar a versão mais recente com correção do 4.3.10 -->
-  <script src="solic_crp.js?v=2026-09-29-resp23" defer></script>
+  <script src="solic_crp.js?v=2026-10-19-resp23" defer></script>
 
   
   <!--<script src="./debugador-solic-crp.js?v=2.0"></script> -->

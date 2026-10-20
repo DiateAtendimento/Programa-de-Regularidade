@@ -82,11 +82,10 @@
           <div class="field"><span class="label"><strong>2.2.5 Telefone</strong></span><span class="value" data-k="tel_rep_ug"></span></div>
         </div>
 
-        <div id="resp23-detalhes" class="sub-section" style="display:none">
+        <div id="resp23-detalhes" class="sub-section">
           <h3>2.3 Regularidade quanto aos requisitos dos dirigentes e colegiados (art. 8º-B da Lei nº 9.717/1998)</h3>
-          <p class="small"><strong>Estrutura de gestão constituída:</strong> <span id="resp23-possui"></span></p>
-          <div id="resp23-sim" style="display:none">
-            <p class="small"><strong>Critério declarado:</strong> Requisitos para os dirigentes, membros titulares dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS.</p>
+          <div id="resp23-sim">
+            <p class="small" id="resp23-declaracao" style="display:none"><strong>Declaração:</strong> Atendimento aos requisitos para os dirigentes, membros titulares dos conselhos deliberativo e fiscal e do comitê de investimentos do RPPS.</p>
             <p class="label-like">Normas que disciplinam a estrutura de gestão:</p>
             <table id="resp23-normas-table" style="width:100%; border-collapse:collapse; font-size:10pt">
               <thead><tr><th style="border:1px solid #777;padding:4px">Tipo</th><th style="border:1px solid #777;padding:4px">Número</th><th style="border:1px solid #777;padding:4px">Ano</th></tr></thead>
@@ -97,10 +96,6 @@
               <thead><tr><th style="border:1px solid #777;padding:4px">Estrutura existente</th><th style="border:1px solid #777;padding:4px">Titular</th><th style="border:1px solid #777;padding:4px">Suplente</th><th style="border:1px solid #777;padding:4px">Dispositivo</th></tr></thead>
               <tbody></tbody>
             </table>
-          </div>
-          <div id="resp23-nao" style="display:none">
-            <p class="label-like">Justificativa/Informações:</p>
-            <div class="value-block" id="resp23-justificativa"></div>
           </div>
         </div>
       </section>
@@ -2437,35 +2432,27 @@
   };
   function renderResp23() {
     const data = window.__TERMO_DATA__ || {};
-    const possui = String(data.RESP23_POSSUI_ESTRUTURA || '').toUpperCase();
-    if (!possui) return;
     const root = document.getElementById('resp23-detalhes');
     const sim = document.getElementById('resp23-sim');
-    const nao = document.getElementById('resp23-nao');
-    if (!(root && sim && nao)) return;
+    if (!(root && sim)) return;
     root.style.display = 'block';
-    document.getElementById('resp23-possui').textContent = possui === 'SIM' ? 'Sim' : 'Não';
-    sim.style.display = possui === 'SIM' ? 'block' : 'none';
-    nao.style.display = possui === 'NAO' ? 'block' : 'none';
-
-    if (possui === 'SIM') {
-      const normasBody = document.querySelector('#resp23-normas-table tbody');
-      const composicaoBody = document.querySelector('#resp23-composicao-table tbody');
-      normasBody.innerHTML = '';
-      composicaoBody.innerHTML = '';
-      parseList(data.RESP23_NORMAS_JSON).forEach(item => {
-        const row = document.createElement('tr');
-        addCell(row, item.tipo); addCell(row, item.numero); addCell(row, item.ano);
-        normasBody.appendChild(row);
-      });
-      parseList(data.RESP23_COMPOSICAO_JSON).forEach(item => {
-        const row = document.createElement('tr');
-        addCell(row, item.estrutura); addCell(row, item.titular); addCell(row, item.suplente); addCell(row, item.dispositivo);
-        composicaoBody.appendChild(row);
-      });
-    } else {
-      document.getElementById('resp23-justificativa').textContent = data.RESP23_JUSTIFICATIVA || '';
-    }
+    sim.style.display = 'block';
+    const declaracao = document.getElementById('resp23-declaracao');
+    if (declaracao) declaracao.style.display = String(data.RESP23_CRITERIO_DECLARADO || '').toUpperCase() === 'SIM' ? 'block' : 'none';
+    const normasBody = document.querySelector('#resp23-normas-table tbody');
+    const composicaoBody = document.querySelector('#resp23-composicao-table tbody');
+    normasBody.innerHTML = '';
+    composicaoBody.innerHTML = '';
+    parseList(data.RESP23_NORMAS_JSON).forEach(item => {
+      const row = document.createElement('tr');
+      addCell(row, item.tipo); addCell(row, item.numero); addCell(row, item.ano);
+      normasBody.appendChild(row);
+    });
+    parseList(data.RESP23_COMPOSICAO_JSON).forEach(item => {
+      const row = document.createElement('tr');
+      addCell(row, item.estrutura); addCell(row, item.titular); addCell(row, item.suplente); addCell(row, item.dispositivo);
+      composicaoBody.appendChild(row);
+    });
   }
   document.addEventListener('TERMO_DATA', renderResp23);
   document.addEventListener('TERMO_DATA_READY', renderResp23);

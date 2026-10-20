@@ -2127,24 +2127,18 @@ app.post('/api/gerar-solic-crp', async (req, res) => {
     if (!p) return;
 
     {
-      const possui = norm(p.RESP23_POSSUI_ESTRUTURA).toUpperCase();
       let normas = [];
       let composicao = [];
       try { normas = JSON.parse(p.RESP23_NORMAS_JSON || '[]'); } catch (_) {}
       try { composicao = JSON.parse(p.RESP23_COMPOSICAO_JSON || '[]'); } catch (_) {}
       const invalid = (detail) => res.status(400).json({ error: 'VALIDATION', details: [detail] });
-      if (!['SIM','NAO'].includes(possui)) return invalid('Informe se o RPPS possui dirigentes ou órgãos colegiados no item 2.3.');
-      if (possui === 'NAO' && !norm(p.RESP23_JUSTIFICATIVA)) return invalid('Informe a justificativa obrigatória do item 2.3.');
-      if (possui === 'SIM') {
-        if (norm(p.RESP23_CRITERIO_DECLARADO).toUpperCase() !== 'SIM') return invalid('Confirme o critério declarado do item 2.3.');
-        if (!Array.isArray(normas) || !normas.length || normas.some(n => !norm(n?.tipo) || !norm(n?.numero) || !/^\d{4}$/.test(norm(n?.ano)))) {
-          return invalid('Informe ao menos uma norma completa no item 2.3.');
-        }
-        const qtd = value => /^\d+$/.test(norm(value));
-        const suplente = value => qtd(value) || /^(não possui|não se aplica)$/i.test(norm(value));
-        if (!Array.isArray(composicao) || !composicao.length || composicao.some(item => !norm(item?.tipo) || !qtd(item?.titular) || !suplente(item?.suplente) || !norm(item?.dispositivo))) {
-          return invalid('Informe ao menos uma estrutura de gestão completa no item 2.3.');
-        }
+      if (!Array.isArray(normas) || !normas.length || normas.some(n => !norm(n?.tipo) || !norm(n?.numero) || !/^\d{4}$/.test(norm(n?.ano)))) {
+        return invalid('Informe ao menos uma norma completa no item 2.3.');
+      }
+      const qtd = value => /^\d+$/.test(norm(value));
+      const suplente = value => qtd(value) || /^(não possui|não se aplica)$/i.test(norm(value));
+      if (!Array.isArray(composicao) || !composicao.length || composicao.some(item => !norm(item?.tipo) || !qtd(item?.titular) || !suplente(item?.suplente) || !norm(item?.dispositivo))) {
+        return invalid('Informe ao menos uma estrutura de gestão completa no item 2.3.');
       }
     }
 
@@ -2967,6 +2961,55 @@ async function gerarPdfDoTemplateSimples({ templateFile, payload, filenameFallba
     setText('[data-k="f43_plano"]', flat['f43_plano']);
     setText('[data-k="f441_legislacao"]', flat['f441_legislacao']);
     setText('[data-k="fase_programa"]', fase);
+
+    // 2.3 — renderização direta para o PDF. Não depende dos scripts inline do
+    // template, que podem ser bloqueados pela política de segurança do servidor.
+    const parseResp23List = (value) => {
+      if (Array.isArray(value)) return value;
+      try {
+        const parsed = JSON.parse(String(value || '[]'));
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) { return []; }
+    };
+    const resp23Root = document.getElementById('resp23-detalhes');
+    const resp23Sim = document.getElementById('resp23-sim');
+    if (resp23Root && resp23Sim) {
+      resp23Root.style.display = 'block';
+      resp23Sim.style.display = 'block';
+      const declaration = document.getElementById('resp23-declaracao');
+      if (declaration) {
+        declaration.style.display = String(raw.RESP23_CRITERIO_DECLARADO || '').toUpperCase() === 'SIM' ? 'block' : 'none';
+      }
+      const addResp23Cell = (row, value) => {
+        const cell = document.createElement('td');
+        cell.style.cssText = 'border:1px solid #777;padding:4px;vertical-align:top';
+        cell.textContent = String(value || '');
+        row.appendChild(cell);
+      };
+      const normasBody = document.querySelector('#resp23-normas-table tbody');
+      const composicaoBody = document.querySelector('#resp23-composicao-table tbody');
+      if (normasBody) {
+        normasBody.innerHTML = '';
+        parseResp23List(raw.RESP23_NORMAS_JSON).forEach(item => {
+          const row = document.createElement('tr');
+          addResp23Cell(row, item.tipo);
+          addResp23Cell(row, item.numero);
+          addResp23Cell(row, item.ano);
+          normasBody.appendChild(row);
+        });
+      }
+      if (composicaoBody) {
+        composicaoBody.innerHTML = '';
+        parseResp23List(raw.RESP23_COMPOSICAO_JSON).forEach(item => {
+          const row = document.createElement('tr');
+          addResp23Cell(row, item.estrutura);
+          addResp23Cell(row, item.titular);
+          addResp23Cell(row, item.suplente);
+          addResp23Cell(row, item.dispositivo);
+          composicaoBody.appendChild(row);
+        });
+      }
+    }
 
     // Marca pronto p/ imprimir (se alguém estiver esperando)
     window.__TERMO_PRINT_READY__ = true;

@@ -897,13 +897,8 @@
 
       // 2.3 — dirigentes, colegiados, normas e composição
       (function(){
-        const possui = st.values?.RESP23_POSSUI_ESTRUTURA || '';
-        const radio = possui && document.querySelector(`input[name="RESP23_POSSUI_ESTRUTURA"][value="${possui}"]`);
-        if (radio) radio.checked = true;
         const declaracao = document.getElementById('RESP23_CRITERIO_DECLARADO');
         if (declaracao) declaracao.checked = !!st.values?.RESP23_CRITERIO_DECLARADO;
-        const justificativa = document.getElementById('RESP23_JUSTIFICATIVA');
-        if (justificativa) justificativa.value = st.values?.RESP23_JUSTIFICATIVA || '';
 
         try {
           const normas = JSON.parse(st.values?.RESP23_NORMAS_JSON || '[]');
@@ -925,7 +920,7 @@
             const suplente = row.querySelector('.resp23-suplente');
             const dispositivo = row.querySelector('.resp23-dispositivo');
             if (titular) titular.value = item.titular || '';
-            if (suplente && !suplente.readOnly) suplente.value = item.suplente || '';
+            if (suplente) suplente.value = item.suplente || '';
             if (dispositivo) dispositivo.value = item.dispositivo || '';
           });
         } catch {}
@@ -1722,30 +1717,19 @@ function syncF46ToTemplate(){
     if(!f) return { ok:false, motivo:'Selecione a fase do Programa (4.1 a 4.6).' };
 
     const resp23 = collectResp23Data();
-    if (!resp23.possui) {
-      return { ok:false, motivo:'No item 2.3, informe se o RPPS possui dirigentes ou órgãos colegiados constituídos.' };
+    if (!resp23.normas.length) {
+      return { ok:false, motivo:'No item 2.3, informe ao menos uma norma que discipline a estrutura de gestão.' };
     }
-    if (resp23.possui === 'NAO' && !resp23.justificativa) {
-      return { ok:false, motivo:'No item 2.3, apresente a justificativa para a inexistência de dirigentes ou órgãos colegiados.' };
+    if (resp23.normas.some(n => !n.tipo || !n.numero || !/^\d{4}$/.test(n.ano))) {
+      return { ok:false, motivo:'No item 2.3, preencha tipo, número e ano (com quatro dígitos) de todas as normas informadas.' };
     }
-    if (resp23.possui === 'SIM') {
-      if (!resp23.criterioDeclarado) {
-        return { ok:false, motivo:'No item 2.3, confirme a declaração relativa aos requisitos dos dirigentes e colegiados.' };
-      }
-      if (!resp23.normas.length) {
-        return { ok:false, motivo:'No item 2.3, informe ao menos uma norma que discipline a estrutura de gestão.' };
-      }
-      if (resp23.normas.some(n => !n.tipo || !n.numero || !/^\d{4}$/.test(n.ano))) {
-        return { ok:false, motivo:'No item 2.3, preencha tipo, número e ano (com quatro dígitos) de todas as normas informadas.' };
-      }
-      if (!resp23.composicao.length) {
-        return { ok:false, motivo:'No item 2.3, marque ao menos uma estrutura de gestão existente.' };
-      }
-      const quantidadeValida = value => /^\d+$/.test(String(value || '').trim());
-      const suplenteValido = value => quantidadeValida(value) || /^(não possui|não se aplica)$/i.test(String(value || '').trim());
-      if (resp23.composicao.some(item => !quantidadeValida(item.titular) || !suplenteValido(item.suplente) || !item.dispositivo)) {
-        return { ok:false, motivo:'No item 2.3, informe quantidades válidas para titulares e suplentes e o dispositivo da norma em todas as estruturas marcadas.' };
-      }
+    if (!resp23.composicao.length) {
+      return { ok:false, motivo:'No item 2.3, marque ao menos uma estrutura de gestão existente.' };
+    }
+    const quantidadeValida = value => /^\d+$/.test(String(value || '').trim());
+    const suplenteValido = value => quantidadeValida(value) || /^(não possui|não se aplica)$/i.test(String(value || '').trim());
+    if (resp23.composicao.some(item => !quantidadeValida(item.titular) || !suplenteValido(item.suplente) || !item.dispositivo)) {
+      return { ok:false, motivo:'No item 2.3, informe quantidades válidas para titulares e suplentes e o dispositivo da norma em todas as estruturas marcadas.' };
     }
 
     if (f==='4.1'){
@@ -1972,7 +1956,6 @@ function syncF46ToTemplate(){
   }
 
   function collectResp23Data() {
-    const possui = document.querySelector('input[name="RESP23_POSSUI_ESTRUTURA"]:checked')?.value || '';
     const normas = Array.from(document.querySelectorAll('#RESP23_NORMAS_BODY tr')).map(row => ({
       tipo: row.querySelector('.resp23-norma-tipo')?.value?.trim() || '',
       numero: row.querySelector('.resp23-norma-numero')?.value?.trim() || '',
@@ -1988,22 +1971,20 @@ function syncF46ToTemplate(){
       dispositivo: row.querySelector('.resp23-dispositivo')?.value?.trim() || ''
     }));
     return {
-      possui,
+      // Mantidos por compatibilidade com registros e versões anteriores da API.
+      possui: 'SIM',
       criterioDeclarado: !!document.getElementById('RESP23_CRITERIO_DECLARADO')?.checked,
       normas,
       composicao,
-      justificativa: collectTextValue('RESP23_JUSTIFICATIVA')
+      justificativa: ''
     };
   }
 
   function syncResp23Visibility() {
-    const data = collectResp23Data();
-    document.getElementById('RESP23_SIM_WRAP')?.classList.toggle('d-none', data.possui !== 'SIM');
-    document.getElementById('RESP23_NAO_WRAP')?.classList.toggle('d-none', data.possui !== 'NAO');
     document.querySelectorAll('#RESP23_ESTRUTURA_BODY tr').forEach(row => {
       const active = !!row.querySelector('.resp23-estrutura-check')?.checked;
       row.querySelectorAll('.resp23-titular,.resp23-suplente,.resp23-dispositivo').forEach(input => {
-        if (!input.readOnly) input.disabled = !active;
+        input.disabled = !active;
       });
     });
   }
@@ -2012,7 +1993,7 @@ function syncF46ToTemplate(){
     if (!document.getElementById('RESP23_BLOCO')) return;
     if (!document.querySelector('#RESP23_NORMAS_BODY tr')) addResp23NormaRow();
     document.getElementById('RESP23_ADD_NORMA')?.addEventListener('click', () => addResp23NormaRow());
-    document.querySelectorAll('input[name="RESP23_POSSUI_ESTRUTURA"], #RESP23_CRITERIO_DECLARADO, #RESP23_ESTRUTURA_BODY input, #RESP23_JUSTIFICATIVA').forEach(node => {
+    document.querySelectorAll('#RESP23_CRITERIO_DECLARADO, #RESP23_ESTRUTURA_BODY input').forEach(node => {
       node.addEventListener('change', () => { syncResp23Visibility(); saveState(); });
     });
     syncResp23Visibility();
